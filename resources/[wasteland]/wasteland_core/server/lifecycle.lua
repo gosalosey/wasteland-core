@@ -16,7 +16,7 @@ local Config = WL.Config
 local Util = WL.Util
 local log = WL.Logger.new('core')
 
-WL.API_VERSION = '1.0.0'
+WL.API_VERSION = '1.1.0'
 
 Lifecycle.state = Lifecycle.state or 'booting'
 Lifecycle.coreConfig = Lifecycle.coreConfig or nil
@@ -235,6 +235,55 @@ function Lifecycle.restartCascadedResources()
     return started
 end
 
+-- The same FiveM behaviour applies to every module resource: restarting
+-- wasteland_database stops wasteland_players (it declares the dependency)
+-- and leaves it stopped. When a module resource stops, the core remembers
+-- the module resources FiveM stopped just before it because they depend on
+-- it, and starts them again when it comes back (same setting).
+Lifecycle.dependentsToRestart = Lifecycle.dependentsToRestart or {}
+
+--- True when `res` lists `target` as a dependency in its fxmanifest.
+function Lifecycle.manifestDependsOn(res, target)
+    local n = GetNumResourceMetadata(res, 'dependency') or 0
+    for i = 0, n - 1 do
+        if GetResourceMetadata(res, 'dependency', i) == target then return true end
+    end
+    return false
+end
+
+function Lifecycle.rememberDependents(resource)
+    local cfg = Lifecycle.coreConfig
+    if cfg and cfg.framework.restartModulesAfterCoreRestart == false then return {} end
+    local list = {}
+    for _, res in ipairs(Registry.resourcesStoppedSince(GetGameTimer() - Lifecycle.CASCADE_WINDOW_MS)) do
+        if res ~= resource and Lifecycle.manifestDependsOn(res, resource) then list[#list + 1] = res end
+    end
+    if #list > 0 then
+        Lifecycle.dependentsToRestart[resource] = list
+        log:info('"%s" stopped; will restart %d dependent module resource(s) when it starts again: %s',
+            resource, #list, table.concat(list, ', '))
+    end
+    return list
+end
+
+function Lifecycle.restartDependents(resource)
+    local list = Lifecycle.dependentsToRestart[resource]
+    if not list then return {} end
+    Lifecycle.dependentsToRestart[resource] = nil
+    local started = {}
+    for _, res in ipairs(list) do
+        if GetResourceState(res) == 'stopped' then
+            log:info('restarting module resource "%s" (stopped because "%s" restarted)', res, resource)
+            if StartResource(res) then
+                started[#started + 1] = res
+            else
+                log:error('could not restart resource "%s"; start it manually with: ensure %s', res, res)
+            end
+        end
+    end
+    return started
+end
+
 --- Ordered, idempotent shutdown.
 function Lifecycle.shutdown(reason)
     if Lifecycle.state == 'shutting_down' or Lifecycle.state == 'stopped' then
@@ -270,8 +319,13 @@ function Lifecycle.statusLines()
     lines[#lines + 1] = string.format('%-14s %-9s %-13s %-22s %s', 'MODULE', 'VERSION', 'STATE', 'RESOURCE', 'DETAILS')
     for _, s in ipairs(list) do
         counts[s.state] = (counts[s.state] or 0) + 1
+        local details = s.reason or ''
+        if s.health == 'degraded' then
+            counts.degraded = (counts.degraded or 0) + 1
+            details = 'DEGRADED: ' .. tostring(s.healthDetail or 'no detail given')
+        end
         lines[#lines + 1] = string.format('%-14s %-9s %-13s %-22s %s',
-            s.name, s.version, s.state, tostring(s.resource), s.reason or '')
+            s.name, s.version, s.state, tostring(s.resource), details)
     end
     for _, name in ipairs(Registry.missingModules()) do
         counts.missing = (counts.missing or 0) + 1
@@ -279,7 +333,7 @@ function Lifecycle.statusLines()
             'enabled in modules config but not registered')
     end
     local parts = {}
-    for _, st in ipairs({ 'running', 'initializing', 'waiting', 'failed', 'disabled', 'stopped', 'missing' }) do
+    for _, st in ipairs({ 'running', 'degraded', 'initializing', 'waiting', 'failed', 'disabled', 'stopped', 'missing' }) do
         if counts[st] then parts[#parts + 1] = st .. '=' .. counts[st] end
     end
     lines[#lines + 1] = 'summary: ' .. table.concat(parts, ' ')

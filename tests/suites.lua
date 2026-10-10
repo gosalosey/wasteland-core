@@ -9,4 +9,7 @@ return {
     'integration/registry.lua',
     'integration/lifecycle.lua',
     'integration/commands.lua',
+    'integration/netguard.lua',
+    'integration/database.lua',
+    'integration/players.lua',
 }

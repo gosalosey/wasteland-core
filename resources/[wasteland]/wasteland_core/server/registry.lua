@@ -142,6 +142,8 @@ local function snapshot(mod)
         configWarnings = mod.configWarnings and Util.deepCopy(mod.configWarnings) or {},
         initIndex = mod.initIndex,
         async = mod.async,
+        health = mod.health or 'ok',
+        healthDetail = mod.healthDetail,
     }
 end
 
@@ -356,6 +358,7 @@ local function initModule(mod)
         return
     end
     setState(mod, 'initializing')
+    mod.health, mod.healthDetail = 'ok', nil
     if not mod.init then
         setState(mod, 'running')
         return
@@ -512,6 +515,40 @@ function Registry.reportFailed(name, reason, resource)
     setState(mod, 'failed', tostring(reason or 'module reported failure'))
     if wasRunning then Registry.cascadeUnavailable(name) end
     Registry.resolve()
+    return true
+end
+
+--- A running module reports whether it is fully operational ('ok') or
+--- running with a problem an admin should see ('degraded', with a detail).
+--- Health is informational: it does not change the module state or cascade.
+Registry.HEALTH = { ok = true, degraded = true }
+
+function Registry.reportHealth(name, status, detail, resource)
+    local mod = Registry.modules[name]
+    if not mod then return false, 'unknown module "' .. tostring(name) .. '"' end
+    if resource and mod.resource ~= resource then
+        return false, string.format('resource "%s" does not own module "%s"', tostring(resource), name)
+    end
+    if not Registry.HEALTH[status] then
+        return false, string.format('invalid health status %s (expected "ok" or "degraded")', Util.inspect(status, 0))
+    end
+    if mod.state ~= 'running' and mod.state ~= 'initializing' then
+        return false, string.format('module "%s" is %s', name, tostring(mod.state))
+    end
+    if detail ~= nil then detail = tostring(detail) end
+    local prev = mod.health or 'ok'
+    mod.health = status
+    mod.healthDetail = status == 'degraded' and detail or nil
+    if prev ~= status then
+        if status == 'degraded' then
+            log:warn('module "%s" is degraded: %s', name, tostring(detail or 'no detail given'))
+        else
+            log:info('module "%s" recovered%s', name, detail and (': ' .. detail) or '')
+        end
+        if TriggerEvent then
+            TriggerEvent('wasteland:core:moduleHealth', name, status, prev, mod.healthDetail)
+        end
+    end
     return true
 end
 

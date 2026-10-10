@@ -21,8 +21,19 @@ return {
     -- restart or shutdown (recommended: protects data from Milestone 2 on).
     shutdownOnTxAdminRestart = true,
 
-    -- When you run `restart wasteland_core`, FiveM also stops every module
-    -- resource that depends on it but does not start them again. With this
-    -- on, the core restarts exactly the modules that were running before.
+    -- When you restart a resource (e.g. `restart wasteland_core` or
+    -- `restart wasteland_database`), FiveM also stops every module resource
+    -- that depends on it but does not start them again. With this on, the
+    -- core restarts exactly the modules that were running before.
     restartModulesAfterCoreRestart = true,
+
+    -- Client requests that fail validation (bad data, spam, invalid sender)
+    -- are always rejected and logged. Optionally kick repeat offenders.
+    security = {
+        -- Kick after this many rejected requests within the window.
+        -- 0 = never kick (only log). Try 20 on a live server.
+        kickAfterViolations = 0,
+        -- Window in seconds for counting rejected requests. 1 - 3600.
+        violationWindowSeconds = 60,
+    },
 }

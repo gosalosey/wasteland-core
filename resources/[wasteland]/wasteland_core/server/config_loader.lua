@@ -121,7 +121,17 @@ Config.CORE_SCHEMAS = {
             shutdownOnTxAdminRestart = { type = 'boolean', default = true,
                 description = 'Run the ordered module shutdown when txAdmin announces a server shutdown.' },
             restartModulesAfterCoreRestart = { type = 'boolean', default = true,
-                description = 'Start module resources again after `restart wasteland_core` (FiveM stops them but does not restart them).' },
+                description = 'Start module resources again after FiveM stopped them because a resource they depend on (the core or another module) restarted.' },
+            security = {
+                type = 'table',
+                description = 'Handling of rejected client requests (net-event guard).',
+                fields = {
+                    kickAfterViolations = { type = 'integer', default = 0, min = 0, max = 1000,
+                        description = 'Kick a player after this many rejected requests within the window (0 = never kick, only log).' },
+                    violationWindowSeconds = { type = 'integer', default = 60, min = 1, max = 3600,
+                        description = 'Window for counting rejected requests.' },
+                },
+            },
         },
     },
     modules = {

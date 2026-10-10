@@ -29,6 +29,12 @@ exports('ReportModuleFailed', function(name, reason)
     return Registry.reportFailed(name, reason, caller())
 end)
 
+--- ReportModuleHealth(name, status, detail) -> ok, err   (api 1.1)
+--- status: 'ok' | 'degraded'. Only the owning resource.
+exports('ReportModuleHealth', function(name, status, detail)
+    return Registry.reportHealth(name, status, detail, caller())
+end)
+
 --- GetModuleStatus(name) -> status table | nil
 exports('GetModuleStatus', function(name)
     return Registry.getStatus(name)

@@ -41,6 +41,7 @@ local function describeModule(name)
         string.format('resource:    %s', tostring(s.resource)),
         string.format('state:       %s%s', s.state, s.reason and (' - ' .. s.reason) or ''),
         string.format('enabled:     %s', tostring(s.enabled)),
+        string.format('health:      %s%s', s.health, s.healthDetail and (' - ' .. s.healthDetail) or ''),
         string.format('config file: %s', s.configFile or '(none)'),
     }
     local deps = {}

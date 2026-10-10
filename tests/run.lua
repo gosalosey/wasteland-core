@@ -38,14 +38,34 @@ function _G.loadCoreFiles(files, stubs)
     return env
 end
 
+local MemoryDB = require('lib.memorydb')
+_G.MemoryDB = MemoryDB
+local FAKE_OXMYSQL = require('lib.fake_oxmysql')
+
 --- Create a simulated server with the framework resources registered.
 --- opts.fixtures = { 'name', ... } adds tests/fixtures/<name> resources.
+--- A simulated `oxmysql` resource is always registered (not started);
+--- server.db controls it (see tests/lib/fake_oxmysql.lua) and
+--- server.db.backend is a MemoryDB unless opts.dbBackend is given.
 function _G.newServer(opts)
     opts = opts or {}
     local server = Mock.new(opts)
     server:addResource('wasteland_config', RESOURCES .. '/wasteland_config')
     server:addResource('wasteland_core', RESOURCES .. '/wasteland_core')
     server:addResource('wasteland_template', RESOURCES .. '/wasteland_template')
+    server:addResource('wasteland_database', RESOURCES .. '/wasteland_database')
+    server:addResource('wasteland_players', RESOURCES .. '/wasteland_players')
+    server.db = {
+        backend = opts.dbBackend or MemoryDB.new(RESOURCES),
+        connected = opts.dbConnected ~= false,
+        hang = false,
+        latencyMs = 5,
+        calls = {},
+    }
+    server:addVirtualResource('oxmysql', {
+        fx_version = { 'cerulean' }, game = { 'gta5' }, lua54 = { 'yes' },
+        server_script = { 'server.lua' },
+    }, { ['server.lua'] = FAKE_OXMYSQL }, { FAKEDB = server.db })
     for _, fx in ipairs(opts.fixtures or {}) do
         server:addResource(fx, ROOT .. '/tests/fixtures/' .. fx)
     end
@@ -59,17 +79,28 @@ end
 --- `body` is Lua source run after a preamble providing:
 ---   track(x)     append x to the resource's CALLS list
 ---   exports Calls() -> CALLS   (read from tests with server:export(name, 'Calls'))
-function _G.addModule(server, resName, body, extraDeps)
+--- `extraScripts` are inserted after the SDK (e.g. '@wasteland_database/lib/db.lua').
+function _G.addModule(server, resName, body, extraDeps, extraScripts)
     local deps = { 'wasteland_core' }
     for _, d in ipairs(extraDeps or {}) do deps[#deps + 1] = d end
     local preamble = 'CALLS = {}\n'
         .. 'function track(x) CALLS[#CALLS + 1] = x end\n'
         .. "exports('Calls', function() return CALLS end)\n"
+    local scripts = { '@wasteland_core/sdk/module.lua' }
+    for _, s in ipairs(extraScripts or {}) do scripts[#scripts + 1] = s end
+    scripts[#scripts + 1] = 'main.lua'
     server:addVirtualResource(resName, {
         fx_version = { 'cerulean' }, game = { 'gta5' }, lua54 = { 'yes' },
         dependency = deps,
-        server_script = { '@wasteland_core/sdk/module.lua', 'main.lua' },
+        server_script = scripts,
     }, { ['main.lua'] = preamble .. body })
+end
+
+--- Start the simulated driver and the given resources, then let them boot.
+function _G.boot(server, resources, ms)
+    server:start('oxmysql')
+    for _, r in ipairs(resources) do server:start(r) end
+    server:advance(ms or 3000)
 end
 
 --- Map of module name -> state from the live core.

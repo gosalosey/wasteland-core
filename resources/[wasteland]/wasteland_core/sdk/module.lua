@@ -154,6 +154,18 @@ function Wasteland.DefineModule(spec)
         return done, err
     end
 
+    --- Report health while running: M.setHealth('degraded', 'why') / M.setHealth('ok').
+    function M.setHealth(status, detail)
+        local ok, done, err = Wasteland.CallCore('ReportModuleHealth', M.name, status, detail)
+        if not ok then return false, done end
+        return done, err
+    end
+
+    --- Register a guarded client -> server event (see Wasteland.GuardNetEvent).
+    function M.netEvent(eventName, opts, handler)
+        return Wasteland.GuardNetEvent(M, eventName, opts, handler)
+    end
+
     function M.register()
         local ok, registered, err = Wasteland.CallCore('RegisterModule', definition)
         if not ok then
@@ -191,6 +203,136 @@ function Wasteland.DefineModule(spec)
 
     if coreStarted() then M.register() end
     return M
+end
+
+-------------------------------------------------------------------------------
+-- Net-event guard
+--
+-- Client -> server events are the only network entry points and are
+-- untrusted. Every one goes through this guard, which checks in order:
+--   1. source: a connected player (not the console, not a stale id)
+--   2. module active: events arriving while the module is down are dropped
+--   3. rate limit: token bucket per player and event
+--   4. payload: argument count and a schema per argument (core schema DSL)
+-- Rejected events are logged (throttled) and reported to the core as
+-- `wasteland:core:netViolation`, which can kick repeat offenders
+-- (framework.security.kickAfterViolations).
+-------------------------------------------------------------------------------
+
+local schemaLib
+
+--- The core's schema validator, loaded into this resource (resources are
+--- isolated, and validating every packet through an export would be slow).
+function Wasteland.Schema()
+    if schemaLib then return schemaLib end
+    local env = setmetatable({ WL = {} }, { __index = _G })
+    for _, file in ipairs({ 'shared/util.lua', 'shared/schema.lua' }) do
+        local src = LoadResourceFile(CORE, file)
+        if not src then error(string.format('cannot load %s/%s (is %s installed?)', CORE, file, CORE), 2) end
+        local chunk, err = load(src, '@' .. CORE .. '/' .. file, 't', env)
+        if not chunk then error(err, 2) end
+        chunk()
+    end
+    schemaLib = env.WL.Schema
+    return schemaLib
+end
+
+local DEFAULT_RATE = { burst = 10, perSecond = 5 }
+local VIOLATION_LOG_INTERVAL_MS = 10000
+local buckets = {}          -- [source][eventName] = { tokens, last }
+local lastViolationLog = {} -- [source|event|kind] = game time
+
+AddEventHandler('playerDropped', function()
+    local src = tonumber(source)
+    if src then buckets[src] = nil end
+end)
+
+local function takeToken(src, eventName, rate)
+    local now = GetGameTimer()
+    local perPlayer = buckets[src]
+    if not perPlayer then perPlayer = {}; buckets[src] = perPlayer end
+    local b = perPlayer[eventName]
+    if not b then
+        b = { tokens = rate.burst, last = now }
+        perPlayer[eventName] = b
+    end
+    b.tokens = math.min(rate.burst, b.tokens + (now - b.last) / 1000 * rate.perSecond)
+    b.last = now
+    if b.tokens < 1 then return false end
+    b.tokens = b.tokens - 1
+    return true
+end
+
+local function violation(M, src, eventName, kind, detail)
+    local key = tostring(src) .. '|' .. eventName .. '|' .. kind
+    local now = GetGameTimer()
+    if not lastViolationLog[key] or now - lastViolationLog[key] >= VIOLATION_LOG_INTERVAL_MS then
+        lastViolationLog[key] = now
+        M.log:warn('rejected "%s" from player %s (%s): %s', eventName, tostring(src), kind, detail)
+    end
+    TriggerEvent('wasteland:core:netViolation', src, M.name, eventName, kind, detail)
+end
+
+--- Register a guarded net event for module M.
+---   eventName  must be 'wasteland:<module>:server:<action>'
+---   opts.args  list of schema nodes, one per argument (default: no arguments)
+---   opts.rateLimit = { burst = n, perSecond = n }   (default 10 / 5)
+---   handler(source, ...validated args)
+function Wasteland.GuardNetEvent(M, eventName, opts, handler)
+    opts = opts or {}
+    local prefix = 'wasteland:' .. M.name .. ':server:'
+    if type(eventName) ~= 'string' or eventName:sub(1, #prefix) ~= prefix or #eventName == #prefix then
+        error(string.format('net event "%s" must be named "%s<action>"', tostring(eventName), prefix), 2)
+    end
+    if type(handler) ~= 'function' then error('GuardNetEvent: handler must be a function', 2) end
+    local Schema = Wasteland.Schema()
+    local args = opts.args or {}
+    for i, node in ipairs(args) do
+        local ok, errors = Schema.check(node)
+        if not ok then
+            error(string.format('net event "%s" argument %d: invalid schema: %s', eventName, i, table.concat(errors, '; ')), 2)
+        end
+    end
+    local rate = opts.rateLimit or DEFAULT_RATE
+    if type(rate.burst) ~= 'number' or rate.burst < 1 or type(rate.perSecond) ~= 'number' or rate.perSecond <= 0 then
+        error(string.format('net event "%s": rateLimit needs burst >= 1 and perSecond > 0', eventName), 2)
+    end
+
+    RegisterNetEvent(eventName, function(...)
+        local src = tonumber(source)
+        if not src or src <= 0 or GetPlayerName(src) == nil then
+            violation(M, tostring(source), eventName, 'source', 'not a connected player')
+            return
+        end
+        if not M.active then
+            M.log:debug('dropped "%s" from player %d: module not running', eventName, src)
+            return
+        end
+        if not takeToken(src, eventName, rate) then
+            violation(M, src, eventName, 'rate', string.format('more than %d calls burst / %s per second', rate.burst, rate.perSecond))
+            return
+        end
+        local n = select('#', ...)
+        if n > #args then
+            violation(M, src, eventName, 'payload', string.format('expected at most %d argument(s), got %d', #args, n))
+            return
+        end
+        local values = {}
+        for i, node in ipairs(args) do
+            local value, errors = Schema.validate(node, (select(i, ...)))
+            if #errors > 0 then
+                local e = errors[1]
+                violation(M, src, eventName, 'payload', string.format('argument %d%s: %s', i,
+                    (e.path and e.path ~= '') and (' (' .. e.path .. ')') or '', e.message))
+                return
+            end
+            values[i] = value
+        end
+        local ok, err = pcall(handler, src, table.unpack(values, 1, #args))
+        if not ok then
+            M.log:error('handler for "%s" (player %d) raised: %s', eventName, src, tostring(err))
+        end
+    end)
 end
 
 return Wasteland

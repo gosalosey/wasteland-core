@@ -1,0 +1,269 @@
+-- tests/lib/memorydb.lua
+-- In-memory stand-in for MariaDB used by the simulated tests. It does not
+-- parse SQL: it knows the exact statements the framework runs (loaded from
+-- the resources' own sql.lua files) and implements each one. Any other
+-- statement is an error and is recorded in `unhandled`, so a test fails if
+-- code and statement list drift apart. The real SQL is exercised against
+-- MariaDB by the db/ suite (see docs/TESTING.md).
+--
+-- Result shapes follow oxmysql: query -> rows | { affectedRows, insertId },
+-- single -> first row, scalar -> first column, insert -> insertId,
+-- update -> affectedRows.
+
+local MemoryDB = {}
+MemoryDB.__index = MemoryDB
+
+local function normalise(sql)
+    return (tostring(sql):gsub('%s+', ' '):gsub('^ ', ''):gsub(' $', ''))
+end
+
+local function deepCopy(v)
+    if type(v) ~= 'table' then return v end
+    local out = {}
+    for k, val in pairs(v) do out[k] = deepCopy(val) end
+    return out
+end
+
+local function loadSqlFile(path, namespace)
+    local f = assert(io.open(path, 'rb'))
+    local src = f:read('a')
+    f:close()
+    local env = { [namespace] = {} }
+    assert(load(src, '@' .. path, 't', env))()
+    return env[namespace]
+end
+
+function MemoryDB.new(resourcesDir)
+    local self = setmetatable({}, MemoryDB)
+    self.data = {
+        wl_migrations = {}, -- list of { module_name, version, name, checksum }
+        wl_accounts = {},   -- [id] = row
+        wl_characters = {}, -- [id] = row
+        wl_character_data = {}, -- ["cid|key"] = row
+        autoinc = { wl_accounts = 0, wl_characters = 0 },
+    }
+    self.ddl = {}          -- DDL statements seen
+    self.unhandled = {}    -- statements this backend does not know
+    self.log = {}          -- { kind, sql, params }
+    self.failPattern = nil -- statements containing this substring fail
+    self.failMessage = 'simulated database error'
+    self.clock = 1700000000
+    self.handlers = {}
+    local wld = loadSqlFile(resourcesDir .. '/wasteland_database/server/sql.lua', 'WLD')
+    local wlp = loadSqlFile(resourcesDir .. '/wasteland_players/server/sql.lua', 'WLP')
+    self:installDatabase(wld.SQL)
+    self:installPlayers(wlp.SQL)
+    return self
+end
+
+function MemoryDB:now()
+    self.clock = self.clock + 1
+    return self.clock
+end
+
+local function header(affected, insertId)
+    return { affectedRows = affected or 0, insertId = insertId or 0 }
+end
+
+function MemoryDB:on(sql, fn)
+    self.handlers[normalise(sql)] = fn
+end
+
+-------------------------------------------------------------------------------
+-- wasteland_database statements
+-------------------------------------------------------------------------------
+
+function MemoryDB:installDatabase(SQL)
+    self:on(SQL.ping, function() return { { ['1'] = 1 } } end)
+    self:on(SQL.selectMigrations, function(db, p)
+        local rows = {}
+        for _, r in ipairs(db.data.wl_migrations) do
+            if r.module_name == p[1] then rows[#rows + 1] = { version = r.version, name = r.name, checksum = r.checksum } end
+        end
+        table.sort(rows, function(a, b) return a.version < b.version end)
+        return rows
+    end)
+    self:on(SQL.insertMigration, function(db, p)
+        for _, r in ipairs(db.data.wl_migrations) do
+            if r.module_name == p[1] and r.version == p[2] then
+                error(string.format("Duplicate entry '%s-%s' for key 'PRIMARY'", p[1], p[2]), 0)
+            end
+        end
+        table.insert(db.data.wl_migrations, { module_name = p[1], version = p[2], name = p[3], checksum = p[4] })
+        return header(1)
+    end)
+end
+
+-------------------------------------------------------------------------------
+-- wasteland_players statements
+-------------------------------------------------------------------------------
+
+function MemoryDB:installPlayers(SQL)
+    local function accountByLicense(db, license)
+        for _, a in pairs(db.data.wl_accounts) do if a.license == license then return a end end
+    end
+
+    self:on(SQL.upsertAccount, function(db, p)
+        local a = accountByLicense(db, p[1])
+        if a then
+            a.name, a.identifiers, a.last_seen = p[2], p[3], db:now()
+            return header(2, 0)
+        end
+        db.data.autoinc.wl_accounts = db.data.autoinc.wl_accounts + 1
+        local id = db.data.autoinc.wl_accounts
+        db.data.wl_accounts[id] = { id = id, license = p[1], name = p[2], identifiers = p[3], first_seen = db:now(), last_seen = db:now() }
+        return header(1, id)
+    end)
+    self:on(SQL.accountIdByLicense, function(db, p)
+        local a = accountByLicense(db, p[1])
+        return a and { { id = a.id } } or {}
+    end)
+    self:on(SQL.listCharacters, function(db, p)
+        local rows = {}
+        for _, c in pairs(db.data.wl_characters) do
+            if c.account_id == p[1] and c.deleted_at == nil then
+                rows[#rows + 1] = { id = c.id, slot = c.slot, first_name = c.first_name, last_name = c.last_name,
+                    play_seconds = c.play_seconds, created_at = c.created_at, last_played = c.last_played }
+            end
+        end
+        table.sort(rows, function(a, b) return a.slot < b.slot end)
+        return rows
+    end)
+    self:on(SQL.insertCharacter, function(db, p)
+        if not db.data.wl_accounts[p[1]] then
+            error('Cannot add or update a child row: a foreign key constraint fails (fk_wl_characters_account)', 0)
+        end
+        for _, c in pairs(db.data.wl_characters) do
+            if c.account_id == p[1] and c.slot ~= nil and c.slot == p[2] then
+                error(string.format("Duplicate entry '%s-%s' for key 'uq_wl_characters_slot'", p[1], p[2]), 0)
+            end
+        end
+        db.data.autoinc.wl_characters = db.data.autoinc.wl_characters + 1
+        local id = db.data.autoinc.wl_characters
+        db.data.wl_characters[id] = {
+            id = id, account_id = p[1], slot = p[2], first_name = p[3], last_name = p[4],
+            pos_x = p[5], pos_y = p[6], pos_z = p[7], heading = p[8],
+            play_seconds = 0, created_at = db:now(), last_played = nil, deleted_at = nil,
+        }
+        return header(1, id)
+    end)
+    self:on(SQL.loadCharacter, function(db, p)
+        local c = db.data.wl_characters[p[1]]
+        if not c or c.account_id ~= p[2] or c.deleted_at ~= nil then return {} end
+        return { { id = c.id, account_id = c.account_id, slot = c.slot, first_name = c.first_name, last_name = c.last_name,
+            pos_x = c.pos_x, pos_y = c.pos_y, pos_z = c.pos_z, heading = c.heading, play_seconds = c.play_seconds } }
+    end)
+    self:on(SQL.loadCharacterData, function(db, p)
+        local rows = {}
+        for _, d in pairs(db.data.wl_character_data) do
+            if d.character_id == p[1] then rows[#rows + 1] = { data_key = d.data_key, data = d.data, revision = d.revision } end
+        end
+        table.sort(rows, function(a, b) return a.data_key < b.data_key end)
+        return rows
+    end)
+    self:on(SQL.touchCharacter, function(db, p)
+        local c = db.data.wl_characters[p[1]]
+        if not c then return header(0) end
+        c.last_played = db:now()
+        return header(1)
+    end)
+    self:on(SQL.saveCharacter, function(db, p)
+        local c = db.data.wl_characters[p[6]]
+        if not c then return header(0) end
+        c.pos_x, c.pos_y, c.pos_z, c.heading, c.play_seconds = p[1], p[2], p[3], p[4], p[5]
+        c.last_played = db:now()
+        return header(1)
+    end)
+    self:on(SQL.upsertCharacterData, function(db, p)
+        if not db.data.wl_characters[p[1]] then
+            error('Cannot add or update a child row: a foreign key constraint fails (fk_wl_character_data_character)', 0)
+        end
+        local key = p[1] .. '|' .. p[2]
+        local d = db.data.wl_character_data[key]
+        if d then
+            d.data, d.revision = p[3], d.revision + 1
+            return header(2)
+        end
+        db.data.wl_character_data[key] = { character_id = p[1], data_key = p[2], data = p[3], revision = 1 }
+        return header(1)
+    end)
+    self:on(SQL.deleteCharacterData, function(db, p)
+        local key = p[1] .. '|' .. p[2]
+        if db.data.wl_character_data[key] then
+            db.data.wl_character_data[key] = nil
+            return header(1)
+        end
+        return header(0)
+    end)
+    self:on(SQL.softDeleteCharacter, function(db, p)
+        local c = db.data.wl_characters[p[1]]
+        if not c or c.account_id ~= p[2] or c.deleted_at ~= nil then return header(0) end
+        c.deleted_at, c.slot = db:now(), nil
+        return header(1)
+    end)
+end
+
+-------------------------------------------------------------------------------
+-- Execution
+-------------------------------------------------------------------------------
+
+-- Returns the raw result (rows or header) or raises.
+function MemoryDB:run(sql, params)
+    local key = normalise(sql)
+    self.log[#self.log + 1] = { sql = key, params = deepCopy(params) }
+    if self.failPattern and key:find(self.failPattern, 1, true) then
+        error(self.failMessage, 0)
+    end
+    if key:find('SIMULATE_ERROR', 1, true) then
+        error('You have an error in your SQL syntax near SIMULATE_ERROR', 0)
+    end
+    local fn = self.handlers[key]
+    if fn then return fn(self, params or {}) end
+    if key:match('^CREATE TABLE') or key:match('^ALTER TABLE') or key:match('^CREATE INDEX') then
+        self.ddl[#self.ddl + 1] = key
+        return header(0)
+    end
+    self.unhandled[#self.unhandled + 1] = key
+    error('memorydb: unhandled SQL: ' .. key, 0)
+end
+
+--- Execute one statement the way oxmysql shapes results.
+--- Returns result or nil, errorMessage.
+function MemoryDB:execute(kind, sql, params)
+    local ok, raw = pcall(self.run, self, sql, params)
+    if not ok then return nil, tostring(raw) end
+    if kind == 'insert' then return raw.insertId end
+    if kind == 'update' then return raw.affectedRows end
+    if kind == 'single' then return raw[1] end
+    if kind == 'scalar' then
+        local row = raw[1]
+        if not row then return nil end
+        local _, v = next(row)
+        return v
+    end
+    return raw
+end
+
+--- Run statements { { sql, params }, ... } atomically. Returns ok, err.
+function MemoryDB:transaction(statements)
+    local snapshot = deepCopy(self.data)
+    for _, st in ipairs(statements) do
+        local ok, err = pcall(self.run, self, st[1], st[2])
+        if not ok then
+            self.data = snapshot
+            return false, tostring(err)
+        end
+    end
+    return true
+end
+
+--- Statements executed so far whose SQL contains `needle`.
+function MemoryDB:calls(needle)
+    local out = {}
+    for _, l in ipairs(self.log) do
+        if not needle or l.sql:find(needle, 1, true) then out[#out + 1] = l end
+    end
+    return out
+end
+
+return MemoryDB

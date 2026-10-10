@@ -15,12 +15,19 @@
 --     reported and do not stop other handlers
 --   * Citizen.CreateThread / Citizen.Wait on a virtual clock
 --   * commands, ACE checks, convars, LoadResourceFile, GetResourceMetadata
+--   * promises and Citizen.Await (a waiting thread is parked until settled)
+--   * players: connecting (with deferrals), joining, dropping, identifiers,
+--     player state bags (which survive resource restarts), ped coordinates
+--   * client -> server net events (only events registered with
+--     RegisterNetEvent are reachable; `source` is set for the handler)
+--   * a `json` global (encode/decode)
 --
 -- What it does NOT model (must be verified on a real server): networking,
 -- clients, natives other than those listed, real timing, msgpack edge cases.
 
 local Mock = {}
 Mock.__index = Mock
+Mock.json = require('lib.json')
 
 local function readFile(path)
     local f = io.open(path, 'rb')
@@ -92,6 +99,11 @@ function Mock.new(opts)
     -- FiveM stops dependents when a dependency stops; set false to simulate
     -- the opposite (used to prove the SDK copes either way).
     self.cascadeStop = opts.cascadeStop ~= false
+    self.players = {}       -- [serverId] = { id, name, identifiers, state, coords, heading }
+    self.nextPlayerId = 1
+    self.nextTempId = 65536
+    self.dropped = {}       -- { id, reason }
+    self.connections = {}   -- connection attempts (see connectPlayer)
     return self
 end
 
@@ -109,10 +121,12 @@ end
 
 --- Register an in-memory resource (used for test fixtures).
 --- meta = parsed-manifest-like table, files = { ['path'] = 'source' }
-function Mock:addVirtualResource(name, meta, files)
+--- `globals` (optional) are injected into the resource environment; tests
+--- use this to hand a fake driver its backing store.
+function Mock:addVirtualResource(name, meta, files, globals)
     self.resources[name] = {
         name = name, path = nil, meta = meta, state = 'stopped',
-        handlers = {}, exports = {}, virtual = files or {},
+        handlers = {}, exports = {}, virtual = files or {}, globals = globals,
     }
     self.order[#self.order + 1] = name
     return self.resources[name]
@@ -205,7 +219,8 @@ function Mock:callFuncRef(id, ...)
     local ref = self.funcrefs[id]
     if not ref then error('invalid function reference', 2) end
     local owner = self.resources[ref.owner]
-    if not owner or (owner.state ~= 'started' and owner.state ~= 'starting' and owner.state ~= 'stopping') then
+    local pseudo = ref.owner:sub(1, 1) == '<' -- harness / simulated client, always alive
+    if not pseudo and (not owner or (owner.state ~= 'started' and owner.state ~= 'starting' and owner.state ~= 'stopping')) then
         error(string.format('function reference to stopped resource %s', ref.owner), 2)
     end
     local caller = self:currentCaller() or '<harness>'
@@ -236,16 +251,28 @@ end
 -------------------------------------------------------------------------------
 
 function Mock:triggerEvent(sender, name, ...)
+    return self:dispatchEvent(sender, nil, false, name, ...)
+end
+
+--- Dispatch an event. `src` becomes the handler's global `source`;
+--- `netOnly` restricts delivery to resources that called RegisterNetEvent.
+function Mock:dispatchEvent(sender, src, netOnly, name, ...)
     local args = table.pack(...)
     for _, resName in ipairs(self.order) do
         local r = self.resources[resName]
-        if r.state == 'started' or r.state == 'starting' or r.state == 'stopping' then
+        if (r.state == 'started' or r.state == 'starting' or r.state == 'stopping')
+            and (not netOnly or (r.netEvents and r.netEvents[name])) then
             local handlers = r.handlers[name]
             if handlers then
                 for _, h in ipairs({ table.unpack(handlers) }) do
                     local copy = packMarshal(self, sender, table.unpack(args, 1, args.n))
                     local ok, err = pcall(function()
-                        self:withInvocation(sender, resName, h, table.unpack(copy, 1, copy.n))
+                        local env = r.env
+                        local prevSource = env and env.source
+                        if env then env.source = src end
+                        local res = table.pack(pcall(self.withInvocation, self, sender, resName, h, table.unpack(copy, 1, copy.n)))
+                        if env then env.source = prevSource end
+                        if not res[1] then error(res[2], 0) end
                     end)
                     if not ok then
                         local msg = string.format('SCRIPT ERROR in %s handler for "%s": %s', resName, name, tostring(err))
@@ -278,7 +305,7 @@ function Mock:advance(ms)
         if not nextT then break end
         table.remove(self.threads, idx)
         local r = self.resources[nextT.owner]
-        if r and (r.state == 'started' or r.state == 'starting') then
+        if nextT.owner == '<mock>' or (r and (r.state == 'started' or r.state == 'starting')) then
             if nextT.wake > self.clock then self.clock = nextT.wake end
             table.insert(self.invoking, { invoker = nil, current = nextT.owner })
             local ok, waitMs = coroutine.resume(nextT.co)
@@ -288,12 +315,162 @@ function Mock:advance(ms)
                 self.scriptErrors[#self.scriptErrors + 1] = msg
                 self:log(nextT.owner, msg)
             elseif coroutine.status(nextT.co) ~= 'dead' then
-                nextT.wake = self.clock + math.max(0, tonumber(waitMs) or 0)
-                self.threads[#self.threads + 1] = nextT
+                if type(waitMs) == 'table' and waitMs.__await then
+                    -- Citizen.Await: park until the promise settles.
+                    local p = waitMs.__await
+                    if p.state ~= 'pending' then
+                        nextT.wake = self.clock
+                        self.threads[#self.threads + 1] = nextT
+                    else
+                        p.waiters[#p.waiters + 1] = nextT
+                    end
+                else
+                    nextT.wake = self.clock + math.max(0, tonumber(waitMs) or 0)
+                    self.threads[#self.threads + 1] = nextT
+                end
             end
         end
     end
     self.clock = target
+end
+
+--- Run a function on the virtual clock outside any resource.
+function Mock:schedule(ms, fn)
+    self:createThread('<mock>', function()
+        if ms and ms > 0 then coroutine.yield(ms) end
+        fn()
+    end)
+end
+
+-------------------------------------------------------------------------------
+-- Promises (FiveM's `promise` global + Citizen.Await)
+-------------------------------------------------------------------------------
+
+function Mock:newPromise()
+    local mock = self
+    local p = { state = 'pending', waiters = {} }
+    local function settle(state, value)
+        if p.state ~= 'pending' then return end
+        p.state, p.value = state, value
+        for _, t in ipairs(p.waiters) do
+            t.wake = mock.clock
+            mock.threads[#mock.threads + 1] = t
+        end
+        p.waiters = {}
+    end
+    function p.resolve(_, value) settle('resolved', value) end
+    function p.reject(_, value) settle('rejected', value) end
+    return p
+end
+
+local function await(p)
+    if p.state == 'pending' then
+        if not coroutine.isyieldable() then error('Citizen.Await() called outside a thread', 2) end
+        coroutine.yield({ __await = p })
+    end
+    if p.state == 'rejected' then error(p.value, 0) end
+    return p.value
+end
+
+-------------------------------------------------------------------------------
+-- Players
+-------------------------------------------------------------------------------
+
+local function playerKey(src) return tonumber(src) end
+
+function Mock:getPlayer(src, includeConnecting)
+    local p = self.players[playerKey(src) or -1]
+    if p and (includeConnecting or not p.connecting) then return p end
+    return nil
+end
+
+--- Start a connection. opts = { name, license, identifiers = {..} }.
+--- Returns a connection record: { tempId, deferred, done, rejected, updates }.
+--- Advance the clock until `done`, then call joinPlayer(conn).
+function Mock:connectPlayer(opts)
+    opts = opts or {}
+    local tempId = self.nextTempId
+    self.nextTempId = self.nextTempId + 1
+    local identifiers = {}
+    if opts.license ~= false then identifiers[#identifiers + 1] = 'license:' .. (opts.license or ('lic' .. tempId)) end
+    for _, id in ipairs(opts.identifiers or {}) do identifiers[#identifiers + 1] = id end
+    self.players[tempId] = {
+        id = tempId, name = opts.name or ('Player' .. tempId), identifiers = identifiers,
+        connecting = true, state = {}, coords = opts.coords, heading = opts.heading or 0.0,
+    }
+    local conn = { tempId = tempId, name = self.players[tempId].name, deferred = false, done = false, updates = {} }
+    local deferrals = {
+        defer = function() conn.deferred = true end,
+        update = function(msg) conn.updates[#conn.updates + 1] = msg end,
+        presentCard = function() end,
+        handover = function() end,
+        done = function(reason)
+            if conn.done then return end
+            conn.done = true
+            if reason ~= nil and reason ~= '' then conn.rejected = reason end
+        end,
+    }
+    local kick = function(reason) conn.done = true; conn.rejected = reason end
+    self.connections[#self.connections + 1] = conn
+    self:dispatchEvent('<client>', tempId, false, 'playerConnecting', conn.name, kick, deferrals)
+    if not conn.deferred and not conn.done then conn.done = true end
+    return conn
+end
+
+--- Complete a successful connection: assigns the permanent server id and
+--- fires playerJoining. Returns the new server id.
+function Mock:joinPlayer(conn)
+    assert(conn.done and not conn.rejected, 'connection was not accepted: ' .. tostring(conn.rejected))
+    local rec = self.players[conn.tempId]
+    self.players[conn.tempId] = nil
+    local id = self.nextPlayerId
+    self.nextPlayerId = self.nextPlayerId + 1
+    rec.id, rec.connecting = id, false
+    self.players[id] = rec
+    conn.id = id
+    self:dispatchEvent('<client>', id, false, 'playerJoining', tostring(conn.tempId))
+    return id
+end
+
+--- Connect, wait (virtual time) for the deferral, and join.
+--- Returns id or nil, rejection reason, conn.
+function Mock:connectAndJoin(opts, maxWaitMs)
+    local conn = self:connectPlayer(opts)
+    local waited = 0
+    while not conn.done and waited < (maxWaitMs or 60000) do
+        self:advance(50)
+        waited = waited + 50
+    end
+    if not conn.done then return nil, 'connection still pending', conn end
+    if conn.rejected then
+        self.players[conn.tempId] = nil
+        return nil, conn.rejected, conn
+    end
+    return self:joinPlayer(conn), nil, conn
+end
+
+--- A player leaves (immediately fires playerDropped).
+function Mock:dropPlayer(id, reason)
+    local rec = self.players[id]
+    if not rec then return false end
+    self.players[id] = nil
+    self.dropped[#self.dropped + 1] = { id = id, reason = reason }
+    self:dispatchEvent('<client>', id, false, 'playerDropped', reason or 'Exiting')
+    return true
+end
+
+--- A client sends a net event to the server.
+function Mock:clientEvent(id, name, ...)
+    self:dispatchEvent('<client>', id, true, name, ...)
+end
+
+--- Client events sent to a player (optionally filtered by name).
+function Mock:clientEventsFor(id, name)
+    local out = {}
+    for _, e in ipairs(self.clientEvents) do
+        if (e.target == id or e.target == -1) and (not name or e.name == name) then out[#out + 1] = e end
+    end
+    return out
 end
 
 -------------------------------------------------------------------------------
@@ -334,6 +511,12 @@ function Mock:buildEnv(r)
         local list = rr.meta[SINGULAR[key] or key]
         return list and list[(idx or 0) + 1] or nil
     end
+    env.GetNumResourceMetadata = function(res, key)
+        local rr = mock.resources[res]
+        if not rr then return 0 end
+        local list = rr.meta[SINGULAR[key] or key]
+        return list and #list or 0
+    end
     env.LoadResourceFile = function(res, path) return mock:readResourceFile(res, path) end
     env.GetConvar = function(k, def)
         local v = mock.convars[k]
@@ -352,7 +535,78 @@ function Mock:buildEnv(r)
         return { name = evName, fn = fn }
     end
     env.RegisterNetEvent = function(evName, fn)
+        r.netEvents = r.netEvents or {}
+        r.netEvents[evName] = true
         if fn then return env.AddEventHandler(evName, fn) end
+    end
+    env.RegisterServerEvent = env.RegisterNetEvent
+    env.json = mock.json
+    env.promise = { new = function() return mock:newPromise() end }
+
+    -- Players
+    env.GetPlayers = function()
+        local ids = {}
+        for id, p in pairs(mock.players) do
+            if not p.connecting then ids[#ids + 1] = id end
+        end
+        table.sort(ids)
+        local out = {}
+        for i, id in ipairs(ids) do out[i] = tostring(id) end
+        return out
+    end
+    env.GetPlayerName = function(src)
+        local p = mock:getPlayer(src, true)
+        return p and p.name or nil
+    end
+    env.GetPlayerIdentifiers = function(src)
+        local p = mock:getPlayer(src, true)
+        if not p then return {} end
+        local out = {}
+        for i, v in ipairs(p.identifiers) do out[i] = v end
+        return out
+    end
+    env.GetPlayerIdentifierByType = function(src, idType)
+        local p = mock:getPlayer(src, true)
+        if not p then return nil end
+        for _, v in ipairs(p.identifiers) do
+            if v:sub(1, #idType + 1) == idType .. ':' then return v end
+        end
+        return nil
+    end
+    env.DropPlayer = function(src, reason)
+        local id = tonumber(src)
+        mock:schedule(0, function() mock:dropPlayer(id, reason) end)
+    end
+    env.GetPlayerPed = function(src)
+        local p = mock:getPlayer(src)
+        if not p or not p.coords then return 0 end
+        return p.id * 100
+    end
+    env.DoesEntityExist = function(ent)
+        return mock:getPlayer(math.floor((tonumber(ent) or 0) / 100)) ~= nil
+    end
+    env.GetEntityCoords = function(ent)
+        local p = mock:getPlayer(math.floor((tonumber(ent) or 0) / 100))
+        local c = p and p.coords or { x = 0.0, y = 0.0, z = 0.0 }
+        return { x = c.x, y = c.y, z = c.z }
+    end
+    env.GetEntityHeading = function(ent)
+        local p = mock:getPlayer(math.floor((tonumber(ent) or 0) / 100))
+        return p and p.heading or 0.0
+    end
+    env.Player = function(src)
+        local p = mock:getPlayer(src, true)
+        local bag = p and p.state or {}
+        local state = setmetatable({}, {
+            __index = function(_, k)
+                if k == 'set' then
+                    return function(_, key, value) bag[key] = value end
+                end
+                return bag[k]
+            end,
+            __newindex = function(_, k, v) bag[k] = v end,
+        })
+        return { state = state }
     end
     env.TriggerEvent = function(evName, ...) mock:triggerEvent(name, evName, ...) end
     env.TriggerClientEvent = function(evName, target, ...)
@@ -374,7 +628,9 @@ function Mock:buildEnv(r)
         SetTimeout = function(ms, fn)
             mock:createThread(name, function() coroutine.yield(ms); fn() end)
         end,
+        Await = await,
     }
+    for k, v in pairs(r.globals or {}) do env[k] = v end
     env.CreateThread = env.Citizen.CreateThread
     env.Wait = env.Citizen.Wait
     env.SetTimeout = env.Citizen.SetTimeout
@@ -415,7 +671,7 @@ function Mock:start(name)
         if not ok then return false, string.format('could not start dependency %s of %s: %s', dep, name, err) end
     end
     r.state = 'starting'
-    r.handlers, r.exports = {}, {}
+    r.handlers, r.exports, r.netEvents = {}, {}, {}
     r.env = self:buildEnv(r)
     local scripts = {}
     for _, s in ipairs(r.meta.shared_script or {}) do scripts[#scripts + 1] = s end
@@ -464,7 +720,7 @@ function Mock:stop(name)
     self:triggerEvent(name, 'onResourceStop', name)
     self:triggerEvent(name, 'onServerResourceStop', name)
     r.state = 'stopped'
-    r.handlers, r.exports = {}, {}
+    r.handlers, r.exports, r.netEvents = {}, {}, {}
     for cmd, c in pairs(self.commands) do
         if c.owner == name then self.commands[cmd] = nil end
     end
