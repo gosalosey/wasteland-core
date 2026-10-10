@@ -53,7 +53,7 @@ end
 -------------------------------------------------------------------------------
 
 function Interface.listCharacters(session)
-    local list, err = Characters.list(session.accountId)
+    local list = Characters.list(session.accountId)
     if not list then
         reply(session, 'list', false, 'Could not load your characters (database unavailable).')
         return
@@ -87,7 +87,7 @@ function Interface.createCharacter(session, firstName, lastName)
 end
 
 function Interface.selectCharacter(session, slot)
-    local list, err = Characters.list(session.accountId)
+    local list = Characters.list(session.accountId)
     if not list then
         reply(session, 'select', false, 'Could not load your characters (database unavailable).')
         return
@@ -124,7 +124,7 @@ function Interface.deleteCharacter(session, slot, confirmFirstName)
         reply(session, 'delete', false, 'Deleting characters is disabled on this server.')
         return
     end
-    local list, err = Characters.list(session.accountId)
+    local list = Characters.list(session.accountId)
     if not list then
         reply(session, 'delete', false, 'Could not load your characters (database unavailable).')
         return

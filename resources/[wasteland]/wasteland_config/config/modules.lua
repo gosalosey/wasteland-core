@@ -7,10 +7,13 @@ return {
         -- Development template / SDK example. Safe to disable on live servers.
         template = true,
 
+        -- Persistence (Milestone 2). Required by every gameplay module.
+        database = true,
+        players  = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.
-        -- database  = true,   -- Milestone 2
         -- inventory = true,   -- Milestone 3
         -- survival  = true,   -- Milestone 4
         -- zombies   = true,   -- Milestone 5

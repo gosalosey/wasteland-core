@@ -1,6 +1,6 @@
 # Wasteland Core: Architecture
 
-Status: **Milestone 1 implemented and tested in simulation.** Everything below "Planned" is design, not code.
+Status: **Milestones 1 and 2 implemented**, tested in simulation and (Milestone 2 SQL) against a real MariaDB. Runtime (in-game) verification of Milestone 2 is pending. Everything marked "Planned" is design, not code.
 
 ## 1. Design principles
 
@@ -22,10 +22,14 @@ All resources live in `resources/[wasteland]/`. Arrows mean "requires" (`depende
                                  │
           ┌──────────────────────┼─────────────────────────────┐
   wasteland_database        wasteland_ui                 wasteland_admin
-  (adapter, migrations)     (NUI shell, design system,   (diagnostics, commands;
-          │                  HUD, menus)                  optional deps on all)
-          ├───────────────┬──────┴──────┐
-  wasteland_inventory ◄───┘             │
+  (adapter, migrations,     (NUI shell, design system,   (diagnostics, commands;
+   health)                   HUD, menus)                  optional deps on all)
+          │                          │
+  wasteland_players                  │
+  (accounts, sessions,               │
+   characters, char data)            │
+          ├───────────────┬──────────┘
+  wasteland_inventory ◄───┘
           │                             │
   ┌───────┼──────────┬───────────┬──────┴─────┬─────────────┐
 survival  loot     world       crafting     vehicles      quests
@@ -41,9 +45,10 @@ survival  loot     world       crafting     vehicles      quests
 | wasteland_config | (none, data only) | none | none | 1 ✅ |
 | wasteland_core | `core` | wasteland_config | none | 1 ✅ |
 | wasteland_template | `template` | core | none | 1 ✅ (SDK example) |
-| wasteland_database | `database` | core, DB driver (see §6) | none | 2 |
+| wasteland_database | `database` | core, DB driver (see §6) | none | 2 ✅ |
+| wasteland_players | `players` | core, database | none | 2 ✅ |
 | wasteland_ui | `ui` | core | none | 3 (inventory UI), 4 (HUD) |
-| wasteland_inventory | `inventory` | core, database, ui | none | 3 |
+| wasteland_inventory | `inventory` | core, database, players, ui | none | 3 |
 | wasteland_survival | `survival` | core, database, inventory, ui | none | 4 |
 | wasteland_zombies | `zombies` | core | world, survival, loot | 5 |
 | wasteland_loot | `loot` | core, database, inventory | world | 6 |
@@ -56,7 +61,7 @@ survival  loot     world       crafting     vehicles      quests
 
 **Note on crafting:** the required workflow lists no milestone for crafting, but vehicle parts (M9) must be craftable and camps (M7) have crafting stations. Crafting is therefore scheduled with Milestone 7.
 
-**Start order** (server.cfg): `wasteland_config` → `wasteland_core` → `wasteland_database` → `wasteland_ui` → `wasteland_inventory` → the rest. FiveM's `dependency` directive also enforces this, and the registry independently orders initialisation by declared module dependencies, so order mistakes in server.cfg cannot break initialisation.
+**Start order** (server.cfg): `oxmysql` → `wasteland_config` → `wasteland_core` → `wasteland_database` → `wasteland_players` → `wasteland_ui` → `wasteland_inventory` → the rest. FiveM's `dependency` directive also enforces this, and the registry independently orders initialisation by declared module dependencies, so order mistakes in server.cfg cannot break initialisation.
 
 ## 3. Kernel (wasteland_core), implemented
 
@@ -69,11 +74,12 @@ survival  loot     world       crafting     vehicles      quests
 | `server/config_loader.lua` | sandboxed loading of `wasteland_config/config/*.lua`; core schemas |
 | `server/registry.lua` | module registration, dependency resolution, init/shutdown, cascade on stop |
 | `server/lifecycle.lua` | boot, config-error mode, startup window, readiness, ordered shutdown, status report |
+| `server/security.lua` | counts net-event guard violations; optional kick (`framework.security`) |
 | `server/commands.lua` | admin console command with ACE check and audit logging |
 | `server/exports.lua` | the public server API (core api 1.0.0) |
 | `server/main.lua` | wiring: boot, `onResourceStop`, txAdmin shutdown event |
 | `client/main.lua` | prints admin command output in F8 for authorised players |
-| `sdk/module.lua` | Module SDK included by module resources (`@wasteland_core/sdk/module.lua`) |
+| `sdk/module.lua` | Module SDK included by module resources (`@wasteland_core/sdk/module.lua`), including the net-event guard (`M.netEvent`) |
 
 ### 3.1 Module lifecycle
 
@@ -92,6 +98,8 @@ running ──(own resource stops)──► stopped ──(resource starts, re-r
 * **Cascade:** when a module stops or fails, every running module that hard-depends on it is shut down (deepest first) and returned to `waiting`. It re-initialises automatically, with config re-read, when the dependency comes back.
 * **Shutdown** runs in reverse initialisation order and is idempotent. It is triggered by the core resource stopping (`core_stopped`) or by txAdmin's `txAdmin:events:serverShuttingDown` (`server_shutdown`). Errors in one module's shutdown are logged and do not prevent the others from stopping.
 * **Core restart:** FiveM stops every resource that depends on `wasteland_core` when the core stops, and does not restart them (verified at runtime). The core records which module resources its own stop took down, in a process-lifetime server convar, and starts them again on boot (`framework.restartModulesAfterCoreRestart`).
+* **Dependent restarts (any module):** the same FiveM behaviour applies to every module resource (`restart wasteland_database` stops `wasteland_players`). When a module resource stops, the core records the module resources that FiveM stopped just before it because their manifest depends on it, and starts them again when it returns. This uses the same setting.
+* **Health:** a running module can report itself `degraded` with a detail (for example, database unreachable). Health is informational: it is shown in `status` and broadcast as `wasteland:core:moduleHealth`, but it does not change the module state or cascade.
 * **Startup window** (`framework.startupTimeoutSeconds`): when it ends, async modules that never reported ready are failed, enabled-but-unregistered modules are reported as missing, still-waiting modules are listed with reasons, the status table is printed and `wasteland:core:ready` fires. Modules may still register afterwards.
 
 ### 3.2 Configuration
@@ -102,17 +110,18 @@ running ──(own resource stops)──► stopped ──(resource starts, re-r
 * Errors look like `wasteland_config/config/logging.lua: setting 'level': expected one of "debug", "info", "warn", "error", "off", got "verbose" (string)`. Unknown keys produce a typo warning.
 * If the core config is invalid, the framework enters `config_error` and initialises nothing. `wasteland config reload` resumes startup once the files are fixed.
 
-## 4. Data contracts (core api 1.0.0)
+## 4. Data contracts (core api 1.1.0)
 
 **ModuleStatus** (`GetModuleStatus`, `GetModuleStatuses`):
-`{ name, version, api, description, resource, state, reason, enabled, dependencies, optionalDependencies, configFile, configWarnings, initIndex, async }`
+`{ name, version, api, description, resource, state, reason, enabled, dependencies, optionalDependencies, configFile, configWarnings, initIndex, async, health, healthDetail }` (`health`/`healthDetail` since api 1.1)
 
 **FrameworkInfo** (`GetFrameworkInfo`, init `ctx.framework`, events):
 `{ name, shortName, version, api, state, resource, configResource }`
 
+**Player identity (M2, implemented):** an **account** per Rockstar license (`wl_accounts`), a **session** per connected player keyed by `source`, and **characters** in numbered slots per account (`wl_characters`, soft-deleted). One character is loaded per session. `source` (session, server ID) is distinct from `characterId` (persistent): persistent APIs take `characterId`, session APIs take `source`. Module data per character is a JSON value per key in `wl_character_data`. See MODULE_API.md "Players".
+
 **Planned contracts** (defined in the milestone that introduces them; listed so the design is visible now):
 
-* **Player identity (M2):** `source` (session, server ID) is distinct from `characterId` (persistent). All persistent APIs take `characterId`, and session APIs take `source`.
 * **ItemStack (M3):** `{ name, count, metadata = { durability?, serial?, ... }, slot }`. Item definitions are registered by name, and the item `name` is the stable key.
 * **Inventory ID (M3):** `'<type>:<id>'`, for example `player:42`, `vehicle:veh_9f2c`, `container:loot_123`, `stash:camp_a`.
 * **Zone (M7):** `{ id, type, shape = circle|polygon, rules = {...} }`.
@@ -120,21 +129,31 @@ running ──(own resource stops)──► stopped ──(resource starts, re-r
 
 ## 5. Security model
 
-* Client→server events are treated as untrusted input. From Milestone 2 on, every net event goes through a core-provided guard: source validation, payload schema validation (same schema DSL), per-player rate limiting, and distance checks where relevant.
+* Client→server events are treated as untrusted input. Every net event goes through the core guard (`M.netEvent`, Milestone 2): source validation, module-running check, per-player token-bucket rate limiting, and argument count and schema validation (same schema DSL). Rejections are logged with throttling and counted by the core, which can kick repeat offenders (`framework.security.kickAfterViolations`). Checks that depend on game state (distance, ownership) stay in each handler.
+* Database access only uses `?` placeholders. Player input is never concatenated into SQL. The database user has rights only on its own database.
+* IP addresses are not stored.
 * Admin actions require an ACE (`wasteland.admin` by default) and are always logged. The server console is always authorised.
 * Inventory and transfer operations (M3) use per-inventory transaction locks and a single authoritative server state. The database is written transactionally.
 * Config files are never sent to clients (they are not listed under `files`).
 
-## 6. Infrastructure dependency: database (decision for Milestone 2)
+## 6. Database and persistence (Milestone 2, implemented)
 
-FiveM has no built-in SQL client, so persistent storage needs a driver resource. The plan is:
+FiveM has no built-in SQL client, so persistent storage needs a driver resource.
 
-* Gameplay modules use only `wasteland_database`'s adapter API (`query`, `scalar`, `insert`, `transaction`, migrations). They never call a driver directly.
-* The first adapter targets **oxmysql** with MariaDB or MySQL. oxmysql is a pure database driver (LGPL-3.0), not a gameplay framework, and it is the most widely maintained MySQL driver for FiveM. This dependency needs your explicit sign-off because of the "ox" naming in the rules: it is infrastructure, isolated behind the adapter and replaceable.
-* If the database is unreachable, `database` fails with a clear reason and every persistence-dependent module stays `waiting`. There is no in-memory fallback (spec §12).
+* **Driver:** **oxmysql** (LGPL-3.0, tested with v2.14.3) with MariaDB or MySQL. The owner approved it on 2026-10-10 as infrastructure. Only `wasteland_database/server/driver_oxmysql.lua` talks to it, so it can be replaced.
+* **Adapter:** modules use `lib/db.lua` (`WDB.query/single/scalar/insert/update/transaction/migrate`), which waits on callback exports of `wasteland_database`. The request layer adds input checks, a per-query timeout (oxmysql waits forever without a connection), slow-query warnings, fail-fast while the database is down, and callbacks that survive a caller resource stopping.
+* **Startup:** `database` is an async module. It waits for the driver connection up to `connectTimeoutSeconds`, then FAILS with a precise reason (driver not installed, not started, or no connection). Every module that depends on it stays `waiting` with that reason. There is no in-memory fallback.
+* **Runtime outage:** health checks (`healthCheckSeconds`, and immediately after a timeout) mark the module `degraded`. Requests fail at once, `wasteland:database:health` is broadcast, and modules refuse database-backed actions and retry their saves when the connection returns.
+* **Migrations:** per module, numbered, forward-only, checksummed, applied one at a time, recorded in `wl_migrations`. Downgrades and edited migrations are refused (see MODULE_API.md).
+* **Save strategy (players):** write-through for create, select and delete and on module request (`SaveCharacter`); a periodic save of every loaded character in one transaction each (`saveIntervalSeconds`); a final save on unload, drop, switch, resource stop and txAdmin shutdown. An account stays locked until its last character's final save succeeds, so a reconnect cannot load stale data (no rollback or duplication by relogging). Failed final saves are retried.
+* **Limits:** a killed process runs no shutdown, so changes since the last periodic save are lost (K-3). Writes that time out may still apply (K-9).
+* Backups and restore: `docs/DATABASE.md`, `tools/backup_database.ps1`.
 
 ## 7. Known platform limitations relevant to the architecture
 
 * Exports and function references cross resource boundaries via serialization. Tables are copied, and functions become callable reference objects. The registry handles this (see `KNOWN_ISSUES.md` K-1).
 * Whether a module's `init` may yield (`Citizen.Wait`) across an export boundary is not relied on. Modules that need asynchronous setup declare `async = true` and call `M.ready()`.
-* FiveM gives no guaranteed hook for an abrupt process kill. Graceful shutdown covers resource stops and txAdmin-announced restarts. From M2, data safety relies on write-through persistence and periodic saves, not on shutdown alone.
+* FiveM gives no guaranteed hook for an abrupt process kill. Graceful shutdown covers resource stops and txAdmin-announced restarts. Data safety relies on write-through persistence and periodic saves, not on shutdown alone.
+* Module shutdown callbacks cannot wait. Final saves at shutdown are issued without waiting, and they complete in `wasteland_database` and oxmysql while the process is still alive. That is the case for resource restarts and for txAdmin restarts, which announce the shutdown before it happens.
+* Cross-resource exports that wait (yield) are not relied on. Database calls use callback exports, and `lib/db.lua` waits inside the caller's own resource.
+* Server-side player positions (`GetEntityCoords(GetPlayerPed(src))`) need OneSync.

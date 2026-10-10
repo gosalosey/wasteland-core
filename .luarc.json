@@ -1,0 +1,20 @@
+{
+    "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+    "runtime.version": "Lua 5.4",
+    "diagnostics.globals": [
+        "Citizen", "CreateThread", "Wait", "SetTimeout", "promise", "json", "exports", "source",
+        "AddEventHandler", "RegisterNetEvent", "TriggerEvent", "TriggerClientEvent", "TriggerServerEvent",
+        "RegisterCommand", "GetCurrentResourceName", "GetInvokingResource", "GetResourceState",
+        "GetResourceMetadata", "GetNumResourceMetadata", "LoadResourceFile", "StartResource",
+        "GetConvar", "SetConvar", "GetGameTimer", "IsPlayerAceAllowed",
+        "GetPlayers", "GetPlayerName", "GetPlayerIdentifiers", "GetPlayerIdentifierByType", "DropPlayer",
+        "GetPlayerPed", "DoesEntityExist", "GetEntityCoords", "GetEntityHeading", "Player",
+        "PlayerPedId", "DoScreenFadeOut", "DoScreenFadeIn", "IsScreenFadedOut", "RequestCollisionAtCoord",
+        "SetEntityCoordsNoOffset", "SetEntityHeading", "HasCollisionLoadedAroundEntity",
+        "vector2", "vector3", "vector4", "vec2", "vec3", "vec4",
+        "WL", "WLD", "WLP", "WDB", "Wasteland",
+        "describe", "it", "expect", "skip", "newServer", "addModule", "boot", "states",
+        "loadCoreFiles", "Mock", "MemoryDB", "ROOT", "RESOURCES", "FAKEDB", "track", "CALLS"
+    ],
+    "workspace.library": []
+}

@@ -1,13 +1,13 @@
 # Project status and development checklist
 
-**Current milestone:** 1 complete (simulated), awaiting runtime verification and owner review.
-**Next milestone:** 2, database and player persistence. Blocked on one decision: approval of oxmysql as the DB driver (see ARCHITECTURE §6).
+**Current milestone:** 2 complete in automated tests (simulated + real MariaDB). Awaiting runtime verification (docs/IN_GAME_TESTS.md, R2.x) and owner review.
+**Next milestone:** 3, inventory and item API.
 **Last updated:** 2026-10-10
 
 ## How to resume work
 
 1. Read this file, then `docs/ARCHITECTURE.md` and `docs/MODULE_API.md`.
-2. Run `./tools/run_tests.sh`; all tests must pass before you change anything.
+2. Run `tools\run_tests.bat` (Windows) or `./tools/run_tests.sh`; all tests must pass before you change anything. With `tests/db.env` configured, the real-database suite runs too (docs/TESTING.md).
 3. Continue with the first unchecked item of the current milestone.
 4. At the end of a milestone, write `docs/milestones/M<n>_REPORT.md` (the format follows spec §19) and update this file and CHANGELOG.md.
 
@@ -25,17 +25,18 @@
 - [x] Configuration loading and validation (config_loader.lua, schema.lua)
 - [x] Module registry (registry.lua) and SDK (sdk/module.lua)
 - [x] Automated test infrastructure: 107 tests passing
-- [~] Acceptance test on a real server: R1.1 and R1.3 passed; R1.7 failed on 0.1.0, fixed in 0.1.1 (re-test); others pending
+- [~] Acceptance test on a real server: R1.1 and R1.3 passed; R1.7 failed on 0.1.0, fixed in 0.1.1 (re-test); R1.11 (txAdmin restart shows `shutdown complete`) not yet confirmed: covered again by R2.20; others pending
 
 ## Milestone 2: database and player persistence
-- [ ] Owner approves the DB driver (oxmysql proposed)
-- [ ] `wasteland_database`: adapter interface, oxmysql driver, health checks, failure reporting
-- [ ] Migration runner (per-module, numbered, transactional, tracked)
-- [ ] Core net-event guard: payload schema, rate limit, source validation
-- [ ] Player identity (license-based), sessions, simultaneous-session handling
-- [ ] Character data persistence, save strategy (write-through + periodic + shutdown)
-- [ ] Backup/restore procedure documentation
-- [ ] Tests: reconnect, simultaneous sessions, DB down/up, resource restart
+- [x] Owner approves the DB driver: oxmysql approved 2026-10-10 (multiple character slots chosen)
+- [x] `wasteland_database`: adapter interface, oxmysql driver, timeouts, health checks, failure reporting (also run against real MariaDB 11.6)
+- [x] Migration runner (per-module, numbered, checksummed, tracked; DDL caveat K-8)
+- [x] Core net-event guard: payload schema, rate limit, source validation, violation counting/kick
+- [x] Player identity (license-based), sessions, simultaneous-session handling (kick_old / reject_new, account lock until saved)
+- [x] Character data persistence, save strategy (write-through + periodic + unload/shutdown, retries)
+- [x] Backup/restore procedure documentation (docs/DATABASE.md, tools/backup_database.ps1)
+- [x] Tests: reconnect, simultaneous sessions, DB down/up, resource restart (simulated); all SQL on real MariaDB
+- [~] Installed on the owner's server (oxmysql 2.14.3, database + user, server.cfg); runtime tests R2.1-R2.21 pending
 
 ## Milestone 3: inventory and item API
 - [ ] Item definition registry (config + API) · [ ] grid inventory model, weight, stacks, metadata, durability

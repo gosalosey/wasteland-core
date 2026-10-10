@@ -19,6 +19,9 @@ end
 
 RegisterNetEvent('wasteland:players:client:characterLoaded', function(info)
     if type(info) ~= 'table' then return end
+    -- After a resource restart the player never left: do not move them back
+    -- to the last saved (older) position.
+    if info.restored then return end
     local pos = info.position
     if type(pos) == 'table' and type(pos.x) == 'number' and type(pos.y) == 'number' and type(pos.z) == 'number' then
         Citizen.CreateThread(function() teleport(pos) end)

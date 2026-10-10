@@ -1,9 +1,15 @@
-# Wasteland Core - example server.cfg fragment (Milestone 1)
-# Merge into your server.cfg. Do not put secrets in files you commit.
+# Wasteland Core - example server.cfg fragment (Milestone 2)
+# Merge into your server.cfg. Do not put secrets in files you commit or share.
+
+# --- database (see docs/DATABASE.md) ---
+set mysql_connection_string "mysql://wasteland:PASSWORD@127.0.0.1/wasteland?charset=utf8mb4"
+ensure oxmysql
 
 # --- framework (order matters) ---
 ensure wasteland_config
 ensure wasteland_core
+ensure wasteland_database
+ensure wasteland_players
 ensure wasteland_template      # SDK example module; optional
 
 # --- permissions ---

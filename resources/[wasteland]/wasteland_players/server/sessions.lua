@@ -143,6 +143,7 @@ function Sessions.start(src)
     local name = GetPlayerName(tostring(src)) or ('player ' .. src)
     local p = WLP.pending[license]
     WLP.pending[license] = nil
+    if p and p.expiresAt < GetGameTimer() then p = nil end
     local accountId = p and p.accountId or nil
     if not accountId then
         local err

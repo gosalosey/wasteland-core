@@ -22,14 +22,21 @@
 | Export | PascalCase verb phrase | `GetModuleStatus` |
 | ACE | `<shortName>.<area>` | `wasteland.admin` |
 
-Client → server events are the only network entry points. Each one must validate the payload against a schema, rate-limit per player, and check distance or ownership where relevant (the guard helper arrives in M2).
+Client → server events are the only network entry points. Register every one with `M.netEvent` (the core guard: source, rate limit, payload schema), never with `RegisterNetEvent` directly. Check distance or ownership in the handler where relevant.
 
 ## Versioning
 
 * **Resource version** (`version` in fxmanifest) follows semver and is bumped on every release of that resource.
 * **Module version** is the implementation version. **Module api** is the interface version other modules depend on. Bump the api *major* version for breaking interface changes, *minor* for additions and *patch* for fixes. If omitted, api equals version.
 * **Core api** (`WL.API_VERSION`, currently `1.0.0`) versions the exports and events in `MODULE_API.md`. Modules declare `core = '^1.0.0'`.
-* **Database schema** (M2) uses numbered, forward-only migrations per module, tracked in a migrations table.
+* **Database schema** uses numbered, forward-only, checksummed migrations per module, tracked in `wl_migrations` (see MODULE_API.md). Tables are prefixed `wl_`. Use one idempotent DDL statement per migration.
+
+## Database
+
+* Only `?` placeholders. Never concatenate player input into SQL.
+* Writes must be idempotent: absolute values and upserts, not increments, because a timed-out write may still apply (K-9).
+* Read timestamps with `UNIX_TIMESTAMP(col)`.
+* Valuable changes (items, currency, quest rewards) are written through: save, then confirm to the player only when the save reported success.
 
 ## Error handling
 
