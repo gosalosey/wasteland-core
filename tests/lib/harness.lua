@@ -1,7 +1,7 @@
 -- tests/lib/harness.lua
 -- Tiny dependency-free test framework: describe / it / expect.
 
-local H = { results = {}, current = {}, passed = 0, failed = 0, failures = {} }
+local H = { results = {}, current = {}, passed = 0, failed = 0, skipped = 0, failures = {} }
 
 local function fullName(name)
     local parts = {}
@@ -28,6 +28,12 @@ function H.it(name, fn)
         print('  FAIL ' .. label)
         print('       ' .. tostring(err):gsub('\n', '\n       '))
     end
+end
+
+--- Record a test that could not run here, with the reason.
+function H.skip(name, reason)
+    H.skipped = H.skipped + 1
+    print('  skip ' .. fullName(name) .. ' (' .. tostring(reason) .. ')')
 end
 
 local function show(v)
@@ -93,7 +99,8 @@ end
 
 function H.summary()
     print('')
-    print(string.format('%d passed, %d failed', H.passed, H.failed))
+    print(string.format('%d passed, %d failed%s', H.passed, H.failed,
+        H.skipped > 0 and string.format(', %d skipped', H.skipped) or ''))
     if H.failed > 0 then
         print('Failures:')
         for _, f in ipairs(H.failures) do print('  - ' .. f.name) end

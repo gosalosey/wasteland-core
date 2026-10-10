@@ -1,3 +1,7 @@
 *.zip
 .DS_Store
 Thumbs.db
+tests/.tmp/
+tests/db.env
+tools/backup.cnf
+backups/

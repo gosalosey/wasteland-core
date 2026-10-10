@@ -14,7 +14,7 @@ local Mock = require('mock.fivem')
 
 _G.ROOT = ROOT
 _G.RESOURCES = ROOT .. '/resources/[wasteland]'
-_G.describe, _G.it, _G.expect = H.describe, H.it, H.expect
+_G.describe, _G.it, _G.expect, _G.skip = H.describe, H.it, H.expect, H.skip
 _G.Mock = Mock
 
 --- Load core shared/server files into an isolated environment (unit tests).

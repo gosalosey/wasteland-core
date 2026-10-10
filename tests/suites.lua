@@ -12,4 +12,5 @@ return {
     'integration/netguard.lua',
     'integration/database.lua',
     'integration/players.lua',
+    'db/mariadb.lua',
 }
