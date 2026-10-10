@@ -404,10 +404,16 @@ function Mock:connectPlayer(opts)
         update = function(msg) conn.updates[#conn.updates + 1] = msg end,
         presentCard = function() end,
         handover = function() end,
-        done = function(reason)
+        -- FiveM accepts only done() with NO argument. Any argument rejects;
+        -- a non-string one (even an explicit nil) shows "Unknown error"
+        -- (runtime finding R2.5, 2026-10-10).
+        done = function(...)
             if conn.done then return end
             conn.done = true
-            if reason ~= nil and reason ~= '' then conn.rejected = reason end
+            if select('#', ...) > 0 then
+                local reason = ...
+                conn.rejected = type(reason) == 'string' and reason or 'Unknown error'
+            end
         end,
     }
     local kick = function(reason) conn.done = true; conn.rejected = reason end

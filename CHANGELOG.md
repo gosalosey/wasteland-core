@@ -1,5 +1,10 @@
 # Changelog
 
+## wasteland_players 0.1.1 (runtime fix, 2026-10-10)
+
+### Fixed
+* Every connection was refused with "Unknown error" (runtime test R2.5): the players module called `deferrals.done(nil)` to accept, which FiveM treats as a rejection. It now calls `done()` with no argument. The test mock reproduces FiveM's behaviour (K-16).
+
 ## Milestone 2: database and player persistence (2026-10-10)
 
 ### wasteland_core 0.2.0 (core api 1.1.0)

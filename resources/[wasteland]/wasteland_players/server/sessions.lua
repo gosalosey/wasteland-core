@@ -125,7 +125,13 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
             WLP.M.log:error('error while admitting %s: %s', tostring(name), tostring(rejection))
             rejection = 'The server could not process your connection. Please try again.'
         end
-        deferrals.done(rejection)
+        -- FiveM accepts only done() with NO argument: done(nil) rejects the
+        -- player with "Unknown error" (runtime finding R2.5).
+        if rejection then
+            deferrals.done(rejection)
+        else
+            deferrals.done()
+        end
     end)
 end)
 

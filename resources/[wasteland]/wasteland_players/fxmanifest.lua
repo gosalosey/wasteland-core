@@ -5,7 +5,7 @@ lua54 'yes'
 name 'wasteland_players'
 author 'Wasteland Core contributors'
 description 'Wasteland Core - accounts, sessions and characters with persistence'
-version '0.1.0'
+version '0.1.1'
 
 dependencies {
     'wasteland_core',
