@@ -1,7 +1,7 @@
 # Project status and development checklist
 
 **Current milestone:** 2 complete in automated tests (simulated + real MariaDB). Awaiting runtime verification (docs/IN_GAME_TESTS.md, R2.x) and owner review.
-**Next milestone:** 3, inventory and item API.
+**Next milestone:** 3A, UI shell, character select and character creator (then 3B, inventory).
 **Last updated:** 2026-10-10
 
 ## How to resume work
@@ -38,11 +38,27 @@
 - [x] Tests: reconnect, simultaneous sessions, DB down/up, resource restart (simulated); all SQL on real MariaDB
 - [~] Installed on the owner's server (oxmysql 2.14.3, database + user, server.cfg); runtime tests R2.1-R2.21 pending
 
-## Milestone 3: inventory and item API
+## Milestone 3A: UI shell, character select and character creator (added 2026-10-10)
+Decision (owner asked for the better approach): appearance is not in the original spec but every
+player sees it first. It needs the NUI shell, not the inventory, so the UI shell moves out of M3
+and ships first, with the screens players hit on joining.
+- [ ] wasteland_ui: NUI shell, design system, focus/input handling, guarded NUI callbacks
+- [ ] Character select screen (replaces the interim `/character` chat command; command stays for admins/debug)
+- [ ] wasteland_appearance: creator after a new character is created; freemode male/female, heritage
+      (parents + blend), face features, hair + colours, overlays (beard, brows, makeup, ageing...),
+      starter outfit chosen from a configurable list
+- [ ] Appearance stored as character data, validated server-side (ranges per component), reapplied
+      on load and after respawn; players frozen/hidden until a character is loaded (K-15)
+- [ ] Admin command to reopen the creator for a player
+- [ ] Tests: appearance validation, persistence, select/create flow, invalid NUI payloads
+Body (face, hair, features) is fixed after creation. Clothing is set only once (starter outfit) here;
+from M3B clothes become wearable inventory items in equipment slots, found as loot and swapped in play.
+
+## Milestone 3B: inventory and item API
 - [ ] Item definition registry (config + API) · [ ] grid inventory model, weight, stacks, metadata, durability
-- [ ] Containers (player/stash/vehicle/container) · [ ] equipment slots
+- [ ] Containers (player/stash/vehicle/container) · [ ] equipment slots, including clothing items applied to the ped
 - [ ] Transactions with locking; split/merge/move/drop/pickup/use · [ ] persistence
-- [ ] wasteland_ui: NUI shell, design system, inventory UI
+- [ ] Inventory UI (on the M3A UI shell)
 - [ ] Tests: duplication, concurrency, disconnect mid-action, invalid client events
 
 ## Milestone 4: survival and HUD
