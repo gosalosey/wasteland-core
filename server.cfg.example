@@ -1,0 +1,14 @@
+# Wasteland Core - example server.cfg fragment (Milestone 1)
+# Merge into your server.cfg. Do not put secrets in files you commit.
+
+# --- framework (order matters) ---
+ensure wasteland_config
+ensure wasteland_core
+ensure wasteland_template      # SDK example module; optional
+
+# --- permissions ---
+add_ace group.admin wasteland.admin allow
+# add_principal identifier.license:<your-license> group.admin
+
+# --- optional: use a differently named config resource ---
+# set wasteland_config_resource "my_wasteland_config"
