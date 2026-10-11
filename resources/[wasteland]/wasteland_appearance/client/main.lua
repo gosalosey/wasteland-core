@@ -140,7 +140,9 @@ end
 
 local CAMERA = {
     face = { distance = 0.75, height = 0.65, fov = 35.0 },
-    body = { distance = 2.4, height = 0.15, fov = 45.0 },
+    -- Whole body, head to feet: the ped's origin is at the hips (~1 m above
+    -- the ground), so aim slightly below it and widen the view.
+    body = { distance = 3.0, height = -0.1, fov = 50.0 },
 }
 
 -- The camera stays where the ped faced when the creator opened (rotating
