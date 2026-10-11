@@ -39,4 +39,5 @@ client_scripts {
 -- Inventory screen, loaded by wasteland_ui.
 files {
     'html/inventory.js',
+    'html/hotbar.js',
 }

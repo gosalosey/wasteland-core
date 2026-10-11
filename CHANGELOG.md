@@ -1,5 +1,14 @@
 # Changelog
 
+## Hotbar on screen, hands up, emotes (owner request)
+* Hotbar on screen (bottom middle): the five hotbar slots with picture, key, count and condition. /hotbar shows or hides it (remembered on the player's computer). Hidden in vehicles, while the inventory is open and while dead.
+* New resource wasteland_emotes (ensure it after wasteland_ui; added to server.cfg):
+  * X: hands up, X again: down. No shooting or punching with your hands up. Ignored while a progress bar or the lockpick game is open (X cancels those).
+  * F4: emote menu (search, categories: Gestures, Survival, Sit & lie, Work, Moods, Fitness); 46 emotes. /e <name> plays one, /e c stops, /e alone opens the menu. Whole-body emotes stop when you walk; upper-body ones (wave, salute...) keep playing while you walk. No emotes in vehicles, while dead, swimming or falling.
+  * The list is wasteland_emotes/shared/emotes.lua (name, label, category, scenario or animation).
+* Tests: 643.
+
+
 ## Named loot props (owner request)
 * A prop an admin made lootable and named shows that name to players: the target says "Search Old barrel", the bar "Searching Old barrel", and the container opens as "Old barrel". Names can now have spaces (letters, digits, space, _ - . ' ( ), up to 40); the field is called "Name players see". Unnamed props still show their category.
 * Tests: 635.

@@ -2,6 +2,7 @@
 return {
     'static/manifests.lua',
     'unit/semver.lua',
+    'unit/emote_list.lua',
     'unit/schema.lua',
     'unit/logger.lua',
     'unit/config_loader.lua',

@@ -4,7 +4,7 @@
 local RESOURCE_NAMES = {
     'wasteland_config', 'wasteland_core', 'wasteland_template', 'wasteland_database', 'wasteland_players',
     'wasteland_ui', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival',
-    'wasteland_world', 'wasteland_admin', 'wasteland_weapons', 'wasteland_images', 'wasteland_zombies', 'wasteland_target', 'wasteland_loot', 'wasteland_camps', 'wasteland_crafting', 'wasteland_quests', 'wasteland_vehicles', 'wasteland_loadscreen',
+    'wasteland_world', 'wasteland_admin', 'wasteland_weapons', 'wasteland_images', 'wasteland_zombies', 'wasteland_target', 'wasteland_loot', 'wasteland_camps', 'wasteland_crafting', 'wasteland_quests', 'wasteland_vehicles', 'wasteland_loadscreen', 'wasteland_emotes',
 }
 local FORBIDDEN = { 'qb-core', 'QBCore', 'qbx_core', 'es_extended', 'ESX', 'ox_lib', 'ox_inventory', 'ox_target' }
 

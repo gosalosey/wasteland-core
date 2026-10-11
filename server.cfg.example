@@ -31,6 +31,7 @@ ensure wasteland_camps
 ensure wasteland_crafting
 ensure wasteland_quests
 ensure wasteland_vehicles
+ensure wasteland_emotes
 ensure wasteland_template      # SDK example module; optional
 
 # --- permissions ---

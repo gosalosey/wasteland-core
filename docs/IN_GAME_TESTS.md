@@ -471,3 +471,15 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 |---|---|---|
 | R30.1 | Restart, drive/walk to the wreck spawn points | Wrecks stand on open ground, not inside props, walls, fences or other cars; the server console may say "moved x m to a clear spot" |
 | R30.2 | Leave and come back | They stay where they were placed (checked once) |
+
+## R31: hotbar, hands up, emotes
+
+| # | Do | Expect |
+|---|---|---|
+| R31.1 | Put items on the hotbar (inventory, right-click, Hotbar 1-5) | They show bottom middle with pictures and counts |
+| R31.2 | /hotbar, then /hotbar again; reconnect | Hidden, shown; the choice is kept |
+| R31.3 | Press X, try to shoot; X again | Hands up (others see it), no shooting; hands down |
+| R31.4 | F4 | Emote menu; search "sit", click it; you sit; walk: you get up |
+| R31.5 | /e wave while walking; /e smoke; /e c | Wave while walking; smoking; stops |
+| R31.6 | /e nothing | "No emote ... Press F4 or type /e for the list." |
+| R31.7 | Try every emote once | Tell me any that do nothing (wrong animation name) |

@@ -362,3 +362,78 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for _, obj in pairs(dropProps) do DeleteObject(obj) end
 end)
+
+-------------------------------------------------------------------------------
+-- Hotbar on screen (/hotbar shows or hides it; kept on this computer)
+-------------------------------------------------------------------------------
+
+local HOTBAR = 'hotbarHud'
+local hotbarShown = true
+do
+    local ok, v = pcall(GetResourceKvpString, 'hotbarShown')
+    if ok and v == 'no' then hotbarShown = false end
+end
+
+local function hotbarData()
+    if not snapshot or not defs or type(snapshot.hotbar) ~= 'table' then return nil end
+    local byUid = {}
+    for _, inv in ipairs(snapshot.inventories or {}) do
+        for _, s in ipairs(inv.items or {}) do byUid[s.uid] = s end
+    end
+    local slots = {}
+    for i = 1, 5 do
+        local uid = snapshot.hotbar[i]
+        local s = uid and byUid[uid]
+        local d = s and defs.items and defs.items[s.name]
+        if d then
+            local cond = nil
+            if (d.durability or 0) > 0 then
+                local cur = s.metadata and tonumber(s.metadata.durability) or d.durability
+                cond = math.max(0, math.min(1, cur / d.durability))
+            end
+            slots[i] = { key = i, label = d.label, image = d.image, count = s.count, cond = cond, color = d.color,
+                cash = s.name == defs.cashItem }
+        else
+            slots[i] = { key = i }
+        end
+    end
+    return { slots = slots }
+end
+
+local function hotbarVisible()
+    if not hotbarShown or not uiRunning() or isOpen() or not snapshot then return false end
+    local ped = PlayerPedId()
+    return not IsPedInAnyVehicle(ped, false) and not IsEntityDead(ped) and not IsPauseMenuActive()
+end
+
+Citizen.CreateThread(function()
+    local lastJson = nil
+    while true do
+        Citizen.Wait(250)
+        if hotbarVisible() then
+            local data = hotbarData()
+            if data then
+                local j = json.encode(data)
+                if not exports.wasteland_ui:IsOpen(HOTBAR) then
+                    exports.wasteland_ui:Open(HOTBAR, { script = 'html/hotbar.js', data = data, focus = false, cursor = false })
+                    lastJson = j
+                elseif j ~= lastJson then
+                    exports.wasteland_ui:Update(HOTBAR, data)
+                    lastJson = j
+                end
+            end
+        elseif uiRunning() and exports.wasteland_ui:IsOpen(HOTBAR) then
+            exports.wasteland_ui:Close(HOTBAR)
+            lastJson = nil
+        end
+    end
+end)
+
+RegisterCommand('hotbar', function()
+    hotbarShown = not hotbarShown
+    SetResourceKvp('hotbarShown', hotbarShown and 'yes' or 'no')
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName(hotbarShown and 'Hotbar shown. Type /hotbar to hide it.' or 'Hotbar hidden. Type /hotbar to show it.')
+    EndTextCommandThefeedPostTicker(false, false)
+end, false)
+
