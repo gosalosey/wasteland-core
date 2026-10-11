@@ -12,6 +12,8 @@ local applied = {}     -- vehicle handle -> seq applied
 local targetIds = {}
 local active = nil     -- action in progress
 local WHEELS = { 0, 1, 4, 5 } -- tyre indices of a car
+local HUD = 'vehHud'
+local driving = nil    -- { veh, fuel, why } while this player drives (for the HUD)
 
 local function uiRunning() return GetResourceState('wasteland_ui') == 'started' end
 local function targetRunning() return GetResourceState('wasteland_target') == 'started' end
@@ -199,6 +201,7 @@ Citizen.CreateThread(function()
         if s and cfg then
             if fuelVeh ~= veh or (s.fuel or 0) > (fuel or 0) + 0.01 then fuel, fuelVeh = s.fuel or 0, veh end
             local can, why = Rules.canRun({ fuel = fuel, engine = GetVehicleEngineHealth(veh), parts = s.parts })
+            driving = { veh = veh, fuel = fuel, why = (not can) and why or nil }
             if not can then
                 SetVehicleEngineOn(veh, false, true, true)
                 SetVehicleUndriveable(veh, true)
@@ -221,7 +224,7 @@ Citizen.CreateThread(function()
                 -- left the vehicle: report the last bit of fuel used
                 TriggerServerEvent('wasteland:vehicles:server:fuel', NetworkGetNetworkIdFromEntity(fuelVeh), fuel + 0.0)
             end
-            fuel, fuelVeh, told = nil, nil, nil
+            fuel, fuelVeh, told, driving = nil, nil, nil, nil
             Citizen.Wait(500)
         end
     end
@@ -236,6 +239,43 @@ Citizen.CreateThread(function()
     TriggerServerEvent('wasteland:vehicles:server:config')
 end)
 
+-------------------------------------------------------------------------------
+-- Vehicle HUD (any seat)
+-------------------------------------------------------------------------------
+
+Citizen.CreateThread(function()
+    local shown = false
+    while true do
+        local ped = PlayerPedId()
+        local veh = GetVehiclePedIsIn(ped, false)
+        if veh ~= 0 and uiRunning() and not IsPauseMenuActive() then
+            local s = stateOf(veh) or {}
+            local mine = driving and driving.veh == veh
+            local data = {
+                speed = GetEntitySpeed(veh), metric = ShouldUseMetricMeasurements(),
+                fuel = mine and driving.fuel or s.fuel or (GetVehicleFuelLevel(veh) / 2), tank = s.tank or 50,
+                engine = GetVehicleEngineHealth(veh), body = GetVehicleBodyHealth(veh),
+                locked = s.locked, hasLock = s.hasLock, warning = mine and driving.why or nil,
+            }
+            if shown and exports.wasteland_ui:IsOpen(HUD) then
+                exports.wasteland_ui:Update(HUD, data)
+            else
+                exports.wasteland_ui:Open(HUD, { script = 'html/hud.js', data = data, focus = false, cursor = false })
+                shown = true
+            end
+            Citizen.Wait(200)
+        else
+            if shown then
+                shown = false
+                if uiRunning() and exports.wasteland_ui:IsOpen(HUD) then exports.wasteland_ui:Close(HUD) end
+            end
+            Citizen.Wait(500)
+        end
+    end
+end)
+
 AddEventHandler('onResourceStop', function(res)
-    if res == GetCurrentResourceName() then stop(false) end
+    if res ~= GetCurrentResourceName() then return end
+    stop(false)
+    if uiRunning() and exports.wasteland_ui:IsOpen(HUD) then exports.wasteland_ui:Close(HUD) end
 end)

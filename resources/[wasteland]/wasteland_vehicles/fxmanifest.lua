@@ -31,4 +31,5 @@ client_scripts {
 
 files {
     'html/progress.js',
+    'html/hud.js',
 }

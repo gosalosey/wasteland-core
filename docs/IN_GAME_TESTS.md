@@ -349,3 +349,4 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R19.10 | Another player (without the key): "Pick the lock" with lockpicks | Usually fails ("The lock holds." / "The lockpick snaps."); sometimes "The lock breaks open."; nearby zombies come to look |
 | R19.11 | Give the key to someone else | They can unlock it and open the trunk |
 | R19.12 | Blow a car up | It burns out and disappears after a while; later another wreck appears somewhere else |
+| R19.13 | Get in a vehicle | Bottom middle: speed, fuel gauge (litres), engine and body %, lock; a red line saying why it will not run, if it will not |

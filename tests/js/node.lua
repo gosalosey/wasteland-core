@@ -2,7 +2,7 @@
 -- test runner and reports each one here. Skipped when Node is not installed.
 
 local IS_WINDOWS = package.config:sub(1, 1) == '\\'
-local FILES = { 'ui.test.js', 'inventory.test.js', 'survival.test.js', 'admin.test.js', 'target.test.js', 'trader.test.js', 'crafting.test.js', 'quests.test.js' }
+local FILES = { 'ui.test.js', 'inventory.test.js', 'survival.test.js', 'admin.test.js', 'target.test.js', 'trader.test.js', 'crafting.test.js', 'quests.test.js', 'vehicles.test.js' }
 
 local function nodeAvailable()
     local p = io.popen(IS_WINDOWS and 'node --version 2>nul' or 'node --version 2>/dev/null')
