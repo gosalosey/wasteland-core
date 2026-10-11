@@ -256,16 +256,22 @@ Citizen.CreateThread(function()
         if near and not isOpen() and canOpen() then
             -- Only while standing at a drop: draw the prompt every frame.
             local deadline = GetGameTimer() + 500
+            local searched = false
             while GetGameTimer() < deadline do
                 BeginTextCommandDisplayHelp('STRING')
                 AddTextComponentSubstringPlayerName('Press ~INPUT_PICKUP~ to search')
                 EndTextCommandDisplayHelp(0, false, false, -1)
                 if IsControlJustReleased(0, 38) then
                     searchDrop(near)
+                    searched = true
                     break
                 end
                 Citizen.Wait(0)
             end
+            -- Always yield here: breaking out and looping straight back would
+            -- see the same key press again in the same frame, search again
+            -- forever and freeze the game (and flood the server).
+            Citizen.Wait(searched and 1000 or 0)
         else
             Citizen.Wait(500)
         end
