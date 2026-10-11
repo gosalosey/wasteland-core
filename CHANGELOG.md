@@ -1,5 +1,9 @@
 # Changelog
 
+## Tailor camera controls (owner request)
+* At the tailor: drag anywhere outside the panel to look around (left/right circles your character, up/down raises or lowers the camera), scroll to zoom in and out, and quick views: Full body, Face, Top, Pants, Shoes. "Turn around" now swings the camera to your back instead of turning the character.
+
+
 ## Tailors (owner request)
 * New resource wasteland_tailor (module "tailor", config tailor.lua; added to server.cfg). Tailor NPCs at Paleto Bay, Sandy Shores and Legion Square, with map blips. Left Alt on one: "Restyle my clothes ($25 a piece)".
 * The screen lists only the pieces you wear (hat, glasses, top with undershirt and arms, pants, shoes): style and colour arrows per part, every change shown on your character at once (a camera looks at you; "Turn around"), "Undo all", "Pay $X (N pieces)". Nothing can be added or removed: only what is worn gets a new look. The server checks you stand at the tailor, that each piece is worn clothing, sane values, and takes the cash first.

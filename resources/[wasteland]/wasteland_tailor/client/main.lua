@@ -62,16 +62,33 @@ local function closeSession(restore)
     if restore and GetResourceState('wasteland_inventory') == 'started' then exports.wasteland_inventory:ApplyClothing() end
 end
 
-local function pointCamera(ped)
+-- The camera circles the player: yaw (degrees around, 0 = in front),
+-- dist (metres), height (camera, from the middle of the body), look (where it
+-- aims, from the middle of the body).
+local VIEWS = {
+    full = { dist = 2.4, height = 0.3, look = 0.0 },
+    face = { dist = 0.9, height = 0.65, look = 0.62 },
+    top = { dist = 1.4, height = 0.35, look = 0.3 },
+    legs = { dist = 1.5, height = -0.35, look = -0.45 },
+    feet = { dist = 1.1, height = -0.7, look = -0.85 },
+}
+
+local function placeCamera(ped, ease)
     if not session then return end
+    local v = session.view
     local c = GetEntityCoords(ped)
-    local h = math.rad(GetEntityHeading(ped))
-    local fwd = vector3(-math.sin(h), math.cos(h), 0.0)
+    local a = math.rad(session.heading + v.yaw)
+    local px, py = c.x - math.sin(a) * v.dist, c.y + math.cos(a) * v.dist
     if not session.cam then session.cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true) end
-    SetCamCoord(session.cam, c.x + fwd.x * 2.4, c.y + fwd.y * 2.4, c.z + 0.4)
-    PointCamAtCoord(session.cam, c.x, c.y, c.z + 0.1)
+    SetCamCoord(session.cam, px, py, c.z + v.height)
+    PointCamAtCoord(session.cam, c.x, c.y, c.z + v.look)
     SetCamFov(session.cam, 45.0)
-    RenderScriptCams(true, true, 400, true, false)
+    if ease then RenderScriptCams(true, true, 400, true, false) end
+end
+
+local function pointCamera(ped)
+    session.view = { yaw = 0.0, dist = VIEWS.full.dist, height = VIEWS.full.height, look = VIEWS.full.look }
+    placeCamera(ped, true)
 end
 
 local function openTailor(index)
@@ -127,7 +144,21 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     elseif action == 'reset' then
         exports.wasteland_inventory:ApplyClothing()
     elseif action == 'turn' then
-        SetEntityHeading(ped, GetEntityHeading(ped) + 90.0)
+        session.view.yaw = (session.view.yaw + 180.0) % 360.0
+        placeCamera(ped)
+    elseif action == 'cam' and type(payload) == 'table' then
+        -- Drag: dx turns around the player, dy moves up/down; wheel: zoom.
+        local v = session.view
+        v.yaw = (v.yaw - (tonumber(payload.dx) or 0) * 0.35) % 360.0
+        local dy = (tonumber(payload.dy) or 0) * 0.004
+        v.height = math.max(-0.9, math.min(1.0, v.height + dy))
+        v.look = math.max(-0.95, math.min(0.8, v.look + dy))
+        v.dist = math.max(0.7, math.min(4.0, v.dist + (tonumber(payload.zoom) or 0) * 0.15))
+        placeCamera(ped)
+    elseif action == 'view' and type(payload) == 'table' and VIEWS[payload.view] then
+        local p = VIEWS[payload.view]
+        session.view.dist, session.view.height, session.view.look = p.dist, p.height, p.look
+        placeCamera(ped)
     elseif action == 'buy' and type(payload) == 'table' and type(payload.changes) == 'table' then
         TriggerServerEvent('wasteland:tailor:server:buy', session.shop, session.model, payload.changes)
     end
