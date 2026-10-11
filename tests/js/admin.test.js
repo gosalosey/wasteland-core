@@ -50,3 +50,11 @@ test('groupItems: items by category in inventory order, sorted by label', () => 
     assert.deepStrictEqual(g.map((x) => x.category), ['weapon', 'medical', 'misc', 'odd']);
     assert.deepStrictEqual(g[0].items.map((i) => i.label), ['Axe', 'Pistol']);
 });
+
+test('coordinates as text for scripts', () => {
+    const c = { x: 123.456, y: -45.6, z: 30, h: 271.239 };
+    assert.strictEqual(admin.coordText(c, 'vector3'), 'vector3(123.46, -45.60, 30.00)');
+    assert.strictEqual(admin.coordText(c, 'vector4'), 'vector4(123.46, -45.60, 30.00, 271.24)');
+    assert.strictEqual(admin.coordText(c, 'heading'), '271.24');
+    assert.strictEqual(admin.coordText(c, 'xyz'), 'X 123.46   Y -45.60   Z 30.00   Heading 271.24');
+});

@@ -25,14 +25,20 @@ CREATE TABLE IF NOT EXISTS wl_vehicles (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci]],
     },
+    {
+        version = 2,
+        name = 'lock_owner',
+        -- The character that fitted the lock (only they can take it off).
+        up = [[ALTER TABLE wl_vehicles ADD COLUMN lock_owner INT UNSIGNED NULL AFTER lock_code]],
+    },
 }
 
 WLV.SQL = {
-    selectAll = 'SELECT id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, locked FROM wl_vehicles',
-    insert = 'INSERT INTO wl_vehicles (id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, locked, updated_unix) '
-        .. 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    selectAll = 'SELECT id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, lock_owner, locked FROM wl_vehicles',
+    insert = 'INSERT INTO wl_vehicles (id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, lock_owner, locked, updated_unix) '
+        .. 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     update = 'UPDATE wl_vehicles SET x = ?, y = ?, z = ?, heading = ?, fuel = ?, engine = ?, body = ?, parts = ?, '
-        .. 'lock_code = ?, locked = ?, updated_unix = ? WHERE id = ?',
+        .. 'lock_code = ?, lock_owner = ?, locked = ?, updated_unix = ? WHERE id = ?',
     delete = 'DELETE FROM wl_vehicles WHERE id = ?',
 }
 

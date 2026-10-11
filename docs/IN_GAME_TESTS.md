@@ -371,3 +371,16 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R20.10 | Jobs: with a job taken, "Drop"; with a job on cooldown, "Reset cooldowns" | The job is gone from their tracker; they can take the job again |
 | R20.11 | Recipes: "Teach" a blueprint recipe, then "Forget" | It shows in / disappears from their crafting screen (K) |
 | R20.12 | "Send to nearest camp" (click twice) | They are teleported into the closest camp |
+| R20.13 | Admin panel, "Coords" tab; walk around with the panel closed, open it again; press each Copy and paste into Notepad | Live X/Y/Z/heading; pasted text is e.g. `vector3(1853.42, 3686.06, 34.27)`, `vector4(..., 211.55)`, `211.55` |
+
+## R21: car locks and lock picking
+
+| # | Do | Expect |
+|---|---|---|
+| R21.1 | Fit a lock on a car, then Left Alt on it: "Take the lock off" | A short bar; "You took the lock off..."; the car lock is back in your pockets; the car opens for everyone |
+| R21.2 | Second player (even holding your key): Left Alt on your locked car | No "Take the lock off" option for them |
+| R21.3 | Second player without a lockpick: "Pick the lock" | "You need a lockpick."; no minigame |
+| R21.4 | With a lockpick: "Pick the lock" | The minigame opens (your character works on the door); zombies nearby come to look |
+| R21.5 | Press E when the pick is in the green, 4 times | Each pin lights up, the pick turns back faster; after the 4th: "The lock turns!", then "The lock breaks open." and the car is open |
+| R21.6 | Press E outside the green | Red shake, "The pick slips."; then "The lockpick snaps." or "The pick slips. The lock holds." |
+| R21.7 | Press Esc during the minigame / get hit by a zombie during it | "You stop picking the lock." / "You were interrupted."; you can move again |

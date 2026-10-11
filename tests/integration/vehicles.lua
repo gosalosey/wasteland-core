@@ -7,8 +7,8 @@ local CFG = {
     ['players.lua'] = 'return { restoreDelayMs = 200 }',
     ['vehicles.lua'] = [[return {
         maxVehicles = 2, respawnMinutes = 1, spawnDistance = 250, despawnDistance = 350, despawnAfterSeconds = 4, saveSeconds = 4,
-        seconds = { battery = 1, engine = 1, wheel = 1, refuel = 1, repair = 1, fitLock = 1, toggleLock = 1, pickLock = 1, fillCan = 1 },
-        lockpick = { chance = 0, breakChance = 1, noise = 60 },
+        seconds = { battery = 1, engine = 1, wheel = 1, refuel = 1, repair = 1, fitLock = 1, toggleLock = 1, pickLock = 1, removeLock = 1, fillCan = 1 },
+        lockpick = { pins = 4, minSecondsPerPin = 0.35, breakChance = 1, noise = 60 },
         wreck = { batteryMissing = 1, engineMissing = 0, wheelsMissingChance = 1, wheelsMissingMax = 1,
             fuel = { 2, 2 }, engine = { 500, 500 }, body = { 600, 600 } },
         models = { 'rebel' },
@@ -49,6 +49,14 @@ local function ack(server)
     local e = veh(server)
     server:clientEvent(e.owner, 'wasteland:vehicles:server:applied', e.netId, e.state.wlVeh.seq)
     server:advance(50)
+end
+-- The lockpick minigame: the client gets the game, plays, reports.
+local function pick(server, id, success, ms)
+    server:clientEvent(id, 'wasteland:vehicles:server:act', veh(server).netId, 'pickLock')
+    server:advance(100)
+    server:advance(ms or 3000)
+    server:clientEvent(id, 'wasteland:vehicles:server:lockpick', success)
+    server:advance(200)
 end
 local function act(server, id, action)
     local e = veh(server)
@@ -164,7 +172,7 @@ describe('vehicles', function()
         expect(veh(server).doorLock).toBe(2)
     end)
 
-    it('without the key: no unlocking, no trunk; a lockpick may fail and break (and makes noise)', function()
+    it('without the key: no unlocking, no trunk; picking needs a lockpick and the minigame; a failed try may snap it', function()
         thief = player(server, 'thief', { x = 999.0, y = -1.0, z = 30.0 })
         local heard = 0
         server:on('wasteland:noise', function() heard = heard + 1 end)
@@ -172,12 +180,40 @@ describe('vehicles', function()
         expect(note(server, thief)).toBe('You do not have the key.')
         server:clientEvent(thief, 'wasteland:vehicles:server:act', veh(server).netId, 'trunk'); server:advance(200)
         expect(note(server, thief)).toBe('It is locked.')
-        I(server, 'AddItem', thief, 'lockpick', 1); server:advance(100)
-        act(server, thief, 'pickLock') -- chance 0, breakChance 1
+        server:clientEvent(thief, 'wasteland:vehicles:server:act', veh(server).netId, 'pickLock'); server:advance(200)
+        expect(note(server, thief)).toBe('You need a lockpick.')
+        expect(#events(server, thief, 'wasteland:vehicles:client:lockpick')).toBe(0)
+        I(server, 'AddItem', thief, 'lockpick', 2); server:advance(100)
+        pick(server, thief, false) -- breakChance 1
+        local game = last(events(server, thief, 'wasteland:vehicles:client:lockpick')).args[1]
+        expect(game.pins).toBe(4)
         expect(note(server, thief)).toBe('The lockpick snaps.')
-        expect(I(server, 'GetItemCount', thief, 'lockpick')).toBe(0)
+        expect(I(server, 'GetItemCount', thief, 'lockpick')).toBe(1)
         expect(heard).toBe(1)
         expect(veh(server).doorLock).toBe(2)
+    end)
+
+    it('a minigame result is only taken once, in time, and finish never picks the lock', function()
+        -- no minigame running: ignored
+        server:clientEvent(thief, 'wasteland:vehicles:server:lockpick', true); server:advance(200)
+        expect(veh(server).doorLock).toBe(2)
+        -- the progress-bar finish does not count for picking
+        server:clientEvent(thief, 'wasteland:vehicles:server:act', veh(server).netId, 'pickLock'); server:advance(2000)
+        server:clientEvent(thief, 'wasteland:vehicles:server:finish'); server:advance(200)
+        server:clientEvent(thief, 'wasteland:vehicles:server:lockpick', true); server:advance(200)
+        expect(veh(server).doorLock).toBe(2)
+        -- too fast to be played: rejected
+        pick(server, thief, true, 200)
+        expect(veh(server).doorLock).toBe(2)
+        expect(#server:lines('finished the lockpick minigame too fast')).toBe(1)
+        expect(I(server, 'GetItemCount', thief, 'lockpick')).toBe(1)
+    end)
+
+    it('only the survivor who fitted the lock can take it off', function()
+        act(server, thief, 'removeLock')
+        expect(note(server, thief)).toBe('Only the survivor who fitted this lock can take it off.')
+        expect(veh(server).state.wlVeh.hasLock).toBe(true)
+        expect(type(veh(server).state.wlVeh.lockBy)).toBe('number')
     end)
 
     it('the key works for whoever holds it (no owners)', function()
@@ -330,5 +366,48 @@ describe('vehicles after a restart', function()
         expect(back.coords.x).toBe(1003.0)
         expect(back.state.wlVeh.body).toBe(444.0)
         expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+
+describe('vehicle locks: removing your own lock, winning the lockpick minigame', function()
+    local server = world()
+    local owner = player(server, 'owner', { x = 1001.0, y = 1.0, z = 30.0 })
+    server:advance(2000)
+    local other = player(server, 'other', { x = 999.0, y = -1.0, z = 30.0 })
+
+    it('the owner takes the lock off and gets it back; the old key fits nothing', function()
+        I(server, 'AddItem', owner, 'vehicle_lock', 1); server:advance(100)
+        act(server, owner, 'fitLock')
+        expect(veh(server).state.wlVeh.locked).toBe(true)
+        local row
+        for _, r in pairs(server.db.backend.data.wl_vehicles) do if r.lock_code then row = r end end
+        expect(row.lock_owner ~= nil).toBe(true)
+        -- someone else holding the key still cannot remove it
+        local key = I(server, 'FindItems', owner, 'vehicle_key')[1]
+        I(server, 'AddItem', other, 'vehicle_key', 1, key.metadata); server:advance(100)
+        act(server, other, 'removeLock')
+        expect(note(server, other)).toBe('Only the survivor who fitted this lock can take it off.')
+        act(server, owner, 'removeLock')
+        expect(note(server, owner)).toContain('You took the lock off')
+        expect(I(server, 'GetItemCount', owner, 'vehicle_lock')).toBe(1)
+        expect(veh(server).state.wlVeh.hasLock).toBe(false)
+        expect(veh(server).doorLock).toBe(1)
+        act(server, owner, 'toggleLock')
+        expect(note(server, owner)).toBe('It has no lock.')
+        server:advance(300)
+        for _, r in pairs(server.db.backend.data.wl_vehicles) do expect(r.lock_code == nil and r.lock_owner == nil).toBe(true) end
+    end)
+
+    it('a thief who sets every pin opens the lock (and keeps the pick)', function()
+        act(server, owner, 'fitLock') -- the lock is back in the owner's pockets
+        expect(veh(server).state.wlVeh.locked).toBe(true)
+        I(server, 'RemoveItem', other, 'vehicle_key', 1)
+        I(server, 'AddItem', other, 'lockpick', 1); server:advance(100)
+        pick(server, other, true, 2000)
+        expect(note(server, other)).toBe('The lock breaks open.')
+        expect(veh(server).doorLock).toBe(1)
+        expect(veh(server).state.wlVeh.hasLock).toBe(false)
+        expect(I(server, 'GetItemCount', other, 'lockpick')).toBe(1)
+        expect(#server:lines('raised:')).toBe(0)
     end)
 end)

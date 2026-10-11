@@ -31,5 +31,6 @@ client_scripts {
 
 files {
     'html/progress.js',
+    'html/lockpick.js',
     'html/hud.js',
 }

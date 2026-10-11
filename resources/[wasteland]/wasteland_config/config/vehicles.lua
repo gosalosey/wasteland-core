@@ -23,11 +23,17 @@ return {
     fuel = { idlePerMinute = 0.06, per100km = 14 },
     repair = { engine = 400, body = 400 },   -- health a toolkit restores (of 1000)
 
-    seconds = { battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8, fillCan = 8 },
+    seconds = { battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, removeLock = 6, fillCan = 8 },
 
+    -- Picking a lock needs a lockpick and a minigame: a pick turns around
+    -- the lock; press E (or Space / click) while it is in the bright zone
+    -- to set a pin. Set every pin to open it; one miss and the try fails.
     lockpick = {
-        chance = 0.3,         -- chance to open the lock per try
-        breakChance = 0.5,    -- chance the lockpick breaks when it fails
+        pins = 4,             -- pins to set
+        zoneDegrees = 32,     -- width of the bright zone (smaller = harder)
+        speed = 150,          -- how fast the pick turns at first (degrees a second)
+        speedStep = 35,       -- and how much faster for every pin
+        breakChance = 0.5,    -- chance the lockpick snaps on a failed try
         noise = 60,           -- metres zombies hear the attempt
     },
 

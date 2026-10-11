@@ -1,5 +1,6 @@
 // wasteland_admin :: html/admin.js
-// Admin panel (runs inside wasteland_ui). Tabs: Players, Bans, Server, Log.
+// Admin panel (runs inside wasteland_ui). Tabs: Players, Live, Coords, Bans,
+// Server & world, Action log.
 // The server checks the admin permission for every action; this screen
 // only shows data and sends requests.
 
@@ -55,9 +56,18 @@
         return { state: 'active', text: ban.expires_unix ? 'Until ' + formatTime(ban.expires_unix) : 'Permanent' };
     }
 
+    // Your position as text for scripts: 'vector3' | 'vector4' | 'heading' | 'xyz'.
+    function coordText(c, kind) {
+        const f = (n) => (Math.round(Number(n || 0) * 100) / 100).toFixed(2);
+        if (kind === 'vector3') return 'vector3(' + f(c.x) + ', ' + f(c.y) + ', ' + f(c.z) + ')';
+        if (kind === 'vector4') return 'vector4(' + f(c.x) + ', ' + f(c.y) + ', ' + f(c.z) + ', ' + f(c.h) + ')';
+        if (kind === 'heading') return f(c.h);
+        return 'X ' + f(c.x) + '   Y ' + f(c.y) + '   Z ' + f(c.z) + '   Heading ' + f(c.h);
+    }
+
     if (typeof module === 'object' && module.exports) {
         module.exports = { filterPlayers: filterPlayers, filterItems: filterItems, groupItems: groupItems, banStatus: banStatus,
-            formatTime: formatTime, DURATIONS: DURATIONS };
+            formatTime: formatTime, coordText: coordText, DURATIONS: DURATIONS };
         return;
     }
 
@@ -399,11 +409,56 @@
             cards, section('Modules'), modules, section('Latest warnings and errors'), issues);
     }
 
+    // ---------------------------------------------------------------- coords
+
+    // NUI has no clipboard permission; a selected textarea and the copy
+    // command work in FiveM.
+    function copyText(text) {
+        const ta = h('textarea', { class: 'wla-clip' });
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        ta.remove();
+        message(ok ? 'Copied: ' + text : 'Could not copy. Select the text and press Ctrl+C.', ok ? 'ok' : 'error');
+        if (ok) {
+            st.copied = [text].concat((st.copied || []).filter((t) => t !== text)).slice(0, 8);
+            if (st.tab === 'coords') render();
+        }
+    }
+
+    function showCoords() {
+        if (!st.coordsEls || !st.coords) return;
+        st.coordsEls.forEach((e) => { e.el.textContent = coordText(st.coords, e.kind); });
+    }
+
+    function coordsTab() {
+        const c = st.coords || { x: 0, y: 0, z: 0, h: 0 };
+        st.coordsEls = [];
+        const line = (label, kind) => {
+            const code = h('code', { class: 'wla-coord', text: coordText(c, kind) });
+            st.coordsEls.push({ el: code, kind: kind });
+            return h('div', { class: 'wla-coordrow' }, h('span', { class: 'wla-label', text: label }), code,
+                UI.button('Copy', () => copyText(coordText(st.coords || c, kind)), 'primary'));
+        };
+        const big = h('div', { class: 'wla-coordbig', text: coordText(c, 'xyz') });
+        st.coordsEls.push({ el: big, kind: 'xyz' });
+        const parts = [h('div', { class: 'wl-hint', text: 'Where you are standing now (updates live while this tab is open).' }), big,
+            line('vector3', 'vector3'), line('vector4', 'vector4'), line('Heading', 'heading')];
+        if ((st.copied || []).length) {
+            parts.push(section('Copied'));
+            st.copied.forEach((t) => parts.push(h('div', { class: 'wla-coordrow' }, h('code', { class: 'wla-coord', text: t }),
+                UI.button('Copy again', () => copyText(t)))));
+        }
+        return h('div', {}, ...parts);
+    }
+
     // ---------------------------------------------------------------- frame
 
-    const TABS = [{ id: 'players', label: 'Players' }, { id: 'live', label: 'Live' }, { id: 'bans', label: 'Bans' },
-        { id: 'server', label: 'Server & world' }, { id: 'log', label: 'Action log' }];
-    const RENDER = { players: playersTab, live: liveTab, bans: bansTab, server: serverTab, log: logTab };
+    const TABS = [{ id: 'players', label: 'Players' }, { id: 'live', label: 'Live' }, { id: 'coords', label: 'Coords' },
+        { id: 'bans', label: 'Bans' }, { id: 'server', label: 'Server & world' }, { id: 'log', label: 'Action log' }];
+    const RENDER = { players: playersTab, live: liveTab, coords: coordsTab, bans: bansTab, server: serverTab, log: logTab };
 
     function render() {
         st.content.innerHTML = '';
@@ -413,6 +468,11 @@
     function selectTab(id) {
         st.tab = id;
         clearInterval(st.liveTimer);
+        clearInterval(st.coordsTimer);
+        if (id === 'coords') {
+            st.api.post('coords');
+            st.coordsTimer = setInterval(() => st.api.post('coords'), 250);
+        }
         if (id === 'live') {
             st.api.post('refresh');
             st.liveTimer = setInterval(() => st.api.post('refresh'), 5000);
@@ -456,14 +516,20 @@
                 if (st.tab === data.list.which) render();
             }
             if (data.result) message(data.result.message, data.result.ok ? 'ok' : 'error');
+            if (data.coords) { st.coords = data.coords; showCoords(); }
         },
-        unmount: function () { document.removeEventListener('keydown', onKey); clearInterval(st.liveTimer); st = null; },
+        unmount: function () { document.removeEventListener('keydown', onKey); clearInterval(st.liveTimer); clearInterval(st.coordsTimer); st = null; },
     });
 
     const CSS = [
         '.wla-root { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }',
         '.wla-panel { position: relative; width: min(1180px, 94vw); height: 86vh; display: flex; flex-direction: column; }',
         '.wla-header { display: flex; align-items: center; gap: 10px; } .wla-header .wl-title { flex: 1; }',
+        '.wla-clip { position: fixed; left: -1000px; top: -1000px; opacity: 0; }',
+        '.wla-coordbig { font-family: Consolas, monospace; font-size: 22px; color: var(--wl-accent); margin: 12px 0 14px; }',
+        '.wla-coordrow { display: flex; align-items: center; gap: 10px; margin: 6px 0; }',
+        '.wla-coord { flex: 1; font-family: Consolas, monospace; font-size: 14px; padding: 7px 10px; background: var(--wl-bg-sunken);',
+        '  border: 1px solid var(--wl-border); border-radius: 4px; user-select: text; }',
         '.wla-label { min-width: 70px; color: var(--wl-text-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }',
         '.wla-mini { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }',
         '.wla-mini--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 10px; }',

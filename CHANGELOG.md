@@ -1,5 +1,12 @@
 # Changelog
 
+## Admin coords, removing your own car lock, lockpick minigame (owner request)
+* Admin panel, new "Coords" tab: your position live (X, Y, Z, heading) with Copy buttons for `vector3(x, y, z)`, `vector4(x, y, z, heading)` and the heading alone; the last copied lines stay listed to copy again.
+* Car locks: "Take the lock off" (Left Alt on the car) for the survivor who fitted it, and only them (stored per character, new column `wl_vehicles.lock_owner`, migration 2). The lock goes back into your pockets; the old key fits nothing any more. Locks fitted before this update: whoever holds the key can take them off.
+* Picking a lock needs a lockpick and a minigame: a pick turns around the lock; press E, Space or click while it is in the green zone to set a pin. Set all 4 pins to open the car; one miss fails the try (the pick may snap, 50%). Each pin: a new zone, the other direction, faster. Esc gives up. Settings in vehicles.lua `lockpick` (`pins`, `zoneDegrees`, `speed`, `speedStep`, `breakChance`, `noise`); the old `chance` setting is gone. The server times the game (results faster than `minSecondsPerPin` per pin are rejected) and checks distance, lockpick and lock again.
+* Tests: 595.
+
+
 ## Milestone 10A: admin tools
 * New "Live" tab: players online, zombies alive, vehicles (in the world / out right now), gas pumps refilling, containers searched, uptime, module health and the latest warnings and errors; refreshes every 5 seconds while open.
 * Server & world tab, world tools: spawn 1-20 zombies around you, clear all zombies, spawn a wreck or a working car in front of you, fix the car you sit in (or the nearest within 8 m), refill every gas pump, teleport to your map waypoint.

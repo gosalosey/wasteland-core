@@ -269,7 +269,7 @@ end
 -------------------------------------------------------------------------------
 
 function MemoryDB:installVehicles(SQL)
-    local cols = { 'x', 'y', 'z', 'heading', 'fuel', 'engine', 'body', 'parts', 'lock_code', 'locked', 'updated_unix' }
+    local cols = { 'x', 'y', 'z', 'heading', 'fuel', 'engine', 'body', 'parts', 'lock_code', 'lock_owner', 'locked', 'updated_unix' }
     self:on(SQL.selectAll, function(db)
         local rows = {}
         for _, v in pairs(db.data.wl_vehicles) do rows[#rows + 1] = deepCopy(v) end
@@ -279,11 +279,11 @@ function MemoryDB:installVehicles(SQL)
     self:on(SQL.insert, function(db, p)
         if db.data.wl_vehicles[p[1]] then error("Duplicate entry '" .. p[1] .. "' for key 'PRIMARY'", 0) end
         db.data.wl_vehicles[p[1]] = { id = p[1], model = p[2], x = p[3], y = p[4], z = p[5], heading = p[6], fuel = p[7],
-            engine = p[8], body = p[9], parts = p[10], lock_code = p[11], locked = p[12], updated_unix = p[13] }
+            engine = p[8], body = p[9], parts = p[10], lock_code = p[11], lock_owner = p[12], locked = p[13], updated_unix = p[14] }
         return header(1)
     end)
     self:on(SQL.update, function(db, p)
-        local v = db.data.wl_vehicles[p[12]]
+        local v = db.data.wl_vehicles[p[13]]
         if not v then return header(0) end
         for i, c in ipairs(cols) do v[c] = p[i] end
         return header(1)

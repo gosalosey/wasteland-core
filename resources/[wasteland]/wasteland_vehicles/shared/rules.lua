@@ -41,10 +41,11 @@ function Rules.fuelUsed(f, kmh, seconds)
 end
 
 --- What an action needs and whether it can be done now.
---- action: battery | engine | wheel | refuel | repair | fitLock | toggleLock | pickLock | trunk
---- has(item) -> true if the player carries it; key = player holds this vehicle's key.
+--- action: battery | engine | wheel | refuel | repair | fitLock | toggleLock | pickLock | removeLock | trunk
+--- has(item) -> true if the player carries it; key = player holds this vehicle's key;
+--- mine = the player fitted this lock (removeLock).
 --- Returns item to use (or true) or nil, reason.
-function Rules.check(action, v, has, key, cfg)
+function Rules.check(action, v, has, key, cfg, mine)
     local p = v.parts
     if action == 'battery' then
         if p.battery then return nil, 'It already has a battery.' end
@@ -71,6 +72,9 @@ function Rules.check(action, v, has, key, cfg)
         if not v.lockCode or not v.locked then return nil, 'It is not locked.' end
         if key then return nil, 'You have the key.' end
         return has('lockpick') and 'lockpick' or nil, 'You need a lockpick.'
+    elseif action == 'removeLock' then
+        if not v.lockCode then return nil, 'It has no lock.' end
+        return mine and true or nil, 'Only the survivor who fitted this lock can take it off.'
     elseif action == 'trunk' then
         if v.locked and not key then return nil, 'It is locked.' end
         return true

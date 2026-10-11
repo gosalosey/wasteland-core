@@ -62,6 +62,11 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
         exports.wasteland_ui:Close(PANEL)
     elseif action == 'refresh' then
         TriggerServerEvent('wasteland:admin:server:open')
+    elseif action == 'coords' then
+        -- Your own position, straight from the game (nothing to ask the server).
+        local ped = PlayerPedId()
+        local c = GetEntityCoords(ped)
+        exports.wasteland_ui:Update(PANEL, { coords = { x = c.x, y = c.y, z = c.z, h = GetEntityHeading(ped) } })
     elseif action == 'list' and type(payload) == 'table' then
         TriggerServerEvent('wasteland:admin:server:list', tostring(payload.which))
     elseif action == 'act' and type(payload) == 'table' and type(payload.action) == 'string' then

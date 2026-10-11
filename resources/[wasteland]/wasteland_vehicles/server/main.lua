@@ -5,8 +5,10 @@
 -- saved back. The client that owns the entity applies the state
 -- (entity state `wlVeh`): damage, missing wheels, fuel, no start without
 -- parts. Every repair, refuel, lock and trunk action is checked and timed
--- here. A car lock creates a key (an item with the lock's code); without
--- the key a lockpick may break the lock.
+-- here. A car lock creates a key (an item with the lock's code); only the
+-- character who fitted it can take it off again. Without the key a thief
+-- needs a lockpick and has to beat the lockpick minigame (client), timed
+-- here; a failed try may snap the pick.
 
 local Rules = WLVE.Rules
 local SQL = WLV.SQL
@@ -18,6 +20,10 @@ local pumps = {}       -- pump key -> { litres, refillAt }  (limited fuel, full 
 local runToken = nil
 
 local function inv() return exports.wasteland_inventory end
+local function characterOf(src)
+    local ok, cid = pcall(function() return exports.wasteland_players:GetCharacterId(src) end)
+    return ok and cid or nil
+end
 local function now() return GetGameTimer() end
 local function notice(src, msg) TriggerClientEvent('wasteland:vehicles:client:notice', src, msg) end
 
@@ -47,7 +53,7 @@ local function newCode() return string.format('%08x', math.random(0, 0x7fffffff)
 
 local function stateOf(v)
     return { id = v.id, fuel = v.fuel, tank = M.config.tankLitres, engine = v.engine, body = v.body, parts = v.parts,
-        locked = v.locked == true, hasLock = v.lockCode ~= nil, seq = v.seq or 0, acked = v.ackSeq }
+        locked = v.locked == true, hasLock = v.lockCode ~= nil, lockBy = v.lockCode and v.lockOwner or nil, seq = v.seq or 0, acked = v.ackSeq }
 end
 
 -- Tell the owning client about a change (seq makes it apply damage again).
@@ -64,7 +70,7 @@ end
 -------------------------------------------------------------------------------
 
 local function params(v)
-    return { v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body, Rules.encodeParts(v.parts), v.lockCode, v.locked and 1 or 0, os.time(), v.id }
+    return { v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body, Rules.encodeParts(v.parts), v.lockCode, v.lockOwner, v.locked and 1 or 0, os.time(), v.id }
 end
 
 -- Database writes run in their own thread (they wait for the database;
@@ -83,7 +89,7 @@ end
 
 local function insert(v)
     write(WDB.insert, SQL.insert, { v.id, v.model, v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body,
-        Rules.encodeParts(v.parts), v.lockCode, v.locked and 1 or 0, os.time() }, 'storing vehicle ' .. v.id)
+        Rules.encodeParts(v.parts), v.lockCode, v.lockOwner, v.locked and 1 or 0, os.time() }, 'storing vehicle ' .. v.id)
 end
 
 -------------------------------------------------------------------------------
@@ -241,7 +247,7 @@ end
 
 local LABELS = { battery = 'Installing the battery', engine = 'Fitting engine parts', wheel = 'Mounting a wheel',
     refuel = 'Refuelling', repair = 'Repairing', fitLock = 'Fitting a lock', toggleLock = 'Turning the key',
-    pickLock = 'Picking the lock', fillCan = 'Filling the jerry can', pumpRefuel = 'Refuelling at the pump' }
+    pickLock = 'Picking the lock', removeLock = 'Taking the lock off', fillCan = 'Filling the jerry can', pumpRefuel = 'Refuelling at the pump' }
 
 -- The pump at `coords` (everyone shares it), topped up for the time passed.
 local function pumpAt(coords)
@@ -272,6 +278,14 @@ local function keyFor(src, v)
         if k.metadata.code == v.lockCode then return k end
     end
     return nil
+end
+
+-- The player fitted this lock. Locks fitted before owners were stored:
+-- whoever holds the key.
+local function ownsLock(src, v)
+    if not v.lockCode then return false end
+    if v.lockOwner then return v.lockOwner == characterOf(src) end
+    return keyFor(src, v) ~= nil
 end
 
 local function canWithFuel(src)
@@ -310,9 +324,17 @@ local function start(src, netId, action)
         inv():OpenStash(src, 'veh_' .. v.id, { label = 'Trunk', width = 6, height = 5, maxWeight = 80, coords = coordsOf(v.handle), open = true })
         return
     end
-    local ok, reason = Rules.check(action, v, has(src), keyFor(src, v) ~= nil, M.config)
+    local ok, reason = Rules.check(action, v, has(src), keyFor(src, v) ~= nil, M.config, ownsLock(src, v))
     if not ok then notice(src, reason); return end
     acting[src] = { id = v.id, action = action, startedAt = now() }
+    if action == 'pickLock' then
+        -- The minigame decides; the server times it and checks everything again.
+        local lp = M.config.lockpick
+        TriggerEvent('wasteland:noise', coordsOf(v.handle), lp.noise)
+        TriggerClientEvent('wasteland:vehicles:client:lockpick', src, { pins = lp.pins, zone = lp.zoneDegrees, speed = lp.speed,
+            speedStep = lp.speedStep })
+        return
+    end
     TriggerClientEvent('wasteland:vehicles:client:progress', src, { seconds = M.config.seconds[action], label = LABELS[action] })
 end
 
@@ -320,6 +342,7 @@ local function finish(src)
     local a = acting[src]
     acting[src] = nil
     if not a then return end
+    if a.action == 'pickLock' then return end -- ends with the minigame result only
     if now() - a.startedAt < (a.seconds or M.config.seconds[a.action]) * 1000 - 300 then
         M.log:warn('player %d finished "%s" too early', src, a.action)
         return
@@ -366,7 +389,7 @@ local function finish(src)
     if not v or not v.handle or not p or dist(p, coordsOf(v.handle)) > M.config.reach + 1.0 then notice(src, 'You moved away.'); return end
     capture(v)
     local key = keyFor(src, v)
-    local item, reason = Rules.check(a.action, v, has(src), key ~= nil, M.config)
+    local item, reason = Rules.check(a.action, v, has(src), key ~= nil, M.config, ownsLock(src, v))
     if not item then notice(src, reason); return end
 
     local cfg = M.config
@@ -396,25 +419,18 @@ local function finish(src)
             notice(src, 'Make room for the key first.')
             return
         end
-        v.lockCode, v.locked = code, true
+        v.lockCode, v.lockOwner, v.locked = code, characterOf(src), true
         notice(src, 'Lock fitted and locked. Keep the key: it is the only one.')
+        M.log:info('player %d (character %s) fitted a lock on vehicle %s', src, tostring(v.lockOwner), v.id)
     elseif a.action == 'toggleLock' then
         v.locked = not v.locked
         notice(src, v.locked and 'Locked.' or 'Unlocked.')
-    elseif a.action == 'pickLock' then
-        TriggerEvent('wasteland:noise', coordsOf(v.handle), cfg.lockpick.noise)
-        if math.random() < cfg.lockpick.chance then
-            v.lockCode, v.locked = nil, false
-            notice(src, 'The lock breaks open.')
-            M.log:info('player %d picked the lock of vehicle %s', src, v.id)
-        else
-            if math.random() < cfg.lockpick.breakChance then
-                inv():RemoveItem(src, 'lockpick', 1)
-                notice(src, 'The lockpick snaps.')
-            else
-                notice(src, 'The lock holds.')
-            end
-        end
+    elseif a.action == 'removeLock' then
+        local ok = inv():AddItem(src, 'vehicle_lock', 1)
+        if not ok then notice(src, 'Make room for the lock first.'); return end
+        v.lockCode, v.lockOwner, v.locked = nil, nil, false
+        notice(src, 'You took the lock off. The old key no longer fits anything.')
+        M.log:info('player %d took the lock off vehicle %s', src, v.id)
     end
     publish(v, a.action == 'repair' or a.action == 'battery' or a.action == 'engine' or a.action == 'wheel')
     save(v)
@@ -454,7 +470,7 @@ M = Wasteland.DefineModule({
                 body = { type = 'number', default = 400, min = 0, max = 1000 } } },
             seconds = { type = 'table', fields = {
                 battery = SECONDS, engine = SECONDS, wheel = SECONDS, refuel = SECONDS, repair = SECONDS,
-                fitLock = SECONDS, toggleLock = SECONDS, pickLock = SECONDS, fillCan = SECONDS,
+                fitLock = SECONDS, toggleLock = SECONDS, pickLock = SECONDS, removeLock = SECONDS, fillCan = SECONDS,
             } },
             pump = { type = 'table', fields = {
                 litres = { type = 'number', default = 80, min = 1, max = 100000, description = 'Fuel in a full pump (litres)' },
@@ -463,8 +479,14 @@ M = Wasteland.DefineModule({
                 litresPerSecond = { type = 'number', default = 4, min = 0.1, max = 1000 },
                 vehicleDistance = { type = 'number', default = 8, min = 2, max = 30, description = 'How close the vehicle must be to the pump (m)' },
             } },
-            lockpick = { type = 'table', fields = { chance = { type = 'number', default = 0.3, min = 0, max = 1 },
-                breakChance = { type = 'number', default = 0.5, min = 0, max = 1 }, noise = { type = 'number', default = 60, min = 0, max = 1000 } } },
+            lockpick = { type = 'table', fields = {
+                pins = { type = 'integer', default = 4, min = 1, max = 10, description = 'Pins to set in the minigame' },
+                zoneDegrees = { type = 'number', default = 32, min = 5, max = 180, description = 'Width of the sweet spot' },
+                speed = { type = 'number', default = 150, min = 30, max = 1000, description = 'Pick speed (degrees a second), first pin' },
+                speedStep = { type = 'number', default = 35, min = 0, max = 500, description = 'Faster by this much for each pin' },
+                minSecondsPerPin = { type = 'number', default = 0.35, min = 0, max = 10, description = 'Faster results are rejected' },
+                breakChance = { type = 'number', default = 0.5, min = 0, max = 1, description = 'Chance the pick snaps on a failed try' },
+                noise = { type = 'number', default = 60, min = 0, max = 1000 } } },
             wreck = { type = 'table', fields = {
                 batteryMissing = { type = 'number', default = 0.6, min = 0, max = 1 },
                 engineMissing = { type = 'number', default = 0.5, min = 0, max = 1 },
@@ -482,7 +504,8 @@ M = Wasteland.DefineModule({
     },
     onInit = function(mod)
         M = mod -- DefineModule may run onInit before it returns
-        for action, s in pairs({ battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8, fillCan = 8 }) do
+        for action, s in pairs({ battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8,
+            removeLock = 6, fillCan = 8 }) do
             if not M.config.seconds[action] then M.config.seconds[action] = s end
         end
         for _, item in ipairs({ 'car_battery', 'engine_parts', 'car_wheel', 'jerry_can', 'vehicle_repair_kit', 'vehicle_lock', 'vehicle_key', 'lockpick' }) do
@@ -500,7 +523,7 @@ M = Wasteland.DefineModule({
             if not rows then return M.fail('could not load vehicles: ' .. tostring(qerr)) end
             for _, r in ipairs(rows) do
                 vehicles[r.id] = { id = r.id, model = r.model, x = r.x, y = r.y, z = r.z, heading = r.heading, fuel = r.fuel,
-                    engine = r.engine, body = r.body, parts = Rules.decodeParts(r.parts), lockCode = r.lock_code,
+                    engine = r.engine, body = r.body, parts = Rules.decodeParts(r.parts), lockCode = r.lock_code, lockOwner = r.lock_owner,
                     locked = r.locked == 1 or r.locked == true }
             end
             -- Fill the world up to the limit on first start.
@@ -544,7 +567,7 @@ M = Wasteland.DefineModule({
 })
 
 local RATE = { burst = 6, perSecond = 2 }
-local ACTIONS = { 'battery', 'engine', 'wheel', 'refuel', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'trunk' }
+local ACTIONS = { 'battery', 'engine', 'wheel', 'refuel', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'removeLock', 'trunk' }
 
 M.netEvent('wasteland:vehicles:server:act', {
     args = { { type = 'integer', required = true, min = 1 }, { type = 'enum', required = true, values = ACTIONS } },
@@ -623,6 +646,37 @@ M.netEvent('wasteland:vehicles:server:applied', {
     end
 end)
 M.netEvent('wasteland:vehicles:server:cancel', { rateLimit = RATE }, function(src) acting[src] = nil end)
+
+-- The lockpick minigame is over: did every pin set?
+M.netEvent('wasteland:vehicles:server:lockpick', { args = { { type = 'boolean', required = true } }, rateLimit = RATE },
+    function(src, success)
+        local a = acting[src]
+        if not a or a.action ~= 'pickLock' then return end
+        acting[src] = nil
+        local lp = M.config.lockpick
+        if success and now() - a.startedAt < lp.pins * lp.minSecondsPerPin * 1000 then
+            M.log:warn('player %d finished the lockpick minigame too fast', src)
+            return
+        end
+        local v = vehicles[a.id]
+        local p = playerCoords(src)
+        if not v or not v.handle or not p or dist(p, coordsOf(v.handle)) > M.config.reach + 1.0 then notice(src, 'You moved away.'); return end
+        local item, reason = Rules.check('pickLock', v, has(src), keyFor(src, v) ~= nil, M.config)
+        if not item then notice(src, reason); return end
+        if success then
+            v.lockCode, v.lockOwner, v.locked = nil, nil, false
+            notice(src, 'The lock breaks open.')
+            M.log:info('player %d picked the lock of vehicle %s', src, v.id)
+        elseif math.random() < lp.breakChance then
+            inv():RemoveItem(src, 'lockpick', 1)
+            notice(src, 'The lockpick snaps.')
+        else
+            notice(src, 'The pick slips. The lock holds.')
+        end
+        publish(v, false)
+        save(v)
+        TriggerEvent('wasteland:vehicles:action', src, 'pickLock', v.id)
+    end)
 
 -- The driver reports fuel use (only ever down).
 M.netEvent('wasteland:vehicles:server:fuel', {

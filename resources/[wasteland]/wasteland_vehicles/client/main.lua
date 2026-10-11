@@ -7,6 +7,8 @@
 
 local Rules = WLVE.Rules
 local PROGRESS = 'vehProgress'
+local LOCKPICK = 'vehLockpick'
+local picking = false  -- the lockpick minigame is open
 local cfg = nil
 local applied = {}     -- vehicle handle -> seq applied
 local targetIds = {}
@@ -72,7 +74,7 @@ end
 local function when(test)
     return function(entity)
         local s = stateOf(entity)
-        return s ~= nil and active == nil and test(s, entity)
+        return s ~= nil and active == nil and not picking and test(s, entity)
     end
 end
 
@@ -122,6 +124,9 @@ local function register()
         { label = 'Fit a lock', icon = '🔒', distance = 3.0, canInteract = when(function(s) return not s.hasLock end), onSelect = act('fitLock') },
         { label = 'Lock / unlock (key)', icon = '🔑', distance = 3.0, canInteract = when(function(s) return s.hasLock end), onSelect = act('toggleLock') },
         { label = 'Pick the lock', icon = '⌕', distance = 3.0, canInteract = when(function(s) return s.locked end), onSelect = act('pickLock') },
+        -- Only the survivor who fitted the lock (the server checks it too).
+        { label = 'Take the lock off', icon = '🔓', distance = 3.0, onSelect = act('removeLock'),
+            canInteract = when(function(s) return s.hasLock and (s.lockBy == nil or s.lockBy == LocalPlayer.state.wlCharacterId) end) },
     })
     if cfg.pumps and #cfg.pumps > 0 then
         targetIds[#targetIds + 1] = exports.wasteland_target:AddModel(cfg.pumps, {
@@ -194,6 +199,60 @@ RegisterNetEvent('wasteland:vehicles:client:progress', function(p)
             Citizen.Wait(0)
         end
     end)
+end)
+
+-------------------------------------------------------------------------------
+-- Lockpick minigame
+-------------------------------------------------------------------------------
+
+local function endPicking()
+    if not picking then return end
+    picking = false
+    ClearPedTasks(PlayerPedId())
+    if uiRunning() and exports.wasteland_ui:IsOpen(LOCKPICK) then exports.wasteland_ui:Close(LOCKPICK) end
+end
+
+RegisterNetEvent('wasteland:vehicles:client:lockpick', function(p)
+    if type(p) ~= 'table' or active or picking or not uiRunning() then
+        TriggerServerEvent('wasteland:vehicles:server:cancel')
+        return
+    end
+    picking = true
+    local ped = PlayerPedId()
+    local dict = 'veh@break_in@0h@p_m_one@'
+    Citizen.CreateThread(function()
+        RequestAnimDict(dict)
+        local t = GetGameTimer() + 1500
+        while not HasAnimDictLoaded(dict) and GetGameTimer() < t do Citizen.Wait(10) end
+        if picking and HasAnimDictLoaded(dict) then TaskPlayAnim(ped, dict, 'low_force_entry_ds', 2.0, 2.0, -1, 1, 0, false, false, false) end
+    end)
+    exports.wasteland_ui:Open(LOCKPICK, { script = 'html/lockpick.js', focus = true, cursor = false, data = p })
+    -- Dying or getting hurt ends it.
+    local health = GetEntityHealth(ped)
+    Citizen.CreateThread(function()
+        while picking do
+            local me = PlayerPedId()
+            if IsEntityDead(me) or GetEntityHealth(me) < health then
+                endPicking()
+                TriggerServerEvent('wasteland:vehicles:server:cancel')
+                notice('You were interrupted.')
+                return
+            end
+            Citizen.Wait(100)
+        end
+    end)
+end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen ~= LOCKPICK or not picking then return end
+    if action == 'result' then
+        endPicking()
+        TriggerServerEvent('wasteland:vehicles:server:lockpick', type(payload) == 'table' and payload.success == true)
+    elseif action == 'cancel' then
+        endPicking()
+        TriggerServerEvent('wasteland:vehicles:server:cancel')
+        notice('You stop picking the lock.')
+    end
 end)
 
 -------------------------------------------------------------------------------
@@ -371,5 +430,6 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     stop(false)
+    endPicking()
     if uiRunning() and exports.wasteland_ui:IsOpen(HUD) then exports.wasteland_ui:Close(HUD) end
 end)
