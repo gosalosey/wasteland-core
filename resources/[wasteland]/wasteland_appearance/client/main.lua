@@ -100,8 +100,13 @@ local function apply(a)
         return false
     end
     applyLook(a)
+    -- Other modules (inventory: worn clothing) apply their parts on top.
+    if not editing then TriggerEvent('wasteland:appearance:client:applied', a.model) end
     return true
 end
+
+--- True while the character creator is open (others must not change the ped).
+exports('IsEditing', function() return editing ~= nil end)
 
 --- Real counts for the creator's pickers, for the ped's current model and choices.
 local function ranges(a)
