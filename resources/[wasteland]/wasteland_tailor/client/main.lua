@@ -56,7 +56,7 @@ local function closeSession(restore)
     end
     local ped = PlayerPedId()
     FreezeEntityPosition(ped, false)
-    if session.heading then SetEntityHeading(ped, session.heading) end
+    if session.heading then ClearPedTasksImmediately(ped); SetEntityHeading(ped, session.heading) end
     session = nil
     if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end
     if restore and GetResourceState('wasteland_inventory') == 'started' then exports.wasteland_inventory:ApplyClothing() end
@@ -157,8 +157,14 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
         placeCamera(ped)
     elseif action == 'rotate' and type(payload) == 'table' then
         -- Turn the character (the camera stays where it is).
+        -- A frozen ped may ignore a new heading: unfreeze for the turn.
         local deg = math.max(-180, math.min(180, tonumber(payload.deg) or 0))
-        SetEntityHeading(ped, (GetEntityHeading(ped) + deg) % 360.0)
+        local target = (GetEntityHeading(ped) + deg) % 360.0
+        FreezeEntityPosition(ped, false)
+        ClearPedTasksImmediately(ped)
+        SetEntityHeading(ped, target)
+        SetPedDesiredHeading(ped, target)
+        FreezeEntityPosition(ped, true)
     elseif action == 'view' and type(payload) == 'table' and VIEWS[payload.view] then
         local p = VIEWS[payload.view]
         session.view.dist, session.view.height, session.view.look = p.dist, p.height, p.look
