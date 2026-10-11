@@ -5,7 +5,7 @@ lua54 'yes'
 name 'wasteland_players'
 author 'Wasteland Core contributors'
 description 'Wasteland Core - accounts, sessions and characters with persistence'
-version '0.1.1'
+version '0.2.0'
 
 dependencies {
     'wasteland_core',
@@ -25,4 +25,10 @@ server_scripts {
 
 client_scripts {
     'client/main.lua',
+}
+
+-- Character select screen, loaded by wasteland_ui (optional: without it the
+-- /character chat command is the interface).
+files {
+    'html/characters.js',
 }

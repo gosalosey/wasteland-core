@@ -47,8 +47,8 @@ survival  loot     world       crafting     vehicles      quests
 | wasteland_template | `template` | core | none | 1 ✅ (SDK example) |
 | wasteland_database | `database` | core, DB driver (see §6) | none | 2 ✅ |
 | wasteland_players | `players` | core, database | none | 2 ✅ |
-| wasteland_ui | `ui` | core | none | 3A (shell, character screens), 3B (inventory UI), 4 (HUD) |
-| wasteland_appearance | `appearance` | core, players, ui | inventory (clothing items, 3B) | 3A |
+| wasteland_ui | `ui` | core | none | 3A ✅ (shell, character screens), 3B (inventory UI), 4 (HUD) |
+| wasteland_appearance | `appearance` | core, players, ui | inventory (clothing items, 3B) | 3A ✅ |
 | wasteland_inventory | `inventory` | core, database, players, ui | none | 3 |
 | wasteland_survival | `survival` | core, database, inventory, ui | none | 4 |
 | wasteland_zombies | `zombies` | core | world, survival, loot | 5 |

@@ -1,5 +1,25 @@
 # Changelog
 
+## Milestone 3A: UI shell, character select, character creator
+
+### wasteland_ui 0.1.0 (new)
+* NUI shell with a screen manager: modules open screens whose scripts live in their own resource; actions come back as `wasteland:ui:client:action`; NUI focus handled per screen; screens of stopped resources close automatically; screen errors are printed in F8.
+* Design system (`style.css`) and DOM helpers (`h`, `button`, `slider`, `picker`, `tabs`).
+
+### wasteland_players 0.2.0
+* Character select screen (create, play, delete with name confirmation) using wasteland_ui; the chat command remains as a fallback.
+* The player is held (frozen, invisible, no collision) until a character is loaded (K-15).
+* A new character is played immediately after it is created.
+* The character state bag is replicated to the player's own client; `requestCharacters` from the screen no longer sends chat lines; the create result includes the slot and character id; client export `IsReady()`.
+
+### wasteland_appearance 0.1.0 (new)
+* Character creator: male/female freemode, heritage, 20 face features, hair and colours, eye colour, 13 overlays (beard, eyebrows, makeup, ageing, ...), starter clothing (top, undershirt, arms, legs, shoes, hat, glasses), live preview, fixed camera with rotation.
+* Opens automatically for characters without a look; admin command `/appearance <id>` reopens it (cancellable).
+* Server-side validation (schema, allowed slots, `blockedClothing`), write-through save, applied on load and after every respawn.
+
+### Tests
+* `tests/integration/appearance.lua` (18) and `tests/js/ui.test.js` (14, Node) run from `tests/run.lua`. 248 tests pass.
+
 ## wasteland_players 0.1.1 (runtime fix, 2026-10-10)
 
 ### Fixed

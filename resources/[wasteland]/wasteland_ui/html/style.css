@@ -1,0 +1,152 @@
+/* wasteland_ui :: html/style.css
+   Design system for every Wasteland screen. Screens use these classes and
+   variables instead of their own colours so the game looks consistent.
+   No external fonts or assets: everything works offline. */
+
+:root {
+    --wl-bg: rgba(14, 13, 11, 0.94);
+    --wl-bg-raised: rgba(30, 27, 23, 0.96);
+    --wl-bg-sunken: rgba(8, 8, 7, 0.9);
+    --wl-border: rgba(214, 186, 140, 0.16);
+    --wl-text: #e9e2d4;
+    --wl-text-dim: #a49b8a;
+    --wl-accent: #d9822b;          /* rust orange */
+    --wl-accent-strong: #f0973a;
+    --wl-danger: #c4453a;
+    --wl-ok: #7fae5a;
+    --wl-radius: 6px;
+    --wl-gap: 12px;
+    --wl-font: "Segoe UI", "Bahnschrift", Roboto, Arial, sans-serif;
+    --wl-font-display: "Bahnschrift", "Segoe UI", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    font-family: var(--wl-font);
+    font-size: 15px;
+    color: var(--wl-text);
+    user-select: none;
+}
+
+#wl-root, .wl-screen {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.wl-screen > * { pointer-events: auto; }
+
+/* Panels ------------------------------------------------------------ */
+
+.wl-panel {
+    background: var(--wl-bg);
+    border: 1px solid var(--wl-border);
+    border-radius: var(--wl-radius);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    padding: 20px;
+}
+
+.wl-title {
+    font-family: var(--wl-font-display);
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+}
+
+.wl-subtitle { color: var(--wl-text-dim); margin: 0 0 18px; }
+
+.wl-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--wl-accent);
+    margin: 18px 0 8px;
+}
+
+.wl-backdrop {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(20, 16, 12, 0.55) 0%, rgba(5, 5, 4, 0.92) 100%);
+}
+
+/* Buttons ----------------------------------------------------------- */
+
+.wl-btn {
+    font: inherit;
+    color: var(--wl-text);
+    background: var(--wl-bg-raised);
+    border: 1px solid var(--wl-border);
+    border-radius: var(--wl-radius);
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+}
+.wl-btn:hover { border-color: var(--wl-accent); }
+.wl-btn:disabled { opacity: 0.45; cursor: default; }
+.wl-btn--primary { background: var(--wl-accent); border-color: var(--wl-accent); color: #1b120a; font-weight: 600; }
+.wl-btn--primary:hover { background: var(--wl-accent-strong); }
+.wl-btn--danger:hover { border-color: var(--wl-danger); color: #ffb3aa; }
+.wl-btn--icon { padding: 4px 12px; font-size: 18px; line-height: 1; }
+
+/* Fields ------------------------------------------------------------ */
+
+.wl-field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.wl-field__label { color: var(--wl-text-dim); font-size: 13px; }
+.wl-field__value { font-variant-numeric: tabular-nums; font-size: 13px; }
+.wl-field > .wl-slider, .wl-field > .wl-picker__row, .wl-field > .wl-input { grid-column: 1 / -1; }
+
+.wl-input {
+    font: inherit;
+    color: var(--wl-text);
+    background: var(--wl-bg-sunken);
+    border: 1px solid var(--wl-border);
+    border-radius: var(--wl-radius);
+    padding: 9px 12px;
+    width: 100%;
+    user-select: text;
+}
+.wl-input:focus { outline: none; border-color: var(--wl-accent); }
+
+.wl-slider { width: 100%; accent-color: var(--wl-accent); }
+
+.wl-picker__row { display: flex; align-items: center; gap: 8px; }
+.wl-picker__value { flex: 1; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Tabs -------------------------------------------------------------- */
+
+.wl-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.wl-tab {
+    font: inherit;
+    font-size: 13px;
+    color: var(--wl-text-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--wl-radius);
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.wl-tab:hover { color: var(--wl-text); }
+.wl-tab.is-active { color: var(--wl-text); border-color: var(--wl-accent); }
+
+/* Messages ---------------------------------------------------------- */
+
+.wl-message { min-height: 20px; font-size: 13px; color: var(--wl-text-dim); margin-top: 10px; }
+.wl-message.is-error { color: #ff9c90; }
+.wl-message.is-ok { color: var(--wl-ok); }
+
+.wl-hint { font-size: 12px; color: var(--wl-text-dim); }

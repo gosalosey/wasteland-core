@@ -243,7 +243,7 @@ function Sessions.restore(token)
                 restored = restored + 1
             else
                 log():error('could not restore character %d for player %d: %s', r.charId, r.session.source, tostring(err))
-                Player(r.session.source).state:set(WLP.STATEBAG_KEY, nil, false)
+                Player(r.session.source).state:set(WLP.STATEBAG_KEY, nil, true)
                 WLP.notify(r.session.source, 'Your character could not be reloaded: ' .. tostring(err))
             end
         elseif not r.charId then

@@ -15,9 +15,12 @@ local function log() return WLP.M.log end
 
 local function cmd() return '/' .. (WLP.cfg and WLP.cfg.commandName or 'character') end
 
-local function reply(session, action, ok, message)
+-- `extra` fields are added to the client result (e.g. the slot of a new character).
+local function reply(session, action, ok, message, extra)
     WLP.notify(session.source, message)
-    TriggerClientEvent('wasteland:players:client:result', session.source, { action = action, ok = ok, message = message })
+    local result = { action = action, ok = ok, message = message }
+    for k, v in pairs(extra or {}) do result[k] = v end
+    TriggerClientEvent('wasteland:players:client:result', session.source, result)
 end
 
 -- Run one action for a session in a thread, one action at a time per player.
@@ -52,7 +55,8 @@ end
 -- Actions (all run inside `run`, so they may wait on the database)
 -------------------------------------------------------------------------------
 
-function Interface.listCharacters(session)
+--- quiet = true: only the client event (the UI asked), no chat lines.
+function Interface.listCharacters(session, quiet)
     local list = Characters.list(session.accountId)
     if not list then
         reply(session, 'list', false, 'Could not load your characters (database unavailable).')
@@ -62,6 +66,7 @@ function Interface.listCharacters(session)
     TriggerClientEvent('wasteland:players:client:characters', session.source, {
         characters = list, maxCharacters = WLP.cfg.maxCharacters, activeId = activeId,
     })
+    if quiet then return end
     if #list == 0 then
         reply(session, 'list', true, string.format('You have no characters. Create one with: %s create <first name> <last name>', cmd()))
         return
@@ -83,7 +88,7 @@ function Interface.createCharacter(session, firstName, lastName)
         return
     end
     reply(session, 'create', true, string.format('Created %s %s in slot %d. Play it with: %s select %d',
-        char.firstName, char.lastName, char.slot, cmd(), char.slot))
+        char.firstName, char.lastName, char.slot, cmd(), char.slot), { slot = char.slot, characterId = char.id })
 end
 
 function Interface.selectCharacter(session, slot)
@@ -230,7 +235,7 @@ function Interface.registerNetEvents(M)
     local strict = { burst = 3, perSecond = 0.5 }
 
     M.netEvent('wasteland:players:server:requestCharacters', { rateLimit = { burst = 5, perSecond = 1 } }, function(src)
-        run(src, 'list', Interface.listCharacters)
+        run(src, 'list', function(session) Interface.listCharacters(session, true) end)
     end)
     M.netEvent('wasteland:players:server:createCharacter', { args = { nameNode, nameNode }, rateLimit = strict }, function(src, first, last)
         run(src, 'create', function(session) Interface.createCharacter(session, first, last) end)

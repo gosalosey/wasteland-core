@@ -267,3 +267,50 @@ Server events (`AddEventHandler`):
 | `wasteland:players:sessionEnded` | source, accountId, reason | The player left |
 
 Client events (for the UI): `wasteland:players:client:characters`, `wasteland:players:client:result`, `wasteland:players:client:characterLoaded`. Guarded server events: `wasteland:players:server:requestCharacters`, `createCharacter(first, last)`, `selectCharacter(slot)`, `deleteCharacter(slot, confirmFirstName)`.
+
+## UI screens (`wasteland_ui`, ui api 0.1)
+
+`wasteland_ui` owns the NUI page and the design system (`html/style.css`). Each module keeps its own screens: a JS file in the module's resource, listed under `files`, which the shell loads when the screen opens.
+
+Client Lua (in the module's resource):
+
+```lua
+exports.wasteland_ui:Open('myScreen', {
+    script = 'html/my_screen.js',   -- path inside YOUR resource (listed under `files`)
+    data = { ... },                  -- passed to mount()
+    focus = true, cursor = true,     -- NUI keyboard / mouse focus (default true)
+})
+exports.wasteland_ui:Update('myScreen', { ... })    -- calls update(data)
+exports.wasteland_ui:Close('myScreen')              -- only the owning resource
+exports.wasteland_ui:IsOpen('myScreen')
+exports.wasteland_ui:SetFocus('myScreen', focus, cursor)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen ~= 'myScreen' then return end
+    -- NUI input is untrusted: send anything that matters to the server
+    -- through a guarded net event (M.netEvent).
+end)
+```
+
+Screen script:
+
+```js
+(function () {
+    const UI = window.WastelandUI;          // h, button, slider, picker, tabs, registerScreen, post
+    UI.registerScreen('myScreen', {
+        mount(el, data, api) { el.appendChild(UI.h('div', { class: 'wl-panel', text: 'Hello' })); },
+        update(data) {},
+        unmount() {},
+    });
+    // api.post(action, payload) -> arrives as wasteland:ui:client:action
+})();
+```
+
+Screens of a stopped resource are closed automatically. Use the design-system classes (`wl-panel`, `wl-title`, `wl-btn`, `wl-btn--primary`, `wl-input`, `wl-field`, `wl-tabs`, `wl-message`) and CSS variables (`--wl-accent`, ...) so the game stays consistent. Keep logic that can be tested out of the DOM code and export it for Node (see `characters.js`).
+
+## Appearance (`wasteland_appearance`, appearance api 0.1)
+
+* The creator opens automatically when a character without a look is loaded (it cannot be cancelled). An admin can reopen it with `/appearance <server id>` (ACE `appearance.adminAce`); that one can be cancelled.
+* The look is stored as character data key `appearance` (format in `shared/defs.lua`), validated on the server (schema, allowed clothing slots, `blockedClothing`), saved write-through, and applied on every load and after every respawn.
+* Export: `GetAppearance(characterId)`. Client events: `wasteland:appearance:client:openCreator|apply|saved|saveFailed`. Guarded server events: `wasteland:appearance:server:save(appearance)`, `request`, `cancel`.
+* Players module (client export): `exports.wasteland_players:IsReady()` is true once a character is loaded and the player is placed in the world.

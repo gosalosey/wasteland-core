@@ -11,6 +11,10 @@ return {
         database = true,
         players  = true,
 
+        -- Screens and the character creator (Milestone 3A).
+        ui         = true,
+        appearance = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.

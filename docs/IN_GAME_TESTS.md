@@ -66,3 +66,27 @@ Open the database to check results, using HeidiSQL (installed with MariaDB) or `
 | R2.21 | `tools\backup_database.ps1` (needs `tools\backup.cnf`, see DATABASE.md §3) | A `wasteland-<date>.sql.zip` file appears in the output folder |
 
 Report anything that does not match, with the console lines around it.
+
+## Milestone 3A: UI shell, character select and character creator
+
+**Setup:** `server.cfg` also has `ensure wasteland_ui` and `ensure wasteland_appearance` after `ensure wasteland_players` (already done on the owner's server). Restart the server. Open F8 if anything looks wrong: screen errors are printed there as `[wasteland_ui] error: ...`.
+
+| # | Step | Expected result |
+|---|---|---|
+| R3.1 | Restart the server, then `wasteland status` | `ui` and `appearance` are `running` |
+| R3.2 | Join | Instead of walking around, you see a dark screen titled **SURVIVORS** with your slots (Gosa Row in slot 1, empty slots after it). You cannot move, and you are invisible. The mouse cursor works. |
+| R3.3 | Click **Create character** on an empty slot, type `Test Person`, press **Create** | The screen closes. You are placed at the airfield, then the **New survivor** creator opens on the right with a camera on your character. |
+| R3.4 | In the creator: Body tab → **Female**, then **Male** | The character switches model each time and stays in view |
+| R3.5 | Change mother/father, the resemblance and skin sliders, then go through the Face, Hair, Details and Clothing tabs and change several values | Every change shows on the character immediately. The camera moves closer for Face, Hair and Details, and further away for Body and Clothing. |
+| R3.6 | Press the rotate buttons | The character turns. The camera stays still. |
+| R3.7 | Press **Done** | The creator closes, the camera returns to normal and you can move. Console: `player N saved the appearance of character N (new)`. |
+| R3.8 | Quit and rejoin, select the new character | The **creator does not open again**, and you look exactly as you saved |
+| R3.9 | Die (e.g. jump from a height) and respawn | After the respawn you still have your look, not a random skater model |
+| R3.10 | Select **Gosa Row** (created before 3A) | The creator opens for Gosa Row, because it never had a look. Finish it. |
+| R3.11 | Server console: `appearance <your server id>` | The creator opens titled **Appearance**, with a **Cancel** button. Cancel puts your saved look back. Run it again, change something and press **Done**: the new look is kept. |
+| R3.12 | Second account or a friend: try `/appearance 1` without admin rights | Nothing happens. Console: `tried "appearance" without the wasteland.admin ACE` |
+| R3.13 | On the select screen, **Delete** an extra character: type the wrong name, then the right one | Wrong name: an error message. Right name: the character disappears from the list. |
+| R3.14 | `restart wasteland_appearance` while playing | You keep your look (after your next death you still have it) |
+| R3.15 | `stop wasteland_ui`, rejoin | Without the UI you are still held until you pick a character with the chat command (`/character select 1`). Afterwards: `start wasteland_ui`. |
+
+Report anything that does not match, and include any F8 lines starting with `[wasteland_ui]`.

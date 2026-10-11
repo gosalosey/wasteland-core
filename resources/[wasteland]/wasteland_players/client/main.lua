@@ -1,6 +1,90 @@
 -- wasteland_players :: client/main.lua
--- Places the player at the loaded character's saved position. Everything
--- else (which character, where) is decided by the server.
+-- Until a character is loaded the player is held (frozen, invisible, no
+-- collision) and the character select screen is shown (wasteland_ui). If
+-- wasteland_ui is not running, the chat command /character still works.
+-- After loading, the player is placed at the character's saved position.
+-- Every decision (which characters exist, what may be created) is made by
+-- the server; this script only displays and forwards requests.
+
+local SCREEN = 'characterSelect'
+local loaded = false
+local placing = false
+local listReceived = false
+
+--- True once a character is loaded and the player has been placed in the
+--- world (other modules wait for this before taking over the camera).
+exports('IsReady', function() return loaded and not placing end)
+
+local function uiRunning()
+    return GetResourceState('wasteland_ui') == 'started'
+end
+
+local function setHeld(held)
+    local ped = PlayerPedId()
+    FreezeEntityPosition(ped, held)
+    SetEntityVisible(ped, not held, false)
+    SetEntityCollision(ped, not held, not held)
+    SetEntityInvincible(ped, held)
+    DisplayRadar(not held)
+end
+
+local function closeScreen()
+    if uiRunning() then exports.wasteland_ui:Close(SCREEN) end
+end
+
+-- Hold the player and ask for the character list until we get it. A
+-- character that is being restored after a resource restart is left alone.
+Citizen.CreateThread(function()
+    while not NetworkIsPlayerActive(PlayerId()) do Citizen.Wait(100) end
+    if LocalPlayer.state.wlCharacterId then return end -- restore in progress
+    local lastRequest = 0
+    while not loaded do
+        setHeld(true) -- spawnmanager may respawn the ped; keep holding it
+        if not listReceived and GetGameTimer() - lastRequest > 5000 then
+            lastRequest = GetGameTimer()
+            TriggerServerEvent('wasteland:players:server:requestCharacters')
+        end
+        Citizen.Wait(250)
+    end
+end)
+
+RegisterNetEvent('wasteland:players:client:characters', function(data)
+    if type(data) ~= 'table' then return end
+    listReceived = true
+    if loaded or not uiRunning() then return end
+    if exports.wasteland_ui:IsOpen(SCREEN) then
+        exports.wasteland_ui:Update(SCREEN, { list = data })
+    else
+        exports.wasteland_ui:Open(SCREEN, { script = 'html/characters.js', data = { list = data } })
+    end
+end)
+
+RegisterNetEvent('wasteland:players:client:result', function(result)
+    if type(result) ~= 'table' or loaded or not uiRunning() then return end
+    if not exports.wasteland_ui:IsOpen(SCREEN) then return end
+    exports.wasteland_ui:Update(SCREEN, { result = result })
+    if result.ok and (result.action == 'create' or result.action == 'delete') then
+        TriggerServerEvent('wasteland:players:server:requestCharacters')
+    end
+    if result.ok and result.action == 'create' and type(result.slot) == 'number' then
+        -- Play the new character straight away (the appearance creator follows).
+        TriggerServerEvent('wasteland:players:server:selectCharacter', result.slot)
+    end
+end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen ~= SCREEN or loaded then return end
+    payload = type(payload) == 'table' and payload or {}
+    if action == 'create' then
+        TriggerServerEvent('wasteland:players:server:createCharacter', tostring(payload.firstName or ''), tostring(payload.lastName or ''))
+    elseif action == 'select' then
+        TriggerServerEvent('wasteland:players:server:selectCharacter', math.tointeger(tonumber(payload.slot)) or 0)
+    elseif action == 'delete' then
+        TriggerServerEvent('wasteland:players:server:deleteCharacter', math.tointeger(tonumber(payload.slot)) or 0, tostring(payload.confirm or ''))
+    elseif action == 'refresh' then
+        TriggerServerEvent('wasteland:players:server:requestCharacters')
+    end
+end)
 
 local function teleport(pos)
     local ped = PlayerPedId()
@@ -19,11 +103,25 @@ end
 
 RegisterNetEvent('wasteland:players:client:characterLoaded', function(info)
     if type(info) ~= 'table' then return end
+    loaded = true
+    placing = not info.restored
+    closeScreen()
     -- After a resource restart the player never left: do not move them back
     -- to the last saved (older) position.
-    if info.restored then return end
-    local pos = info.position
-    if type(pos) == 'table' and type(pos.x) == 'number' and type(pos.y) == 'number' and type(pos.z) == 'number' then
-        Citizen.CreateThread(function() teleport(pos) end)
+    if info.restored then
+        setHeld(false)
+        return
     end
+    Citizen.CreateThread(function()
+        local pos = info.position
+        if type(pos) == 'table' and type(pos.x) == 'number' and type(pos.y) == 'number' and type(pos.z) == 'number' then
+            teleport(pos)
+        end
+        setHeld(false)
+        placing = false
+    end)
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() and not loaded then setHeld(false) end
 end)

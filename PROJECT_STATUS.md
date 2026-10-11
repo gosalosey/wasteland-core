@@ -1,7 +1,7 @@
 # Project status and development checklist
 
-**Current milestone:** 2 complete in automated tests (simulated + real MariaDB). Awaiting runtime verification (docs/IN_GAME_TESTS.md, R2.x) and owner review.
-**Next milestone:** 3A, UI shell, character select and character creator (then 3B, inventory).
+**Current milestone:** 3A complete in automated tests; installed on the owner's server; runtime verification pending (R2.x and R3.x in docs/IN_GAME_TESTS.md).
+**Next milestone:** 3B, inventory and item API.
 **Last updated:** 2026-10-10
 
 ## How to resume work
@@ -42,15 +42,15 @@
 Decision (owner asked for the better approach): appearance is not in the original spec but every
 player sees it first. It needs the NUI shell, not the inventory, so the UI shell moves out of M3
 and ships first, with the screens players hit on joining.
-- [ ] wasteland_ui: NUI shell, design system, focus/input handling, guarded NUI callbacks
-- [ ] Character select screen (replaces the interim `/character` chat command; command stays for admins/debug)
-- [ ] wasteland_appearance: creator after a new character is created; freemode male/female, heritage
-      (parents + blend), face features, hair + colours, overlays (beard, brows, makeup, ageing...),
-      starter outfit chosen from a configurable list
-- [ ] Appearance stored as character data, validated server-side (ranges per component), reapplied
-      on load and after respawn; players frozen/hidden until a character is loaded (K-15)
-- [ ] Admin command to reopen the creator for a player
-- [ ] Tests: appearance validation, persistence, select/create flow, invalid NUI payloads
+- [x] wasteland_ui: NUI shell, design system, focus/input handling, screens owned by modules
+- [x] Character select screen (the `/character` chat command stays as a fallback)
+- [x] wasteland_appearance: creator for new characters; freemode male/female, heritage, face features,
+      hair + colours, overlays, starter clothing chosen in the creator (blocklist in config)
+- [x] Appearance stored as character data, validated server-side, reapplied on load and after respawn;
+      players held until a character is loaded (K-15)
+- [x] Admin command to reopen the creator for a player
+- [x] Tests: appearance validation, persistence, select/create flow, invalid payloads (Lua), UI logic (Node)
+- [~] Installed on the owner's server; runtime tests R3.1-R3.15 pending
 Body (face, hair, features) is fixed after creation. Clothing is set only once (starter outfit) here;
 from M3B clothes become wearable inventory items in equipment slots, found as loot and swapped in play.
 

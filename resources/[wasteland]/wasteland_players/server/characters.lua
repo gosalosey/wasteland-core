@@ -226,7 +226,9 @@ function Characters.load(session, characterId, opts)
     WLP.loaded[char.id] = char
     session.character = char
     session.state = 'active'
-    Player(session.source).state:set(WLP.STATEBAG_KEY, char.id, false)
+    -- Replicated to the player's own client, so a client that restarts with
+    -- the resource knows its character is about to be restored.
+    Player(session.source).state:set(WLP.STATEBAG_KEY, char.id, true)
     log():info('player %d (%s) loaded character %d "%s %s"%s', session.source, session.name, char.id,
         char.firstName, char.lastName, opts.restored and ' (restored after a resource restart)' or '')
     TriggerEvent('wasteland:players:characterLoaded', session.source, WLP.describe(char), opts.restored == true)
@@ -262,7 +264,7 @@ function Characters.unload(session, reason)
     char.lastSource, char.lastSession, char.unloadReason = char.source, session, reason
     char.source = nil
     if WLP.isOnline(session.source) then
-        Player(session.source).state:set(WLP.STATEBAG_KEY, nil, false)
+        Player(session.source).state:set(WLP.STATEBAG_KEY, nil, true)
     end
     WLP.unsaved[char.id] = char
     local ok, err = Characters.save(char, 'unload: ' .. tostring(reason))
