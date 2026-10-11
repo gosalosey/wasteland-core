@@ -16,6 +16,7 @@ ensure wasteland_inventory
 ensure wasteland_survival
 ensure wasteland_world
 ensure wasteland_admin
+ensure wasteland_weapons
 ensure wasteland_template      # SDK example module; optional
 
 # --- permissions ---

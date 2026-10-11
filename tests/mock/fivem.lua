@@ -250,6 +250,15 @@ end
 -- Events
 -------------------------------------------------------------------------------
 
+--- Listen to a server event from a test (handlers live in a started
+--- fixture resource "__test", so they see what any resource would).
+function Mock:on(name, fn)
+    local r = self.resources.__test or self:addVirtualResource('__test', {}, {})
+    r.state = 'started'
+    r.handlers[name] = r.handlers[name] or {}
+    table.insert(r.handlers[name], fn)
+end
+
 function Mock:triggerEvent(sender, name, ...)
     return self:dispatchEvent(sender, nil, false, name, ...)
 end

@@ -666,6 +666,32 @@ function Inv.ownInventories(c)
     return out
 end
 
+--- A stack the player carries (pockets, worn, worn bag): stack, inventoryId | nil
+function Inv.findOwn(src, uid)
+    local c = Inv.characterOf(src)
+    if not c or not c.loaded or type(uid) ~= 'string' then return nil end
+    for _, id in ipairs(Inv.ownInventories(c)) do
+        local inv = WLI.invs[id]
+        if inv and inv.items[uid] then return inv.items[uid], id end
+    end
+    return nil
+end
+
+--- Merge `patch` into the metadata of a stack the player carries.
+function Inv.setMetadata(src, uid, patch)
+    if type(patch) ~= 'table' then return false, 'metadata patch must be a table' end
+    return Inv.run(src, 'metadata', function()
+        local s, invId = Inv.findOwn(src, uid)
+        if not s then return nil, 'that item is no longer in your inventory' end
+        s.metadata = s.metadata or {}
+        for k, v in pairs(patch) do
+            if type(k) ~= 'string' then return nil, 'metadata keys must be strings' end
+            s.metadata[k] = v
+        end
+        return { statements = { Store.upsert(s, invId) }, changed = changedSet(invId) }
+    end)
+end
+
 function Inv.useHotbar(src, index)
     local c = Inv.characterOf(src)
     if not c or not c.loaded then return false, 'your inventory is still loading' end

@@ -1,5 +1,20 @@
 # Changelog
 
+## Milestone 5A: weapons
+
+### wasteland_weapons 0.1.0 (new)
+* Weapon items: use (hotbar key) to draw, use again to put away. Knife, baseball bat, crowbar, hatchet, machete, pistol, heavy revolver, sawed-off and pump shotgun, micro SMG, SMG, carbine, assault rifle, hunting rifle.
+* Ammo comes from the inventory: 9mm, .44, 12 gauge, 5.56, 7.62, .308. Every shot uses a round; picking up or dropping ammo updates the gun at once.
+* Durability: every shot or melee hit wears the weapon; a broken weapon cannot be used until it is fixed with a weapon repair kit (40% per kit).
+* GTA's own weapon switching (wheel, scroll, weapon-slot keys) is off; weapons come only from the inventory.
+* Gunshots and hits announce their noise (`wasteland:weapons:used`) for the zombies in 5B.
+
+### Other
+* wasteland_inventory: `FindItem`, `SetItemMetadata`, server event `wasteland:inventory:playerUpdated`; the crowbar is now a melee weapon.
+* Fixes: worn clothing that carries no look (given or looted) shows a plain outfit instead of nothing; searching a drop with E no longer freezes the game.
+* Tests: 402 simulated (new: weapons).
+
+
 ## World and admin (owner requests, brought forward from Milestones 7 and 10)
 
 ### wasteland_world 0.1.0 (new)

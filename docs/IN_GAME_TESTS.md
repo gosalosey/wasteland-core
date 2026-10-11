@@ -169,3 +169,20 @@ Tell me what does not match, especially the temperatures (they are estimated fro
 | R7.13 | Send an announcement | Every player sees a banner at the top for 10 seconds and a chat line |
 | R7.14 | Noclip on: fly with W A S D, Space and Ctrl (Shift is faster). Invisible on. | You fly through walls; others cannot see you. Turning them off puts you back to normal. |
 | R7.15 | Modules and recent warnings, then the Action log tab | All modules are running. Every change you made above is listed with your name. |
+
+## Weapons (5A)
+
+**Setup:** `server.cfg` has `ensure wasteland_weapons` after `ensure wasteland_admin` (done on the owner's server). Restart the server. Give items with the admin panel (Players, Items) or `/give <id> <item> <count>`: `weapon_pistol`, `ammo_9mm` 30, `weapon_bat`, `weapon_pumpshotgun`, `ammo_12g` 10, `weapon_repair_kit` 2.
+
+| # | Step | Expected result |
+|---|---|---|
+| R8.1 | Put the pistol on hotbar key 1, press 1 | You draw the pistol with 30 rounds (GTA ammo counter). The pistol stays in your inventory. |
+| R8.2 | Press 1 again | You put it away (unarmed) |
+| R8.3 | Draw it, fire 5 shots, open the inventory (TAB) | 9mm rounds: 25. The pistol's durability bar is slightly lower. |
+| R8.4 | Fire until empty; then give yourself 12 more rounds | At 0 you cannot shoot. After the 12 rounds arrive you can reload and shoot without drawing again. |
+| R8.5 | Mouse wheel, GTA weapon-slot keys, TAB (weapon wheel) | None of them gives you a weapon or switches weapons |
+| R8.6 | Draw the bat and hit another player (or a car) a few times | Durability goes down a little per hit |
+| R8.7 | Keep using the bat until it breaks (or ask for a low-durability test item) | "Your Baseball bat broke." You can hold it but not attack. A repair kit used while holding it fixes 40% and is used up. |
+| R8.8 | Drop the pistol you are holding (inventory, drop) | It leaves your hands |
+| R8.9 | Hold a weapon and die | After respawn you are unarmed. Weapons on the hotbar are still in your inventory; others are in the body bag. |
+| R8.10 | Shotgun with 10 shells: fire 3 times | 12 gauge shells: 7 |

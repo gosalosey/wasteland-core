@@ -51,7 +51,8 @@ survival  loot     world       crafting     vehicles      quests
 | wasteland_appearance | `appearance` | core, players, ui | inventory (clothing items, 3B) | 3A ✅ |
 | wasteland_inventory | `inventory` | core, database, players, ui | appearance | 3B ✅ |
 | wasteland_survival | `survival` | core, players, ui | inventory | 4 ✅ |
-| wasteland_zombies | `zombies` | core | world, survival, loot | 5 |
+| wasteland_weapons | `weapons` | core, players, inventory | survival | 5A ✅ |
+| wasteland_zombies | `zombies` | core | world, survival, loot, weapons | 5B |
 | wasteland_loot | `loot` | core, database, inventory | world | 6 |
 | wasteland_world | `world` | core | none | 7 (clock, weather, empty world ✅ early; zones, camps, traders in M7) |
 | wasteland_crafting | `crafting` | core, inventory | world | 7 (see note) |

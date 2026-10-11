@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** World + admin (owner requests) complete in automated tests; installed; runtime verification pending (R6.x, R7.x).
+**Current milestone:** 5A (weapons) complete in automated tests; installed; runtime verification pending (R8.x). Next: 5B zombies.
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -77,12 +77,22 @@ Brought forward: part of Milestone 7 (world) and Milestone 10 (admin).
 - [x] wasteland_world: no ambient NPCs or traffic, ambient audio off, server clock and weather (also fixes K-27)
 - [x] wasteland_admin: panel (players, items, bans, server & world, action log), bans checked on connect
 - [x] Tests: world rules, admin permissions and every action, bans, real MariaDB
-- [~] Installed on the owner's server; runtime tests R6.1-R6.5 and R7.1-R7.15 pending
+- [x] Installed on the owner's server; owner confirmed it works (fixes: plain look for given clothing, freeze when searching a drop)
 
-## Milestone 5: zombies
-- [ ] Weapons as inventory items: ammo, attachments, durability (moved here from M3B)
-- [ ] Archetypes, spawning, population manager, ownership strategy · [ ] AI states, detection (sight/sound)
-- [ ] Combat, damage, infection hook, loot drops · [ ] ambient population control · [ ] multiplayer tests
+## Milestone 5: weapons and zombies
+Decisions (owner, 2026-10-10): mostly walkers, some runners; moderate numbers, gunshots attract from far; hits do damage with a chance of infection and bleeding; melee, pistols, shotguns, SMGs, rifles; durability and repairs. Split into 5A (weapons) and 5B (zombies).
+
+### 5A: weapons
+- [x] wasteland_weapons: weapon items held by using them (hotbar), ammo taken from the inventory per shot, durability per shot/hit, broken weapons, repair kits
+- [x] Inventory: FindItem, SetItemMetadata, `wasteland:inventory:playerUpdated`; 14 weapons, 6 ammo types, repair kit
+- [x] Tests: holding, ammo, wear, breaking, repairs, dropping, death, guarded events
+- [~] Installed on the owner's server; runtime tests R8.1-R8.10 pending
+Attachments: later (not chosen for 5A, K-34).
+
+### 5B: zombies
+- [ ] Archetypes (walkers, runners), spawning around players, population manager, ownership strategy
+- [ ] AI states, detection (sight, sound: gunshots via `wasteland:weapons:used`)
+- [ ] Attacks: damage, chance of infection and bleeding · [ ] multiplayer tests
 
 ## Milestone 6: looting
 - [ ] Searchable containers, loot tables, rarity · [ ] durations, cooldowns, respawn · [ ] registration API · [ ] concurrency tests

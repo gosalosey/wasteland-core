@@ -231,6 +231,20 @@ exports('GetWornItems', function(src)
     return out
 end)
 
+--- FindItem(source, uid) -> { uid, name, count, metadata }, inventoryId | nil
+--- Only stacks the player carries (pockets, worn items, worn bag).
+exports('FindItem', function(src, uid)
+    local s, invId = Inv.findOwn(tonumber(src), uid)
+    if not s then return nil end
+    return { uid = s.uid, name = s.name, count = s.count, metadata = Inv.copy(s.metadata or {}) }, invId
+end)
+
+--- SetItemMetadata(source, uid, patch) -> ok, err   (merges patch into a carried stack)
+exports('SetItemMetadata', function(src, uid, patch)
+    if inactive() then return false, 'inventory module is not running' end
+    return Inv.setMetadata(tonumber(src), uid, patch)
+end)
+
 --- IsLoaded(source) -> boolean
 exports('IsLoaded', function(src)
     local c = Inv.characterOf(tonumber(src))

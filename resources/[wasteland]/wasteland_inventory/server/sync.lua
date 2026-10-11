@@ -49,6 +49,8 @@ function Sync.player(src)
     end
     table.sort(payload.secondary)
     TriggerClientEvent('wasteland:inventory:client:sync', src, payload)
+    -- Server modules (weapons: is the held weapon still carried?) react here.
+    TriggerEvent('wasteland:inventory:playerUpdated', src)
 end
 
 --- Who can see inventory `id`: its owner and players viewing it.

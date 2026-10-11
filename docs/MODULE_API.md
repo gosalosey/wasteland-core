@@ -372,3 +372,15 @@ Bans are stored in `wl_bans`, cached in memory and checked when a player connect
 Exports: `IsAdmin(source)`, `IsBanned(license)`.
 
 New exports used by the panel: players `RegisterAdmissionCheck(name, fn)`. Survival `Heal(source)` and `Revive(source)`. Inventory `OpenForAdmin(admin, target)`, `ClearInventory(source)` and `GetItemList()`.
+
+## Weapons (`wasteland_weapons`, weapons api 0.1)
+
+Weapon, ammo and repair items are defined in `inventory.lua` like every other item; `weapons.lua` says what each weapon item does (`hash`, `ammo`, `wear`, `noise`) and which items repair (`repairItems`). Using a weapon item (hotbar key or Use) holds it; using it again puts it away. Only items the player carries can be held. GTA weapon selection is switched off; the client only has the weapon the server handed it.
+
+Guns take their ammo straight from the inventory (pockets and worn bag). The client reports shots and melee hits once a second; the server removes that many rounds (never more than the player has), wears the weapon (`wear` per shot or hit; durability is the item's `durability`) and sends the new state. A weapon at 0 durability can be held but not used. A repair item restores `percent` of full durability to the weapon in hand. The held weapon is put away when it leaves the player's inventory or the player dies.
+
+Server events: `wasteland:weapons:used(source, item, count, noise, coords)` after every report (zombies listen for noise), `wasteland:weapons:held(source, item)`, `wasteland:weapons:holstered(source)`.
+
+Exports: `GetHeldWeapon(source) -> { uid, item } | nil`, `GetWeaponConfig(item) -> { hash, ammo, wear, noise } | nil`.
+
+New inventory exports: `FindItem(source, uid) -> stack, inventoryId | nil` (only items the player carries), `SetItemMetadata(source, uid, patch) -> ok, err`. New server event: `wasteland:inventory:playerUpdated(source)` after every change to what a player carries or sees.

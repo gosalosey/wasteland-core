@@ -22,7 +22,7 @@
 | K-18 | Appearance | The server cannot know how many clothing/hair styles exist (client game data). It checks bounds and allowed slots; the client clamps to real counts before applying. A tampered client can only choose styles that exist anyway. | By design |
 | K-19 | Appearance | Characters created before 3A have no look; the creator opens for them on their next load. | Expected |
 | K-20 | Appearance | `spawnmanager` replaces the model on every respawn; the look is re-applied on `playerSpawned`. Death and respawn rules arrive in Milestone 4. | Interim, planned M4 |
-| K-21 | Inventory | Weapons are not items yet; they need ammo, attachments and combat rules and are scheduled with zombies and combat (Milestone 5). | Planned M5 |
+| K-21 | Inventory | Weapons were not items. | Fixed (weapons 0.1.0) |
 | K-22 | Inventory | The `naked` component values (what an empty clothing slot shows) differ between game builds; the shipped values are the common freemode ones and must be checked in-game (R4.9). | Verify at runtime |
 | K-23 | Inventory | Hotbar keys 1-5 are also GTA's weapon-category keys. Harmless while there are no weapons; rebind in Key Bindings if needed. | By design for now |
 | K-24 | Inventory | If the database keeps refusing one queued change while it is reachable (a permanent error, not an outage), that change is dropped after 10 attempts with an error so later changes are not blocked forever. | By design; investigate any such log line |
@@ -35,3 +35,6 @@
 | K-31 | World | The list of music emitters switched off (`shared/emitters.lua`) covers the well-known ones; a building that still plays music can be added by name in `world.lua` → `audio.emitters` (report it). | Verify at runtime (R6.2) |
 | K-32 | Admin | Noclip and invisibility run on the admin's own client after the server allowed them. A modified client could do the same without the panel; anti-cheat for movement is out of scope for now. | By design |
 | K-33 | Admin | Bans are by Rockstar license. A player with a second Rockstar account is a new account; identifier/hardware bans are not implemented. | By design for now |
+| K-34 | Weapons | No attachments (scopes, suppressors, extended magazines) yet. | Later |
+| K-35 | Weapons | The client counts shots (ammo going down) and melee hits and reports them once a second. The server never takes more ammo than the player has and logs reports above it, but a modified client could under-report shots (saving ammo and durability). | By design for now |
+| K-36 | Weapons | Melee hits are counted from the game's damage events; on a server without NPCs they can only be checked on other players until zombies exist (5B). | Verify at runtime (R8.6) |
