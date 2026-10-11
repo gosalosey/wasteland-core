@@ -43,7 +43,6 @@ local function hudData()
     return {
         mode = hudMode,
         health = healthPercent(ped),
-        stamina = 100 - GetPlayerSprintStaminaRemaining(PlayerId()),
         stats = stats,
     }
 end

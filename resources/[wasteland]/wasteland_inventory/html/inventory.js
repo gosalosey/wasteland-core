@@ -134,6 +134,17 @@
             el.style.left = (stack.x * CELL + 2) + 'px';
             el.style.top = (stack.y * CELL + 2) + 'px';
         }
+        if (def.image) {
+            // The picture keeps its own orientation box and turns with the item.
+            el.classList.add('has-image');
+            const img = h('img', { class: 'wli-item__img', src: def.image, draggable: false });
+            const turned = !!stack.rotated && !(opts && opts.fixed);
+            img.style.width = ((turned ? f.h : f.w) * CELL - 10) + 'px';
+            img.style.height = ((turned ? f.w : f.h) * CELL - 10) + 'px';
+            if (turned) img.style.transform = 'translate(-50%, -50%) rotate(90deg)';
+            img.addEventListener('error', () => { img.remove(); el.classList.remove('has-image'); });
+            el.appendChild(img);
+        }
         el.appendChild(h('span', { class: 'wli-item__label', text: shortLabel(def.label, f.w) }));
         if (stack.count > 1) el.appendChild(h('span', { class: 'wli-item__count', text: 'x' + stack.count }));
         if (def.durability > 0 && stack.metadata && typeof stack.metadata.durability === 'number') {
@@ -448,7 +459,10 @@
         '  cursor: grab; overflow: hidden; display: flex; align-items: center; justify-content: center; text-align: center; }',
         '.wli-item:hover { box-shadow: inset 0 0 0 1px var(--wl-accent); }',
         '.wli-item.is-dragging { opacity: 0.35; }',
-        '.wli-item__label { font-size: 11px; line-height: 1.15; padding: 2px 4px; text-shadow: 0 1px 2px #000; }',
+        '.wli-item__label { position: relative; font-size: 11px; line-height: 1.15; padding: 2px 4px; text-shadow: 0 1px 2px #000; }',
+        '.wli-item.has-image { background-color: rgba(30,30,28,0.92) !important; }',
+        '.wli-item.has-image .wli-item__label { font-size: 10px; opacity: 0.85; }',
+        '.wli-item__img { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); object-fit: contain; pointer-events: none; }',
         '.wli-item__count { position: absolute; right: 3px; bottom: 1px; font-size: 11px; font-weight: 600; text-shadow: 0 1px 2px #000; }',
         '.wli-item__hot { position: absolute; left: 3px; top: 1px; font-size: 10px; color: var(--wl-accent-strong); font-weight: 700; }',
         '.wli-item__dur { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--wl-ok); }',

@@ -127,6 +127,23 @@ describe('inventory startup and new characters', function()
         -- the look of given/looted clothing that carries none of its own
         expect(d.plain.mp_m_freemode_01.top[1]).toBe(0)
         expect(d.plain.mp_f_freemode_01.shoes[1]).toBe(1)
+        expect(d.items.bandage.image).toBe(nil) -- wasteland_images not started
+    end)
+
+    it('item pictures come from wasteland_images: own name, `image` field, or none', function()
+        server:start('wasteland_images')
+        server:advance(200)
+        local defs = server:clientEventsFor(id, 'wasteland:inventory:client:definitions')
+        local d = defs[#defs].args[1]
+        expect(d.items.bandage.image).toBe('https://cfx-nui-wasteland_images/html/images/bandage.webp')
+        expect(d.items.backpack_small.image).toBe('https://cfx-nui-wasteland_images/html/images/bag.webp')
+        expect(d.items.clothing_pants.image).toBe(nil)
+        local list = server:export('wasteland_inventory', 'GetItemList')
+        local byName = {}
+        for _, it in ipairs(list) do byName[it.name] = it end
+        expect(byName.water_bottle.image).toContain('water_bottle.webp')
+        server:stop('wasteland_images')
+        expect(#server.scriptErrors).toBe(0)
     end)
 end)
 

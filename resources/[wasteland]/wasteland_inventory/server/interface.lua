@@ -25,11 +25,42 @@ local function answer(src, ok, err)
     end
 end
 
+-- Pictures: wasteland_images lists its images in html/index.txt. An item
+-- shows the image named by its `image` field, else the one named like the
+-- item, else its colour.
+local IMAGES = 'wasteland_images'
+local imageIndex = nil
+
+local function loadImageIndex()
+    imageIndex = {}
+    if GetResourceState(IMAGES) ~= 'started' then return end
+    local text = LoadResourceFile(IMAGES, 'html/index.txt') or ''
+    for line in text:gmatch('[^\r\n]+') do imageIndex[line] = true end
+end
+
+function Interface.imageFor(name, d)
+    if not imageIndex then loadImageIndex() end
+    local file = d.image or name
+    if imageIndex[file] then return string.format('https://cfx-nui-%s/html/images/%s.webp', IMAGES, file) end
+    return nil
+end
+
+AddEventHandler('onResourceStart', function(res)
+    if res == IMAGES then
+        imageIndex = nil
+        if WLI.M and WLI.M.active then Interface.sendDefinitions() end
+    end
+end)
+AddEventHandler('onResourceStop', function(res)
+    if res == IMAGES then imageIndex = nil end
+end)
+
 --- Send the item definitions (with usability) to one player or everyone.
 function Interface.sendDefinitions(target)
     local defs = {}
     for name, d in pairs(WLI.defs) do
         defs[name] = {
+            image = Interface.imageFor(name, d),
             name = name, label = d.label, description = d.description, category = d.category,
             width = d.width, height = d.height, weight = d.weight, stack = d.stack,
             durability = d.durability, equip = d.equip, container = d.container, color = d.color, warmth = d.warmth,
@@ -136,10 +167,12 @@ exports('GetItemCount', function(target, name)
     return Inv.countItem(target, name)
 end)
 
---- GetItemList() -> list of { name, label, category } sorted by label
+--- GetItemList() -> list of { name, label, category, image } sorted by label (image: URL or nil)
 exports('GetItemList', function()
     local out = {}
-    for name, d in pairs(WLI.defs) do out[#out + 1] = { name = name, label = d.label, category = d.category } end
+    for name, d in pairs(WLI.defs) do
+        out[#out + 1] = { name = name, label = d.label, category = d.category, image = Interface.imageFor(name, d) }
+    end
     table.sort(out, function(a, b) return a.label < b.label end)
     return out
 end)

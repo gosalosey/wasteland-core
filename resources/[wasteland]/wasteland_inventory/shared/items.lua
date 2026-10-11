@@ -40,6 +40,8 @@ WLI.ITEM_SCHEMA = {
         stack = { type = 'integer', min = 1, max = 10000, description = 'Units per stack (1 = not stackable; default 50, or 1 for items that cannot stack)' },
         durability = { type = 'integer', default = 0, min = 0, max = 100000, description = '0 = no durability' },
         equip = { type = 'enum', values = WLI.EQUIP_SLOTS, description = 'Equipment slot this item can be worn in' },
+        image = { type = 'string', pattern = '^[a-z0-9_%-]+$', maxLength = 96,
+            description = 'Picture from wasteland_images (file name without .webp); default: the item name' },
         container = {
             type = 'table', nullable = true,
             description = 'Wearing this item adds a grid (backpacks)',

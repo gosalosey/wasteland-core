@@ -1,5 +1,15 @@
 # Changelog
 
+## HUD redesign (owner request)
+* The survival HUD is now four green outlined icons in the bottom-right corner that drain like a liquid level: health (drop), food (tray with fork and knife), drink (bottle), temperature (thermometer, 33-39 °C). They turn amber at 35% or below (or cold/hot) and red and pulsing at 15% or below. Bleeding and infection show as small badges under the icons. Stamina is no longer shown (GTA shows its own). `/hud` still cycles always / only when it matters / off.
+
+## Item pictures (owner request)
+
+### wasteland_images 0.1.0 (new)
+* All 3,474 pictures of the community MK-Items pack (3,485 files; same-name files kept with a folder suffix), converted to WebP and scaled down where oversized (187.7 MB of PNG -> 19.3 MB, empty borders trimmed so long items fill their tiles). `tools/import_images.py` re-imports a pack.
+* Inventory: tiles show the item's picture (it turns with rotated items); items can pick a picture with `image = '...'`, otherwise the picture named like the item is used. 22 items mapped to pictures; most weapons, water and bandages match by name. Admin panel shows the chosen item's picture.
+
+
 ## Milestone 5A: weapons
 
 ### wasteland_weapons 0.1.0 (new)

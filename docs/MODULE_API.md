@@ -384,3 +384,7 @@ Server events: `wasteland:weapons:used(source, item, count, noise, coords)` afte
 Exports: `GetHeldWeapon(source) -> { uid, item } | nil`, `GetWeaponConfig(item) -> { hash, ammo, wear, noise } | nil`.
 
 New inventory exports: `FindItem(source, uid) -> stack, inventoryId | nil` (only items the player carries), `SetItemMetadata(source, uid, patch) -> ok, err`. New server event: `wasteland:inventory:playerUpdated(source)` after every change to what a player carries or sees.
+
+## Item pictures (`wasteland_images`)
+
+`wasteland_images` holds item pictures (`html/images/<name>.webp`, listed in `html/index.txt`). An item definition may name one with `image = '<name>'`; without it the picture named like the item is used, if there is one; otherwise the screen shows the item's colour. Definitions sent to clients carry `image` as a full NUI URL (or nil), and `GetItemList()` entries include `image` too. Items registered with `RegisterItem` work the same way. The inventory re-sends definitions when `wasteland_images` starts.

@@ -4,7 +4,7 @@
 local RESOURCE_NAMES = {
     'wasteland_config', 'wasteland_core', 'wasteland_template', 'wasteland_database', 'wasteland_players',
     'wasteland_ui', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival',
-    'wasteland_world', 'wasteland_admin', 'wasteland_weapons',
+    'wasteland_world', 'wasteland_admin', 'wasteland_weapons', 'wasteland_images',
 }
 local FORBIDDEN = { 'qb-core', 'QBCore', 'qbx_core', 'es_extended', 'ESX', 'ox_lib', 'ox_inventory', 'ox_target' }
 
@@ -49,7 +49,8 @@ for _, name in ipairs(RESOURCE_NAMES) do
         it('declares fx_version cerulean, game gta5, lua54 and a semver version', function()
             expect(meta.fx_version[1]).toBe('cerulean')
             expect(meta.game[1]).toBe('gta5')
-            expect(meta.lua54[1]).toBe('yes')
+            local scripts = meta.shared_script or meta.server_script or meta.client_script
+            if scripts then expect((meta.lua54 or {})[1]).toBe('yes') end -- asset-only resources run no Lua
             expect(meta.version[1]:match('^%d+%.%d+%.%d+$') ~= nil).toBe(true)
         end)
 
@@ -62,6 +63,17 @@ for _, name in ipairs(RESOURCE_NAMES) do
             for _, e in ipairs(entries) do
                 local other, rel = e:match('^@([^/]+)/(.+)$')
                 local path = other and (RESOURCES .. '/' .. other .. '/' .. rel) or (dir .. '/' .. e)
+                if e:find('*', 1, true) then
+                    -- wildcard (e.g. html/images/*.webp): at least one match
+                    local dirPart, pattern = path:match('^(.*)/([^/]*)$')
+                    local luaPattern = '^' .. pattern:gsub('%.', '%%.'):gsub('%*', '.*') .. '$'
+                    local cmd = IS_WINDOWS and ('dir /b "' .. dirPart:gsub('/', '\\') .. '" 2>nul') or ('ls "' .. dirPart .. '" 2>/dev/null')
+                    local p, found = io.popen(cmd), false
+                    for line in p:lines() do if line:match(luaPattern) then found = true; break end end
+                    p:close()
+                    if not found then error('no files match manifest entry: ' .. e) end
+                    goto continue
+                end
                 local src = read(path)
                 if not src then error('missing file referenced by manifest: ' .. e) end
                 if not other then referenced[path] = true end
@@ -69,6 +81,7 @@ for _, name in ipairs(RESOURCE_NAMES) do
                     local chunk, cerr = load(src, '@' .. path, 't', {})
                     if not chunk then error(cerr) end
                 end
+                ::continue::
             end
         end)
 

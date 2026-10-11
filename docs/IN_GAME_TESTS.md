@@ -186,3 +186,24 @@ Tell me what does not match, especially the temperatures (they are estimated fro
 | R8.8 | Drop the pistol you are holding (inventory, drop) | It leaves your hands |
 | R8.9 | Hold a weapon and die | After respawn you are unarmed. Weapons on the hotbar are still in your inventory; others are in the body bag. |
 | R8.10 | Shotgun with 10 shells: fire 3 times | 12 gauge shells: 7 |
+
+## Item pictures
+
+**Setup:** `server.cfg` has `ensure wasteland_images` before `ensure wasteland_inventory` (done on the owner's server). Restart the server. The first join downloads the pictures once (about the size given in the CHANGELOG).
+
+| # | Step | Expected result |
+|---|---|---|
+| R9.1 | Open the inventory (TAB) | Items show pictures: water bottle, bandages, beans (a can), backpack (a bag), weapons, ammo |
+| R9.2 | Rotate a long item while dragging (R), e.g. a rifle or the bat | The picture turns with the item and fits the tile |
+| R9.3 | Look at pants, hat and glasses (no picture in the pack) | They show their colour and name as before |
+| R9.4 | Admin panel, Players, Items: pick different items in the list | A small picture of the chosen item is shown next to the list |
+
+## HUD (icons)
+
+| # | Step | Expected result |
+|---|---|---|
+| R10.1 | Join with full stats | Bottom right: four green icons (drop, food tray, bottle, thermometer), full; the thermometer about two-thirds |
+| R10.2 | Admin panel: set Food to 30, then 10 | The tray drains to a third and turns amber; at 10 it is red and pulses |
+| R10.3 | Get hurt | The drop drains with health |
+| R10.4 | Start bleeding / get infected (admin panel stats) | Badges under the icons: "Bleeding", "Infection 40%" |
+| R10.5 | `/hud` twice, then once more | Only icons that matter; nothing; all icons again |

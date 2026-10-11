@@ -140,7 +140,16 @@
         const c = p.character ? p.character.firstName + ' ' + p.character.lastName + ' (character ' + p.character.id + ')' : 'no character loaded';
         const items = filterItems(st.data.items || [], st.itemSearch);
         const itemSelect = select(items.map((i) => ({ label: i.label + ' (' + i.name + ')', value: i.name })), st.itemChoice);
-        itemSelect.addEventListener('change', () => { st.itemChoice = itemSelect.value; });
+        // Picture of the chosen item (when wasteland_images has one).
+        const preview = h('img', { class: 'wla-itemimg', draggable: false });
+        const showPreview = () => {
+            const it = items.find((i) => i.name === itemSelect.value);
+            preview.hidden = !(it && it.image);
+            if (it && it.image) preview.src = it.image;
+        };
+        preview.addEventListener('error', () => { preview.hidden = true; });
+        showPreview();
+        itemSelect.addEventListener('change', () => { st.itemChoice = itemSelect.value; showPreview(); });
         const itemSearch = input({ placeholder: 'Search items' }, st.itemSearch || '');
         itemSearch.addEventListener('input', () => { st.itemSearch = itemSearch.value; render(); itemFocus(); });
         const count = input({ type: 'number', min: '1', max: '10000' }, 1);
@@ -159,7 +168,7 @@
             statEditor(p),
             section('Items'),
             row(itemSearch),
-            row(itemSelect, count, UI.button('Give', () => {
+            row(preview, itemSelect, count, UI.button('Give', () => {
                 const name = itemSelect.value;
                 if (name) act('give', { target: p.id, item: name, count: Math.max(1, Math.floor(Number(count.value) || 1)) });
             }, 'primary')),
@@ -332,6 +341,7 @@
         '.wla-id { color: var(--wl-accent); font-variant-numeric: tabular-nums; }',
         '.wla-big { font-family: var(--wl-font-display); font-size: 22px; }',
         '.wla-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }',
+        '.wla-itemimg { width: 40px; height: 40px; object-fit: contain; background: var(--wl-bg-sunken); border-radius: 4px; }',
         '.wla-row .wl-input { flex: 1; min-width: 120px; }',
         '.wla-row select.wl-input { flex: 2; }',
         '.wla-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }',

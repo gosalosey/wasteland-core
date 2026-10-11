@@ -73,27 +73,29 @@ return {
     --   container   { width, height, maxWeight }  a bag; must have equip = 'back'
     --   color       '#rrggbb' tile colour in the inventory screen
     --   warmth      degrees C of insulation while worn (body temperature)
+    --   image       picture from wasteland_images (file name without .webp);
+    --               default: the picture named like the item, if there is one
     -- Other modules add their own items through the RegisterItem export.
     items = {
         water_bottle = { label = 'Water bottle', category = 'drink', width = 1, height = 2, weight = 0.6,
             description = 'Half a litre of probably clean water.' },
-        canned_beans = { label = 'Canned beans', category = 'food', width = 1, height = 1, weight = 0.4 },
+        canned_beans = { label = 'Canned beans', image = 'canned_peas', category = 'food', width = 1, height = 1, weight = 0.4 },
         bandage = { label = 'Bandage', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 100 },
         painkillers = { label = 'Painkillers', category = 'medical', width = 1, height = 1, weight = 0.1, stack = 100 },
-        antibiotics = { label = 'Antibiotics', category = 'medical', width = 1, height = 1, weight = 0.1,
+        antibiotics = { label = 'Antibiotics', image = 'antibiotic', category = 'medical', width = 1, height = 1, weight = 0.1,
             description = 'Slows and fights an infection.' },
-        rag = { label = 'Clean rag', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 100,
+        rag = { label = 'Clean rag', image = 'cloth', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 100,
             description = 'Can stop light bleeding.' },
-        soda_can = { label = 'Soda', category = 'drink', width = 1, height = 1, weight = 0.35 },
-        energy_bar = { label = 'Energy bar', category = 'food', width = 1, height = 1, weight = 0.1, stack = 100 },
-        canned_peaches = { label = 'Canned peaches', category = 'food', width = 1, height = 1, weight = 0.45 },
-        scrap_metal = { label = 'Scrap metal', category = 'material', width = 2, height = 1, weight = 1.0, stack = 100 },
+        soda_can = { label = 'Soda', image = 'ecola', category = 'drink', width = 1, height = 1, weight = 0.35 },
+        energy_bar = { label = 'Energy bar', image = 'chocolate', category = 'food', width = 1, height = 1, weight = 0.1, stack = 100 },
+        canned_peaches = { label = 'Canned peaches', image = 'canned_pears', category = 'food', width = 1, height = 1, weight = 0.45 },
+        scrap_metal = { label = 'Scrap metal', image = 'metalscrap', category = 'material', width = 2, height = 1, weight = 1.0, stack = 100 },
         duct_tape = { label = 'Duct tape', category = 'material', width = 1, height = 1, weight = 0.2 },
-        flashlight = { label = 'Flashlight', category = 'tool', width = 1, height = 2, weight = 0.4, durability = 100 },
+        flashlight = { label = 'Flashlight', image = 'weapon_flashlight', category = 'tool', width = 1, height = 2, weight = 0.4, durability = 100 },
 
         -- Weapons (what each one does is in weapons.lua). Durability is
         -- shots (guns) or hits (melee) until the weapon breaks.
-        crowbar = { label = 'Crowbar', category = 'weapon', width = 1, height = 3, weight = 1.5, durability = 400,
+        crowbar = { label = 'Crowbar', image = 'weapon_crowbar', category = 'weapon', width = 1, height = 3, weight = 1.5, durability = 400,
             description = 'Heavy, quiet, hard to break.' },
         weapon_knife = { label = 'Knife', category = 'weapon', width = 1, height = 2, weight = 0.3, durability = 300 },
         weapon_bat = { label = 'Baseball bat', category = 'weapon', width = 1, height = 4, weight = 1.0, durability = 250 },
@@ -111,31 +113,31 @@ return {
             description = 'Uses 9mm rounds.' },
         weapon_smg = { label = 'SMG', category = 'weapon', width = 3, height = 2, weight = 2.6, durability = 800,
             description = 'Uses 9mm rounds.' },
-        weapon_carbine = { label = 'Carbine rifle', category = 'weapon', width = 5, height = 2, weight = 3.4, durability = 1000,
+        weapon_carbine = { label = 'Carbine rifle', image = 'weapon_carbinerifle', category = 'weapon', width = 5, height = 2, weight = 3.4, durability = 1000,
             description = 'Uses 5.56 rounds.' },
         weapon_assaultrifle = { label = 'Assault rifle', category = 'weapon', width = 5, height = 2, weight = 3.5, durability = 900,
             description = 'Uses 7.62 rounds.' },
-        weapon_huntingrifle = { label = 'Hunting rifle', category = 'weapon', width = 6, height = 2, weight = 4.5, durability = 500,
+        weapon_huntingrifle = { label = 'Hunting rifle', image = 'weapon_sniperrifle', category = 'weapon', width = 6, height = 2, weight = 4.5, durability = 500,
             description = 'Uses .308 rounds.' },
 
-        ammo_9mm = { label = '9mm rounds', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 250, color = '#8a7a4a' },
-        ammo_44 = { label = '.44 rounds', category = 'ammo', width = 1, height = 1, weight = 0.02, stack = 100, color = '#8a6a3a' },
-        ammo_12g = { label = '12 gauge shells', category = 'ammo', width = 1, height = 1, weight = 0.04, stack = 100, color = '#8a3a2a' },
-        ammo_556 = { label = '5.56 rounds', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 250, color = '#6a7a4a' },
-        ammo_762 = { label = '7.62 rounds', category = 'ammo', width = 1, height = 1, weight = 0.016, stack = 250, color = '#5a6a3a' },
-        ammo_308 = { label = '.308 rounds', category = 'ammo', width = 1, height = 1, weight = 0.025, stack = 100, color = '#4a5a3a' },
+        ammo_9mm = { label = '9mm rounds', image = 'ammo9mmbulletball', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 250, color = '#8a7a4a' },
+        ammo_44 = { label = '.44 rounds', image = 'ammo44magnumbulletball', category = 'ammo', width = 1, height = 1, weight = 0.02, stack = 100, color = '#8a6a3a' },
+        ammo_12g = { label = '12 gauge shells', image = 'shotgun_ammo', category = 'ammo', width = 1, height = 1, weight = 0.04, stack = 100, color = '#8a3a2a' },
+        ammo_556 = { label = '5.56 rounds', image = 'rifle_ammo', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 250, color = '#6a7a4a' },
+        ammo_762 = { label = '7.62 rounds', image = 'ammo762mmbulletball', category = 'ammo', width = 1, height = 1, weight = 0.016, stack = 250, color = '#5a6a3a' },
+        ammo_308 = { label = '.308 rounds', image = 'ammo762mmbullethp', category = 'ammo', width = 1, height = 1, weight = 0.025, stack = 100, color = '#4a5a3a' },
 
-        weapon_repair_kit = { label = 'Weapon repair kit', category = 'tool', width = 2, height = 1, weight = 0.8,
+        weapon_repair_kit = { label = 'Weapon repair kit', image = 'repairkit2', category = 'tool', width = 2, height = 1, weight = 0.8,
             description = 'Repairs the weapon in your hands.' },
 
-        backpack_small = { label = 'Small backpack', category = 'container', width = 3, height = 3, weight = 0.8,
+        backpack_small = { label = 'Small backpack', image = 'bag', category = 'container', width = 3, height = 3, weight = 0.8,
             equip = 'back', container = { width = 5, height = 4, maxWeight = 15 } },
-        backpack_large = { label = 'Hiking backpack', category = 'container', width = 4, height = 4, weight = 1.8,
+        backpack_large = { label = 'Hiking backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 1.8,
             equip = 'back', container = { width = 7, height = 6, maxWeight = 30 } },
 
-        clothing_top = { label = 'Top', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6 },
+        clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6 },
         clothing_pants = { label = 'Pants', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4 },
-        clothing_shoes = { label = 'Shoes', category = 'clothing', width = 2, height = 1, weight = 0.8, equip = 'feet', warmth = 2 },
+        clothing_shoes = { label = 'Shoes', image = 'shoes_blue', category = 'clothing', width = 2, height = 1, weight = 0.8, equip = 'feet', warmth = 2 },
         clothing_hat = { label = 'Hat', category = 'clothing', width = 1, height = 1, weight = 0.2, equip = 'head', warmth = 2 },
         clothing_glasses = { label = 'Glasses', category = 'clothing', width = 1, height = 1, weight = 0.05, equip = 'eyes' },
     },
