@@ -59,16 +59,18 @@ describe('vehicle rules', function()
         expect(p.battery).toBe(true); expect(p.engine).toBe(false); expect(p.wheels).toBe(3)
         expect(Rules.decodeParts(nil).wheels).toBe(0)
     end)
-    it('pumps: same key for everyone, refill on a timer up to full', function()
+    it('pumps: same key for everyone; full again 2 hours after fuel was first taken', function()
         expect(Rules.pumpKey({ x = 10.4, y = -3.6, z = 29.5 })).toBe('10_-4_30')
-        local p = { litres = 80, refillLitres = 20, refillMinutes = 15, litresPerSecond = 4, vehicleDistance = 8 }
-        local pump = { litres = 5, since = 0 }
-        Rules.pumpLevel(pump, p, 14 * 60000)
-        expect(pump.litres).toBe(5)
-        expect(Rules.pumpWait(pump, p, 14 * 60000)).toBe(1)
-        Rules.pumpLevel(pump, p, 31 * 60000)
-        expect(pump.litres).toBe(45); expect(pump.since).toBe(30 * 60000)
-        Rules.pumpLevel(pump, p, 200 * 60000)
-        expect(pump.litres).toBe(80)
+        local p = { litres = 80, refillMinutes = 120 }
+        local pump = { litres = 80 }
+        expect(Rules.pumpWait(pump, p, 0)).toBe(0) -- full
+        expect(Rules.pumpTake(pump, p, 50, 0)).toBe(50)
+        expect(pump.litres).toBe(30); expect(Rules.pumpWait(pump, p, 0)).toBe(120)
+        expect(Rules.pumpTake(pump, p, 50, 60 * 60000)).toBe(30) -- only what is left; the clock is not restarted
+        expect(Rules.pumpWait(pump, p, 60 * 60000)).toBe(60)
+        expect(Rules.pumpTake(pump, p, 5, 90 * 60000)).toBe(0)
+        Rules.pumpLevel(pump, p, 120 * 60000)
+        expect(pump.litres).toBe(80); expect(Rules.pumpWait(pump, p, 120 * 60000)).toBe(0)
+        expect(Rules.duration(84)).toBe('1 h 24 min'); expect(Rules.duration(120)).toBe('2 h'); expect(Rules.duration(45)).toBe('45 min')
     end)
 end)

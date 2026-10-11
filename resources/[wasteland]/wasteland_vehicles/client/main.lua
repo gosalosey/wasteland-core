@@ -263,6 +263,77 @@ Citizen.CreateThread(function()
 end)
 
 -------------------------------------------------------------------------------
+-- Pump level above the pump you stand next to
+-------------------------------------------------------------------------------
+
+local pumpInfo = {}    -- pump key -> { litres, max, minutes, at }
+
+RegisterNetEvent('wasteland:vehicles:client:pump', function(key, info)
+    if type(key) == 'string' and type(info) == 'table' then info.at = GetGameTimer(); pumpInfo[key] = info end
+end)
+
+local function text3d(x, y, z, line1, line2)
+    SetDrawOrigin(x, y, z, 0)
+    for i, line in ipairs({ line1, line2 }) do
+        if line then
+            SetTextScale(0.0, 0.32)
+            SetTextFont(4)
+            SetTextProportional(true)
+            SetTextColour(220, 235, 210, 230)
+            SetTextOutline()
+            SetTextCentre(true)
+            BeginTextCommandDisplayText('STRING')
+            AddTextComponentSubstringPlayerName(line)
+            EndTextCommandDisplayText(0.0, (i - 1) * 0.022)
+        end
+    end
+    ClearDrawOrigin()
+end
+
+Citizen.CreateThread(function()
+    local nearKey, asked = nil, 0
+    while true do
+        if cfg and cfg.pumps then
+            local p = GetEntityCoords(PlayerPedId())
+            local near = nil
+            for _, model in ipairs(cfg.pumps) do
+                local obj = GetClosestObjectOfType(p.x, p.y, p.z, 3.0, GetHashKey(model), false, false, false)
+                if obj ~= 0 then near = obj; break end
+            end
+            if near then
+                local c = GetEntityCoords(near)
+                local key = Rules.pumpKey({ x = c.x, y = c.y, z = c.z })
+                if key ~= nearKey or GetGameTimer() - asked > 5000 then
+                    nearKey, asked = key, GetGameTimer()
+                    TriggerServerEvent('wasteland:vehicles:server:pumpInfo', { x = c.x, y = c.y, z = c.z })
+                end
+                -- Draw every frame while standing here (re-checked twice a second).
+                local untilMs = GetGameTimer() + 500
+                while GetGameTimer() < untilMs do
+                    local info = pumpInfo[key]
+                    if info then
+                        local second = 'Full'
+                        if (info.minutes or 0) > 0 then
+                            local left = math.max(1, info.minutes - math.floor((GetGameTimer() - info.at) / 60000))
+                            second = 'Full again in ' .. Rules.duration(left)
+                        end
+                        text3d(c.x, c.y, c.z + 1.25, string.format('Fuel: %d / %d L', info.litres, info.max), second)
+                    else
+                        text3d(c.x, c.y, c.z + 1.25, 'Fuel: ...', nil)
+                    end
+                    Citizen.Wait(0)
+                end
+            else
+                nearKey = nil
+                Citizen.Wait(750)
+            end
+        else
+            Citizen.Wait(2000)
+        end
+    end
+end)
+
+-------------------------------------------------------------------------------
 -- Vehicle HUD (any seat)
 -------------------------------------------------------------------------------
 

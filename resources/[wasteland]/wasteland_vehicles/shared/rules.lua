@@ -84,26 +84,36 @@ function Rules.pumpKey(coords)
     return string.format('%d_%d_%d', r(coords.x), r(coords.y), r(coords.z))
 end
 
---- A pump's fuel now: refills `refillLitres` every `refillMinutes` since
---- it was last topped up, up to `litres`. Mutates and returns the pump.
---- pump = { litres, since }   p = config.pump
+--- A pump's fuel now. A pump is full again `refillMinutes` after fuel was
+--- first taken from it (taking more meanwhile does not restart the clock).
+--- Mutates and returns the pump.   pump = { litres, refillAt? }   p = config.pump
 function Rules.pumpLevel(pump, p, nowMs)
-    local step = p.refillMinutes * 60000
-    if pump.litres >= p.litres then
-        pump.litres, pump.since = p.litres, nowMs
-        return pump
-    end
-    local steps = math.floor((nowMs - pump.since) / step)
-    if steps > 0 then
-        pump.litres = math.min(p.litres, pump.litres + steps * p.refillLitres)
-        pump.since = pump.since + steps * step
-    end
+    if pump.refillAt and nowMs >= pump.refillAt then pump.litres, pump.refillAt = p.litres, nil end
     return pump
 end
 
---- Minutes until a dry pump has fuel again.
+--- Take up to `wanted` litres; starts the refill clock. Returns litres taken.
+function Rules.pumpTake(pump, p, wanted, nowMs)
+    Rules.pumpLevel(pump, p, nowMs)
+    local take = math.max(0, math.min(wanted, pump.litres))
+    if take > 0 then
+        pump.litres = pump.litres - take
+        pump.refillAt = pump.refillAt or (nowMs + p.refillMinutes * 60000)
+    end
+    return take
+end
+
+--- Minutes until the pump is full again (0 = full).
 function Rules.pumpWait(pump, p, nowMs)
-    return math.max(1, math.ceil((pump.since + p.refillMinutes * 60000 - nowMs) / 60000))
+    if not pump.refillAt then return 0 end
+    return math.max(1, math.ceil((pump.refillAt - nowMs) / 60000))
+end
+
+--- "1 h 24 min", "45 min".
+function Rules.duration(minutes)
+    local h, m = math.floor(minutes / 60), minutes % 60
+    if h > 0 then return m > 0 and string.format('%d h %d min', h, m) or string.format('%d h', h) end
+    return string.format('%d min', m)
 end
 
 --- Encode / decode the parts column.

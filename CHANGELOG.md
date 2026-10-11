@@ -1,5 +1,11 @@
 # Changelog
 
+## Gas pumps: level shown, full again after 2 hours (owner request)
+* Standing next to a gas pump shows above it: "Fuel: 35 / 80 L" and "Full again in 1 h 24 min" (or "Full").
+* Refill rule changed: a pump is full again 2 hours (real time) after fuel was first taken from it; taking more meanwhile does not restart the clock (`pump.refillMinutes = 120`; the 20 L every 15 minutes rule is gone).
+* Tests: 571.
+
+
 ## Gas pumps: refuel at the pump, limited fuel (owner request)
 * Park within 8 m of a gas pump, hold Left Alt on the pump: "Refuel vehicle" fills the nearest vehicle straight from the pump (4 L a second; no jerry can needed). "Fill jerry can" is still there.
 * Every pump holds 80 L, shared by everyone (vehicles and jerry cans), and gets 20 L back every 15 minutes up to full. A dry pump says when it refills; a pump with little left gives what it has. All numbers in vehicles.lua (`pump`). Pump levels are kept in memory (full again after a restart).

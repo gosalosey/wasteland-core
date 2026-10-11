@@ -14,7 +14,7 @@ local M
 local vehicles = {}    -- id -> record (+ handle, farSince, seq)
 local byHandle = {}    -- entity handle -> id
 local acting = {}      -- source -> { id, action, startedAt, coords, seconds }
-local pumps = {}       -- pump key -> { litres, since }  (limited fuel, refills on a timer)
+local pumps = {}       -- pump key -> { litres, refillAt }  (limited fuel, full again 2 h after first use)
 local runToken = nil
 
 local function inv() return exports.wasteland_inventory end
@@ -248,14 +248,22 @@ local function pumpAt(coords)
     local key = Rules.pumpKey(coords)
     local p = pumps[key]
     if not p then
-        p = { litres = M.config.pump.litres, since = now() }
+        p = { litres = M.config.pump.litres }
         pumps[key] = p
     end
     return Rules.pumpLevel(p, M.config.pump, now())
 end
 
 local function dry(src, pump)
-    notice(src, string.format('This pump is dry. It refills in about %d min.', Rules.pumpWait(pump, M.config.pump, now())))
+    notice(src, 'This pump is dry. It is full again in ' .. Rules.duration(Rules.pumpWait(pump, M.config.pump, now())) .. '.')
+end
+
+-- What a player near a pump sees above it.
+local function sendPump(src, coords)
+    local pump = pumpAt(coords)
+    TriggerClientEvent('wasteland:vehicles:client:pump', src, Rules.pumpKey(coords), {
+        litres = math.floor(pump.litres + 0.5), max = M.config.pump.litres, minutes = Rules.pumpWait(pump, M.config.pump, now()),
+    })
 end
 
 local function keyFor(src, v)
@@ -325,10 +333,10 @@ local function finish(src)
         for _, c in ipairs(inv():FindItems(src, 'jerry_can')) do
             local have = c.metadata.fuel or 0
             if have < cap then
-                local amount = math.min(cap - have, pump.litres)
-                pump.litres = pump.litres - amount
+                local amount = Rules.pumpTake(pump, M.config.pump, cap - have, now())
                 inv():SetItemMetadata(src, c.uid, { fuel = have + amount })
                 notice(src, string.format('Jerry can: %.0f of %d L. The pump has %.0f L left.', have + amount, cap, pump.litres))
+                sendPump(src, a.coords)
                 return
             end
         end
@@ -344,10 +352,10 @@ local function finish(src)
         end
         local pump = pumpAt(a.coords)
         if pump.litres <= 0 then dry(src, pump); return end
-        local amount = math.min(M.config.tankLitres - v.fuel, pump.litres)
-        if amount <= 0 then notice(src, 'The tank is full.'); return end
-        pump.litres = pump.litres - amount
+        if M.config.tankLitres - v.fuel <= 0 then notice(src, 'The tank is full.'); return end
+        local amount = Rules.pumpTake(pump, M.config.pump, M.config.tankLitres - v.fuel, now())
         v.fuel = v.fuel + amount
+        sendPump(src, a.coords)
         publish(v, false)
         save(v)
         notice(src, string.format('Added %.0f L. The tank has %.0f of %d L; the pump has %.0f L left.', amount, v.fuel, M.config.tankLitres, pump.litres))
@@ -450,8 +458,8 @@ M = Wasteland.DefineModule({
             } },
             pump = { type = 'table', fields = {
                 litres = { type = 'number', default = 80, min = 1, max = 100000, description = 'Fuel in a full pump (litres)' },
-                refillLitres = { type = 'number', default = 20, min = 0, max = 100000 },
-                refillMinutes = { type = 'number', default = 15, min = 0.1, max = 100000 },
+                refillMinutes = { type = 'number', default = 120, min = 0.1, max = 100000,
+                    description = 'A used pump is full again this many real minutes after fuel was first taken' },
                 litresPerSecond = { type = 'number', default = 4, min = 0.1, max = 1000 },
                 vehicleDistance = { type = 'number', default = 8, min = 2, max = 30, description = 'How close the vehicle must be to the pump (m)' },
             } },
@@ -557,6 +565,16 @@ M.netEvent('wasteland:vehicles:server:fillCan', {
     if pump.litres <= 0 then dry(src, pump); return end
     acting[src] = { action = 'fillCan', startedAt = now(), coords = coords }
     TriggerClientEvent('wasteland:vehicles:client:progress', src, { seconds = M.config.seconds.fillCan, label = LABELS.fillCan })
+end)
+
+-- A player near a pump asks how much fuel it has.
+M.netEvent('wasteland:vehicles:server:pumpInfo', {
+    args = { { type = 'table', required = true, fields = { x = { type = 'number', required = true }, y = { type = 'number', required = true },
+        z = { type = 'number', required = true } } } },
+    rateLimit = { burst = 5, perSecond = 1 },
+}, function(src, coords)
+    local p = playerCoords(src)
+    if p and dist(p, coords) <= 10 then sendPump(src, coords) end
 end)
 
 -- Refuel a vehicle parked next to a pump, straight from the pump.
