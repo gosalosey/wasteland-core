@@ -257,3 +257,20 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R13.5 | Left Alt while in a vehicle, dead, or with the inventory open | No eye |
 | R13.6 | Admin panel, a player, Items: click the item box | A list of every item by category with pictures; typing filters it; clicking one picks it; Give works |
 | R13.7 | Let a zombie attack you | It swings from about 2.5 m instead of walking into you |
+
+## Looting (6)
+
+**Setup:** `server.cfg` has `ensure wasteland_loot` after `ensure wasteland_zombies` (done on the owner's server). Restart the server.
+
+| # | Step | Expected result |
+|---|---|---|
+| R14.1 | Find a dumpster or trash can, hold Left Alt and look at it | "Search dumpster" / "Search trash can" |
+| R14.2 | Choose it | You lean in (animation); "Searching dumpster" with a bar fills in 3-5 seconds |
+| R14.3 | Search another one and walk away (or press X) before it is done | "Search cancelled."; nothing opens |
+| R14.4 | Let a search finish | Either "You found nothing." or the container opens next to your inventory with a few items (mostly junk) |
+| R14.5 | Take everything, search it again | "Already searched. Nothing left (check back in about N min)." |
+| R14.6 | Leave an item in a container; a second player searches it | They find what you left |
+| R14.7 | Try a fridge, a vending machine, a tool chest, a wooden crate, a mailbox | Each can be searched and gives fitting loot (drinks, snacks, tools, mail money...) |
+| R14.8 | Kill a zombie, Left Alt on the body | "Search body"; a short search (kneeling); sometimes loot; no loot bag on the ground |
+| R14.9 | Wait until the body disappears (90 s) | Its loot is gone with it |
+| R14.10 | Tell me any prop that should be searchable but is not (model name from a tool, or a screenshot) | It can be added to `loot.lua` |

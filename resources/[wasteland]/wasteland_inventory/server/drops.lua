@@ -191,29 +191,61 @@ function Drops.open(src, id)
     return true
 end
 
---- Open a stash for a player (modules decide when; thread only, it may load).
+--- Load (or create) a stash in memory. Thread only: it may read the
+--- database. Returns the inventory or nil, err.
 --- opts = { label, width, height, maxWeight, coords }
-function Drops.openStash(src, name, opts)
+function Drops.ensureStash(name, opts)
     if type(name) ~= 'string' or not name:match('^[%w_%-:%.]+$') or #name > 56 then
-        return false, 'stash names may use letters, digits and _ - : .'
+        return nil, 'stash names may use letters, digits and _ - : .'
     end
     local id = 'stash:' .. name
     local inv = WLI.invs[id]
-    if not inv then
-        opts = opts or {}
-        local items, err = Store.loadItems(id)
-        if not items then return false, err end
-        inv = WLI.invs[id] or Inv.create(id, 'grid', {
-            label = opts.label or 'Stash', width = math.floor(tonumber(opts.width) or 10),
-            height = math.floor(tonumber(opts.height) or 6), maxWeight = tonumber(opts.maxWeight) or 100,
-            coords = opts.coords, items = items,
-        })
-        for _, s in pairs(items) do
-            if WLI.defs[s.name].container then
-                Inv.containerFor(s).items = Store.loadItems('item:' .. s.uid) or {}
+    if inv then return inv end
+    opts = opts or {}
+    local items, err = Store.loadItems(id)
+    if not items then return nil, err end
+    inv = WLI.invs[id] or Inv.create(id, 'grid', {
+        label = opts.label or 'Stash', width = math.floor(tonumber(opts.width) or 10),
+        height = math.floor(tonumber(opts.height) or 6), maxWeight = tonumber(opts.maxWeight) or 100,
+        coords = opts.coords, items = items,
+    })
+    for _, s in pairs(items) do
+        if WLI.defs[s.name] and WLI.defs[s.name].container then
+            Inv.containerFor(s).items = Store.loadItems('item:' .. s.uid) or {}
+        end
+    end
+    return inv
+end
+
+--- Delete a stash and everything in it (e.g. a zombie body that is gone).
+function Drops.deleteStash(name)
+    local id = 'stash:' .. tostring(name)
+    local inv = WLI.invs[id]
+    local statements = { { SQL.deleteInventoryItems, { id } } }
+    if inv then
+        for _, s in pairs(inv.items) do
+            if WLI.defs[s.name] and WLI.defs[s.name].container then
+                statements[#statements + 1] = { SQL.deleteInventoryItems, { 'item:' .. s.uid } }
+                WLI.invs['item:' .. s.uid] = nil
             end
         end
     end
+    WLI.invs[id] = nil
+    local viewers = {}
+    for src, v in pairs(WLI.views) do
+        if v[id] then v[id] = nil; viewers[#viewers + 1] = src end
+    end
+    Store.enqueue(statements, 'delete ' .. id)
+    for _, src in ipairs(viewers) do WLI.Sync.player(src) end
+    return true
+end
+
+--- Open a stash for a player (modules decide when; thread only, it may load).
+--- opts = { label, width, height, maxWeight, coords }
+function Drops.openStash(src, name, opts)
+    local inv, err = Drops.ensureStash(name, opts)
+    if not inv then return false, err end
+    local id = inv.id
     local ok, why = Drops.inRange(src, inv)
     if not ok then return false, why end
     WLI.views[src] = WLI.views[src] or {}

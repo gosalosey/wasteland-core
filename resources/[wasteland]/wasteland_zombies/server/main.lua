@@ -64,6 +64,14 @@ end
 local function remove(z)
     zombies[z.handle] = nil
     if DoesEntityExist(z.handle) then DeleteEntity(z.handle) end
+    -- The body is gone (looting deletes what was left on it).
+    TriggerEvent('wasteland:zombies:removed', z.uid, z.netId)
+end
+
+local uidCounter = 0
+local function newUid()
+    uidCounter = (uidCounter + 1) % 0x10000
+    return string.format('%08x%04x', os.time() & 0xffffffff, uidCounter)
 end
 
 -------------------------------------------------------------------------------
@@ -78,9 +86,10 @@ local function spawnAt(point, kind)
         M.log:warn('could not create a zombie (%s) at %.0f %.0f', model, point.x, point.y)
         return nil
     end
-    Entity(handle).state:set('wlZombie', { kind = kind }, true)
+    local uid = newUid()
+    Entity(handle).state:set('wlZombie', { kind = kind, uid = uid }, true)
     local z = { handle = handle, netId = NetworkGetNetworkIdFromEntity(handle), kind = kind, spawnedAt = now(),
-        hp = GetEntityHealth(handle) }
+        hp = GetEntityHealth(handle), uid = uid }
     zombies[handle] = z
     return z
 end
@@ -131,6 +140,8 @@ end
 
 local function dropLoot(z)
     if GetResourceState('wasteland_inventory') ~= 'started' then return end
+    -- With wasteland_loot running, the body itself is searched instead.
+    if GetResourceState('wasteland_loot') == 'started' then return end
     local items = Rules.loot(M.config.loot, math.random(), math.random)
     if not items then return end
     local c = coordsOf(z.handle)
@@ -397,6 +408,13 @@ exports('SpawnZombie', function(coords, kind)
     if not (M and M.active) or type(coords) ~= 'table' then return nil end
     local z = spawnAt(coords, (kind == 'runner' or kind == 'walker') and kind or 'walker')
     return z and z.netId or nil
+end)
+
+--- GetZombieInfo(netId) -> { uid, kind, dead, coords } | nil
+exports('GetZombieInfo', function(netId)
+    local z = zombieByNet(tonumber(netId))
+    if not z or not DoesEntityExist(z.handle) then return nil end
+    return { uid = z.uid, kind = z.kind, dead = z.dead == true, coords = coordsOf(z.handle) }
 end)
 
 --- ClearZombies() -> number removed

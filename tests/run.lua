@@ -64,6 +64,7 @@ function _G.newServer(opts)
     server:addResource('wasteland_weapons', RESOURCES .. '/wasteland_weapons')
     server:addResource('wasteland_images', RESOURCES .. '/wasteland_images')
     server:addResource('wasteland_zombies', RESOURCES .. '/wasteland_zombies')
+    server:addResource('wasteland_loot', RESOURCES .. '/wasteland_loot')
     server.db = {
         backend = opts.dbBackend or MemoryDB.new(RESOURCES),
         connected = opts.dbConnected ~= false,

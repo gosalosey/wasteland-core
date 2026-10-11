@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** 5B (zombies) complete in automated tests; installed; runtime verification pending (R12.x). Next: Milestone 6 looting.
+**Current milestone:** 6 (looting) complete in automated tests; installed; runtime verification pending (R14.x). Next: Milestone 7 zones, camps, NPCs, crafting.
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -97,7 +97,13 @@ Attachments: later (not chosen for 5A, K-34).
 - [~] Installed on the owner's server; runtime tests R12.1-R12.12 pending (also the 5A weapons R8.x, confirmed working by the owner)
 
 ## Milestone 6: looting
-- [ ] Searchable containers, loot tables, rarity · [ ] durations, cooldowns, respawn · [ ] registration API · [ ] concurrency tests
+Decisions (owner, 2026-10-11): world props everywhere and zombie bodies; shared containers that refill on a timer; short search bar, then the container opens; scarce loot.
+- [x] Searchable containers (world props by model, zombie bodies) through wasteland_target; loot tables with rarity and empty chance
+- [x] Search duration, cancel, refill only when empty after a timer; shared between players (inventory stashes)
+- [x] Registration: containers and tables in loot.lua; `RollTable` export
+- [x] Tests: rules, searching, sharing, refills, bodies, abuse (early finish, distance, cancel)
+- [~] Installed on the owner's server; runtime tests R14.1-R14.10 pending
+Refill state is kept in memory (after a restart emptied containers can be filled again).
 
 ## Milestone 7: zones, camps, NPCs, crafting
 - [ ] Zones (circle/polygon) and rules · [ ] safe zones · [ ] camps, NPC registry, barter traders, reputation

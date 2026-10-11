@@ -1,5 +1,20 @@
 # Changelog
 
+## Milestone 6: looting
+
+### wasteland_loot 0.1.0 (new)
+* Every dumpster, trash can, recycling bin, fridge, vending machine, tool chest, wooden crate and mailbox on the map can be searched (hold Left Alt, "Search ..."). Dead zombies are searched the same way ("Search body"), instead of dropping a loot bag.
+* Searching takes 3-5 seconds with an animation and a progress bar; moving, getting hurt, dying or X cancels. Then the container opens next to the inventory and you take what you want.
+* Containers are shared: what one player takes is gone for everyone. A container refills only once it is empty and its time has passed (40-90 minutes). A body's loot is gone with the body.
+* Scarce loot: many containers are empty; mostly junk; food and medicine uncommon; guns rare (crates, bodies). Every table, chance and time is in `loot.lua`.
+* Export `RollTable(name)` for other modules (quests, rewards); event `wasteland:loot:searched(source, type, stash)`.
+
+### Other
+* wasteland_inventory: `EnsureStash`, `DeleteStash`, `OpenStash` option `open` (shows the screen).
+* wasteland_zombies: zombies have a unique id (`wlZombie.uid`), export `GetZombieInfo`, event `wasteland:zombies:removed`; no loot bag while wasteland_loot runs.
+* Tests: 475 (new: loot rules, searching, sharing, refills, bodies, abuse).
+
+
 ## Target system, admin item list, zombie reach (owner requests)
 
 ### wasteland_target 0.1.0 (new)

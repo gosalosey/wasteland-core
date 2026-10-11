@@ -201,7 +201,7 @@ exports('RegisterUsable', function(name, handler)
     return true
 end)
 
---- OpenStash(source, name, opts) -> true (started) | false, err
+--- OpenStash(source, name, opts) -> true (started) | false, err   (opts.open = true: show the screen)
 --- opts: label, width, height, maxWeight, coords (players must be within
 --- reachDistance when coords are given). Loads in the background; errors
 --- are shown to the player.
@@ -211,9 +211,24 @@ exports('OpenStash', function(src, name, opts)
     if not src then return false, 'source must be a player server id' end
     Citizen.CreateThread(function()
         local ok, err = Drops.openStash(src, name, opts)
-        if not ok then Sync.error(src, err) end
+        if not ok then Sync.error(src, err)
+        elseif type(opts) == 'table' and opts.open then TriggerClientEvent('wasteland:inventory:client:open', src) end
     end)
     return true
+end)
+
+--- EnsureStash(name, opts) -> inventoryId | nil, err   (loads or creates it;
+--- call from a thread: it may read the database). opts as OpenStash.
+exports('EnsureStash', function(name, opts)
+    if inactive() then return nil, 'inventory module is not running' end
+    local inv, err = Drops.ensureStash(name, opts)
+    return inv and inv.id or nil, err
+end)
+
+--- DeleteStash(name) -> ok   (removes it and everything in it)
+exports('DeleteStash', function(name)
+    if inactive() then return false end
+    return Drops.deleteStash(name)
 end)
 
 --- GetInventory(id) -> snapshot | nil

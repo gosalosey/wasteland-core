@@ -421,3 +421,11 @@ Hold Left Alt to target. Client exports (call from client scripts):
 * `Remove(id) -> ok`, `IsTargeting() -> boolean`
 
 Options: a list of `{ label, icon?, name?, distance? (2.5), canInteract?(entity, distance, coords), onSelect?(data) | event? | serverEvent?, args? }`. `onSelect` gets `{ entity, netId, coords, distance, model, args, name, zone }`; `event` is triggered on the client with the same table; `serverEvent` is sent to the server with `{ netId, coords, args }` (check everything there). Registrations are removed when the resource that made them stops. The target is off while dead, in a vehicle, in the pause menu or while a screen has focus.
+
+## Loot (`wasteland_loot`, loot api 0.1)
+
+`loot.lua`: `containers` (type → `label`, `table`, `searchSeconds`, `refillMinutes`, `grid`, `anim` = `bin`|`search`|`kneel`, `models`) and `tables` (name → `emptyChance`, `rolls = { min, max }`, `items = { { name, min, max, weight } }`). The container type `body` (no models) is used for dead zombies.
+
+A world container is identified by its type and its position rounded to a metre; it is an inventory stash `loot_<type>_<x>_<y>_<z>` shared by everyone. The client asks to search (`wasteland:loot:server:start(model, coords)` or `...:body(netId)`); the server checks the model, the distance and whether anything is left, times the search, fills the stash when it is new or empty and due for a refill, and opens it (`OpenStash` with `open`). Bodies use the stash `loot_body_<uid>`, deleted when the zombie is removed.
+
+Exports: `RollTable(name) -> list of { name, count } | nil`. Server event: `wasteland:loot:searched(source, type, stashName)`.
