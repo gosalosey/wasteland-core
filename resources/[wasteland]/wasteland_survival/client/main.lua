@@ -91,13 +91,27 @@ end)
 
 RegisterNetEvent('wasteland:survival:client:notice', function(message) notice(tostring(message)) end)
 
+-- Animation per kind, and where a held prop sits in the hand
+-- (bone, offset x y z, rotation x y z).
 local ANIMS = {
-    eat = { dict = 'mp_player_inteat@burger', name = 'mp_player_int_eat_burger', ms = 3000 },
-    drink = { dict = 'mp_player_intdrink', name = 'loop_bottle', ms = 3000 },
-    treat = { dict = 'missheistdockssetup1clipboard@idle_a', name = 'idle_a', ms = 3000 },
+    eat = { dict = 'mp_player_inteat@burger', name = 'mp_player_int_eat_burger', ms = 3000,
+        bone = 18905, pos = { 0.13, 0.05, 0.02 }, rot = { -50.0, 16.0, 60.0 } },
+    drink = { dict = 'mp_player_intdrink', name = 'loop_bottle', ms = 3000,
+        bone = 18905, pos = { 0.12, 0.008, 0.03 }, rot = { 240.0, -60.0, 0.0 } },
+    treat = { dict = 'missheistdockssetup1clipboard@idle_a', name = 'idle_a', ms = 3000,
+        bone = 57005, pos = { 0.12, 0.02, -0.02 }, rot = { -90.0, 0.0, 0.0 } },
 }
 
-RegisterNetEvent('wasteland:survival:client:consumed', function(kind)
+local function loadModel(name)
+    local hash = GetHashKey(name)
+    if not IsModelInCdimage(hash) then return nil end
+    RequestModel(hash)
+    local deadline = GetGameTimer() + 2000
+    while not HasModelLoaded(hash) and GetGameTimer() < deadline do Citizen.Wait(0) end
+    return HasModelLoaded(hash) and hash or nil
+end
+
+RegisterNetEvent('wasteland:survival:client:consumed', function(kind, prop)
     local a = ANIMS[kind] or ANIMS.eat
     Citizen.CreateThread(function()
         local ped = PlayerPedId()
@@ -106,8 +120,24 @@ RegisterNetEvent('wasteland:survival:client:consumed', function(kind)
         local deadline = GetGameTimer() + 2000
         while not HasAnimDictLoaded(a.dict) and GetGameTimer() < deadline do Citizen.Wait(0) end
         if not HasAnimDictLoaded(a.dict) then return end
+        -- The item in the hand (networked, so others see it too).
+        local object
+        local hash = type(prop) == 'string' and loadModel(prop) or nil
+        if hash then
+            local c = GetEntityCoords(ped)
+            object = CreateObject(hash, c.x, c.y, c.z + 0.2, true, true, false)
+            SetEntityCollision(object, false, false)
+            AttachEntityToEntity(object, ped, GetPedBoneIndex(ped, a.bone), a.pos[1], a.pos[2], a.pos[3],
+                a.rot[1], a.rot[2], a.rot[3], true, true, false, true, 1, true)
+            SetModelAsNoLongerNeeded(hash)
+        end
         TaskPlayAnim(ped, a.dict, a.name, 4.0, -4.0, a.ms, 49, 0, false, false, false)
         RemoveAnimDict(a.dict)
+        Citizen.Wait(a.ms)
+        if object and DoesEntityExist(object) then
+            DetachEntity(object, true, false)
+            DeleteEntity(object)
+        end
     end)
 end)
 

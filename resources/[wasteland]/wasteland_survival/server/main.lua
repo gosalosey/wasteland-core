@@ -142,7 +142,7 @@ local function useConsumable(src, stack)
     if not Model.useful(s, effect) then return false, 'You do not need that right now.' end
     local heal = Model.consume(s, effect)
     if heal > 0 then TriggerClientEvent('wasteland:survival:client:heal', src, heal) end
-    TriggerClientEvent('wasteland:survival:client:consumed', src, effect.animation or 'eat')
+    TriggerClientEvent('wasteland:survival:client:consumed', src, effect.animation or 'eat', effect.prop)
     players():SetCharacterData(cid, DATA_KEY, s)
     sendStats(src, cid)
     return 1, effect.message
@@ -248,6 +248,7 @@ local EFFECT = { type = 'table', fields = {
     infection = { type = 'number', min = -100, max = 100 }, treatmentMinutes = { type = 'number', min = 0, max = 600 },
     temperature = { type = 'number', min = -5, max = 5 },
     animation = { type = 'enum', values = { 'eat', 'drink', 'treat' }, default = 'eat' },
+    prop = { type = 'string', pattern = '^[%w_]+$', maxLength = 64, description = 'Model held in the hand while using it' },
     message = { type = 'string', maxLength = 120 },
 } }
 

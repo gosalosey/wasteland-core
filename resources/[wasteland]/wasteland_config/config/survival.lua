@@ -66,17 +66,20 @@ return {
     -- What eating, drinking and medicine do (item names from inventory.lua).
     -- Fields: hunger, thirst, health (hit points), stopBleeding (levels),
     -- infection (+/-), treatmentMinutes (infection cannot grow meanwhile),
-    -- temperature (degrees), animation ('eat' | 'drink' | 'treat'), message.
+    -- temperature (degrees), animation ('eat' | 'drink' | 'treat'), message,
+    -- prop (game model held in the hand while using it; an unknown model is skipped).
     consumables = {
-        water_bottle = { thirst = 45, animation = 'drink' },
-        soda_can = { thirst = 25, hunger = 5, animation = 'drink' },
-        canned_beans = { hunger = 35, thirst = -5, animation = 'eat' },
-        canned_peaches = { hunger = 25, thirst = 10, animation = 'eat' },
-        energy_bar = { hunger = 15, animation = 'eat' },
-        bandage = { stopBleeding = 3, health = 10, animation = 'treat', message = 'You bandage your wounds.' },
-        rag = { stopBleeding = 1, animation = 'treat', message = 'You press the rag on the wound.' },
-        painkillers = { health = 15, animation = 'eat', message = 'The pain fades a little.' },
-        antibiotics = { infection = -40, treatmentMinutes = 20, animation = 'eat',
+        water_bottle = { thirst = 45, animation = 'drink', prop = 'prop_ld_flow_bottle' },
+        soda_can = { thirst = 25, hunger = 5, animation = 'drink', prop = 'prop_ecola_can' },
+        canned_beans = { hunger = 35, thirst = -5, animation = 'eat', prop = 'prop_ecola_can' },
+        canned_peaches = { hunger = 25, thirst = 10, animation = 'eat', prop = 'prop_ecola_can' },
+        energy_bar = { hunger = 15, animation = 'eat', prop = 'prop_choc_ego' },
+        bandage = { stopBleeding = 3, health = 10, animation = 'treat', prop = 'prop_ld_health_pack',
+            message = 'You bandage your wounds.' },
+        rag = { stopBleeding = 1, animation = 'treat', prop = 'prop_shower_towel',
+            message = 'You press the rag on the wound.' },
+        painkillers = { health = 15, animation = 'eat', prop = 'prop_cs_pills', message = 'The pain fades a little.' },
+        antibiotics = { infection = -40, treatmentMinutes = 20, animation = 'eat', prop = 'prop_cs_pills',
             message = 'You take the antibiotics.' },
     },
 }
