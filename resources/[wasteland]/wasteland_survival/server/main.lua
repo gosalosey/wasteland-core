@@ -189,14 +189,51 @@ AddEventHandler('wasteland:zombies:hit', function(victim)
     if after <= 0 then notice(victim, string.format('Your %s is ruined. Mend it with a sewing kit.', w.label:lower())) end
 end)
 
--- What to mend: the piece the player chose, else the most worn piece they
--- wear, else the most worn piece they carry.
-local function clothingTarget(src, targetUid)
+-------------------------------------------------------------------------------
+-- Armor plates (worn in the inventory's armor slot): while a plate holds,
+-- incoming damage is stopped. Hits from the server (zombies, Damage) and
+-- what the game takes from the GTA armour the client keeps full
+-- (wasteland:survival:server:armorHit) wear the plate down slowly.
+-------------------------------------------------------------------------------
+
+local plateCarry = {}   -- [uid] = wear below 1 not yet taken off the plate
+
+local function wornPlate(src)
+    if not clothingRunning() then return nil end
+    local ok, worn = pcall(function() return exports.wasteland_inventory:GetWornItems(src) end)
+    if not ok or type(worn) ~= 'table' then return nil end
+    for _, w in ipairs(worn) do
+        if w.category == 'armor' and (w.durability or 0) > 0 and currentOf(w, w.durability) > 0 then return w end
+    end
+    return nil
+end
+
+--- The plate takes `damage`; true if a plate was there to take it.
+local function wearPlate(src, damage)
+    local w = wornPlate(src)
+    if not w then return false end
+    local loss = damage * M.config.armor.wearPerDamage + (plateCarry[w.uid] or 0)
+    local whole = math.floor(loss)
+    plateCarry[w.uid] = loss - whole
+    if whole > 0 then
+        local after = math.max(0, currentOf(w, w.durability) - whole)
+        exports.wasteland_inventory:SetItemMetadata(src, w.uid, { durability = after })
+        if after <= 0 then
+            plateCarry[w.uid] = nil
+            notice(src, string.format('Your %s broke. Repair it with an armor repair kit.', w.label:lower()))
+        end
+    end
+    return true
+end
+
+-- What to repair: the piece the player chose, else the most worn piece of
+-- that category they wear, else the most worn one they carry.
+local function repairTarget(src, category, targetUid)
     local inv = exports.wasteland_inventory
     if targetUid then
         local s = inv:FindItem(src, targetUid)
         local d = s and inv:GetItemDefinition(s.name)
-        if not d or d.category ~= 'clothing' or (d.durability or 0) <= 0 then return nil, 'That cannot be mended with this.' end
+        if not d or d.category ~= category or (d.durability or 0) <= 0 then return nil, 'That cannot be repaired with this.' end
         return { uid = s.uid, label = d.label, current = currentOf(s, d.durability), max = d.durability }
     end
     local best
@@ -206,11 +243,11 @@ local function clothingTarget(src, targetUid)
         end
     end
     for _, w in ipairs(inv:GetWornItems(src)) do
-        if w.category == 'clothing' and (w.durability or 0) > 0 then consider(w.uid, w.label, currentOf(w, w.durability), w.durability) end
+        if w.category == category and (w.durability or 0) > 0 then consider(w.uid, w.label, currentOf(w, w.durability), w.durability) end
     end
     if best then return best end
     for _, it in ipairs(inv:GetItemList()) do
-        if it.category == 'clothing' then
+        if it.category == category then
             local d = inv:GetItemDefinition(it.name)
             if d and (d.durability or 0) > 0 then
                 for _, s in ipairs(inv:FindItems(src, it.name)) do consider(s.uid, d.label, currentOf(s, d.durability), d.durability) end
@@ -220,26 +257,40 @@ local function clothingTarget(src, targetUid)
     return best
 end
 
-local function useClothingRepair(src, stack, _, targetUid)
+-- Repair items: clothing.repairItems mend clothing, armor.repairItems
+-- repair armor plates (the category from the config section).
+local function repairInfo(name)
+    if M.config.clothing.repairItems[name] then return 'clothing', M.config.clothing.repairItems[name].percent end
+    if M.config.armor.repairItems[name] then return 'armor', M.config.armor.repairItems[name].percent end
+    return nil
+end
+
+local function useRepairItem(src, stack, _, targetUid)
     local cid = characterOf(src)
     local s = cid and states[cid]
     if not s or s.dead then return false, 'You cannot do that right now.' end
-    local t, err = clothingTarget(src, targetUid)
-    if not t then return false, err or 'Nothing you wear or carry needs mending.' end
-    if t.current >= t.max then return false, string.format('Your %s does not need mending.', t.label:lower()) end
-    local after = math.min(t.max, t.current + math.ceil(t.max * M.config.clothing.repairItems[stack.name].percent / 100))
+    local category, percent = repairInfo(stack.name)
+    if not category then return false, 'Nothing happens.' end
+    local cloth = category == 'clothing'
+    local t, err = repairTarget(src, category, targetUid)
+    if not t then return false, err or (cloth and 'Nothing you wear or carry needs mending.' or 'You have no damaged armor plate.') end
+    if t.current >= t.max then return false, string.format('Your %s does not need %s.', t.label:lower(), cloth and 'mending' or 'repairs') end
+    local after = math.min(t.max, t.current + math.ceil(t.max * percent / 100))
     local ok, e = exports.wasteland_inventory:SetItemMetadata(src, t.uid, { durability = after })
     if not ok then return false, e end
+    plateCarry[t.uid] = nil
     TriggerClientEvent('wasteland:survival:client:consumed', src, 'treat', nil)
-    return 1, string.format('You mend your %s (%d%% -> %d%%).', t.label:lower(), math.floor(t.current / t.max * 100 + 0.5),
-        math.floor(after / t.max * 100 + 0.5))
+    return 1, string.format('You %s your %s (%d%% -> %d%%).', cloth and 'mend' or 'repair', t.label:lower(),
+        math.floor(t.current / t.max * 100 + 0.5), math.floor(after / t.max * 100 + 0.5))
 end
 
 local function registerClothingRepairs()
     if not clothingRunning() then return end
-    for name in pairs(M.config.clothing.repairItems) do
-        local ok, err = exports.wasteland_inventory:RegisterUsable(name, useClothingRepair)
-        if not ok then M.log:warn('clothing repair item "%s": %s', name, tostring(err)) end
+    for _, list in ipairs({ M.config.clothing.repairItems, M.config.armor.repairItems }) do
+        for name in pairs(list) do
+            local ok, err = exports.wasteland_inventory:RegisterUsable(name, useRepairItem)
+            if not ok then M.log:warn('repair item "%s": %s', name, tostring(err)) end
+        end
     end
 end
 
@@ -392,6 +443,11 @@ M = Wasteland.DefineModule({
                 repairItems = { type = 'map', default = { sewing_kit = { percent = 50 } }, keys = { type = 'string', pattern = '^[a-z][a-z0-9_]*$' },
                     values = { type = 'table', fields = { percent = { type = 'number', default = 50, min = 1, max = 100 } } } },
             } },
+            armor = { type = 'table', fields = {
+                wearPerDamage = num(0.25, 0, 10),
+                repairItems = { type = 'map', default = { armor_repair_kit = { percent = 40 } }, keys = { type = 'string', pattern = '^[a-z][a-z0-9_]*$' },
+                    values = { type = 'table', fields = { percent = { type = 'number', default = 40, min = 1, max = 100 } } } },
+            } },
         } },
     },
 
@@ -426,6 +482,14 @@ M = Wasteland.DefineModule({
 -------------------------------------------------------------------------------
 -- Net events
 -------------------------------------------------------------------------------
+
+-- The game took GTA armour (gunshots, melee): the plate wears down. The
+-- client keeps the armour full while a plate holds.
+M.netEvent('wasteland:survival:server:armorHit', { args = { { type = 'number', required = true, min = 0, max = 400 } },
+    rateLimit = { burst = 4, perSecond = 2 } }, function(src, amount)
+    local cid = characterOf(src)
+    if cid and states[cid] and not states[cid].dead and amount > 0 then wearPlate(src, amount) end
+end)
 
 M.netEvent('wasteland:survival:server:died', { rateLimit = { burst = 2, perSecond = 0.2 } }, function(src)
     local cid = characterOf(src)
@@ -537,13 +601,14 @@ exports('Revive', function(src)
     return true
 end)
 
---- Damage(source, amount) -> ok   (zombie hits; health points of 100)
+--- Damage(source, amount) -> ok, absorbed (an armor plate took it) -> ok   (zombie hits; health points of 100)
 exports('Damage', function(src, amount)
     local s = stateOf(src)
     amount = math.floor(tonumber(amount) or 0)
     if not s or s.dead or amount <= 0 then return false end
+    if wearPlate(tonumber(src), amount) then return true, true end -- the armor plate took it
     TriggerClientEvent('wasteland:survival:client:damage', tonumber(src), math.min(amount, 400))
-    return true
+    return true, false
 end)
 
 --- IsDead(source) -> boolean

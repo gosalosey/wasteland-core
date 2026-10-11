@@ -154,6 +154,26 @@ describe('zombie hits', function()
         expect(infected).toBe(true); expect(bled).toBe(true)
         expect(#server.scriptErrors).toBe(0)
     end)
+
+    it('an armor plate takes the hits: no damage, no bleeding', function()
+        local inv = function(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+        inv('AddItem', id, 'armor_plate', 1); server:advance(100)
+        local plate = inv('FindItems', id, 'armor_plate')[1]
+        server:clientEvent(id, 'wasteland:inventory:server:equip', plate.uid, plate.inventoryId, 'armor'); server:advance(300)
+        local damage = #events(server, id, 'wasteland:survival:client:damage')
+        local bled = false
+        for _ = 1, 20 do
+            server:advance(1600)
+            server:clientEvent(id, 'wasteland:zombies:server:hit', netId, id)
+            server:advance(50)
+            if server:export('wasteland_survival', 'GetStats', id).bleeding > 0 then bled = true end
+        end
+        expect(#events(server, id, 'wasteland:survival:client:damage')).toBe(damage)
+        expect(bled).toBe(false)
+        local worn
+        for _, w in ipairs(inv('GetWornItems', id)) do if w.slot == 'armor' then worn = w end end
+        expect(worn.metadata.durability < 100).toBe(true)
+    end)
 end)
 
 describe('noise, deaths, loot and despawning', function()

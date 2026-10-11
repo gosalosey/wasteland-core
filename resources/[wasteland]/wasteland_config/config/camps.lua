@@ -64,6 +64,8 @@ return {
                 { name = 'ammo_9mm', buy = 4, sell = 1, stock = 120, restock = 30 },
                 { name = 'ammo_12g', buy = 8, sell = 2, stock = 40, restock = 10 },
                 { name = 'weapon_repair_kit', buy = 300, sell = 80, stock = 2, restock = 1 },
+                { name = 'armor_plate', buy = 750, sell = 180, stock = 2, restock = 1 },
+                { name = 'armor_repair_kit', buy = 150, sell = 35, stock = 3, restock = 1 },
                 { name = 'weapon_smg', sell = 900 },
                 { name = 'weapon_carbine', sell = 1800 },
                 { name = 'weapon_assaultrifle', sell = 1800 },

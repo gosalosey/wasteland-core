@@ -61,12 +61,27 @@ end
 -- already sends this client (pockets and worn bag, like GetCash).
 local cashItem, cash = nil, nil
 
+local itemDefs = {}
+local plate = nil      -- worn armor plate { current, max } (nil = none)
+
 RegisterNetEvent('wasteland:inventory:client:definitions', function(defs)
     if type(defs) == 'table' and type(defs.cashItem) == 'string' then cashItem = defs.cashItem end
+    if type(defs) == 'table' and type(defs.items) == 'table' then itemDefs = defs.items end
 end)
 
 RegisterNetEvent('wasteland:inventory:client:sync', function(snap)
     if type(snap) ~= 'table' or type(snap.inventories) ~= 'table' then return end
+    for _, inv in ipairs(snap.inventories) do
+        if inv.id == snap.equip then
+            plate = nil
+            for _, s in ipairs(inv.items or {}) do
+                local d = itemDefs[s.name]
+                if s.slot == 'armor' and d and (d.durability or 0) > 0 then
+                    plate = { current = (s.metadata and tonumber(s.metadata.durability)) or d.durability, max = d.durability }
+                end
+            end
+        end
+    end
     local name = cashItem or 'cash'
     local total = 0
     for _, inv in ipairs(snap.inventories) do
@@ -90,6 +105,7 @@ local function hudData()
         mode = hudMode,
         health = healthPercent(ped),
         stamina = staminaPercent(),
+        armor = plate and math.max(0, math.min(100, math.floor(plate.current / plate.max * 100 + 0.5))) or nil,
         stats = stats,
         layout = hudLayout,
         editing = hudEditing,
@@ -417,6 +433,31 @@ Citizen.CreateThread(function()
         else
             Citizen.Wait(1000)
         end
+    end
+end)
+
+-- Armor plate: while it holds, GTA armour is kept full so the game puts
+-- gunshots and blows on the armour instead of health; what it took is
+-- reported and the server wears the plate down. No plate: no armour.
+Citizen.CreateThread(function()
+    local holding, pending, lastReport = true, 0, 0
+    while true do
+        local ped = PlayerPedId()
+        local working = plate ~= nil and plate.current > 0 and not (stats and stats.dead) and not IsEntityDead(ped)
+        if working then
+            local a = GetPedArmour(ped)
+            if holding and a < 100 then pending = pending + (100 - a) end
+            if a ~= 100 then SetPedArmour(ped, 100) end
+            holding = true
+        elseif holding then
+            SetPedArmour(ped, 0)
+            holding = false
+        end
+        if pending > 0 and GetGameTimer() - lastReport > 1000 then
+            TriggerServerEvent('wasteland:survival:server:armorHit', math.min(pending, 400) + 0.0)
+            pending, lastReport = 0, GetGameTimer()
+        end
+        Citizen.Wait(100)
     end
 end)
 

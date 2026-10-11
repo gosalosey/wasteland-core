@@ -1,5 +1,15 @@
 # Changelog
 
+## Armor plates (owner request)
+* New Armor slot in the inventory (Worn) and new items: Armor plate, Armor repair kit, Blueprint: armor plate.
+* While a worn plate holds, all incoming damage is stopped: zombie hits (and they cannot cause bleeding; infection still can) and gunshots/blows from players (the client keeps GTA armour full and reports what the game took). The plate loses 0.25 durability per point of damage it stops (`survival.lua` armor.wearPerDamage): a new plate stops about 400 damage. At 0 it breaks ("Your armor plate broke...") and stops nothing until repaired. Falls and other damage the game does not put on armour still hurt.
+* HUD: a shield icon shows the plate's condition while one is worn.
+* Repair: Armor repair kit (+40%, used up): right-click the plate, "Repair with Armor repair kit", or use the kit (repairs the worn plate first). Sewing kits do not repair plates.
+* Get them: crates (plate, kit, blueprint), tool loot (kit); gunsmith sells plates ($750) and kits ($150); craft plates with the blueprint (6 scrap metal, 2 duct tape, 2 rags), kits from the start (2 scrap metal, 1 duct tape).
+* New item category `armor`; survival `Damage` export returns `ok, absorbed`.
+* Tests: 613.
+
+
 ## Clothing durability and mending (owner request)
 * Tops, pants, shoes, hats and glasses have durability (100). Every zombie hit wears out one worn piece (4-10, `survival.lua` clothing.hitWear). The inventory shows a condition bar (red at 25% or less), "Condition 64%" on hover and in the right-click menu; a ruined piece is greyed out and marked RUINED.
 * Worn-out clothing keeps you less warm: full warmth when new, at least half while worn, none when ruined (until mended).

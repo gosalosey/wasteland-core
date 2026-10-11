@@ -91,4 +91,14 @@ return {
         hitWear = { 4, 10 },
         repairItems = { sewing_kit = { percent = 50 } },
     },
+
+    -- Armor plates (items worn in the Armor slot): while a plate holds, all
+    -- incoming damage is stopped (and zombie hits cannot cause bleeding;
+    -- infection still can). The plate loses wearPerDamage durability per
+    -- point of damage it stops (0.25: a new plate stops about 400 damage).
+    -- Repair items: how much one use repairs (percent of new).
+    armor = {
+        wearPerDamage = 0.25,
+        repairItems = { armor_repair_kit = { percent = 40 } },
+    },
 }

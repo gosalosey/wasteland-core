@@ -79,3 +79,10 @@ test('stamina bar: only while stamina is used', () => {
     assert.strictEqual(hud.staminaBar({ mode: 'compact', stamina: 12, stats: stats() }).low, true);
     assert.strictEqual(hud.staminaBar({ mode: 'off', stamina: 10, stats: stats() }).visible, false);
 });
+
+test('armor plate icon only while a plate is worn', () => {
+    const base = { mode: 'compact', health: 80, stats: { hunger: 50, thirst: 50 } };
+    assert.ok(!hud.icons(base).some((i) => i.key === 'armor'));
+    const a = hud.icons(Object.assign({ armor: 30 }, base)).find((i) => i.key === 'armor');
+    assert.deepStrictEqual([a.fill, a.level], [30, 'low']);
+});

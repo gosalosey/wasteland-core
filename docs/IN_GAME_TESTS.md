@@ -413,3 +413,15 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R24.3 | Keep getting hit until a piece is ruined | "Your top is ruined. Mend it with a sewing kit."; the tile is grey with RUINED; in the cold you get colder faster |
 | R24.4 | Get a sewing kit (general trader / craft from 2 rags + scrap); right-click the ruined piece | "Repair with Sewing kit"; "You mend your top (0% -> 50%)."; one kit is gone; a short animation |
 | R24.5 | Use a sewing kit from its own menu ("Use") | It mends the most worn piece you wear |
+
+## R25: armor plates
+
+| # | Do | Expect |
+|---|---|---|
+| R25.1 | Buy an armor plate (gunsmith), open the inventory | A new "Armor" slot under Worn; drag the plate in (or right-click, Wear) |
+| R25.2 | Look at the HUD | A shield icon next to Health, full |
+| R25.3 | Let zombies hit you | Health does not go down, no bleeding; the shield goes down a little each hit |
+| R25.4 | Have another player shoot / punch you | Health does not go down; the shield goes down |
+| R25.5 | Keep taking hits until it breaks | "Your armor plate broke. Repair it with an armor repair kit."; now you take damage |
+| R25.6 | Right-click the plate, "Repair with Armor repair kit" | "You repair your armor plate (0% -> 40%)."; protected again |
+| R25.7 | Take the plate off | The shield icon goes; you take damage normally |

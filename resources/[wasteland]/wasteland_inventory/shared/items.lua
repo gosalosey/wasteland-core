@@ -5,10 +5,11 @@
 
 WLI = WLI or {}
 
--- Equipment slots, in display order. `back` holds a backpack (container).
-WLI.EQUIP_SLOTS = { 'head', 'eyes', 'torso', 'back', 'legs', 'feet' }
+-- Equipment slots, in display order. `back` holds a backpack (container),
+-- `armor` an armor plate (survival: stops incoming damage).
+WLI.EQUIP_SLOTS = { 'head', 'eyes', 'torso', 'armor', 'back', 'legs', 'feet' }
 WLI.EQUIP_SLOT_LABELS = {
-    head = 'Head', eyes = 'Eyes', torso = 'Torso', back = 'Back', legs = 'Legs', feet = 'Feet',
+    head = 'Head', eyes = 'Eyes', torso = 'Torso', armor = 'Armor', back = 'Back', legs = 'Legs', feet = 'Feet',
 }
 
 -- Which part of the ped a clothing slot changes.
@@ -26,7 +27,7 @@ WLI.CLOTHING_PARTS = {
 -- Stack size of items that do not set one (and can stack).
 WLI.DEFAULT_STACK = 50
 
-WLI.CATEGORIES = { 'food', 'drink', 'medical', 'material', 'tool', 'clothing', 'container', 'weapon', 'ammo', 'misc' }
+WLI.CATEGORIES = { 'food', 'drink', 'medical', 'material', 'tool', 'clothing', 'armor', 'container', 'weapon', 'ammo', 'misc' }
 
 WLI.ITEM_SCHEMA = {
     type = 'table',

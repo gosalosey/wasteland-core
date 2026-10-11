@@ -244,9 +244,11 @@ local function hit(src, netId, victim)
     local r = Rules.hit(M.config.kinds[z.kind], {
         damage = math.random(), infection = math.random(), infectionAmount = math.random(), bleeding = math.random(),
     })
-    survival('Damage', victim, r.damage)
+    -- An armor plate (survival) takes the damage; then the hit cannot cut.
+    local _, absorbed = survival('Damage', victim, r.damage)
+    r.absorbed = absorbed == true
     if r.infection > 0 then survival('AddInfection', victim, r.infection) end
-    if r.bleeding > 0 then survival('AddBleeding', victim, r.bleeding) end
+    if r.bleeding > 0 and not r.absorbed then survival('AddBleeding', victim, r.bleeding) end
     TriggerEvent('wasteland:zombies:hit', victim, z.netId, r)
 end
 

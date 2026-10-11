@@ -155,7 +155,7 @@
     const CELL = 50;
     const CATEGORY_COLORS = {
         food: '#6d7f3a', drink: '#3d6f8a', medical: '#8a3d3d', material: '#6b5f50', tool: '#7a6a3a',
-        clothing: '#5a4d6e', container: '#4e5f45', weapon: '#5d5d5d', ammo: '#7d6b2e', misc: '#555048',
+        clothing: '#5a4d6e', armor: '#4a5866', container: '#4e5f45', weapon: '#5d5d5d', ammo: '#7d6b2e', misc: '#555048',
     };
     let st; // screen state
 

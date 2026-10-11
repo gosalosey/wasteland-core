@@ -28,7 +28,7 @@
 
     // Items grouped by category (inventory order; unknown categories last),
     // each group sorted by label: [{ category, items }]
-    const CATEGORY_ORDER = ['weapon', 'ammo', 'medical', 'food', 'drink', 'clothing', 'container', 'tool', 'material', 'misc'];
+    const CATEGORY_ORDER = ['weapon', 'ammo', 'armor', 'medical', 'food', 'drink', 'clothing', 'container', 'tool', 'material', 'misc'];
     function groupItems(items) {
         const groups = {};
         items.forEach((i) => { const c = i.category || 'misc'; (groups[c] = groups[c] || []).push(i); });

@@ -11,7 +11,7 @@
 // Also: a line with the player's server id, character name and cash (moves
 // with the HUD), and a stamina bar at the bottom middle of the screen that
 // only shows while stamina is being used.
-// Data: { mode, health, stamina, editing, layout = { x, y, vertical, size },
+// Data: { mode, health, armor (plate %, only while one is worn), stamina, editing, layout = { x, y, vertical, size },
 //         info = { id, name, cash },
 //         stats = { hunger, thirst, infection, bleeding, temperature, treatment, dead } }
 
@@ -47,6 +47,7 @@
         if (data.mode === 'off' || s.dead) return [];
         const all = [];
         if (typeof data.health === 'number') all.push({ key: 'health', label: 'Health', fill: clamp(data.health) });
+        if (typeof data.armor === 'number') all.push({ key: 'armor', label: 'Armor', fill: clamp(data.armor) });
         if (typeof s.hunger === 'number') all.push({ key: 'food', label: 'Food', fill: clamp(s.hunger) });
         if (typeof s.thirst === 'number') all.push({ key: 'drink', label: 'Drink', fill: clamp(s.thirst) });
         all.forEach((i) => { i.level = levelOf(i.fill); });
@@ -162,6 +163,10 @@
         drink: {
             outline: 'M15 3 H25 V9 C25 12 34 15 34 24 V39 A6 6 0 0 1 28 45 H12 A6 6 0 0 1 6 39 V24 C6 15 15 12 15 9 Z',
             inner: 'M17.5 7 H22.5 V10 C22.5 14 30 17 30 24 V38 A3 3 0 0 1 27 41 H13 A3 3 0 0 1 10 38 V24 C10 17 17.5 14 17.5 10 Z',
+        },
+        armor: {
+            outline: 'M20 3 L35 9 V22 C35 33 28 41 20 45 C12 41 5 33 5 22 V9 Z',
+            inner: 'M20 7 L31 11.5 V22 C31 30.5 26 37 20 40.5 C14 37 9 30.5 9 22 V11.5 Z',
         },
         temp: {
             outline: 'M15 8 A5 5 0 0 1 25 8 V28 A10 10 0 1 1 15 28 Z',
