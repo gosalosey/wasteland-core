@@ -274,3 +274,13 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R14.8 | Kill a zombie, Left Alt on the body | "Search body"; a short search (kneeling); sometimes loot; no loot bag on the ground |
 | R14.9 | Wait until the body disappears (90 s) | Its loot is gone with it |
 | R14.10 | Tell me any prop that should be searchable but is not (model name from a tool, or a screenshot) | It can be added to `loot.lua` |
+
+## Inventory: weight, double-click
+
+| # | Step | Expected result |
+|---|---|---|
+| R15.1 | Open the inventory | Pockets show `/ 35.0 kg`; a small backpack `/ 35.0 kg`, a hiking backpack `/ 60.0 kg` |
+| R15.2 | Search a container that has items; double-click one | It jumps into your pockets (or your backpack if the pockets are full) |
+| R15.3 | Double-click ammo in a container while you carry the same ammo | It joins your stack |
+| R15.4 | Double-click one of your items while a container is open | It goes into the container |
+| R15.5 | Fill up until too heavy, double-click something heavy | "Too heavy to carry." |

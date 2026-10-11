@@ -3,7 +3,7 @@
 -- rotated. Pockets are small; a worn backpack adds its own grid.
 return {
     -- The pockets every character has (cells and kilograms).
-    pockets = { width = 6, height = 4, maxWeight = 12.0 },
+    pockets = { width = 6, height = 4, maxWeight = 35.0 },
 
     -- Size of the grid for items lying on the ground.
     dropGrid = { width = 10, height = 10 },
@@ -137,9 +137,9 @@ return {
             description = 'Repairs the weapon in your hands.' },
 
         backpack_small = { label = 'Small backpack', image = 'bag', category = 'container', width = 3, height = 3, weight = 0.8,
-            equip = 'back', container = { width = 5, height = 4, maxWeight = 15 } },
+            equip = 'back', container = { width = 5, height = 4, maxWeight = 35 } },
         backpack_large = { label = 'Hiking backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 1.8,
-            equip = 'back', container = { width = 7, height = 6, maxWeight = 30 } },
+            equip = 'back', container = { width = 7, height = 6, maxWeight = 60 } },
 
         clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6 },
         clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4 },

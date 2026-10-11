@@ -2,7 +2,7 @@
 // Inventory screen (runs inside wasteland_ui): pockets, worn backpack,
 // worn items, hotbar, and the ground/stash being searched. Drag items
 // between grids (R rotates while dragging), right-click for actions,
-// shift-click to quick-move. The server decides every change; the screen
+// double-click or shift-click to quick-move. The server decides every change; the screen
 // only previews placement (same rules as shared/grid.lua) and waits for the
 // server's snapshot.
 
@@ -85,6 +85,43 @@
         return { action: 'move', payload: { uid: s.uid, from: drag.from, to: target.inv.id, x: target.x, y: target.y, rotated: drag.rotated } };
     }
 
+    // Quick move (double-click or shift-click): from a searched / opened
+    // inventory into yours (pockets, then backpack), or from yours into the
+    // opened one. Tops up a matching stack first, then uses free space.
+    // Returns { action, payload } or { error } or null (nothing to move to).
+    function quickTarget(stack, fromId, snap, defs) {
+        const def = defs[stack.name];
+        if (!def) return null;
+        const mine = [snap.pockets, snap.backpack].filter(Boolean);
+        const others = snap.secondary || [];
+        const targets = mine.indexOf(fromId) >= 0 ? others : mine;
+        if (!targets.length) return null;
+        const byId = (id) => snap.inventories.find((i) => i.id === id);
+        // Room for `n` more units by weight (the server checks again).
+        const light = (inv, n) => typeof inv.maxWeight !== 'number' || (inv.weight || 0) + (def.weight || 0) * n <= inv.maxWeight + 1e-9;
+        let heavy = false;
+        if (def.stack > 1) {
+            for (const id of targets) {
+                const inv = byId(id);
+                if (inv && !light(inv, 1)) { heavy = true; continue; }
+                const under = inv && inv.items.find((s) => s.uid !== stack.uid && s.name === stack.name
+                    && s.count < def.stack && sameMeta(s.metadata, stack.metadata));
+                if (under) {
+                    let count = Math.min(stack.count, def.stack - under.count);
+                    while (count > 1 && !light(inv, count)) count--;
+                    return { action: 'merge', payload: { uid: stack.uid, from: fromId, target: under.uid, to: id, count: count } };
+                }
+            }
+        }
+        for (const id of targets) {
+            const inv = byId(id);
+            if (inv && !light(inv, stack.count)) { heavy = true; continue; }
+            const spot = inv && findSpot(inv, defs, def);
+            if (spot) return { action: 'move', payload: { uid: stack.uid, from: fromId, to: id, x: spot.x, y: spot.y, rotated: spot.rotated } };
+        }
+        return { error: heavy ? 'Too heavy to carry.' : 'No room for that.' };
+    }
+
     function formatKg(v) { return (Math.round(v * 10) / 10).toFixed(1); }
 
     // Short label for a tile: whole label when it fits, else initials.
@@ -94,7 +131,7 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop,
+        module.exports = { footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
             formatKg: formatKg, shortLabel: shortLabel };
         return;
     }
@@ -240,7 +277,15 @@
         if (e.button !== 0) return;
         e.preventDefault();
         closeMenu();
-        if (e.shiftKey) { quickMove(stack, fromId); return; }
+        if (e.shiftKey) { quickMove(stack, fromId, true); return; }
+        // Double-click (second press on the same item within 300 ms): quick move.
+        const now = Date.now();
+        if (st.lastPress && st.lastPress.uid === stack.uid && now - st.lastPress.t < 300) {
+            st.lastPress = null;
+            quickMove(stack, fromId, false);
+            return;
+        }
+        st.lastPress = { uid: stack.uid, t: now };
         const rect = el.getBoundingClientRect();
         const ghost = el.cloneNode(true);
         ghost.classList.add('wli-ghost');
@@ -318,21 +363,14 @@
         else if (target) setMessage('That does not fit there.', 'error');
     }
 
-    // Shift-click: move between your inventories and the searched one.
-    function quickMove(stack, fromId) {
-        const def = st.defs.items[stack.name];
-        const mine = [st.snap.pockets, st.snap.backpack].filter(Boolean);
-        const others = st.snap.secondary || [];
-        const targets = mine.indexOf(fromId) >= 0 ? others : mine;
-        for (const id of targets) {
-            const inv = invById(id);
-            const spot = inv && findSpot(inv, st.defs.items, def);
-            if (spot) {
-                st.api.post('move', { uid: stack.uid, from: fromId, to: id, x: spot.x, y: spot.y, rotated: spot.rotated });
-                return;
-            }
-        }
-        setMessage(targets.length ? 'No room for that.' : 'Nothing is open to move it to.', 'error');
+    // Double-click / shift-click: move between your inventories and the
+    // searched one. `explain`: say so when nothing is open.
+    function quickMove(stack, fromId, explain) {
+        if (fromId === st.snap.equip) return; // worn items: drag them off
+        const r = quickTarget(stack, fromId, st.snap, st.defs.items);
+        if (!r) { if (explain) setMessage('Nothing is open to move it to.', 'error'); return; }
+        if (r.error) { setMessage(r.error, 'error'); return; }
+        st.api.post(r.action, r.payload);
     }
 
     // ---------------------------------------------------------------- menu
@@ -413,7 +451,7 @@
                 h('div', { class: 'wli-layout' },
                     h('div', { class: 'wli-header' },
                         h('h1', { class: 'wl-title', text: 'Inventory' }),
-                        h('span', { class: 'wl-hint', text: 'Drag to move · R rotates while dragging · Right-click for actions · Shift-click to quick-move · TAB or Esc closes' })),
+                        h('span', { class: 'wl-hint', text: 'Drag to move · Double-click to take / put back · R rotates while dragging · Right-click for actions · TAB or Esc closes' })),
                     h('div', { class: 'wli-columns' }, st.left, st.middle, st.right),
                     st.message));
             el.appendChild(st.root);

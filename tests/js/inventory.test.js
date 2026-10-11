@@ -80,3 +80,36 @@ test('labels and weights are formatted for the tiles', () => {
     assert.strictEqual(inv.formatKg(1.25), '1.3');
     assert.strictEqual(inv.formatKg(12), '12.0');
 });
+
+test('quickTarget: takes into pockets, tops up a stack first, falls back to the bag, refuses when heavy or full', () => {
+    const defs = {
+        ammo: { width: 1, height: 1, stack: 100, weight: 0.01 },
+        rifle: { width: 5, height: 2, stack: 1, weight: 3 },
+        rock: { width: 1, height: 1, stack: 1, weight: 20 },
+    };
+    const pockets = { id: 'player:1', width: 6, height: 4, weight: 1, maxWeight: 35, items: [
+        { uid: 'p1', name: 'ammo', count: 95, x: 0, y: 0, metadata: {} },
+        { uid: 'p2', name: 'rifle', count: 1, x: 0, y: 1 },
+        { uid: 'p3', name: 'rifle', count: 1, x: 0, y: 3 - 0 },
+    ] };
+    const bag = { id: 'item:b', width: 7, height: 6, weight: 0, maxWeight: 60, items: [] };
+    const loot = { id: 'stash:loot_x', width: 6, height: 5, weight: 0, maxWeight: 200, items: [
+        { uid: 'l1', name: 'ammo', count: 20, x: 0, y: 0, metadata: {} },
+        { uid: 'l2', name: 'rifle', count: 1, x: 0, y: 1 },
+        { uid: 'l3', name: 'rock', count: 1, x: 0, y: 3 },
+    ] };
+    const snap = { pockets: 'player:1', backpack: 'item:b', secondary: ['stash:loot_x'], inventories: [pockets, bag, loot] };
+    const merge = inv.quickTarget(loot.items[0], 'stash:loot_x', snap, defs);
+    assert.strictEqual(merge.action, 'merge');
+    assert.strictEqual(merge.payload.target, 'p1');
+    assert.strictEqual(merge.payload.count, 5); // tops the pocket stack up to 100
+    const rifle = inv.quickTarget(loot.items[1], 'stash:loot_x', snap, defs);
+    assert.strictEqual(rifle.action, 'move');
+    assert.strictEqual(rifle.payload.to, 'item:b'); // pockets have no 5x2 room left
+    pockets.weight = 34; bag.weight = 59;
+    assert.strictEqual(inv.quickTarget(loot.items[2], 'stash:loot_x', snap, defs).error, 'Too heavy to carry.');
+    // from your pockets back into the open container
+    assert.strictEqual(inv.quickTarget(pockets.items[1], 'player:1', snap, defs).payload.to, 'stash:loot_x');
+    // nothing open: nothing to do
+    assert.strictEqual(inv.quickTarget(pockets.items[1], 'player:1', Object.assign({}, snap, { secondary: [] }), defs), null);
+});

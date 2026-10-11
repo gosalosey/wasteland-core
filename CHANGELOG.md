@@ -1,5 +1,10 @@
 # Changelog
 
+## Inventory: carry more, double-click to take (owner request)
+* Weight limits raised: pockets 35 kg (was 12), small backpack 35 kg (was 15), hiking backpack 60 kg (was 30).
+* Double-click an item in a searched container (or a bag on the ground, a stash) to take it into your inventory: it tops up a matching stack first (ammo onto ammo), then uses free space in your pockets, then your backpack. Double-click one of yours to put it back into the open container. Shift-click still works.
+
+
 ## Milestone 6: looting
 
 ### wasteland_loot 0.1.0 (new)
