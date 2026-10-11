@@ -24,3 +24,18 @@ test('fuel, engine and body levels; lock and warning', () => {
     assert.strictEqual(v.warning, 'There is no battery.');
     assert.strictEqual(hud.view({ fuel: 60, tank: 50 }).fuel.fill, 100);
 });
+
+test('layout: size limits, default position, screen fractions', () => {
+    assert.strictEqual(hud.clampScale(3), 1.8);
+    assert.strictEqual(hud.clampScale(0.1), 0.6);
+    assert.strictEqual(hud.clampScale('x'), 1);
+    assert.strictEqual(hud.clampScale(1.234), 1.23);
+    assert.deepStrictEqual(hud.normalizeLayout(null), { x: null, y: null, scale: 1 });
+    assert.deepStrictEqual(hud.normalizeLayout({ x: 0.5 }), { x: null, y: null, scale: 1 });
+    assert.deepStrictEqual(hud.normalizeLayout({ x: 2, y: -1, scale: 1.5 }), { x: 1, y: 0, scale: 1.5 });
+    const box = { w: 200, h: 100 }, scr = { w: 1200, h: 700 };
+    assert.strictEqual(hud.toPixels({}, box, scr), null);
+    assert.deepStrictEqual(hud.toPixels({ x: 0.5, y: 1 }, box, scr), { left: 500, top: 600 });
+    assert.deepStrictEqual(hud.toFractions(500, 600, box, scr), { x: 0.5, y: 1 });
+    assert.deepStrictEqual(hud.toFractions(-50, 9999, box, scr), { x: 0, y: 1 });
+});

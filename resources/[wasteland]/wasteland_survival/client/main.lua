@@ -110,10 +110,13 @@ local function ensureHud()
     end
 end
 
-local function stopEditing()
+-- Other HUD pieces (the vehicle HUD) move in the same edit mode:
+-- 'wasteland:hud:editing'(true) when it starts, (false, saved) when it ends.
+local function stopEditing(saved)
     hudEditing = false
     if uiRunning() and exports.wasteland_ui:IsOpen(HUD) then exports.wasteland_ui:SetFocus(HUD, false, false) end
     ensureHud()
+    TriggerEvent('wasteland:hud:editing', false, saved == true)
 end
 
 -- /hud: move the HUD and choose what it shows, row or column, and size.
@@ -126,6 +129,7 @@ RegisterCommand('hud', function()
     hudEditing = true
     ensureHud()
     exports.wasteland_ui:SetFocus(HUD, true, true)
+    TriggerEvent('wasteland:hud:editing', true)
 end, false)
 
 -------------------------------------------------------------------------------
@@ -230,7 +234,7 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
             SetResourceKvp('hudLayout', json.encode(hudLayout))
             SetResourceKvp('hudMode', hudMode)
             notice('HUD saved.')
-            stopEditing()
+            stopEditing(true)
         elseif action == 'cancelLayout' then
             stopEditing()
         end

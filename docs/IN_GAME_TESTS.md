@@ -393,3 +393,13 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R22.2 | With a hose and an empty jerry can | A 10 s bar; "Siphoned 12 L. Jerry can: 12 of 20 L. The tank has 0 L left."; the car will not start ("The tank is empty.") |
 | R22.3 | Use that can on another car ("Refuel (jerry can)") | The fuel goes in |
 | R22.4 | The general trader | Sells siphon hoses; the item shows the hose picture |
+
+## R23: moving the vehicle HUD
+
+| # | Do | Expect |
+|---|---|---|
+| R23.1 | Type /hud (in or out of a vehicle) | The vehicle HUD shows with a dashed outline and a "VEHICLE HUD  -  100%  +  Reset" bar above it (example values when on foot) |
+| R23.2 | Drag it somewhere; scroll the mouse wheel over it; press - and + | It follows the mouse; it gets smaller/bigger (60%-180%) |
+| R23.3 | Save the HUD, get in a car; reconnect | The vehicle HUD is where you put it, at that size, after reconnecting too |
+| R23.4 | /hud, move it, then cancel (Esc) | It goes back to where it was |
+| R23.5 | /hud, Reset, save | Bottom middle, normal size again |

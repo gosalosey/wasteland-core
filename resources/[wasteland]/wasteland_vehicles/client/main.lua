@@ -396,23 +396,65 @@ Citizen.CreateThread(function()
 end)
 
 -------------------------------------------------------------------------------
--- Vehicle HUD (any seat)
+-- Vehicle HUD (any seat). Moved and resized in the /hud edit mode; the
+-- layout is kept on this computer (KVP) like the main HUD's.
 -------------------------------------------------------------------------------
+
+local hudLayout = { scale = 1 }   -- x, y: share of the free screen space (nil = bottom middle)
+local hudEditing, hudBefore = false, nil
+
+local function cleanLayout(p)
+    if type(p) ~= 'table' then return { scale = 1 } end
+    local function unit(v) return type(v) == 'number' and v == v and math.max(0.0, math.min(1.0, v)) or nil end
+    local x, y = unit(p.x), unit(p.y)
+    if not x or not y then x, y = nil, nil end
+    local scale = type(p.scale) == 'number' and p.scale == p.scale and math.max(0.6, math.min(1.8, p.scale)) or 1
+    return { x = x, y = y, scale = scale }
+end
+
+do
+    local ok, raw = pcall(GetResourceKvpString, 'vehHudLayout')
+    if ok and type(raw) == 'string' then
+        local okJ, decoded = pcall(json.decode, raw)
+        if okJ then hudLayout = cleanLayout(decoded) end
+    end
+end
+
+AddEventHandler('wasteland:hud:editing', function(on, saved)
+    if on then
+        hudEditing, hudBefore = true, hudLayout
+    elseif hudEditing then
+        hudEditing = false
+        if saved then SetResourceKvp('vehHudLayout', json.encode(hudLayout)) else hudLayout = hudBefore or hudLayout end
+        hudBefore = nil
+    end
+end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen == HUD and action == 'layout' and hudEditing then hudLayout = cleanLayout(payload) end
+end)
 
 Citizen.CreateThread(function()
     local shown = false
     while true do
         local ped = PlayerPedId()
         local veh = GetVehiclePedIsIn(ped, false)
-        if veh ~= 0 and uiRunning() and not IsPauseMenuActive() then
-            local s = stateOf(veh) or {}
-            local mine = driving and driving.veh == veh
-            local data = {
-                speed = GetEntitySpeed(veh), metric = false, -- always mph (owner's choice)
-                fuel = mine and driving.fuel or s.fuel or (GetVehicleFuelLevel(veh) / 2), tank = s.tank or 50,
-                engine = GetVehicleEngineHealth(veh), body = GetVehicleBodyHealth(veh),
-                locked = s.locked, hasLock = s.hasLock, warning = mine and driving.why or nil,
-            }
+        if (veh ~= 0 or hudEditing) and uiRunning() and not IsPauseMenuActive() then
+            local data
+            if veh ~= 0 then
+                local s = stateOf(veh) or {}
+                local mine = driving and driving.veh == veh
+                data = {
+                    speed = GetEntitySpeed(veh), metric = false, -- always mph (owner's choice)
+                    fuel = mine and driving.fuel or s.fuel or (GetVehicleFuelLevel(veh) / 2), tank = s.tank or 50,
+                    engine = GetVehicleEngineHealth(veh), body = GetVehicleBodyHealth(veh),
+                    locked = s.locked, hasLock = s.hasLock, warning = mine and driving.why or nil,
+                }
+            else
+                -- Not in a vehicle while moving the HUDs: show an example.
+                data = { speed = 19.0, metric = false, fuel = 32, tank = 50, engine = 870, body = 640, locked = false, hasLock = true }
+            end
+            data.layout, data.editing = hudLayout, hudEditing
             if shown and exports.wasteland_ui:IsOpen(HUD) then
                 exports.wasteland_ui:Update(HUD, data)
             else

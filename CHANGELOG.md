@@ -1,5 +1,11 @@
 # Changelog
 
+## Vehicle HUD: move and resize (owner request)
+* /hud now also edits the vehicle HUD (shown with example values when you are not in a vehicle): drag it anywhere; resize it with the mouse wheel or the - / + buttons above it (60% to 180%); Reset puts it back at the bottom middle, normal size. Saving the HUD keeps it (stored on the player's computer, like the main HUD); Esc / cancel puts it back.
+* survival sends the local event `wasteland:hud:editing(on, saved)` so other HUD pieces can join the edit mode.
+* Tests: 599.
+
+
 ## Siphoning fuel (owner request)
 * New item: Siphon hose (own picture). Left Alt on any vehicle with fuel: "Siphon fuel (hose)" drains the tank into a jerry can that is not full (up to the can's 20 L) in 10 seconds (`seconds.siphon`). The hose is kept. Works on locked cars too (the fuel cap has no lock).
 * Found in garage/vehicle loot, sold by the general trader ($60, sells for $15).
