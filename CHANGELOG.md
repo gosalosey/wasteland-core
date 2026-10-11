@@ -1,7 +1,7 @@
 # Changelog
 
 ## Vehicle HUD (owner request)
-* While in a vehicle (any seat), bottom middle: speed (km/h or mph, from the GTA "metric" setting), fuel gauge with litres, engine and body condition (green, yellow at 35% or less, red at 15% or less), Locked / Unlocked for vehicles with a lock, and the reason a car will not run ("There is no battery.", "The tank is empty.").
+* While in a vehicle (any seat), bottom middle: speed in mph, fuel gauge with litres, engine and body condition (green, yellow at 35% or less, red at 15% or less), Locked / Unlocked for vehicles with a lock, and the reason a car will not run ("There is no battery.", "The tank is empty.").
 * Tests: 566.
 
 

@@ -252,7 +252,7 @@ Citizen.CreateThread(function()
             local s = stateOf(veh) or {}
             local mine = driving and driving.veh == veh
             local data = {
-                speed = GetEntitySpeed(veh), metric = ShouldUseMetricMeasurements(),
+                speed = GetEntitySpeed(veh), metric = false, -- always mph (owner's choice)
                 fuel = mine and driving.fuel or s.fuel or (GetVehicleFuelLevel(veh) / 2), tank = s.tank or 50,
                 engine = GetVehicleEngineHealth(veh), body = GetVehicleBodyHealth(veh),
                 locked = s.locked, hasLock = s.hasLock, warning = mine and driving.why or nil,
