@@ -38,10 +38,33 @@ function Rules.toSpawn(pop, night, near, total)
     return math.max(0, math.min(want, room, pop.spawnBatch))
 end
 
---- 'walker' or 'runner' from a roll in [0, 1).
+--- A kind name from a roll in [0, 1). Every kind but 'walker' has a chance
+--- (percent; nightChance at night); kinds are tried in name order and
+--- whatever is left is a walker.
 function Rules.pickKind(kinds, night, roll)
-    local runner = (night and kinds.runner.nightChance or kinds.runner.chance) / 100
-    return roll < runner and 'runner' or 'walker'
+    local names = {}
+    for name in pairs(kinds) do if name ~= 'walker' then names[#names + 1] = name end end
+    table.sort(names)
+    local acc = 0
+    for _, name in ipairs(names) do
+        local k = kinds[name]
+        acc = acc + ((night and k.nightChance or k.chance) or 0) / 100
+        if roll < acc then return name end
+    end
+    return 'walker'
+end
+
+--- The models a new zombie of `kind` may use: the kind's own list, else the
+--- general list; without the ones no player's game has (missing).
+function Rules.modelPool(kind, general, missing)
+    local function usable(list)
+        local out = {}
+        for _, m in ipairs(list or {}) do if not missing[m] then out[#out + 1] = m end end
+        return out
+    end
+    local own = usable(kind and kind.models)
+    if #own > 0 then return own end
+    return usable(general)
 end
 
 --- Is `point` a good place for a zombie for player `requester`? Not too

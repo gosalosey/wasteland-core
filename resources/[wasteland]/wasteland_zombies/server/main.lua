@@ -85,9 +85,12 @@ end
 -- Spawning
 -------------------------------------------------------------------------------
 
+local missingModels = {}  -- model name -> true: a player's game does not have it
+
 local function spawnAt(point, kind)
-    local models = M.config.models
-    local model = models[math.random(1, #models)]
+    local pool = Rules.modelPool(M.config.kinds[kind], M.config.models, missingModels)
+    if #pool == 0 then pool = { 'u_m_y_zombie_01' } end -- GTA's own zombie: always there
+    local model = pool[math.random(1, #pool)]
     local handle = CreatePed(4, GetHashKey(model), point.x + 0.0, point.y + 0.0, point.z + 0.0, math.random() * 360.0, true, true)
     if not handle or handle == 0 or not DoesEntityExist(handle) then
         M.log:warn('could not create a zombie (%s) at %.0f %.0f', model, point.x, point.y)
@@ -308,11 +311,15 @@ end
 local NUM = function(default, min, max) return { type = 'number', default = default, min = min, max = max } end
 local INT = function(default, min, max) return { type = 'integer', default = default, min = min, max = max } end
 local RANGE = function(a, b) return { type = 'array', default = { a, b }, minItems = 2, maxItems = 2, items = { type = 'number', min = 0, max = 400 } } end
-local KIND = function(speed, dmgA, dmgB, infChance, infA, infB, bleed) return { type = 'table', fields = {
-    speed = NUM(speed, 0.5, 4), damage = RANGE(dmgA, dmgB), infectionChance = NUM(infChance, 0, 1),
-    infection = RANGE(infA, infB), bleedingChance = NUM(bleed, 0, 1),
-    chance = NUM(15, 0, 100), nightChance = NUM(30, 0, 100),
-} } end
+-- A kind of zombie (zombies.lua `kinds`; any name, 'walker' is required).
+local KIND = { type = 'table', fields = {
+    speed = NUM(1.0, 0.5, 4), damage = RANGE(6, 10), infectionChance = NUM(0.25, 0, 1),
+    infection = RANGE(6, 12), bleedingChance = NUM(0.15, 0, 1),
+    chance = NUM(0, 0, 100), nightChance = NUM(0, 0, 100),
+    shamble = { type = 'boolean', default = false, description = 'Stagger like a drunk when walking' },
+    models = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' },
+        description = 'Models for this kind only (empty = the general models list)' },
+} }
 local commandRegistered = false
 
 M = Wasteland.DefineModule({
@@ -332,14 +339,17 @@ M = Wasteland.DefineModule({
                 spawnIntervalSeconds = INT(6, 1, 120), despawnDistance = NUM(230, 50, 1000),
                 despawnAfterSeconds = INT(20, 0, 600), corpseSeconds = INT(90, 5, 3600),
             } },
-            kinds = { type = 'table', fields = {
-                walker = KIND(1.0, 6, 10, 0.25, 6, 12, 0.15),
-                runner = KIND(2.6, 5, 8, 0.2, 5, 10, 0.2),
-            } },
+            kinds = { type = 'map', keys = { type = 'string', pattern = '^[a-z][a-z0-9_]*$', maxLength = 24 }, values = KIND,
+                default = {
+                    walker = { speed = 1.0, damage = { 6, 10 }, infectionChance = 0.25, infection = { 6, 12 }, bleedingChance = 0.15, shamble = true },
+                    runner = { speed = 2.6, chance = 15, nightChance = 30, damage = { 5, 8 }, infectionChance = 0.2, infection = { 5, 10 },
+                        bleedingChance = 0.2 },
+                } },
             models = { type = 'array', minItems = 1, default = { 'u_m_y_zombie_01' }, items = { type = 'string', pattern = '^[%w_]+$' } },
             detection = { type = 'table', fields = {
                 sightDay = NUM(35, 0, 200), sightNight = NUM(18, 0, 200), hearSprint = NUM(25, 0, 200),
                 hearWalk = NUM(9, 0, 200), hearCrouch = NUM(3, 0, 200), loseSeconds = INT(10, 1, 120),
+                alertRadius = NUM(0, 0, 100), -- a zombie that spots a player brings the others this close
             } },
             attack = { type = 'table', fields = { range = NUM(2.6, 0.5, 5), cooldownMs = INT(1500, 200, 10000) } },
             noise = { type = 'table', fields = { investigateSeconds = INT(40, 1, 600) } },
@@ -355,6 +365,8 @@ M = Wasteland.DefineModule({
     },
     onInit = function(mod)
         M = mod -- DefineModule may run onInit before it returns
+        if not M.config.kinds.walker then return false, 'zombies.lua: kinds must have a "walker" (the usual zombie)' end
+        missingModels = {}
         local pop = M.config.population
         if pop.spawnMin >= pop.spawnMax then return false, 'zombies.lua: population.spawnMin must be below spawnMax' end
         for _, it in ipairs(M.config.loot.items) do
@@ -379,8 +391,29 @@ M = Wasteland.DefineModule({
 
 -- What the clients running zombie AI need to know.
 local function clientConfig()
-    return { detection = M.config.detection, attack = M.config.attack, kinds = M.config.kinds }
+    -- Every model a zombie may use, so clients can say which they do not have.
+    local all, seen = {}, {}
+    local function add(list) for _, m in ipairs(list or {}) do if not seen[m] then seen[m] = true; all[#all + 1] = m end end end
+    add(M.config.models)
+    for _, k in pairs(M.config.kinds) do add(k.models) end
+    return { detection = M.config.detection, attack = M.config.attack, kinds = M.config.kinds, models = all }
 end
+
+-- A client lists the zombie models its game does not have (custom models
+-- not streamed, a typo): they are not used until the module restarts.
+M.netEvent('wasteland:zombies:server:missingModels', {
+    args = { { type = 'array', required = true, maxItems = 100, items = { type = 'string', pattern = '^[%w_]+$', maxLength = 64 } } },
+    rateLimit = { burst = 2, perSecond = 0.1 },
+}, function(src, list)
+    local known = {}
+    for _, m in ipairs(clientConfig().models) do known[m] = true end
+    for _, m in ipairs(list) do
+        if known[m] and not missingModels[m] then
+            missingModels[m] = true
+            M.log:warn('zombie model "%s" is not in the game of player %d: not used (stream it with wasteland_zombiemodels, or check the name)', m, src)
+        end
+    end
+end)
 
 M.netEvent('wasteland:zombies:server:config', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
     TriggerClientEvent('wasteland:zombies:client:config', src, clientConfig())
@@ -433,7 +466,7 @@ exports('GetZombieCount', function() return count(false), count(true) end)
 --- SpawnZombie(coords, kind?) -> netId | nil   (scripted spawns: events, quests)
 exports('SpawnZombie', function(coords, kind)
     if not (M and M.active) or type(coords) ~= 'table' then return nil end
-    local z = spawnAt(coords, (kind == 'runner' or kind == 'walker') and kind or 'walker')
+    local z = spawnAt(coords, (type(kind) == 'string' and M.config.kinds[kind]) and kind or 'walker')
     return z and z.netId or nil
 end)
 

@@ -245,3 +245,44 @@ describe('zombie admin command and stopping', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('custom zombie kinds and models', function()
+    local CFG2 = {}
+    for k, v in pairs(CFG) do CFG2[k] = v end
+    CFG2['zombies.lua'] = [[return {
+        population = { perPlayer = 0, maxTotal = 20 },
+        kinds = {
+            walker = { speed = 1.0 },
+            brute = { speed = 1.3, chance = 100, nightChance = 100, damage = { 20, 20 }, models = { 'my_brute' } },
+        },
+        models = { 'u_m_y_zombie_01' },
+    }]]
+    local server = newServer({ config = CFG2 })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival', 'wasteland_zombies' })
+    local id = player(server, 'kinds')
+    local env = server.resources.wasteland_zombies.env
+
+    it('clients learn every model, including each kind\'s own', function()
+        local c = last(events(server, -1, 'wasteland:zombies:client:config')).args[1]
+        local names = table.concat(c.models, ',')
+        expect(names:find('u_m_y_zombie_01', 1, true) ~= nil).toBe(true)
+        expect(names:find('my_brute', 1, true) ~= nil).toBe(true)
+    end)
+
+    it('a kind with its own models uses them', function()
+        local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 5.0, y = 0.0, z = 30.0 }, 'brute')
+        local e = server.entities[netId - 5000]
+        expect(e.model).toBe(env.GetHashKey('my_brute'))
+        expect(e.state.wlZombie.kind).toBe('brute')
+    end)
+
+    it('a model a player game lacks is no longer used (warned once)', function()
+        server:clientEvent(id, 'wasteland:zombies:server:missingModels', { 'my_brute', 'not_ours' }); server:advance(100)
+        expect(#server:lines('zombie model "my_brute" is not in the game of player')).toBe(1)
+        expect(#server:lines('not_ours')).toBe(0) -- not a configured model: ignored
+        local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 6.0, y = 0.0, z = 30.0 }, 'brute')
+        expect(server.entities[netId - 5000].model).toBe(env.GetHashKey('u_m_y_zombie_01'))
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+

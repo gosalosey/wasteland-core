@@ -15,7 +15,14 @@ local WALK_CLIPSET = 'move_m@drunk@verydrunk'
 local zombieGroup = nil
 
 RegisterNetEvent('wasteland:zombies:client:config', function(c)
-    if type(c) == 'table' then cfg = c end
+    if type(c) ~= 'table' then return end
+    cfg = c
+    -- Tell the server which zombie models this game does not have.
+    local missing = {}
+    for _, m in ipairs(c.models or {}) do
+        if not IsModelInCdimage(GetHashKey(m)) then missing[#missing + 1] = m end
+    end
+    if #missing > 0 then TriggerServerEvent('wasteland:zombies:server:missingModels', missing) end
 end)
 
 -------------------------------------------------------------------------------
@@ -81,7 +88,8 @@ local function configure(ped, kind)
     SetPedKeepTask(ped, true)
     ApplyPedDamagePack(ped, 'BigHitByVehicle', 0.0, 9.0)
     ApplyPedDamagePack(ped, 'SCR_Dumpster', 0.0, 9.0)
-    if kind == 'walker' then
+    local k = cfg and cfg.kinds and cfg.kinds[kind]
+    if k and k.shamble then
         RequestAnimSet(WALK_CLIPSET)
         local deadline = GetGameTimer() + 1000
         while not HasAnimSetLoaded(WALK_CLIPSET) and GetGameTimer() < deadline do Citizen.Wait(0) end
@@ -133,7 +141,19 @@ local function think(ped, b, kind, investigate, night)
     local k = cfg.kinds[kind] or cfg.kinds.walker
     local target, dist = sense(ped, night)
     if target then
+        local fresh = b.mode ~= 'chase'
         b.mode, b.target, b.lastSeen = 'chase', target, t
+        -- It spotted someone: the others close by come too.
+        local radius = cfg.detection.alertRadius or 0
+        if fresh and radius > 0 then
+            local here = GetEntityCoords(ped)
+            for other, ob in pairs(brains) do
+                if other ~= ped and ob.mode ~= 'chase' and ob.configured and DoesEntityExist(other) and not IsPedDeadOrDying(other, true)
+                    and #(GetEntityCoords(other) - here) <= radius then
+                    ob.mode, ob.target, ob.lastSeen, ob.nextTask = 'chase', target, t, 0
+                end
+            end
+        end
     elseif b.mode == 'chase' and (not DoesEntityExist(b.target) or IsEntityDead(b.target) or safe(b.target)
         or t - b.lastSeen > cfg.detection.loseSeconds * 1000) then
         b.mode, b.target, b.nextTask = 'idle', nil, 0

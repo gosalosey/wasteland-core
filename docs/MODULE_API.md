@@ -407,6 +407,8 @@ Server events: `wasteland:zombies:died(netId, kind, cause)`, `wasteland:zombies:
 
 Server event used by survival: `wasteland:zombies:hit` wears out one worn clothing piece (survival `clothing.hitWear`).
 
+Kinds are a map (any names, `walker` required); `Rules.pickKind` gives each non-walker kind its `chance`/`nightChance` percent in name order. A kind's `models` override the general list. Clients report models their game lacks (`wasteland:zombies:server:missingModels`); those are not used until the module restarts. Custom models: resource `wasteland_zombiemodels`.
+
 Exports: `GetZombieCount() -> total, alive`, `SpawnZombie(coords, kind?) -> netId | nil`, `ClearZombies() -> removed`, `SpawnNear(source, n)` (asks that client for spots 15-35 m away). Client export: `GetZombieMode(ped) -> mode | nil`.
 
 Admin command: `/zombies count | clear | spawn <n>` (ACE `wasteland.admin`).

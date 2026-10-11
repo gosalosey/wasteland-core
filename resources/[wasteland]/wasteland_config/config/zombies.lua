@@ -13,14 +13,26 @@ return {
         corpseSeconds = 90,        -- dead zombies lie this long
     },
 
-    -- chance / nightChance: percent of new zombies that are runners.
-    -- damage: health points per hit (players have 100).
-    -- infectionChance, bleedingChance: per hit (0 - 1).
-    -- infection: infection points added when a hit infects (infection 0 - 100).
+    -- Kinds of zombies. Any name; 'walker' is required (the usual zombie,
+    -- and what is left after every other kind's chance).
+    --   chance / nightChance  percent of new zombies that are this kind (day / night)
+    --   speed                 1 = walk, 2.6 = run
+    --   damage                health points per hit (players have 100)
+    --   infectionChance, bleedingChance   per hit (0 - 1)
+    --   infection             infection points added when a hit infects (0 - 100)
+    --   shamble = true        stagger like a drunk when walking
+    --   models = { ... }      models for this kind only (else the list below)
     kinds = {
-        walker = { speed = 1.0, damage = { 6, 10 }, infectionChance = 0.25, infection = { 6, 12 }, bleedingChance = 0.15 },
-        runner = { speed = 2.6, chance = 15, nightChance = 30, damage = { 5, 8 }, infectionChance = 0.2, infection = { 5, 10 },
+        walker = { speed = 1.15, damage = { 7, 11 }, infectionChance = 0.25, infection = { 6, 12 }, bleedingChance = 0.15,
+            shamble = true },
+        runner = { speed = 2.7, chance = 25, nightChance = 45, damage = { 6, 9 }, infectionChance = 0.2, infection = { 5, 10 },
             bleedingChance = 0.2 },
+
+        -- An example of your own kind (remove the -- to use it): a slow,
+        -- hard-hitting brute with its own models (custom models: put them in
+        -- resources/[wasteland]/wasteland_zombiemodels/stream).
+        -- brute = { speed = 1.3, chance = 5, nightChance = 8, damage = { 15, 22 }, infectionChance = 0.3,
+        --     infection = { 8, 14 }, bleedingChance = 0.4, models = { 'u_m_y_zombie_01' } },
     },
 
     -- What zombies look like (ambient GTA models; the first is GTA's zombie).
@@ -32,14 +44,15 @@ return {
 
     -- How zombies notice players (metres). Sight needs a clear line.
     detection = {
-        sightDay = 35, sightNight = 18,
-        hearSprint = 25, hearWalk = 9, hearCrouch = 3,
-        loseSeconds = 10,          -- give up a target not seen or heard this long
+        sightDay = 70, sightNight = 40,
+        hearSprint = 45, hearWalk = 18, hearCrouch = 6,
+        loseSeconds = 25,          -- give up a target not seen or heard this long
+        alertRadius = 25,          -- a zombie that spots a player brings the others this close (0 = off)
     },
 
     -- range: how far a zombie reaches (metres). It stops a little short of
     -- that and swings, so you get hit before it is in your face.
-    attack = { range = 2.6, cooldownMs = 1500 },
+    attack = { range = 2.6, cooldownMs = 1100 },
 
     -- Gunshots (and other weapon noise, weapons.lua `noise`): zombies within
     -- the noise radius walk to it.

@@ -505,3 +505,12 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R33.4 | Another player opens it | Same contents, minus what was taken |
 | R33.5 | Wait 20 minutes | The crate and the blips are gone |
 | R33.6 | /supplydrop here | A crate a few metres from you |
+
+## R34: aggressive zombies, custom models
+
+| # | Do | Expect |
+|---|---|---|
+| R34.1 | Walk in the open by day | Zombies notice you from about 70 m (40 m at night) and come; several come together |
+| R34.2 | Break line of sight and hide | They keep looking for about 25 s |
+| R34.3 | (Optional) put a ped model in wasteland_zombiemodels/stream, add it to zombies.lua `models`, restart | Some zombies use it; with a wrong name the console says it is not in the game and no invisible zombies appear |
+

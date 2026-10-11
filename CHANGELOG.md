@@ -1,5 +1,12 @@
 # Changelog
 
+## Zombies: more aggressive, custom kinds and models (owner request)
+* More aggressive: they see 70 m by day / 40 m at night (was 35 / 18), hear running 45 m, walking 18 m, crouching 6 m, keep chasing 25 s without seeing you (was 10), hit every 1.1 s (was 1.5), walkers a little faster, more runners (25 % by day, 45 % at night). New: a zombie that spots a player brings the others within 25 m (`detection.alertRadius`).
+* Any number of zombie kinds (zombies.lua `kinds`; walker required): each with its chance, speed, damage, infection, bleeding, `shamble` and its own `models`. A commented "brute" example is in the config.
+* Custom models: new resource wasteland_zombiemodels (put files in its stream folder; add-on peds also in its peds.meta; added to server.cfg). Players' games report models they do not have; those are skipped with a console warning, so a bad model never makes invisible zombies.
+* Tests: 684.
+
+
 ## Repair kits ask what to repair (owner request)
 * Using a sewing kit or an armor repair kit ("Use (choose what to repair)…" in its right-click menu, or its hotbar key) opens a list of the damaged pieces it can fix, worn and carried, most worn first ("Pants · 42% (worn)"); pick one, or Cancel. Nothing is used until you pick. From the hotbar the inventory opens with the list.
 * Right-clicking a damaged piece still offers "Repair with ..." directly.

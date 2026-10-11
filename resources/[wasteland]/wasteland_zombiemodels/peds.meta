@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Add-on ped models: paste the <Item type="CPedModelInfo__InitData"> entries
+  that came with your models between <InitDatas> and </InitDatas>.
+  Models that replace a GTA ped (same name as the original) need nothing here.
+-->
+<CPedModelInfo__InitDataList>
+  <InitDatas>
+  </InitDatas>
+</CPedModelInfo__InitDataList>

@@ -27,9 +27,23 @@ describe('zombie population', function()
     end)
     it('mostly walkers; more runners at night', function()
         expect(Rules.pickKind(cfg.kinds, false, 0.10)).toBe('runner')
-        expect(Rules.pickKind(cfg.kinds, false, 0.20)).toBe('walker')
-        expect(Rules.pickKind(cfg.kinds, true, 0.20)).toBe('runner')
-        expect(Rules.pickKind(cfg.kinds, true, 0.35)).toBe('walker')
+        expect(Rules.pickKind(cfg.kinds, false, 0.30)).toBe('walker')
+        expect(Rules.pickKind(cfg.kinds, true, 0.40)).toBe('runner')
+        expect(Rules.pickKind(cfg.kinds, true, 0.50)).toBe('walker')
+    end)
+    it('any number of kinds: each its chance, in name order, the rest walkers', function()
+        local kinds = { walker = {}, runner = { chance = 20, nightChance = 20 }, brute = { chance = 5, nightChance = 10 } }
+        expect(Rules.pickKind(kinds, false, 0.03)).toBe('brute')   -- brute 0-5 %
+        expect(Rules.pickKind(kinds, false, 0.10)).toBe('runner')  -- runner 5-25 %
+        expect(Rules.pickKind(kinds, false, 0.30)).toBe('walker')
+        expect(Rules.pickKind(kinds, true, 0.08)).toBe('brute')
+    end)
+    it('models: the kind own list, else the general list; never one a game lacks', function()
+        local general = { 'a', 'b' }
+        expect(table.concat(Rules.modelPool({ models = { 'x', 'y' } }, general, {}), ',')).toBe('x,y')
+        expect(table.concat(Rules.modelPool({ models = {} }, general, {}), ',')).toBe('a,b')
+        expect(table.concat(Rules.modelPool({ models = { 'x' } }, general, { x = true }), ',')).toBe('a,b')
+        expect(table.concat(Rules.modelPool(nil, general, { a = true }), ',')).toBe('b')
     end)
 end)
 
@@ -53,9 +67,9 @@ describe('hits, noise and loot', function()
     it('a hit does damage, sometimes infects and starts bleeding', function()
         local w = cfg.kinds.walker
         local clean = Rules.hit(w, { damage = 0, infection = 0.9, infectionAmount = 0, bleeding = 0.9 })
-        expect(clean.damage).toBe(6); expect(clean.infection).toBe(0); expect(clean.bleeding).toBe(0)
+        expect(clean.damage).toBe(7); expect(clean.infection).toBe(0); expect(clean.bleeding).toBe(0)
         local bad = Rules.hit(w, { damage = 0.999, infection = 0.1, infectionAmount = 0.999, bleeding = 0.1 })
-        expect(bad.damage).toBe(10); expect(bad.infection).toBe(12); expect(bad.bleeding).toBe(1)
+        expect(bad.damage).toBe(11); expect(bad.infection).toBe(12); expect(bad.bleeding).toBe(1)
     end)
     it('zombies within the noise radius hear it; dead ones do not', function()
         local zs = { { id = 1, coords = { x = 50, y = 0, z = 0 } }, { id = 2, coords = { x = 200, y = 0, z = 0 } },

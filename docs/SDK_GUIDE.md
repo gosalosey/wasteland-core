@@ -219,16 +219,19 @@ A module can count its own events towards jobs with `exports.wasteland_quests:Ad
 File: `zombies.lua`.
 
 * `population`: how many around each player, the most in the world, how far away they appear and disappear.
-* `kinds`: each kind's `speed`, `damage = { min, max }`, `infectionChance`, `infection = { min, max }`, `bleedingChance`, and for kinds other than walkers `chance` / `nightChance` (percent of new zombies).
-* `models`: what they look like (GTA ped models).
-* `detection`: how far they see and hear players.
+* `kinds`: any number of kinds; `walker` is required (the usual zombie, and what is left after the other kinds' chances). Each has `speed`, `damage = { min, max }`, `infectionChance`, `infection = { min, max }`, `bleedingChance`, `chance` / `nightChance` (percent of new zombies), `shamble = true` (drunk walk) and optionally its own `models`.
+* `models`: what they look like (GTA ped models, or your own: see below).
+* `detection`: how far they see and hear players, how long they keep chasing, and `alertRadius` (a zombie that spots a player brings the others this close).
 * `loot`: the chance a dead zombie leaves a bag, and what is in it (the `body` container in `loot.lua`).
 
-To add a kind, add a line to `kinds` with a `chance`, for example a tough "brute":
+To add a kind, add a line to `kinds` with a `chance`, for example a tough "brute" with its own models:
 
 ```lua
-brute = { speed = 1.2, chance = 5, nightChance = 8, damage = { 15, 22 }, infectionChance = 0.3, infection = { 8, 14 }, bleedingChance = 0.4 },
+brute = { speed = 1.3, chance = 5, nightChance = 8, damage = { 15, 22 }, infectionChance = 0.3, infection = { 8, 14 },
+    bleedingChance = 0.4, models = { 'my_zombie' } },
 ```
+
+**Your own zombie models:** put the model files in `resources/[wasteland]/wasteland_zombiemodels/stream/` (add-on peds also need their `peds.meta` entries in that resource's `peds.meta`), then name them in `models` or a kind's `models`. Its README has the details. A model that players' games do not have is reported and no longer used, with a console warning.
 
 ---
 
