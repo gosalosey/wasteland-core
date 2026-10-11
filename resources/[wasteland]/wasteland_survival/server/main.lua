@@ -40,7 +40,10 @@ local function sendStats(src, cid)
     local s = states[cid]
     if not s then return end
     local e = env[src] or {}
+    local ok, character = pcall(function() return players():GetCharacter(src) end)
+    local name = ok and character and (character.firstName .. ' ' .. character.lastName) or nil
     TriggerClientEvent('wasteland:survival:client:stats', src, {
+        name = name,
         hunger = s.hunger, thirst = s.thirst, infection = s.infection, bleeding = s.bleeding,
         temperature = s.temperature, treatment = s.treatment > 0, dead = s.dead,
         ambient = e.ambient,

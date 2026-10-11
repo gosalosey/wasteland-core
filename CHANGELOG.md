@@ -1,5 +1,11 @@
 # Changelog
 
+## Cash, HUD info line, stamina bar (owner request)
+* Cash is an item (`cash`, weightless, stacks to 1,000,000, picture `cashroll`) and the only money: no bank. It is carried in pockets or a worn bag, can be dropped, handed over and looted, and goes into the body bag on death like other items (unless on the hotbar). Inventory exports `GetCash`, `AddCash`, `RemoveCash`; config `cashItem` in inventory.lua. Tiles show cash as `$1,250`. Inventory and admin limits for one action raised to 1,000,000 for cash.
+* HUD: a line with the player's server id, character name and cash above the icons (moves with the HUD).
+* Stamina: a small bar at the bottom middle of the screen, only while stamina is used; it fades out when full.
+* GTA's green/blue health and armour bars under the minimap are hidden.
+
 ## HUD redesign (owner request)
 * The survival HUD is now four green outlined icons in the bottom-right corner that drain like a liquid level: health (drop), food (tray with fork and knife), drink (bottle), temperature (thermometer, 33-39 °C). They turn amber at 35% or below (or cold/hot) and red and pulsing at 15% or below. Bleeding and infection show as small badges under the icons. Stamina is no longer shown (GTA shows its own).
 * `/hud` opens edit mode: drag the HUD anywhere, choose Always / When it matters / Off, Row or Column, size S/M/L; Save keeps it on the player's PC (each player their own), Cancel or Esc keeps the old one, Reset returns to the bottom-right corner.

@@ -146,7 +146,11 @@
             el.appendChild(img);
         }
         el.appendChild(h('span', { class: 'wli-item__label', text: shortLabel(def.label, f.w) }));
-        if (stack.count > 1) el.appendChild(h('span', { class: 'wli-item__count', text: 'x' + stack.count }));
+        if (stack.name === st.defs.cashItem) {
+            el.appendChild(h('span', { class: 'wli-item__count', text: '$' + stack.count.toLocaleString('en-US') }));
+        } else if (stack.count > 1) {
+            el.appendChild(h('span', { class: 'wli-item__count', text: 'x' + stack.count }));
+        }
         if (def.durability > 0 && stack.metadata && typeof stack.metadata.durability === 'number') {
             const bar = h('span', { class: 'wli-item__dur' });
             bar.style.width = Math.max(0, Math.min(100, stack.metadata.durability / def.durability * 100)) + '%';

@@ -388,3 +388,7 @@ New inventory exports: `FindItem(source, uid) -> stack, inventoryId | nil` (only
 ## Item pictures (`wasteland_images`)
 
 `wasteland_images` holds item pictures (`html/images/<name>.webp`, listed in `html/index.txt`). An item definition may name one with `image = '<name>'`; without it the picture named like the item is used, if there is one; otherwise the screen shows the item's colour. Definitions sent to clients carry `image` as a full NUI URL (or nil), and `GetItemList()` entries include `image` too. Items registered with `RegisterItem` work the same way. The inventory re-sends definitions when `wasteland_images` starts.
+
+## Money (cash item)
+
+Cash is the item named by `cashItem` in `inventory.lua` (default `cash`); there is no bank. Inventory exports: `GetCash(source) -> amount` (pockets and worn bag), `AddCash(source, amount) -> ok, err` (needs room), `RemoveCash(source, amount) -> ok, err` (all or nothing; `false, 'not enough items'` when short). `AddItem`/`RemoveItem`/`GetItemCount` with the cash item work the same. Definitions sent to clients include `cashItem`.

@@ -63,3 +63,19 @@ test('layout: dragging maps to fractions of the free space and back', () => {
     // same layout on a smaller screen keeps the HUD inside it
     assert.deepStrictEqual(hud.toPixels({ x: 1, y: 1 }, box, { w: 1280, h: 720 }), { left: 1060, top: 660 });
 });
+
+test('info line: id, character name and cash; hidden when the HUD is off', () => {
+    const line = hud.infoLine({ mode: 'immersive', info: { id: 7, name: 'John Doe', cash: 1250.9 }, stats: stats() });
+    assert.deepStrictEqual(line, { id: '#7', name: 'John Doe', cash: '$1,250' });
+    assert.strictEqual(hud.infoLine({ mode: 'compact', info: { id: 7, name: 'A B' }, stats: stats() }).cash, null);
+    assert.strictEqual(hud.infoLine({ mode: 'off', info: { id: 7 }, stats: stats() }), null);
+    assert.strictEqual(hud.infoLine({ mode: 'compact', info: { id: 7 }, stats: stats({ dead: true }) }), null);
+});
+
+test('stamina bar: only while stamina is used', () => {
+    assert.strictEqual(hud.staminaBar({ mode: 'compact', stamina: 100, stats: stats() }).visible, false);
+    const used = hud.staminaBar({ mode: 'immersive', stamina: 63.4, stats: stats() });
+    assert.deepStrictEqual(used, { visible: true, fill: 63, low: false });
+    assert.strictEqual(hud.staminaBar({ mode: 'compact', stamina: 12, stats: stats() }).low, true);
+    assert.strictEqual(hud.staminaBar({ mode: 'off', stamina: 10, stats: stats() }).visible, false);
+});

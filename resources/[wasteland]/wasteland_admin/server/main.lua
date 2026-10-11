@@ -377,7 +377,7 @@ local PAYLOAD = { type = 'table', fields = {
     stat = { type = 'string', maxLength = 16 },
     value = { type = 'number', min = -1000, max = 1000 },
     item = { type = 'string', pattern = '^[a-z][a-z0-9_]*$', maxLength = 48 },
-    count = { type = 'integer', min = 1, max = 10000 },
+    count = { type = 'integer', min = 1, max = 1000000 },
     enabled = { type = 'boolean' },
     text = { type = 'string', maxLength = 300 },
     hour = { type = 'integer', min = 0, max = 23 },

@@ -12,7 +12,7 @@ local UID = { type = 'string', required = true, pattern = '^%x+$', minLength = 1
 local INV_ID = { type = 'string', required = true, pattern = '^%a+:[%w_%-:%.]+$', maxLength = 64 }
 local CELL = { type = 'integer', required = true, min = 0, max = 31 }
 local SLOT = { type = 'enum', required = true, values = WLI.EQUIP_SLOTS }
-local COUNT = { type = 'integer', min = 1, max = 100000 }
+local COUNT = { type = 'integer', min = 1, max = 1000000 }
 local BOOL = { type = 'boolean', default = false }
 local OPS_RATE = { burst = 20, perSecond = 8 }
 
@@ -69,7 +69,7 @@ function Interface.sendDefinitions(target)
     end
     TriggerClientEvent('wasteland:inventory:client:definitions', target or -1, {
         items = defs, slots = WLI.EQUIP_SLOTS, slotLabels = WLI.EQUIP_SLOT_LABELS,
-        clothingParts = WLI.CLOTHING_PARTS, naked = WLI.cfg.naked, plain = WLI.cfg.plain,
+        clothingParts = WLI.CLOTHING_PARTS, naked = WLI.cfg.naked, plain = WLI.cfg.plain, cashItem = WLI.cfg.cashItem,
     })
 end
 
@@ -83,7 +83,7 @@ function Interface.registerNetEvents(M)
         function(src, uid, fromId, toId, x, y, rotated) answer(src, Inv.move(src, uid, fromId, toId, x, y, rotated)) end)
     M.netEvent('wasteland:inventory:server:merge', { args = { UID, INV_ID, UID, INV_ID, COUNT }, rateLimit = OPS_RATE },
         function(src, uid, fromId, targetUid, toId, count) answer(src, Inv.merge(src, uid, fromId, targetUid, toId, count)) end)
-    M.netEvent('wasteland:inventory:server:split', { args = { UID, INV_ID, { type = 'integer', required = true, min = 1, max = 100000 } }, rateLimit = OPS_RATE },
+    M.netEvent('wasteland:inventory:server:split', { args = { UID, INV_ID, { type = 'integer', required = true, min = 1, max = 1000000 } }, rateLimit = OPS_RATE },
         function(src, uid, invId, count) answer(src, Inv.split(src, uid, invId, count)) end)
     M.netEvent('wasteland:inventory:server:equip', { args = { UID, INV_ID, SLOT }, rateLimit = OPS_RATE },
         function(src, uid, fromId, slot) answer(src, Inv.equip(src, uid, fromId, slot)) end)
@@ -262,6 +262,25 @@ exports('GetWornItems', function(src)
         out[#out + 1] = { name = s.name, slot = s.slot, metadata = Inv.copy(s.metadata), warmth = d and d.warmth or 0 }
     end
     return out
+end)
+
+--- Money is an item (config cashItem, default "cash"): the only currency.
+--- GetCash(source) -> amount carried (pockets + worn bag)
+exports('GetCash', function(src)
+    if inactive() then return 0 end
+    return Inv.countItem(tonumber(src), WLI.cfg.cashItem)
+end)
+
+--- AddCash(source, amount) -> ok, err   (needs room in pockets or bag)
+exports('AddCash', function(src, amount)
+    if inactive() then return false, 'inventory module is not running' end
+    return Inv.addItem(tonumber(src), WLI.cfg.cashItem, math.tointeger(tonumber(amount)) or amount)
+end)
+
+--- RemoveCash(source, amount) -> ok, err   (all or nothing: false when short)
+exports('RemoveCash', function(src, amount)
+    if inactive() then return false, 'inventory module is not running' end
+    return Inv.removeItem(tonumber(src), WLI.cfg.cashItem, math.tointeger(tonumber(amount)) or amount)
 end)
 
 --- FindItem(source, uid) -> { uid, name, count, metadata }, inventoryId | nil

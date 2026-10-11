@@ -211,3 +211,14 @@ Tell me what does not match, especially the temperatures (they are estimated fro
 | R10.7 | `/hud`, drag it somewhere else, press Esc (or Cancel) | It goes back to where it was |
 | R10.8 | `/hud`, Show: When it matters, Save | Icons disappear while everything is fine; low food brings the tray back |
 | R10.9 | `/hud`, Reset, Save | Back in the bottom-right corner, as a row, size M |
+
+## Cash, HUD info, stamina, minimap bars
+
+| # | Step | Expected result |
+|---|---|---|
+| R11.1 | Look under the minimap | No green health or blue armour bar |
+| R11.2 | Look at the HUD | Above the icons: `#<your id>  <character name>  $0` |
+| R11.3 | Admin panel: give yourself `cash` 1500 | The HUD shows $1,500; the inventory has one Cash stack showing `$1,500` |
+| R11.4 | Drop 500 of it (split, then drop) and pick it up again | HUD goes to $1,000, then back to $1,500 |
+| R11.5 | Sprint | A thin bar appears at the bottom middle and shrinks; it turns yellow when almost empty and fades out once stamina is full again |
+| R11.6 | Die with cash not on the hotbar | The cash is in the body bag |

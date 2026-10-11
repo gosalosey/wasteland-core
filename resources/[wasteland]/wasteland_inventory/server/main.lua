@@ -159,6 +159,8 @@ WLI.M = Wasteland.DefineModule({
                 maxQueuedWrites = { type = 'integer', default = 500, min = 10, max = 100000 },
                 adminAce = { type = 'string', default = 'wasteland.admin', minLength = 1 },
                 giveCommand = { type = 'string', default = 'give', pattern = '^[a-z][a-z0-9_]*$' },
+                cashItem = { type = 'string', default = 'cash', pattern = '^[a-z][a-z0-9_]*$',
+                    description = 'The item that is money (the only currency; no bank)' },
                 startingItems = { type = 'array', default = {}, items = { type = 'table', fields = {
                     name = { type = 'string', required = true },
                     count = { type = 'integer', default = 1, min = 1, max = 10000 },
@@ -195,6 +197,9 @@ WLI.M = Wasteland.DefineModule({
             if defs[name].equip ~= slot then
                 return false, string.format('inventory.lua: item "%s" must have equip = "%s" to be the %s clothing item', name, slot, slot)
             end
+        end
+        if not defs[M.config.cashItem] then
+            return false, string.format('inventory.lua: cashItem names "%s", which is not in items', M.config.cashItem)
         end
         for _, entry in ipairs(M.config.startingItems) do
             if not defs[entry.name] then return false, string.format('inventory.lua: startingItems names unknown item "%s"', entry.name) end

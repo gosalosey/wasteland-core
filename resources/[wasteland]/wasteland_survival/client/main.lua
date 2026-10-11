@@ -57,14 +57,47 @@ local function healthPercent(ped)
     return math.max(0, math.min(100, (hp - 100) / (max - 100) * 100)) -- player peds die at 100
 end
 
+-- Cash on the HUD: counted from the inventory snapshots the inventory
+-- already sends this client (pockets and worn bag, like GetCash).
+local cashItem, cash = nil, nil
+
+RegisterNetEvent('wasteland:inventory:client:definitions', function(defs)
+    if type(defs) == 'table' and type(defs.cashItem) == 'string' then cashItem = defs.cashItem end
+end)
+
+RegisterNetEvent('wasteland:inventory:client:sync', function(snap)
+    if type(snap) ~= 'table' or type(snap.inventories) ~= 'table' then return end
+    local name = cashItem or 'cash'
+    local total = 0
+    for _, inv in ipairs(snap.inventories) do
+        if inv.id == snap.pockets or inv.id == snap.backpack then
+            for _, s in ipairs(inv.items or {}) do
+                if s.name == name then total = total + (tonumber(s.count) or 0) end
+            end
+        end
+    end
+    cash = total
+end)
+
+-- GTA counts sprint stamina used (0 = fresh, 100 = spent).
+local function staminaPercent()
+    return math.max(0, math.min(100, 100 - GetPlayerSprintStaminaRemaining(PlayerId())))
+end
+
 local function hudData()
     local ped = PlayerPedId()
     return {
         mode = hudMode,
         health = healthPercent(ped),
+        stamina = staminaPercent(),
         stats = stats,
         layout = hudLayout,
         editing = hudEditing,
+        info = {
+            id = GetPlayerServerId(PlayerId()),
+            name = stats and stats.name or GetPlayerName(PlayerId()),
+            cash = GetResourceState('wasteland_inventory') == 'started' and cash or nil,
+        },
     }
 end
 
@@ -361,6 +394,44 @@ Citizen.CreateThread(function()
             TriggerServerEvent('wasteland:survival:server:environment', ambient + 0.0, wet == true)
         end
         ensureHud()
+    end
+end)
+
+-- Stamina bar: refresh quickly only while stamina is changing.
+Citizen.CreateThread(function()
+    local lastStamina = 100
+    while true do
+        if active then
+            local s = staminaPercent()
+            if s ~= lastStamina then
+                lastStamina = s
+                ensureHud()
+                Citizen.Wait(150)
+            else
+                Citizen.Wait(400)
+            end
+        else
+            Citizen.Wait(1000)
+        end
+    end
+end)
+
+-- GTA's health and armour bars under the minimap: hidden (the HUD shows
+-- health). The minimap's own scaleform is told to draw no bars, every
+-- frame, because the game resets it.
+Citizen.CreateThread(function()
+    local minimap = RequestScaleformMovie('minimap')
+    local deadline = GetGameTimer() + 5000
+    while not HasScaleformMovieLoaded(minimap) and GetGameTimer() < deadline do Citizen.Wait(0) end
+    -- Toggling the big map once makes the minimap re-read the setting.
+    SetRadarBigmapEnabled(true, false)
+    Citizen.Wait(0)
+    SetRadarBigmapEnabled(false, false)
+    while true do
+        BeginScaleformMovieMethod(minimap, 'SETUP_HEALTH_ARMOUR')
+        ScaleformMovieMethodAddParamInt(3)
+        EndScaleformMovieMethod()
+        Citizen.Wait(0)
     end
 end)
 

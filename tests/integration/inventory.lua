@@ -469,6 +469,30 @@ Wasteland.DefineModule({ name = 'medic', version = '1.0.0', core = '^1.1.0', dep
         expect(rowCount(server, 'duct_tape')).toBe(1)
     end)
 
+    it('cash is an item: one weightless stack, GetCash / AddCash / RemoveCash', function()
+        local I = function(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+        expect(I('GetCash', a)).toBe(0)
+        expect(I('AddCash', a, 250000)).toBe(true)
+        expect(I('AddCash', a, 1500)).toBe(true)
+        expect(I('GetCash', a)).toBe(251500)
+        expect(find(snap(server, a), 'cash').count).toBe(251500) -- one stack, no weight
+        local ok, err = I('RemoveCash', a, 300000)
+        expect(ok).toBe(false); expect(err).toBe('not enough items')
+        expect(I('RemoveCash', a, 1500)).toBe(true)
+        expect(I('GetCash', a)).toBe(250000)
+        -- big amounts can be split (and so dropped or handed over)
+        local stack = find(snap(server, a), 'cash')
+        op(server, a, 'split', stack.uid, 'player:1', 200000)
+        expect(I('GetCash', a)).toBe(250000)
+        local stacks = 0
+        for _, i in ipairs(snap(server, a).inventories) do
+            for _, s in ipairs(i.items) do if s.name == 'cash' then stacks = stacks + 1 end end
+        end
+        expect(stacks).toBe(2)
+        local defs = server:clientEventsFor(a, 'wasteland:inventory:client:definitions')
+        expect(defs[#defs].args[1].cashItem).toBe('cash')
+    end)
+
     it('the give command needs the admin ACE and explains mistakes', function()
         server:clearOutput()
         server:command(a, 'give ' .. a .. ' duct_tape 1'); server:advance(100)

@@ -8,7 +8,11 @@
 //   off        - nothing
 // /hud opens edit mode: drag the HUD anywhere, pick mode, row/column and
 // size, then Save (client/main.lua stores it on the player's PC).
-// Data: { mode, health, editing, layout = { x, y, vertical, size },
+// Also: a line with the player's server id, character name and cash (moves
+// with the HUD), and a stamina bar at the bottom middle of the screen that
+// only shows while stamina is being used.
+// Data: { mode, health, stamina, editing, layout = { x, y, vertical, size },
+//         info = { id, name, cash },
 //         stats = { hunger, thirst, infection, bleeding, temperature, treatment, dead } }
 
 (function () {
@@ -70,6 +74,24 @@
         return out;
     }
 
+    // Id, name and cash line (null when the HUD is off). Cash null = unknown
+    // (inventory not running).
+    function infoLine(data) {
+        const s = data.stats || {};
+        if (data.mode === 'off' || s.dead || !data.info) return null;
+        const i = data.info;
+        const cash = typeof i.cash === 'number' ? '$' + Math.max(0, Math.floor(i.cash)).toLocaleString('en-US') : null;
+        return { id: typeof i.id === 'number' ? '#' + i.id : null, name: i.name ? String(i.name) : null, cash: cash };
+    }
+
+    // Stamina bar: shown only while stamina is not full (and the HUD is on).
+    function staminaBar(data) {
+        const s = data.stats || {};
+        if (data.mode === 'off' || s.dead || typeof data.stamina !== 'number') return { visible: false, fill: 100 };
+        const fill = clamp(data.stamina);
+        return { visible: fill < 100, fill: fill, low: fill <= 20 };
+    }
+
     // Layout: x/y are the share of the free space left of / above the HUD
     // (0 = left/top edge, 1 = right/bottom edge), so the HUD stays on screen
     // at any resolution or size. x/y null = default corner (bottom right).
@@ -103,7 +125,7 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { icons: icons, badges: badges, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
+        module.exports = { icons: icons, badges: badges, infoLine: infoLine, staminaBar: staminaBar, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
         return;
     }
 
@@ -167,6 +189,7 @@
     // ------------------------------------------------------------------
 
     let host;           // the screen element
+    let stamina = null; // bottom-middle stamina bar (kept, so it can fade)
     let post;           // api.post(action, payload)
     let toolbar = null;
     let draft = null;   // while editing: { mode, x, y, vertical, size }
@@ -231,6 +254,14 @@
 
         root.innerHTML = '';
         root.classList.toggle('is-editing', editing);
+        const line = infoLine(editing ? Object.assign({}, data, { mode: 'compact', stats: {} }) : data);
+        if (line) {
+            const info = h('div', { class: 'wlh-info' });
+            if (line.id) info.appendChild(h('span', { class: 'wlh-info__id', text: line.id }));
+            if (line.name) info.appendChild(h('span', { class: 'wlh-info__name', text: line.name }));
+            if (line.cash) info.appendChild(h('span', { class: 'wlh-info__cash', text: line.cash }));
+            root.appendChild(info);
+        }
         // While editing every icon shows, so there is always something to move.
         const shown = editing
             ? Object.assign({}, data, {
@@ -256,6 +287,11 @@
 
         if (toolbar) { toolbar.remove(); toolbar = null; }
         if (editing) { toolbar = buildToolbar(); host.appendChild(toolbar); }
+
+        const bar = staminaBar(data);
+        stamina.classList.toggle('is-visible', bar.visible);
+        stamina.classList.toggle('is-low', bar.low === true);
+        stamina.firstChild.style.width = bar.fill + '%';
     }
 
     function onDown(e) {
@@ -280,6 +316,8 @@
             post = api.post;
             root = h('div', { class: 'wlh-root' });
             el.appendChild(root);
+            stamina = h('div', { class: 'wlh-stamina' }, h('div', { class: 'wlh-stamina__fill' }));
+            el.appendChild(stamina);
             el.appendChild(h('style', { text: CSS }));
             root.addEventListener('mousedown', onDown);
             document.addEventListener('mousemove', onMove);
@@ -292,7 +330,7 @@
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
             document.removeEventListener('keydown', onKey);
-            root = null; host = null; toolbar = null; draft = null; drag = null;
+            root = null; host = null; toolbar = null; draft = null; drag = null; stamina = null;
         },
     });
 
@@ -318,6 +356,16 @@
         '.wlh-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(10,14,9,0.7); text-shadow: 0 1px 2px #000; }',
         '.wlh-badge--bleeding { color: #ff8a80; border: 1px solid var(--wlh-critical); }',
         '.wlh-badge--infection { color: #b6e39a; border: 1px solid var(--wlh-ok); }',
+        '.wlh-info { display: flex; gap: 10px; align-items: baseline; font-size: calc(12px * var(--wlh-scale)); color: #cfe8c0;',
+        '  text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,0.6); white-space: nowrap; }',
+        '.wlh-info__id { color: var(--wlh-ok); font-weight: 600; }',
+        '.wlh-info__cash { color: #9be27a; font-weight: 600; font-variant-numeric: tabular-nums; }',
+        '.wlh-stamina { position: absolute; left: 50%; bottom: 2.2vh; width: 180px; height: 5px; transform: translateX(-50%);',
+        '  background: rgba(10,14,9,0.6); border: 1px solid rgba(127,199,90,0.35); border-radius: 3px; overflow: hidden;',
+        '  opacity: 0; transition: opacity 0.6s ease 0.8s; pointer-events: none; }',
+        '.wlh-stamina.is-visible { opacity: 1; transition: opacity 0.15s ease; }',
+        '.wlh-stamina__fill { height: 100%; width: 100%; background: #d8e6c8; box-shadow: 0 0 6px rgba(216,230,200,0.6); transition: width 0.15s linear; }',
+        '.wlh-stamina.is-low .wlh-stamina__fill { background: #d6b23c; }',
         '.wlh-tb { position: absolute; top: 3vh; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center;',
         '  gap: 10px 16px; max-width: 92vw; padding: 10px 14px; background: var(--wl-bg); border: 1px solid var(--wl-border);',
         '  border-radius: var(--wl-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; }',

@@ -152,7 +152,7 @@
         itemSelect.addEventListener('change', () => { st.itemChoice = itemSelect.value; showPreview(); });
         const itemSearch = input({ placeholder: 'Search items' }, st.itemSearch || '');
         itemSearch.addEventListener('input', () => { st.itemSearch = itemSearch.value; render(); itemFocus(); });
-        const count = input({ type: 'number', min: '1', max: '10000' }, 1);
+        const count = input({ type: 'number', min: '1', max: '1000000' }, 1);
         const kickReason = input({ placeholder: 'Reason', maxlength: '200' });
         const banReason = input({ placeholder: 'Reason (required)', maxlength: '200' });
         const banTime = select(DURATIONS.map((d) => ({ label: d.label, value: d.minutes })), 1440);

@@ -26,6 +26,10 @@ return {
     giveCommand = 'give',
     adminAce = 'wasteland.admin',
 
+    -- The item that is money. Cash is the only currency (no bank): it is
+    -- carried, dropped, looted and lost on death like any other item.
+    cashItem = 'cash',
+
     -- What a brand-new character starts with (item names from `items`).
     startingItems = {
         { name = 'water_bottle', count = 1 },
@@ -77,6 +81,8 @@ return {
     --               default: the picture named like the item, if there is one
     -- Other modules add their own items through the RegisterItem export.
     items = {
+        cash = { label = 'Cash', category = 'misc', width = 1, height = 1, weight = 0, stack = 1000000, image = 'cashroll',
+            description = 'Dollars. The only money there is.' },
         water_bottle = { label = 'Water bottle', category = 'drink', width = 1, height = 2, weight = 0.6,
             description = 'Half a litre of probably clean water.' },
         canned_beans = { label = 'Canned beans', image = 'canned_peas', category = 'food', width = 1, height = 1, weight = 0.4 },
