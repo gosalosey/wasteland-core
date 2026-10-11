@@ -66,7 +66,8 @@ return {
     --   category    food | drink | medical | material | tool | clothing | container | weapon | ammo | misc
     --   width, height   cells (1 - 10)
     --   weight      kilograms per unit
-    --   stack       units per stack (1 = does not stack)
+    --   stack       units per stack (default 50; weapons, tools with
+    --               durability, backpacks and clothing never stack)
     --   durability  starting durability (0 = none; such items never stack)
     --   equip       head | eyes | torso | back | legs | feet   (can be worn there)
     --   container   { width, height, maxWeight }  a bag; must have equip = 'back'
@@ -76,18 +77,18 @@ return {
     items = {
         water_bottle = { label = 'Water bottle', category = 'drink', width = 1, height = 2, weight = 0.6,
             description = 'Half a litre of probably clean water.' },
-        canned_beans = { label = 'Canned beans', category = 'food', width = 1, height = 1, weight = 0.4, stack = 4 },
-        bandage = { label = 'Bandage', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 10 },
-        painkillers = { label = 'Painkillers', category = 'medical', width = 1, height = 1, weight = 0.1, stack = 10 },
-        antibiotics = { label = 'Antibiotics', category = 'medical', width = 1, height = 1, weight = 0.1, stack = 5,
+        canned_beans = { label = 'Canned beans', category = 'food', width = 1, height = 1, weight = 0.4 },
+        bandage = { label = 'Bandage', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 100 },
+        painkillers = { label = 'Painkillers', category = 'medical', width = 1, height = 1, weight = 0.1, stack = 100 },
+        antibiotics = { label = 'Antibiotics', category = 'medical', width = 1, height = 1, weight = 0.1,
             description = 'Slows and fights an infection.' },
-        rag = { label = 'Clean rag', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 5,
+        rag = { label = 'Clean rag', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 100,
             description = 'Can stop light bleeding.' },
-        soda_can = { label = 'Soda', category = 'drink', width = 1, height = 1, weight = 0.35, stack = 4 },
-        energy_bar = { label = 'Energy bar', category = 'food', width = 1, height = 1, weight = 0.1, stack = 6 },
-        canned_peaches = { label = 'Canned peaches', category = 'food', width = 1, height = 1, weight = 0.45, stack = 4 },
-        scrap_metal = { label = 'Scrap metal', category = 'material', width = 2, height = 1, weight = 1.0, stack = 10 },
-        duct_tape = { label = 'Duct tape', category = 'material', width = 1, height = 1, weight = 0.2, stack = 5 },
+        soda_can = { label = 'Soda', category = 'drink', width = 1, height = 1, weight = 0.35 },
+        energy_bar = { label = 'Energy bar', category = 'food', width = 1, height = 1, weight = 0.1, stack = 100 },
+        canned_peaches = { label = 'Canned peaches', category = 'food', width = 1, height = 1, weight = 0.45 },
+        scrap_metal = { label = 'Scrap metal', category = 'material', width = 2, height = 1, weight = 1.0, stack = 100 },
+        duct_tape = { label = 'Duct tape', category = 'material', width = 1, height = 1, weight = 0.2 },
         flashlight = { label = 'Flashlight', category = 'tool', width = 1, height = 2, weight = 0.4, durability = 100 },
 
         -- Weapons (what each one does is in weapons.lua). Durability is
@@ -117,14 +118,14 @@ return {
         weapon_huntingrifle = { label = 'Hunting rifle', category = 'weapon', width = 6, height = 2, weight = 4.5, durability = 500,
             description = 'Uses .308 rounds.' },
 
-        ammo_9mm = { label = '9mm rounds', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 60, color = '#8a7a4a' },
-        ammo_44 = { label = '.44 rounds', category = 'ammo', width = 1, height = 1, weight = 0.02, stack = 36, color = '#8a6a3a' },
-        ammo_12g = { label = '12 gauge shells', category = 'ammo', width = 1, height = 1, weight = 0.04, stack = 24, color = '#8a3a2a' },
-        ammo_556 = { label = '5.56 rounds', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 60, color = '#6a7a4a' },
-        ammo_762 = { label = '7.62 rounds', category = 'ammo', width = 1, height = 1, weight = 0.016, stack = 60, color = '#5a6a3a' },
-        ammo_308 = { label = '.308 rounds', category = 'ammo', width = 1, height = 1, weight = 0.025, stack = 20, color = '#4a5a3a' },
+        ammo_9mm = { label = '9mm rounds', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 250, color = '#8a7a4a' },
+        ammo_44 = { label = '.44 rounds', category = 'ammo', width = 1, height = 1, weight = 0.02, stack = 100, color = '#8a6a3a' },
+        ammo_12g = { label = '12 gauge shells', category = 'ammo', width = 1, height = 1, weight = 0.04, stack = 100, color = '#8a3a2a' },
+        ammo_556 = { label = '5.56 rounds', category = 'ammo', width = 1, height = 1, weight = 0.012, stack = 250, color = '#6a7a4a' },
+        ammo_762 = { label = '7.62 rounds', category = 'ammo', width = 1, height = 1, weight = 0.016, stack = 250, color = '#5a6a3a' },
+        ammo_308 = { label = '.308 rounds', category = 'ammo', width = 1, height = 1, weight = 0.025, stack = 100, color = '#4a5a3a' },
 
-        weapon_repair_kit = { label = 'Weapon repair kit', category = 'tool', width = 2, height = 1, weight = 0.8, stack = 3,
+        weapon_repair_kit = { label = 'Weapon repair kit', category = 'tool', width = 2, height = 1, weight = 0.8,
             description = 'Repairs the weapon in your hands.' },
 
         backpack_small = { label = 'Small backpack', category = 'container', width = 3, height = 3, weight = 0.8,

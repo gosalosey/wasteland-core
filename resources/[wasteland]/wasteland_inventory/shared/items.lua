@@ -23,6 +23,9 @@ WLI.CLOTHING_PARTS = {
     eyes = { { key = 'glasses', prop = 1 } },
 }
 
+-- Stack size of items that do not set one (and can stack).
+WLI.DEFAULT_STACK = 50
+
 WLI.CATEGORIES = { 'food', 'drink', 'medical', 'material', 'tool', 'clothing', 'container', 'weapon', 'ammo', 'misc' }
 
 WLI.ITEM_SCHEMA = {
@@ -34,7 +37,7 @@ WLI.ITEM_SCHEMA = {
         width = { type = 'integer', default = 1, min = 1, max = 10, description = 'Grid cells wide' },
         height = { type = 'integer', default = 1, min = 1, max = 10, description = 'Grid cells high' },
         weight = { type = 'number', default = 0.1, min = 0, max = 1000, description = 'Kilograms per unit' },
-        stack = { type = 'integer', default = 1, min = 1, max = 10000, description = 'Units per stack (1 = not stackable)' },
+        stack = { type = 'integer', min = 1, max = 10000, description = 'Units per stack (1 = not stackable; default 50, or 1 for items that cannot stack)' },
         durability = { type = 'integer', default = 0, min = 0, max = 100000, description = '0 = no durability' },
         equip = { type = 'enum', values = WLI.EQUIP_SLOTS, description = 'Equipment slot this item can be worn in' },
         container = {
@@ -67,7 +70,9 @@ function WLI.validateItem(Schema, name, raw)
     if def.container and def.equip ~= 'back' then
         return nil, string.format('item "%s": a container must be worn on the back (equip = "back")', name)
     end
-    if def.stack > 1 and (def.durability > 0 or def.container or def.equip) then
+    local unstackable = def.durability > 0 or def.container ~= nil or def.equip ~= nil
+    if def.stack == nil then def.stack = unstackable and 1 or WLI.DEFAULT_STACK end
+    if def.stack > 1 and unstackable then
         return nil, string.format('item "%s": items with durability, containers and wearables cannot stack', name)
     end
     def.name = name

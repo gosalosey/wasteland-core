@@ -22,7 +22,7 @@ local DEFS = {
     can = def('can', { label = 'Can', width = 1, height = 1, stack = 5, weight = 0.4 }),
     bottle = def('bottle', { label = 'Bottle', width = 1, height = 2, weight = 1 }),
     plank = def('plank', { label = 'Plank', width = 3, height = 1, weight = 2 }),
-    crate = def('crate', { label = 'Crate', width = 2, height = 2, weight = 5 }),
+    crate = def('crate', { label = 'Crate', width = 2, height = 2, weight = 5, stack = 1 }),
 }
 
 local function inv(w, h, items)
@@ -36,8 +36,15 @@ describe('item definitions', function()
         local d = def('thing', { label = 'Thing' })
         expect(d.name).toBe('thing')
         expect(d.width).toBe(1)
-        expect(d.stack).toBe(1)
+        expect(d.stack).toBe(50)
         expect(d.category).toBe('misc')
+    end)
+    it('items that cannot stack default to 1 and refuse a bigger stack', function()
+        expect(def('gun', { label = 'Gun', durability = 100 }).stack).toBe(1)
+        expect(def('bag', { label = 'Bag', equip = 'back', container = { width = 2, height = 2, maxWeight = 5 } }).stack).toBe(1)
+        expect(def('hat', { label = 'Hat', equip = 'head' }).stack).toBe(1)
+        local _, err = WLI.validateItem(Schema, 'shirt', { label = 'Shirt', equip = 'torso', stack = 50 })
+        expect(err).toContain('cannot stack')
     end)
     it('rejects bad names, sizes and impossible combinations', function()
         local _, e1 = WLI.validateItem(Schema, 'Bad Name', { label = 'x' })

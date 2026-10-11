@@ -12,7 +12,8 @@
 ### Other
 * wasteland_inventory: `FindItem`, `SetItemMetadata`, server event `wasteland:inventory:playerUpdated`; the crowbar is now a melee weapon.
 * Fixes: worn clothing that carries no look (given or looted) shows a plain outfit instead of nothing; searching a drop with E no longer freezes the game.
-* Tests: 402 simulated (new: weapons).
+* Stacks (owner request): items stack to 50 by default; bandages, painkillers, rags, energy bars and scrap metal to 100; 9mm, 5.56 and 7.62 rounds to 250, other ammo to 100. Weapons, tools with durability, backpacks and clothing still never stack (each carries its own wear, contents or look). Weight limits still apply.
+* Tests: 403 simulated (new: weapons, stack defaults).
 
 
 ## World and admin (owner requests, brought forward from Milestones 7 and 10)
