@@ -39,3 +39,14 @@ test('ban status: active, expired, lifted', () => {
 test('ban durations include permanent', () => {
     assert.ok(admin.DURATIONS.some((d) => d.minutes === 0 && d.label === 'Permanent'));
 });
+
+test('groupItems: items by category in inventory order, sorted by label', () => {
+    const items = [
+        { name: 'zz', label: 'Zeta', category: 'misc' }, { name: 'p', label: 'Pistol', category: 'weapon' },
+        { name: 'b', label: 'Bandage', category: 'medical' }, { name: 'a', label: 'Axe', category: 'weapon' },
+        { name: 'x', label: 'Thing', category: 'odd' },
+    ];
+    const g = admin.groupItems(items);
+    assert.deepStrictEqual(g.map((x) => x.category), ['weapon', 'medical', 'misc', 'odd']);
+    assert.deepStrictEqual(g[0].items.map((i) => i.label), ['Axe', 'Pistol']);
+});

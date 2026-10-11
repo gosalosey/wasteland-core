@@ -16,6 +16,7 @@ ensure wasteland_core
 ensure wasteland_database
 ensure wasteland_players
 ensure wasteland_ui
+ensure wasteland_target
 ensure wasteland_appearance
 ensure wasteland_images
 ensure wasteland_inventory

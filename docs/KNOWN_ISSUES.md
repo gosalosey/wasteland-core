@@ -44,3 +44,4 @@
 | K-40 | Zombies | The client that runs a zombie reports its hits and death. The server checks ownership, distance, cooldown and that a "dead" zombie is hurt, but a modified client could still make the zombies it owns hit within those limits, or never hit. | By design for now |
 | K-41 | Zombies | No safe zones yet: zombies spawn everywhere players are, including inside interiors near players (spawn spots are on the ground nearest the chosen point). Safe zones come with zones in Milestone 7. | Planned M7 |
 | K-42 | Zombies | Zombies are silent (no groans) because ambient voices are off; zombie sounds can be added later. | Later |
+| K-43 | Target | Bags on the ground have no collision, so they are targeted through a small sphere where they lie (look at the ground at the bag). Scroll-wheel choosing uses the weapon-wheel controls, which are disabled while Left Alt is held. | Verify at runtime (R13.x) |

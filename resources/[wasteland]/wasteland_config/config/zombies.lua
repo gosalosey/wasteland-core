@@ -37,7 +37,9 @@ return {
         loseSeconds = 10,          -- give up a target not seen or heard this long
     },
 
-    attack = { range = 1.7, cooldownMs = 1500 },
+    -- range: how far a zombie reaches (metres). It stops a little short of
+    -- that and swings, so you get hit before it is in your face.
+    attack = { range = 2.6, cooldownMs = 1500 },
 
     -- Gunshots (and other weapon noise, weapons.lua `noise`): zombies within
     -- the noise radius walk to it.

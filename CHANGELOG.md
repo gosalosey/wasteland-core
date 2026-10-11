@@ -1,5 +1,18 @@
 # Changelog
 
+## Target system, admin item list, zombie reach (owner requests)
+
+### wasteland_target 0.1.0 (new)
+* Hold Left Alt: an eye appears in the middle of the screen. Look at something with options: they appear beside the eye; scroll to choose, click or E to use. Rebindable in the GTA key settings (FiveM section).
+* For other resources (client exports): `AddModel`, `AddEntity`, `AddNetId`, `AddGlobal('ped'|'vehicle'|'object'|'player')`, `AddSphere`, `AddBox`, `Remove`, `IsTargeting`. Options: `label`, `icon`, `distance` (default 2.5 m), `canInteract(entity, distance, coords)`, and `onSelect(data)`, `event` or `serverEvent`. Registrations disappear with the resource that made them.
+* Bags on the ground and body bags are searched through the target ("Search ..."); without wasteland_target the "Press E" prompt still works.
+
+### Other
+* Admin panel: the item picker is a dropdown listing every item on the server by category, with pictures and a search box.
+* Zombies reach further: attack range 2.6 m (was 1.7 m).
+* Tests: 453 (new: target matching and screen, item grouping).
+
+
 ## Milestone 5B: zombies
 
 ### wasteland_zombies 0.1.0 (new)

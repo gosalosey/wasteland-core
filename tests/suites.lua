@@ -8,6 +8,7 @@ return {
     'unit/inventory_grid.lua',
     'unit/survival_model.lua',
     'unit/zombie_rules.lua',
+    'unit/target_match.lua',
     'integration/boot.lua',
     'integration/registry.lua',
     'integration/lifecycle.lua',

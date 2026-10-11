@@ -25,6 +25,17 @@
         return items.filter((i) => i.name.includes(q) || i.label.toLowerCase().includes(q) || (i.category || '').includes(q));
     }
 
+    // Items grouped by category (inventory order; unknown categories last),
+    // each group sorted by label: [{ category, items }]
+    const CATEGORY_ORDER = ['weapon', 'ammo', 'medical', 'food', 'drink', 'clothing', 'container', 'tool', 'material', 'misc'];
+    function groupItems(items) {
+        const groups = {};
+        items.forEach((i) => { const c = i.category || 'misc'; (groups[c] = groups[c] || []).push(i); });
+        const rank = (c) => { const r = CATEGORY_ORDER.indexOf(c); return r < 0 ? 999 : r; };
+        return Object.keys(groups).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
+            .map((c) => ({ category: c, items: groups[c].slice().sort((a, b) => a.label.localeCompare(b.label)) }));
+    }
+
     const DURATIONS = [
         { label: '1 hour', minutes: 60 }, { label: '1 day', minutes: 1440 }, { label: '3 days', minutes: 4320 },
         { label: '1 week', minutes: 10080 }, { label: '30 days', minutes: 43200 }, { label: 'Permanent', minutes: 0 },
@@ -45,7 +56,8 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { filterPlayers: filterPlayers, filterItems: filterItems, banStatus: banStatus, formatTime: formatTime, DURATIONS: DURATIONS };
+        module.exports = { filterPlayers: filterPlayers, filterItems: filterItems, groupItems: groupItems, banStatus: banStatus,
+            formatTime: formatTime, DURATIONS: DURATIONS };
         return;
     }
 
@@ -138,20 +150,7 @@
         if (!p) return h('div', { class: 'wl-hint', text: 'Select a player.' });
         const t = { target: p.id };
         const c = p.character ? p.character.firstName + ' ' + p.character.lastName + ' (character ' + p.character.id + ')' : 'no character loaded';
-        const items = filterItems(st.data.items || [], st.itemSearch);
-        const itemSelect = select(items.map((i) => ({ label: i.label + ' (' + i.name + ')', value: i.name })), st.itemChoice);
-        // Picture of the chosen item (when wasteland_images has one).
-        const preview = h('img', { class: 'wla-itemimg', draggable: false });
-        const showPreview = () => {
-            const it = items.find((i) => i.name === itemSelect.value);
-            preview.hidden = !(it && it.image);
-            if (it && it.image) preview.src = it.image;
-        };
-        preview.addEventListener('error', () => { preview.hidden = true; });
-        showPreview();
-        itemSelect.addEventListener('change', () => { st.itemChoice = itemSelect.value; showPreview(); });
-        const itemSearch = input({ placeholder: 'Search items' }, st.itemSearch || '');
-        itemSearch.addEventListener('input', () => { st.itemSearch = itemSearch.value; render(); itemFocus(); });
+        const picker = itemPicker(st.data.items || []);
         const count = input({ type: 'number', min: '1', max: '1000000' }, 1);
         const kickReason = input({ placeholder: 'Reason', maxlength: '200' });
         const banReason = input({ placeholder: 'Reason (required)', maxlength: '200' });
@@ -167,9 +166,8 @@
             section('Survival'),
             statEditor(p),
             section('Items'),
-            row(itemSearch),
-            row(preview, itemSelect, count, UI.button('Give', () => {
-                const name = itemSelect.value;
+            h('div', { class: 'wla-row wla-row--top' }, picker, count, UI.button('Give', () => {
+                const name = st.itemChoice;
                 if (name) act('give', { target: p.id, item: name, count: Math.max(1, Math.floor(Number(count.value) || 1)) });
             }, 'primary')),
             row(UI.button('Open inventory', () => act('inventory', t)),
@@ -182,8 +180,51 @@
             }))));
     }
 
-    function itemFocus() {
-        const el = st.content.querySelector('.wla-detail input[placeholder="Search items"]');
+    // Dropdown with every item on the server: the closed box shows the
+    // chosen item; open, it lists all items by category with a search box.
+    function itemPicker(all) {
+        const chosen = all.find((i) => i.name === st.itemChoice);
+        const pic = (it, cls) => {
+            const img = h('img', { class: cls, draggable: false });
+            if (it && it.image) img.src = it.image; else img.style.visibility = 'hidden';
+            img.addEventListener('error', () => { img.style.visibility = 'hidden'; });
+            return img;
+        };
+        const box = h('button', { class: 'wla-pick__box' + (st.itemOpen ? ' is-open' : '') },
+            pic(chosen, 'wla-pick__img'),
+            h('span', { class: 'wla-pick__label', text: chosen ? chosen.label : 'Choose an item (' + all.length + ')' }),
+            chosen ? h('span', { class: 'wla-pick__name', text: chosen.name }) : null,
+            h('span', { class: 'wla-pick__caret', text: st.itemOpen ? '▴' : '▾' }));
+        box.addEventListener('click', () => { st.itemOpen = !st.itemOpen; render(); if (st.itemOpen) pickerFocus(); });
+        const wrap = h('div', { class: 'wla-pick' }, box);
+        if (!st.itemOpen) return wrap;
+
+        const list = h('div', { class: 'wla-pick__list' });
+        const fill = () => {
+            list.innerHTML = '';
+            const groups = groupItems(filterItems(all, st.itemSearch));
+            if (!groups.length) list.appendChild(h('div', { class: 'wl-hint wla-pick__empty', text: 'No item matches.' }));
+            groups.forEach((g) => {
+                list.appendChild(h('div', { class: 'wla-pick__group', text: g.category + ' (' + g.items.length + ')' }));
+                g.items.forEach((it) => {
+                    const rowEl = h('div', { class: 'wla-pick__row' + (it.name === st.itemChoice ? ' is-chosen' : '') },
+                        pic(it, 'wla-pick__rowimg'), h('span', { text: it.label }), h('span', { class: 'wla-pick__name', text: it.name }));
+                    rowEl.addEventListener('click', () => { st.itemChoice = it.name; st.itemOpen = false; render(); });
+                    list.appendChild(rowEl);
+                });
+            });
+        };
+        const search = input({ placeholder: 'Search ' + all.length + ' items' }, st.itemSearch || '');
+        search.classList.add('wla-pick__search');
+        search.addEventListener('input', () => { st.itemSearch = search.value; fill(); });
+        search.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); st.itemOpen = false; render(); } });
+        fill();
+        wrap.appendChild(h('div', { class: 'wla-pick__panel' }, search, list));
+        return wrap;
+    }
+
+    function pickerFocus() {
+        const el = st.content.querySelector('.wla-pick__search');
         if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
     }
 
@@ -341,7 +382,26 @@
         '.wla-id { color: var(--wl-accent); font-variant-numeric: tabular-nums; }',
         '.wla-big { font-family: var(--wl-font-display); font-size: 22px; }',
         '.wla-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }',
-        '.wla-itemimg { width: 40px; height: 40px; object-fit: contain; background: var(--wl-bg-sunken); border-radius: 4px; }',
+        '.wla-row--top { align-items: flex-start; }',
+        '.wla-pick { flex: 3; min-width: 240px; }',
+        '.wla-pick__box { width: 100%; display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; cursor: pointer; text-align: left;',
+        '  background: var(--wl-bg-sunken); color: var(--wl-text); border: 1px solid var(--wl-border); border-radius: var(--wl-radius); font: inherit; }',
+        '.wla-pick__box:hover, .wla-pick__box.is-open { border-color: var(--wl-accent); }',
+        '.wla-pick__img { width: 34px; height: 34px; object-fit: contain; }',
+        '.wla-pick__label { flex: 1; }',
+        '.wla-pick__name { color: var(--wl-text-dim); font-size: 11px; font-family: monospace; }',
+        '.wla-pick__caret { color: var(--wl-text-dim); }',
+        '.wla-pick__panel { margin-top: 4px; background: var(--wl-bg);',
+        '  border: 1px solid var(--wl-accent); border-radius: var(--wl-radius); box-shadow: 0 12px 30px rgba(0,0,0,0.6); padding: 6px; }',
+        '.wla-pick__search { width: 100%; box-sizing: border-box; margin-bottom: 6px; }',
+        '.wla-pick__list { max-height: 320px; overflow-y: auto; }',
+        '.wla-pick__group { position: sticky; top: 0; background: var(--wl-bg); padding: 6px 4px 3px; font-size: 11px; text-transform: uppercase;',
+        '  letter-spacing: 0.06em; color: var(--wl-accent); }',
+        '.wla-pick__row { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 8px; padding: 3px 6px; border-radius: 4px; cursor: pointer; }',
+        '.wla-pick__row:hover { background: var(--wl-bg-sunken); }',
+        '.wla-pick__row.is-chosen { background: rgba(217,130,43,0.18); }',
+        '.wla-pick__rowimg { width: 28px; height: 28px; object-fit: contain; }',
+        '.wla-pick__empty { padding: 8px; }',
         '.wla-row .wl-input { flex: 1; min-width: 120px; }',
         '.wla-row select.wl-input { flex: 2; }',
         '.wla-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }',

@@ -243,8 +243,43 @@ local function searchDrop(drop)
     end)
 end
 
+-- With wasteland_target running, bags are searched through the target
+-- (hold Left Alt, look at the bag); otherwise with the "Press E" prompt.
+local dropTargets = {}   -- drop id -> target registration id
+local function targetRunning() return GetResourceState('wasteland_target') == 'started' end
+
+local function syncDropTargets()
+    if not targetRunning() then dropTargets = {}; return end
+    local wanted = {}
+    for _, d in ipairs(drops) do wanted[d.id] = d end
+    for id, tid in pairs(dropTargets) do
+        if not wanted[id] then
+            exports.wasteland_target:Remove(tid)
+            dropTargets[id] = nil
+        end
+    end
+    for id, d in pairs(wanted) do
+        if not dropTargets[id] then
+            -- Bag props have no collision, so the target is a small sphere
+            -- where the bag lies.
+            dropTargets[id] = exports.wasteland_target:AddSphere(vector3(d.x, d.y, d.z), 0.9, {
+                { label = d.label and ('Search ' .. d.label) or 'Search', icon = '⌕', distance = 2.5,
+                    onSelect = function() if canOpen() and not isOpen() then searchDrop(d) end end },
+            })
+        end
+    end
+end
+
+AddEventHandler('onClientResourceStart', function(res)
+    if res == 'wasteland_target' then dropTargets = {}; syncDropTargets() end
+end)
+AddEventHandler('onClientResourceStop', function(res)
+    if res == 'wasteland_target' then dropTargets = {} end
+end)
+
 Citizen.CreateThread(function()
     local sinceProps = 0
+    local lastDrops = nil
     while true do
         local pos = GetEntityCoords(PlayerPedId())
         sinceProps = sinceProps + 1
@@ -252,7 +287,11 @@ Citizen.CreateThread(function()
             sinceProps = 0
             updateProps(pos)
         end
-        local near = (#drops > 0) and nearestDrop(pos) or nil
+        if drops ~= lastDrops then
+            lastDrops = drops
+            syncDropTargets()
+        end
+        local near = (#drops > 0 and not targetRunning()) and nearestDrop(pos) or nil
         if near and not isOpen() and canOpen() then
             -- Only while standing at a drop: draw the prompt every frame.
             local deadline = GetGameTimer() + 500

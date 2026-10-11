@@ -408,3 +408,16 @@ Exports: `GetZombieCount() -> total, alive`, `SpawnZombie(coords, kind?) -> netI
 Admin command: `/zombies count | clear | spawn <n>` (ACE `wasteland.admin`).
 
 New exports elsewhere: inventory `CreateLootDrop(coords, items, opts) -> dropId | nil, err` (items: list of { name, count }; opts: label, lifetimeMinutes, grid); survival `Damage(source, amount) -> ok`.
+
+## Target (`wasteland_target`, client)
+
+Hold Left Alt to target. Client exports (call from client scripts):
+
+* `AddModel(models, options) -> id` (models: name, hash or a list)
+* `AddEntity(entity, options) -> id` (a local entity handle)
+* `AddNetId(netId, options) -> id` (a networked entity)
+* `AddGlobal(kind, options) -> id` (kind: `'ped'`, `'vehicle'`, `'object'`, `'player'`)
+* `AddSphere(coords, radius, options) -> id`, `AddBox(coords, size, heading, options) -> id` (the point looked at must be inside)
+* `Remove(id) -> ok`, `IsTargeting() -> boolean`
+
+Options: a list of `{ label, icon?, name?, distance? (2.5), canInteract?(entity, distance, coords), onSelect?(data) | event? | serverEvent?, args? }`. `onSelect` gets `{ entity, netId, coords, distance, model, args, name, zone }`; `event` is triggered on the client with the same table; `serverEvent` is sent to the server with `{ netId, coords, args }` (check everything there). Registrations are removed when the resource that made them stops. The target is off while dead, in a vehicle, in the pause menu or while a screen has focus.

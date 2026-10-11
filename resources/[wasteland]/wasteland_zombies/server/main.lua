@@ -308,7 +308,7 @@ M = Wasteland.DefineModule({
                 sightDay = NUM(35, 0, 200), sightNight = NUM(18, 0, 200), hearSprint = NUM(25, 0, 200),
                 hearWalk = NUM(9, 0, 200), hearCrouch = NUM(3, 0, 200), loseSeconds = INT(10, 1, 120),
             } },
-            attack = { type = 'table', fields = { range = NUM(1.7, 0.5, 5), cooldownMs = INT(1500, 200, 10000) } },
+            attack = { type = 'table', fields = { range = NUM(2.6, 0.5, 5), cooldownMs = INT(1500, 200, 10000) } },
             noise = { type = 'table', fields = { investigateSeconds = INT(40, 1, 600) } },
             loot = { type = 'table', fields = {
                 chance = NUM(0.25, 0, 1), lifetimeMinutes = INT(15, 1, 1440),

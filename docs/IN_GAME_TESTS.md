@@ -243,3 +243,17 @@ Tell me what does not match, especially the temperatures (they are estimated fro
 | R12.12 | Watch the F8 console and the server console while playing | No errors from wasteland_zombies |
 
 Tell me how they feel: too many, too few, too slow, too fast, too weak, too strong. Every number is in `zombies.lua`.
+
+## Target, admin item list, zombie reach
+
+**Setup:** `server.cfg` has `ensure wasteland_target` after `ensure wasteland_ui` (done on the owner's server). Restart the server.
+
+| # | Step | Expected result |
+|---|---|---|
+| R13.1 | Hold Left Alt | A small eye in the middle of the screen; letting go hides it |
+| R13.2 | Drop an item, hold Left Alt and look at the bag on the ground (within about 2.5 m) | The eye turns green and "Search" appears beside it |
+| R13.3 | Click (or press E) | The bag opens next to your inventory |
+| R13.4 | Die, respawn, go to your body bag, Left Alt and look at it | "Search Body of <name>"; it opens |
+| R13.5 | Left Alt while in a vehicle, dead, or with the inventory open | No eye |
+| R13.6 | Admin panel, a player, Items: click the item box | A list of every item by category with pictures; typing filters it; clicking one picks it; Give works |
+| R13.7 | Let a zombie attack you | It swings from about 2.5 m instead of walking into you |
