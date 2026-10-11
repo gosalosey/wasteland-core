@@ -111,11 +111,19 @@ local function look()
     if not hit then return nil end
     local info = { coords = { x = coords.x, y = coords.y, z = coords.z } }
     info.distance = #(GetEntityCoords(ped) - coords)
-    if entity and entity ~= 0 and DoesEntityExist(entity) then
-        local t = GetEntityType(entity)
+    -- The ray also returns handles for map pieces (buildings, terrain) that
+    -- are not script entities; reading their model throws in the game. Only
+    -- peds (1), vehicles (2) and objects (3) count as entities.
+    local t = 0
+    if entity and entity ~= 0 then
+        local okType, kind = pcall(GetEntityType, entity)
+        t = okType and kind or 0
+    end
+    if (t == 1 or t == 2 or t == 3) and DoesEntityExist(entity) then
         info.entity = entity
-        info.model = GetEntityModel(entity)
-        info.type = (t == 1 and (IsPedAPlayer(entity) and 'player' or 'ped')) or (t == 2 and 'vehicle') or (t == 3 and 'object') or nil
+        local okModel, model = pcall(GetEntityModel, entity)
+        info.model = okModel and model or nil
+        info.type = (t == 1 and (IsPedAPlayer(entity) and 'player' or 'ped')) or (t == 2 and 'vehicle') or 'object'
         if NetworkGetEntityIsNetworked(entity) then info.netId = NetworkGetNetworkIdFromEntity(entity) end
     end
     return info
