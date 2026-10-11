@@ -369,3 +369,45 @@ describe('real MariaDB: vehicles', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('real MariaDB: supply drops (SDK example)', function()
+    local env = { WLSD = {} }
+    assert(loadfile(RESOURCES .. '/wasteland_supplydrops/server/sql.lua', 't', env))()
+    local SQLS = env.WLSD.SQL
+    local server = newServer({ dbBackend = backend, config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 60000, slowQueryWarningMs = 60000 }',
+        ['supplydrops.lua'] = [[return { intervalMinutes = 0, lootTable = '', rolls = { 1, 1 },
+            items = { { name = 'bandage', min = 2, max = 2, weight = 1 } },
+            points = { { x = 100.0, y = 100.0, z = 30.0, label = 'the test field' } } }]],
+    } })
+    server.db.latencyMs = 0
+    boot(server, { 'wasteland_players', 'wasteland_inventory', 'wasteland_supplydrops' })
+
+    it('creates its table, stores a drop and who opened it', function()
+        expect(states(server).supplydrops).toBe('running')
+        local id = server:connectAndJoin({ name = 'Looter', license = 'looter' })
+        server:advance(200)
+        server.players[id].coords = { x = 101.0, y = 100.0, z = 30.0 }
+        server:command(id, 'character create Lou Ter'); server:advance(500)
+        server:command(id, 'character select 1'); server:advance(800)
+        server:export('wasteland_supplydrops', 'SpawnDrop'); server:advance(800)
+        local drop = server:export('wasteland_supplydrops', 'GetActiveDrops')[1]
+        expect(drop ~= nil).toBe(true)
+        server:clientEvent(id, 'wasteland:supplydrops:server:open', drop.id); server:advance(1500)
+        local row = backend:rows('SELECT label, opened_by FROM wl_supply_drops WHERE id = ?', { drop.id })[1]
+        expect(row.label).toBe('the test field')
+        expect(row.opened_by ~= nil).toBe(true)
+    end)
+
+    it('ran every supply drop statement against the real database', function()
+        local ran = {}
+        for _, l in ipairs(backend.log) do ran[l.sql] = true end
+        local missing = {}
+        for key, sql in pairs(SQLS) do
+            if not ran[(sql:gsub('%s+', ' '))] then missing[#missing + 1] = key end
+        end
+        table.sort(missing)
+        expect(missing).toEqual({})
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

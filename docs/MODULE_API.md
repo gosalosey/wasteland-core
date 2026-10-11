@@ -471,3 +471,13 @@ Actions (`wasteland:vehicles:server:act(netId, action)`, then `...:finish`): bat
 Gas pumps (`pump` in vehicles.lua) have limited, shared fuel keyed by their position (rounded to a metre); a pump is full again `refillMinutes` after fuel was first taken from it. `...:pumpInfo(coords)` answers `wasteland:vehicles:client:pump(key, { litres, max, minutes })` (players within 10 m; the client shows it above the pump). `...:pumpRefuel(netId, pumpCoords)` fills a vehicle parked within `vehicleDistance`; `...:fillCan(pumpCoords)` fills a jerry can; both take only what the pump has.
 
 Exports: `GetVehicleCount()`, `SpawnWreck(coords, model?) -> id`, `SpawnWorking(coords, model?) -> id`, `GetVehicleState(id)`, `GetVehicleStats() -> { total, out, pumpsUsed }`, `FixVehicle(netId) -> ok, err`, `RefillPumps() -> count`, `GetSpawnPoints()`, `GetPumpFuel(coords) -> litres`. Server events: `wasteland:vehicles:action(source, action, id)`, `wasteland:noise(coords, radius)` (lock picking). New inventory export: `FindItems(source, name) -> list of { uid, count, metadata, inventoryId }`.
+
+## Supply drops (`wasteland_supplydrops`, supplydrops api 1.0) - the SDK example module
+
+Walked through in [SDK_GUIDE.md](SDK_GUIDE.md), section 11. Config `supplydrops.lua`: `intervalMinutes` (0 = only by command), `lifetimeMinutes`, `maxActive`, `minPlayers`, `minGap`, `reach`, `grid`, `lootTable` (a loot.lua table, or "" for `items` + `rolls`), `points = { { x, y, z, label } }`, `adminCommand` (default `supplydrop`; `/supplydrop here`), `adminAce`.
+
+Table `wl_supply_drops` (id, label, x, y, z, created_unix, opened_by, opened_unix). Crates are inventory stashes `supply_<id>`, filled when first opened.
+
+Net events: `wasteland:supplydrops:server:sync`, `...:open(id)`. Client events: `...:client:drop(info, announce)`, `...:client:remove(id)`, `...:client:notice(text)`.
+
+Exports: `GetActiveDrops() -> { { id, coords, label, secondsLeft } }`, `SpawnDrop(coords?) -> true`. Server events: `wasteland:supplydrops:dropped(id, coords, label)`, `wasteland:supplydrops:opened(source, id)`.

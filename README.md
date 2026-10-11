@@ -36,6 +36,7 @@ PROJECT_STATUS.md       milestone checklist and how to resume work
 ## Documentation
 
 * `docs/ARCHITECTURE.md`: design, resource map, lifecycle, contracts, security
+* `docs/SDK_GUIDE.md`: how to add content (items, loot, recipes, traders, jobs, zombies, vehicles) and write your own module, using the supply drop example
 * `docs/MODULE_API.md`: SDK, net-event guard, config schema DSL, exports, events, admin command, database and players APIs
 * `docs/DATABASE.md`: database setup, how data is kept safe, backups, restore, upgrades
 * `docs/CONVENTIONS.md`: naming, versioning, error handling

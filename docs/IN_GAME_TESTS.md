@@ -494,3 +494,14 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R32.4 | Cancel | Your old clothes come back, nothing paid |
 | R32.5 | Change pants and shoes, Pay $50 (with the cash) | "The tailor restyled 2 pieces for $50."; the look stays after relog |
 | R32.6 | Without enough cash | "That costs $X. You do not have enough cash." |
+
+## R33: supply drops
+
+| # | Do | Expect |
+|---|---|---|
+| R33.1 | As admin: /supplydrop | Everyone: "Supply drop coming down near ..."; a red area and a crate blip on the map |
+| R33.2 | Go there | A military crate with red smoke on the ground (tell me if it floats or sinks) |
+| R33.3 | Left Alt on it: "Open supply crate" | It opens next to your inventory with loot; everyone gets "Someone opened the supply crate at ..." |
+| R33.4 | Another player opens it | Same contents, minus what was taken |
+| R33.5 | Wait 20 minutes | The crate and the blips are gone |
+| R33.6 | /supplydrop here | A crate a few metres from you |

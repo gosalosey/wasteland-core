@@ -144,7 +144,8 @@ Decisions (owner, 2026-10-11): all four admin tool sets (world tools, live serve
 - [x] 10A: live view, world tools, debug overlays, player tools (spectate, cash, jobs, recipes, send to camp)
 - [x] Tests: every new action, panel data, the action log
 - [~] Installed on the owner's server; runtime tests R20.1-R20.12 pending
-- [ ] 10B: SDK docs complete · [ ] example extension
+- [x] 10B: SDK guide (docs/SDK_GUIDE.md) and example module wasteland_supplydrops (supply drops), with unit, integration and real-MariaDB tests
+- [~] Supply drops installed on the owner's server; runtime tests R33.1-R33.6 pending
 
 ## Milestone 11: txAdmin recipe
 - [ ] Recipe (verify against current txAdmin docs) · [ ] clean-install test

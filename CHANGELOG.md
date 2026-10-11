@@ -1,5 +1,12 @@
 # Changelog
 
+## Milestone 10B: SDK guide and example module
+* docs/SDK_GUIDE.md: recipes for adding items, food and medicine, weapons, loot (files and in-game), recipes and blueprints, camps, traders and shops, jobs, zombie kinds, vehicles, emotes, tailors and supply drops; a step-by-step walk-through of writing a module; how to test it.
+* New resource wasteland_supplydrops (module "supplydrops", config supplydrops.lua; added to server.cfg): the SDK example and a real feature. Every 45 minutes (with players online) a military crate comes down at one of 8 points: map blip and area, a message for everyone, red smoke. The first player to open it fills it (loot table "crate", or its own item list); everyone shares what is inside; gone after 20 minutes. Drops are recorded in `wl_supply_drops`. Admins: /supplydrop, /supplydrop here.
+* It shows every part of the SDK: config schema, async init with a migration, a token-stopped thread, guarded net events with server-side checks, optional dependencies, inventory stashes, target, blips and props, an admin command, exports and server events, unit, integration and real-MariaDB tests.
+* Tests: 672 (including the real MariaDB suite).
+
+
 ## Fix: sometimes spawning at a random spot after choosing a character
 * Cause: the base server's spawnmanager (with the default map spawn points) could spawn the player after we placed them at their saved spot, and the server could sample the position before the move arrived, saving that spawn point.
 * Now: the server only records positions after the client reports the character was placed (or after a minute if a client never does); autospawn is turned off as soon as a character loads; if spawnmanager still spawns the player in the first minute, they are put back at their saved spot.
