@@ -1,5 +1,18 @@
 # Changelog
 
+## Milestone 7A: camps, safe zones, traders
+
+### wasteland_camps 0.1.0 (new)
+* Three camps: Sandy Shores, Paleto Bay, Legion Square. Each is a safe zone shown on the map (green circle + marker); entering shows "<camp> - safe zone", leaving "Leaving <camp>".
+* Zombies never spawn inside a camp, ones that wander in are removed, they stop chasing players who are inside, and cannot hurt them there.
+* Traders (NPCs, hold Left Alt, "Trade"): general trader and medic in every camp, a gunsmith in Sandy Shores. Buy and sell for cash; each item has a stock that refills every 10 minutes; selling to a trader raises its stock. Every trade is checked by the server (at the trader, stock, cash, room in the inventory; money back when the items do not fit).
+* Exports `IsInSafeZone`, `GetCampAt`, `GetCamps` (server; `IsInSafeZone` also on the client); event `wasteland:camps:traded`.
+
+### Fixes
+* Zombies: `/zombies spawn` checked the spots against the normal 70-140 m ring and refused them all; it now uses the 15-35 m ring it asked for.
+* Tests: 497 (new: camp zones and trade rules, trading, safe zones with zombies, trade screen).
+
+
 ## Inventory: carry more, double-click to take (owner request)
 * Weight limits raised: pockets 35 kg (was 12), small backpack 35 kg (was 15), hiking backpack 60 kg (was 30).
 * Double-click an item in a searched container (or a bag on the ground, a stash) to take it into your inventory: it tops up a matching stack first (ammo onto ammo), then uses free space in your pockets, then your backpack. Double-click one of yours to put it back into the open container. Shift-click still works.

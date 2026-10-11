@@ -90,6 +90,13 @@ local function configure(ped, kind)
     TaskWanderStandard(ped, 10.0, 10)
 end
 
+-- Players inside a safe zone (camp) are left alone.
+local function safe(target)
+    if GetResourceState('wasteland_camps') ~= 'started' then return false end
+    local ok, yes = pcall(function() return exports.wasteland_camps:IsInSafeZone(GetEntityCoords(target)) end)
+    return ok and yes == true
+end
+
 -- Who can this zombie sense? Nearest living player it sees or hears.
 local function sense(ped, night)
     local d = cfg.detection
@@ -97,7 +104,7 @@ local function sense(ped, night)
     local best, bestDist = nil, math.huge
     for _, pl in ipairs(GetActivePlayers()) do
         local target = GetPlayerPed(pl)
-        if target ~= 0 and not IsEntityDead(target) then
+        if target ~= 0 and not IsEntityDead(target) and not safe(target) then
             local dist = #(GetEntityCoords(target) - zc)
             if dist < bestDist then
                 local sight = night and d.sightNight or d.sightDay
@@ -127,7 +134,7 @@ local function think(ped, b, kind, investigate, night)
     local target, dist = sense(ped, night)
     if target then
         b.mode, b.target, b.lastSeen = 'chase', target, t
-    elseif b.mode == 'chase' and (not DoesEntityExist(b.target) or IsEntityDead(b.target)
+    elseif b.mode == 'chase' and (not DoesEntityExist(b.target) or IsEntityDead(b.target) or safe(b.target)
         or t - b.lastSeen > cfg.detection.loseSeconds * 1000) then
         b.mode, b.target, b.nextTask = 'idle', nil, 0
     end

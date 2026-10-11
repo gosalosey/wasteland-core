@@ -284,3 +284,19 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R15.3 | Double-click ammo in a container while you carry the same ammo | It joins your stack |
 | R15.4 | Double-click one of your items while a container is open | It goes into the container |
 | R15.5 | Fill up until too heavy, double-click something heavy | "Too heavy to carry." |
+
+## Camps and traders (7A)
+
+**Setup:** `server.cfg` has `ensure wasteland_camps` after `ensure wasteland_loot` (done on the owner's server). Restart the server.
+
+| # | Step | Expected result |
+|---|---|---|
+| R16.1 | Open the map | Three green camp markers with circles: Sandy Shores Camp, Paleto Bay Camp, Legion Square Camp |
+| R16.2 | Walk into a camp, then out | "Sandy Shores Camp - safe zone", then "Leaving Sandy Shores Camp" |
+| R16.3 | Look around in the camp | Traders standing there (general trader, medic; gunsmith in Sandy Shores). Tell me if one stands inside a wall or floats: its coords are in camps.lua. |
+| R16.4 | Hold Left Alt on a trader, "Trade" | The trade screen: Buy (prices, stock) and Sell (what you carry that they buy), your cash |
+| R16.5 | Buy something you can afford, then something you cannot | Cash goes down, the item is in your inventory; "You need $..." |
+| R16.6 | Sell something (or All) | Items gone, cash up |
+| R16.7 | Buy out an item, wait 10 minutes | "Sold out", later some back in stock |
+| R16.8 | Lead zombies to a camp | They stop following at the edge; any that walk in disappear; none appear inside |
+| R16.9 | Walk away from the trader with the screen open | The screen closes |

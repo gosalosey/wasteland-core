@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** 6 (looting) complete in automated tests; installed; runtime verification pending (R14.x). Next: Milestone 7 zones, camps, NPCs, crafting.
+**Current milestone:** 7A (camps, safe zones, traders) complete in automated tests; installed; runtime verification pending (R16.x). Next: 7B crafting.
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -106,8 +106,17 @@ Decisions (owner, 2026-10-11): world props everywhere and zombie bodies; shared 
 Refill state is kept in memory (after a restart emptied containers can be filled again).
 
 ## Milestone 7: zones, camps, NPCs, crafting
-- [ ] Zones (circle/polygon) and rules · [ ] safe zones · [ ] camps, NPC registry, barter traders, reputation
-- [ ] Crafting recipes and stations (scheduled here; see ARCHITECTURE)
+Decisions (owner, 2026-10-11): safe zones keep zombies out, with map blips and entry messages; traders buy and sell for cash; limited stock that restocks, no reputation; three starter camps picked by me. Split into 7A (camps) and 7B (crafting).
+
+### 7A: camps
+- [x] Camp zones (circles), safe zones (zombies: no spawn, removed inside, no chasing or hits inside), blips, entry/leave messages
+- [x] Traders as NPCs with the target; cash buy/sell, stock and restock; server-checked trades
+- [x] Tests: zone and trade rules, trading, safe zones with zombies, screen
+- [~] Installed on the owner's server; runtime tests R16.1-R16.9 pending
+Not chosen: barter, reputation, no-weapons zones, faster healing in camps.
+
+### 7B: crafting
+- [ ] Recipes and stations
 
 ## Milestone 8: quests
 - [ ] Definitions, objective handler registry, chains, rewards, persistence, HUD tracking · [ ] duplicate-claim tests

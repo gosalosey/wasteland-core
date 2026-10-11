@@ -429,3 +429,13 @@ Options: a list of `{ label, icon?, name?, distance? (2.5), canInteract?(entity,
 A world container is identified by its type and its position rounded to a metre; it is an inventory stash `loot_<type>_<x>_<y>_<z>` shared by everyone. The client asks to search (`wasteland:loot:server:start(model, coords)` or `...:body(netId)`); the server checks the model, the distance and whether anything is left, times the search, fills the stash when it is new or empty and due for a refill, and opens it (`OpenStash` with `open`). Bodies use the stash `loot_body_<uid>`, deleted when the zombie is removed.
 
 Exports: `RollTable(name) -> list of { name, count } | nil`. Server event: `wasteland:loot:searched(source, type, stashName)`.
+
+## Camps (`wasteland_camps`, camps api 0.1)
+
+`camps.lua`: `shops` (name → `label`, `items = { { name, buy?, sell?, stock?, restock? } }`; `buy` = the player pays, `sell` = the player is paid, `stock` limits what the trader sells and refills by `restock` every `restockMinutes`), and `camps` (list of `{ id, label, coords, radius, safe = true, blip = { sprite, color }, traders = { { shop, model, coords = { x, y, z, heading } } } }`).
+
+Traders are local peds on each client (created within 80 m) with a "Trade" target. Net events `wasteland:camps:server:open|buy|sell(campId, traderIndex, item?, count?)`; the server checks the distance (`tradeDistance`), stock, cash and inventory room and answers with the screen data. Stock is kept in memory.
+
+Exports (server): `IsInSafeZone(coords) -> boolean`, `GetCampAt(coords) -> { id, label } | nil`, `GetCamps()`. Client export: `IsInSafeZone(coords?)`. Server event: `wasteland:camps:traded(source, 'buy'|'sell', item, count, cash, campId)`.
+
+Zombies use `IsInSafeZone`: no spawning inside, removal inside, no chasing a player inside, no hits on a player inside.

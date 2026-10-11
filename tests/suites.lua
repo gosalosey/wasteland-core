@@ -10,6 +10,7 @@ return {
     'unit/zombie_rules.lua',
     'unit/target_match.lua',
     'unit/loot_rules.lua',
+    'unit/camp_zones.lua',
     'integration/boot.lua',
     'integration/registry.lua',
     'integration/lifecycle.lua',
@@ -25,6 +26,7 @@ return {
     'integration/weapons.lua',
     'integration/zombies.lua',
     'integration/loot.lua',
+    'integration/camps.lua',
     'db/mariadb.lua',
     'js/node.lua',
 }

@@ -48,3 +48,5 @@
 | K-44 | Loot | Container prop names are common GTA models but not verified on every part of the map; props that are part of a building (not separate objects) cannot be targeted. Missing ones can be added to `loot.lua` by model name. | Verify at runtime (R14.x) |
 | K-45 | Loot | Refill state is kept in memory: after a server restart, containers that were emptied can be filled again at once. Items left in containers are stored and survive restarts. | By design for now |
 | K-46 | Loot | Search animations (`amb@prop_human_bum_bin@base`, `mini@repair`, `amb@medic@standing@kneel@base`) are verified in-game only; a missing one only skips the animation. | Verify at runtime |
+| K-47 | Camps | Camp centres and trader positions/headings are picked from known map spots but not checked in-game; a trader may stand in a wall or face the wrong way. Edit `camps.lua` coords. | Verify at runtime (R16.3) |
+| K-48 | Camps | Trader stock is kept in memory (full again after a restart). | By design for now |

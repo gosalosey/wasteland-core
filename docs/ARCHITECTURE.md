@@ -54,6 +54,7 @@ survival  loot     world       crafting     vehicles      quests
 | wasteland_weapons | `weapons` | core, players, inventory | survival | 5A ✅ |
 | wasteland_zombies | `zombies` | core, players | survival, inventory, weapons, world | 5B ✅ |
 | wasteland_target | (client only, no module) | ui | players | owner request ✅ (used by looting, M6) |
+| wasteland_camps | `camps` | core, players, inventory | zombies use its safe zones; target, ui on the client | 7A ✅ |
 | wasteland_loot | `loot` | core, players, inventory | zombies (target on the client) | 6 ✅ |
 | wasteland_world | `world` | core | none | 7 (clock, weather, empty world ✅ early; zones, camps, traders in M7) |
 | wasteland_crafting | `crafting` | core, inventory | world | 7 (see note) |

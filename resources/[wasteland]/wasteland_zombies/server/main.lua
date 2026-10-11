@@ -12,7 +12,7 @@
 local Rules = WLZ.Rules
 local M
 local zombies = {}     -- handle -> { handle, netId, kind, spawnedAt, dead, deadAt, farSince, lastHit, hp }
-local pending = {}     -- source -> number of spawn points asked for
+local pending = {}     -- source -> { n, ring = { spawnMin, spawnMax } } (spawn points asked for)
 local runToken = nil
 
 local function players() return exports.wasteland_players end
@@ -48,6 +48,13 @@ local function activePlayers()
         end
     end
     return out
+end
+
+-- Safe zones (camps): no zombies inside.
+local function inSafeZone(coords)
+    if GetResourceState('wasteland_camps') ~= 'started' then return false end
+    local ok, safe = pcall(function() return exports.wasteland_camps:IsInSafeZone(coords) end)
+    return ok and safe == true
 end
 
 local function coordsOf(handle)
@@ -105,9 +112,9 @@ local function requestSpawns(list)
                 near = near + 1
             end
         end
-        local n = Rules.toSpawn(pop, night, near, total + (pending[p.source] or 0))
+        local n = Rules.toSpawn(pop, night, near, total + (pending[p.source] and pending[p.source].n or 0))
         if n > 0 and not pending[p.source] then
-            pending[p.source] = n
+            pending[p.source] = { n = n, ring = { spawnMin = pop.spawnMin, spawnMax = pop.spawnMax } }
             TriggerClientEvent('wasteland:zombies:client:findSpawns', p.source, n, pop.spawnMin, pop.spawnMax)
             total = total + n
         end
@@ -116,9 +123,10 @@ end
 
 -- Points found by a client (untrusted: each one is checked).
 local function spawnsFound(src, points)
-    local asked = pending[src]
+    local req = pending[src]
     pending[src] = nil
-    if not asked or not (M and M.active) then return end
+    if not req or not (M and M.active) then return end
+    local asked = req.n
     local list = activePlayers()
     local me
     for _, p in ipairs(list) do if p.source == src then me = p end end
@@ -127,8 +135,9 @@ local function spawnsFound(src, points)
     local spawned = 0
     for _, point in ipairs(points) do
         if spawned >= asked or count(true) >= M.config.population.maxTotal then break end
-        local ok = Rules.validSpawn(M.config.population, point, me.coords, list)
-        if ok then
+        -- Checked against the ring that was asked for (admin spawns are closer).
+        local ok = Rules.validSpawn(req.ring, point, me.coords, list)
+        if ok and not inSafeZone(point) then
             if spawnAt(point, Rules.pickKind(M.config.kinds, night, math.random())) then spawned = spawned + 1 end
         end
     end
@@ -171,6 +180,10 @@ local function maintain()
         else
             if GetEntityHealth(z.handle) <= 0 then markDead(z, 'health') end
             local c = coordsOf(z.handle)
+            if inSafeZone(c) then
+                remove(z) -- wandered into a camp
+                goto continue
+            end
             local close = false
             for _, p in ipairs(list) do
                 if Rules.dist2d(c, p.coords) <= pop.despawnDistance then close = true; break end
@@ -183,6 +196,7 @@ local function maintain()
                 remove(z)
             end
         end
+        ::continue::
     end
     return list
 end
@@ -224,6 +238,7 @@ local function hit(src, netId, victim)
     local ped = GetPlayerPed(victim)
     if not ped or ped == 0 or not DoesEntityExist(ped) or survival('IsDead', victim) then return end
     if Rules.dist3d(coordsOf(z.handle), coordsOf(ped)) > M.config.attack.range + 1.0 then return end
+    if inSafeZone(coordsOf(ped)) then return end
     z.lastHit = t
     local r = Rules.hit(M.config.kinds[z.kind], {
         damage = math.random(), infection = math.random(), infectionAmount = math.random(), bleeding = math.random(),
@@ -271,7 +286,7 @@ local function adminCommand(src, args)
         reply(string.format('Removed %d zombies.', n))
     elseif what == 'spawn' and src ~= 0 then
         local n = math.max(1, math.min(20, math.tointeger(tonumber(args[2] or '5')) or 5))
-        pending[src] = n
+        pending[src] = { n = n, ring = { spawnMin = 15, spawnMax = 35 } }
         TriggerClientEvent('wasteland:zombies:client:findSpawns', src, n, 15, 35)
         reply(string.format('Spawning up to %d zombies 15-35 m around you.', n))
     else
