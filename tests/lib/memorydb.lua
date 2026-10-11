@@ -40,6 +40,8 @@ function MemoryDB.new(resourcesDir)
         wl_accounts = {},   -- [id] = row
         wl_characters = {}, -- [id] = row
         wl_character_data = {}, -- ["cid|key"] = row
+        wl_items = {},      -- [uid] = row
+        wl_drops = {},      -- [id] = row
         autoinc = { wl_accounts = 0, wl_characters = 0 },
     }
     self.ddl = {}          -- DDL statements seen
@@ -51,8 +53,10 @@ function MemoryDB.new(resourcesDir)
     self.handlers = {}
     local wld = loadSqlFile(resourcesDir .. '/wasteland_database/server/sql.lua', 'WLD')
     local wlp = loadSqlFile(resourcesDir .. '/wasteland_players/server/sql.lua', 'WLP')
+    local wli = loadSqlFile(resourcesDir .. '/wasteland_inventory/server/sql.lua', 'WLI')
     self:installDatabase(wld.SQL)
     self:installPlayers(wlp.SQL)
+    self:installInventory(wli.SQL)
     return self
 end
 
@@ -200,6 +204,55 @@ function MemoryDB:installPlayers(SQL)
         if not c or c.account_id ~= p[2] or c.deleted_at ~= nil then return header(0) end
         c.deleted_at, c.slot = db:now(), nil
         return header(1)
+    end)
+end
+
+-------------------------------------------------------------------------------
+-- wasteland_inventory statements
+-------------------------------------------------------------------------------
+
+function MemoryDB:installInventory(SQL)
+    self:on(SQL.selectItems, function(db, p)
+        local rows = {}
+        for _, r in pairs(db.data.wl_items) do
+            if r.inventory_id == p[1] then rows[#rows + 1] = deepCopy(r) end
+        end
+        table.sort(rows, function(a, b) return a.uid < b.uid end)
+        return rows
+    end)
+    self:on(SQL.upsertItem, function(db, p)
+        local existed = db.data.wl_items[p[1]] ~= nil
+        db.data.wl_items[p[1]] = { uid = p[1], inventory_id = p[2], name = p[3], count = p[4],
+            pos_x = p[5], pos_y = p[6], rotated = p[7] == 1, slot = p[8], metadata = p[9] }
+        return header(existed and 2 or 1)
+    end)
+    self:on(SQL.deleteItem, function(db, p)
+        local existed = db.data.wl_items[p[1]] ~= nil
+        db.data.wl_items[p[1]] = nil
+        return header(existed and 1 or 0)
+    end)
+    self:on(SQL.deleteInventoryItems, function(db, p)
+        local n = 0
+        for uid, r in pairs(db.data.wl_items) do
+            if r.inventory_id == p[1] then db.data.wl_items[uid] = nil; n = n + 1 end
+        end
+        return header(n)
+    end)
+    self:on(SQL.selectDrops, function(db)
+        local rows = {}
+        for _, r in pairs(db.data.wl_drops) do rows[#rows + 1] = deepCopy(r) end
+        table.sort(rows, function(a, b) return a.id < b.id end)
+        return rows
+    end)
+    self:on(SQL.insertDrop, function(db, p)
+        if db.data.wl_drops[p[1]] then error("Duplicate entry '" .. p[1] .. "' for key 'PRIMARY'", 0) end
+        db.data.wl_drops[p[1]] = { id = p[1], x = p[2], y = p[3], z = p[4], created_unix = p[5] }
+        return header(1)
+    end)
+    self:on(SQL.deleteDrop, function(db, p)
+        local existed = db.data.wl_drops[p[1]] ~= nil
+        db.data.wl_drops[p[1]] = nil
+        return header(existed and 1 or 0)
     end)
 end
 

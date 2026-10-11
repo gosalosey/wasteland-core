@@ -156,6 +156,8 @@ M.netEvent('wasteland:appearance:server:save', {
         creatorOpen[characterId] = nil
         M.log:info('player %d saved the appearance of character %d (%s)', src, characterId, open.reason)
         TriggerClientEvent('wasteland:appearance:client:saved', src, appearance)
+        -- Other modules (inventory: starting outfit becomes clothing items).
+        TriggerEvent('wasteland:appearance:saved', src, characterId, appearance, open.reason)
     end)
 end)
 

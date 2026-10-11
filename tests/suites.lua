@@ -5,6 +5,7 @@ return {
     'unit/schema.lua',
     'unit/logger.lua',
     'unit/config_loader.lua',
+    'unit/inventory_grid.lua',
     'integration/boot.lua',
     'integration/registry.lua',
     'integration/lifecycle.lua',
@@ -13,6 +14,7 @@ return {
     'integration/database.lua',
     'integration/players.lua',
     'integration/appearance.lua',
+    'integration/inventory.lua',
     'db/mariadb.lua',
     'js/node.lua',
 }
