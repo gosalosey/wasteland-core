@@ -253,6 +253,15 @@ describe('real MariaDB: inventory', function()
         expect(bottle.y).toBe(2)
     end)
 
+    it('stores a body bag with owner, label and expiry', function()
+        local result = server:export('wasteland_inventory', 'DeathDrop', id, 'Body of Zed Zero')
+        server:advance(1500)
+        local r = backend:rows('SELECT owner_character, label, expires_unix - created_unix AS life FROM wl_drops WHERE id = ?', { result.dropIds[1] })
+        expect(r[1].owner_character).toBe(server:export('wasteland_players', 'GetCharacterId', id))
+        expect(r[1].label).toBe('Body of Zed Zero')
+        expect(r[1].life).toBe(7200)
+    end)
+
     it('ran every inventory statement against the real database', function()
         local ran = {}
         for _, l in ipairs(backend.log) do ran[l.sql] = true end

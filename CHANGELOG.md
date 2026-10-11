@@ -1,5 +1,20 @@
 # Changelog
 
+## Milestone 4: survival, HUD, death and respawn
+
+### wasteland_survival 0.1.0 (new)
+* Server-owned hunger, thirst, bleeding (3 levels, from hard hits, clotting), infection (grows, treatable, lethal at 100) and body temperature (weather, time, altitude, wet, clothing warmth). The rules are pure functions in `shared/model.lua`. Moderate pace by default: food 2 h, water 1.5 h.
+* Consumables from config (food, drink, bandage, rag, painkillers, antibiotics), used through the inventory, with eat, drink and treat animations. Items that would do nothing are refused and kept.
+* Death: everything except hotbar items goes into a body bag (map marker for the owner, 2 h lifetime). There is a "You died" screen with a countdown, and respawn happens at a random configured point with reset stats. spawnmanager autospawn is off.
+* HUD (bottom left): compact, only when it matters, or off (`/hud`, remembered per player).
+* Exports: GetStats, AddInfection, AddBleeding, ModifyStats, IsDead. Events: wasteland:survival:died and respawned.
+
+### wasteland_inventory
+* DeathDrop export (body bags), GetWornItems, the item field `warmth`, and migration 3 (drop owner, label and expiry). New survival items in config.
+
+### Tests
+* 341 passing: survival rules (unit), survival server (integration), body bags, HUD logic (Node), and body bags on real MariaDB.
+
 ## Milestone 3B: inventory and item API
 
 ### wasteland_inventory 0.1.0 (new)

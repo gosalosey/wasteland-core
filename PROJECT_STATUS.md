@@ -1,7 +1,7 @@
 # Project status and development checklist
 
-**Current milestone:** 3B complete in automated tests; installed on the owner's server; runtime verification pending (R4.x; also R2.x leftovers).
-**Next milestone:** 4, survival and HUD.
+**Current milestone:** 4 complete in automated tests; installed on the owner's server; runtime verification pending (R5.x).
+**Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
 ## How to resume work
@@ -61,12 +61,16 @@ Decisions (owner, 2026-10-10): Tetris grid with item sizes; backpacks add their 
 - [x] Atomic operations (no yields) + ordered transactional write queue; move/rotate/merge/split/wear/take off/drop/pick up/use · [x] persistence
 - [x] Inventory UI (drag and drop, preview, context menu, hotbar)
 - [x] Tests: duplication, concurrency (two players, one item), disconnect mid-action, database failure, invalid client events; SQL on real MariaDB
-- [~] Installed on the owner's server; runtime tests R4.1-R4.15 pending
+- [x] Installed on the owner's server; owner confirmed it works after the drag fix (key changed to TAB)
 Weapons as items are deferred to Milestone 5 (K-21).
 
 ## Milestone 4: survival and HUD
-- [ ] Hunger, thirst, stamina, health; consumable effects · [ ] optional bleeding/infection/temperature
-- [ ] Death/respawn rules, item loss options · [ ] HUD (configurable, compact/immersive modes)
+Decisions (owner, 2026-10-10): drop everything into a body bag with a map marker, except hotbar items; random respawn points; bleeding, infection and temperature; moderate pace.
+- [x] Hunger, thirst, health (client ped, server-driven damage/heal); consumable effects · [x] bleeding, infection, temperature
+- [x] Death/respawn rules, body bags (hotbar kept), respawn delay and points · [x] HUD (compact / only when it matters / off)
+- [x] Tests: rules (unit), server flows, body bags, HUD logic, real MariaDB
+- [~] Installed on the owner's server; runtime tests R5.1-R5.14 pending
+Stamina is shown, not changed (GTA's own). Weather/time sync for temperature: Milestone 7 (K-27).
 
 ## Milestone 5: zombies
 - [ ] Weapons as inventory items: ammo, attachments, durability (moved here from M3B)

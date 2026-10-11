@@ -50,7 +50,7 @@ survival  loot     world       crafting     vehicles      quests
 | wasteland_ui | `ui` | core | none | 3A ✅ (shell, character screens), 3B (inventory UI), 4 (HUD) |
 | wasteland_appearance | `appearance` | core, players, ui | inventory (clothing items, 3B) | 3A ✅ |
 | wasteland_inventory | `inventory` | core, database, players, ui | appearance | 3B ✅ |
-| wasteland_survival | `survival` | core, database, inventory, ui | none | 4 |
+| wasteland_survival | `survival` | core, players, ui | inventory | 4 ✅ |
 | wasteland_zombies | `zombies` | core | world, survival, loot | 5 |
 | wasteland_loot | `loot` | core, database, inventory | world | 6 |
 | wasteland_world | `world` | core, database, inventory, ui | none | 7 |

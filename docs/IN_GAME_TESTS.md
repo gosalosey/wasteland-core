@@ -114,3 +114,26 @@ Report anything that does not match, and include any F8 lines starting with `[wa
 | R4.15 | Watch F8 while doing all of the above | No `[wasteland_ui] error` lines and no SCRIPT ERROR |
 
 If an empty clothing slot looks wrong (for example underwear that does not match), the `naked` values in `wasteland_config/config/inventory.lua` need adjusting for your game build; tell me what you see.
+
+## Milestone 4: survival, HUD, death and respawn
+
+**Setup:** `server.cfg` has `ensure wasteland_survival` after `ensure wasteland_inventory` (done on the owner's server). Restart the server. To test quickly, set values with the admin command `survival <id> <hunger|thirst|infection|bleeding|temperature> <value>` (for example `survival 1 hunger 5`).
+
+| # | Step | Expected result |
+|---|---|---|
+| R5.1 | `wasteland status` | `survival` is `running`; the inventory applied migration 3 (`drops_owner_label_expiry`) |
+| R5.2 | Join and select a character | The HUD at the bottom left shows Health, Food and Water (and Stamina while you sprint), plus the body temperature |
+| R5.3 | `/hud` three times | Only when it matters: bars appear only when low. Then off. Then compact again. The choice is kept after you rejoin. |
+| R5.4 | Wait a few minutes (or use fast test rates) | Food and Water drop. With fast rates they reach 0 and you lose health slowly. |
+| R5.5 | TAB, right-click canned beans → **Use** | An eating animation, Food goes up, one can is used. With a full stomach: "You do not need that right now." and nothing is used. |
+| R5.6 | Fall from a height or get hit hard (several times if needed) | Sometimes a **Bleeding** chip appears and health drops slowly. **Use** a bandage: the bleeding stops, you heal a little and see "You bandage your wounds." |
+| R5.7 | Console: `give <id> antibiotics 1`, then `survival <id> infection 70` (Milestone 5 does this through zombies) | An **Infection** bar appears. Above 60 the screen effect starts and you lose health. Antibiotics lower it and say it is treated. |
+| R5.8 | Swim in cold weather or at night, or stand in the rain without a top | The temperature chip falls. Below 35.5 °C it turns blue and the camera shakes, and below 35 you lose health. Wearing clothes slows this. |
+| R5.9 | Put a bandage on hotbar 1, then die (fall from a roof) | The **You died** screen with a 15 s countdown. GTA's own respawn does **not** happen. |
+| R5.10 | After the countdown, **Respawn** | You appear at one of the respawn points with your own face. Your clothes are in the body bag, so you are in underwear. Food and Water are at 70; bleeding and infection are gone. Only the bandage (hotbar) is still in your pockets. |
+| R5.11 | Open the map | A red marker **Your body** where you died. Go there and press E: the bag is labelled **Body of First Last** and holds everything else. Empty it: the marker disappears. |
+| R5.12 | Die, then quit before respawning. Rejoin. | The death screen shows **Respawn** straight away. Nothing is dropped twice. |
+| R5.13 | A second player loots your body bag | They can. Body bags never merge with other piles. |
+| R5.14 | Watch F8 throughout | No `[wasteland_ui] error` and no SCRIPT ERROR |
+
+Tell me what does not match, especially the temperatures (they are estimated from your game's weather) and whether the animations play.

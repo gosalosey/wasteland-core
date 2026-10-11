@@ -336,3 +336,21 @@ Server exports:
 | `IsLoaded(source)` | boolean |
 
 Rules the server enforces on every request: the player must be able to reach both inventories (own pockets, worn items and worn bag, or a drop or stash the server opened for them, within reach). The item must still be there. The target cells must be free and inside the grid. Weight limits apply. Bags never go inside bags, and worn items must match their slot and the character's body. Every operation runs without yielding and is saved as one transaction in an ordered queue. While the database is down, operations are refused.
+
+## Survival (`wasteland_survival`, survival api 0.1)
+
+The server owns each character's **hunger, thirst** (0-100, 100 = full), **infection** (0-100, 100 = lethal), **bleeding** (0-3) and **body temperature** (°C). They are stored as character data `survival` and updated every `tickSeconds`. The rules are pure functions in `shared/model.lua`. Health stays on the client's ped: the server sends damage and healing, and the client applies them. Consumables are set in `survival.lua` → `consumables` and registered as usable items with the inventory.
+
+Exports:
+
+| Export | Returns |
+|---|---|
+| `GetStats(source)` | `{ hunger, thirst, infection, bleeding, temperature, dead }` or `nil` |
+| `AddInfection(source, amount)` | ok (Milestone 5: zombie hits) |
+| `AddBleeding(source, levels)` | ok |
+| `ModifyStats(source, { hunger, thirst, infection, temperature })` | ok (changes, not absolute values) |
+| `IsDead(source)` | boolean |
+
+Server events: `wasteland:survival:died (source, characterId, cause)` and `wasteland:survival:respawned (source, characterId)`. On death, the inventory's `DeathDrop` puts everything except hotbar items into a body bag (see Inventory), and the respawn point is random from `respawn.points`.
+
+Inventory additions: `DeathDrop(source, label)`, `GetWornItems(source)`, an item field `warmth` (insulation in °C while worn), and drops carry `owner` and `label` (body bags show as a map marker for their owner).

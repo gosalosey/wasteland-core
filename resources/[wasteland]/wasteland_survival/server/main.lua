@@ -20,6 +20,9 @@ local deathAt = {}      -- [characterId] = game time of death
 local damageCarry = {}  -- [characterId] = fractional damage not yet applied
 local runToken = nil
 
+local commandRegistered = false
+local adminCommand -- defined below
+
 local function players() return exports.wasteland_players end
 
 local function characterOf(src)
@@ -201,6 +204,39 @@ local function respawn(src, cid)
 end
 
 -------------------------------------------------------------------------------
+-- Admin: /survival <server id> <stat> <value>   (testing and support)
+-------------------------------------------------------------------------------
+
+local SETTABLE = { hunger = { 0, 100 }, thirst = { 0, 100 }, infection = { 0, 100 }, bleeding = { 0, 3 }, temperature = { 30, 42 } }
+
+adminCommand = function(src, args)
+    local reply = function(msg)
+        if src == 0 then print(msg) else TriggerClientEvent('wasteland:core:client:consoleOutput', src, { msg }) end
+    end
+    if src ~= 0 and not IsPlayerAceAllowed(tostring(src), M.config.adminAce) then
+        M.log:warn('player %d tried "%s" without the %s ACE', src, M.config.adminCommand, M.config.adminAce)
+        return
+    end
+    local target, stat, value = tonumber(args[1]), args[2], tonumber(args[3])
+    local range = stat and SETTABLE[stat]
+    if not target or not range or not value then
+        reply(string.format('usage: %s <server id> <hunger|thirst|infection|bleeding|temperature> <value>', M.config.adminCommand))
+        return
+    end
+    local cid = characterOf(target)
+    local s = cid and states[cid]
+    if not s then reply(string.format('player %d has no loaded character', target)); return end
+    if s.dead then reply('that character is dead'); return end
+    value = Model.clamp(value, range[1], range[2])
+    if stat == 'bleeding' then value = math.floor(value) end
+    s[stat] = value
+    players():SetCharacterData(cid, DATA_KEY, s)
+    sendStats(target, cid)
+    M.log:info('%s set %s of player %d to %s', src == 0 and 'console' or ('player ' .. src), stat, target, tostring(value))
+    reply(string.format('Set %s of player %d to %s.', stat, target, tostring(value)))
+end
+
+-------------------------------------------------------------------------------
 -- Module
 -------------------------------------------------------------------------------
 
@@ -227,6 +263,8 @@ M = Wasteland.DefineModule({
         optional = true,
         schema = { type = 'table', fields = {
             tickSeconds = { type = 'integer', default = 10, min = 1, max = 120 },
+            adminCommand = { type = 'string', default = 'survival', pattern = '^[a-z][a-z0-9_]*$' },
+            adminAce = { type = 'string', default = 'wasteland.admin', minLength = 1 },
             start = { type = 'table', fields = { hunger = num(100, 0, 100), thirst = num(100, 0, 100) } },
             hunger = { type = 'table', fields = { drainPerHour = num(50, 0, 1000), starvingDamagePerMinute = num(2, 0, 200) } },
             thirst = { type = 'table', fields = { drainPerHour = num(66.7, 0, 1000), dehydratedDamagePerMinute = num(3, 0, 200),
@@ -269,6 +307,10 @@ M = Wasteland.DefineModule({
             return false, 'survival.lua: temperature.comfortLow must be below comfortHigh'
         end
         states, online, deathAt, damageCarry = {}, {}, {}, {}
+        if not commandRegistered then
+            RegisterCommand(M.config.adminCommand, function(source, args) adminCommand(tonumber(source) or 0, args) end, false)
+            commandRegistered = true
+        end
         registerConsumables()
         for _, c in ipairs(players():GetOnlineCharacters()) do
             if c.source then load(c.source, c.id) end

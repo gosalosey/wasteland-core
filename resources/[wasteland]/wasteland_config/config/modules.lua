@@ -18,10 +18,12 @@ return {
         -- Inventory (Milestone 3B).
         inventory  = true,
 
+        -- Survival, HUD, death and respawn (Milestone 4).
+        survival   = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.
-        -- survival  = true,   -- Milestone 4
         -- zombies   = true,   -- Milestone 5
         -- loot      = true,   -- Milestone 6
         -- world     = true,   -- Milestone 7

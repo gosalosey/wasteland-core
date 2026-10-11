@@ -6,6 +6,11 @@ return {
     -- How often (seconds) the server updates everyone's survival stats.
     tickSeconds = 10,
 
+    -- Admin command for testing and support:
+    --   /survival <server id> <hunger|thirst|infection|bleeding|temperature> <value>
+    adminCommand = 'survival',
+    adminAce = 'wasteland.admin',
+
     -- A new character starts with these (0 - 100).
     start = { hunger = 100, thirst = 100 },
 
