@@ -107,7 +107,10 @@ end)
 -- Crafting
 -------------------------------------------------------------------------------
 
-local function start(src, name)
+local MAX_BATCH = 50
+
+-- count: how many to make one after another (each one timed).
+local function start(src, name, count)
     local r = M.config.recipes[name]
     local busy = crafting[src]
     if busy and now() - busy.startedAt < (M.config.recipes[busy.recipe].seconds + 10) * 1000 then return end
@@ -122,8 +125,10 @@ local function start(src, name)
         send(src, string.format('You need %d x %s (you have %d).', missing[1].need, label(missing[1].name), missing[1].have), false)
         return
     end
-    crafting[src] = { recipe = name, startedAt = now() }
-    TriggerClientEvent('wasteland:crafting:client:progress', src, { seconds = r.seconds, label = 'Making ' .. r.label:lower() })
+    count = math.max(1, math.min(MAX_BATCH, math.floor(tonumber(count) or 1)))
+    crafting[src] = { recipe = name, startedAt = now(), total = count, made = 0 }
+    TriggerClientEvent('wasteland:crafting:client:progress', src, { seconds = r.seconds,
+        label = 'Making ' .. r.label:lower() .. (count > 1 and string.format(' (1 of %d)', count) or '') })
 end
 
 local function finish(src)
@@ -135,15 +140,19 @@ local function finish(src)
         M.log:warn('player %d finished crafting "%s" too early', src, c.recipe)
         return
     end
+    local total, made = c.total or 1, c.made or 0
+    local function stopped(why)
+        send(src, made > 0 and string.format('Made %d of %d. %s', made, total, why) or why, made > 0)
+    end
     local missing = Recipes.missing(r, countFor(src))
-    if #missing > 0 then send(src, 'Some of the materials are gone.', false); return end
+    if #missing > 0 then stopped('Some of the materials are gone.'); return end
     -- Take every ingredient; on any failure put back what was taken.
     local taken = {}
     for _, ing in ipairs(r.ingredients) do
         local ok = inv():RemoveItem(src, ing.name, ing.count)
         if not ok then
             for _, t in ipairs(taken) do inv():AddItem(src, t.name, t.count) end
-            send(src, 'Some of the materials are gone.', false)
+            stopped('Some of the materials are gone.')
             return
         end
         taken[#taken + 1] = ing
@@ -151,12 +160,25 @@ local function finish(src)
     local ok, err = inv():AddItem(src, r.result.name, r.result.count)
     if not ok then
         for _, t in ipairs(taken) do inv():AddItem(src, t.name, t.count) end
-        send(src, 'No room for the ' .. label(r.result.name):lower() .. ' (' .. tostring(err) .. ').', false)
+        stopped('No room for the ' .. label(r.result.name):lower() .. ' (' .. tostring(err) .. ').')
         return
     end
+    made = made + 1
     M.log:info('player %d crafted %d x %s', src, r.result.count, r.result.name)
     TriggerEvent('wasteland:crafting:crafted', src, c.recipe)
-    send(src, string.format('Made %d x %s.', r.result.count, label(r.result.name)), true)
+    if made < total then
+        -- Next one, if the materials are still there.
+        if #Recipes.missing(r, countFor(src)) > 0 then
+            send(src, string.format('Made %d of %d x %s: out of materials.', made, total, label(r.result.name)), true)
+            return
+        end
+        crafting[src] = { recipe = c.recipe, startedAt = now(), total = total, made = made }
+        TriggerClientEvent('wasteland:crafting:client:notice', src, string.format('Made %d of %d.', made, total))
+        TriggerClientEvent('wasteland:crafting:client:progress', src, { seconds = r.seconds,
+            label = string.format('Making %s (%d of %d)', r.label:lower(), made + 1, total) })
+        return
+    end
+    send(src, string.format('Made %d x %s.', r.result.count * total, label(r.result.name)), true)
 end
 
 AddEventHandler('playerDropped', function()
@@ -219,8 +241,8 @@ M.netEvent('wasteland:crafting:server:open', { rateLimit = RATE }, function(src)
     if characterOf(src) then send(src) end
 end)
 
-M.netEvent('wasteland:crafting:server:craft', { args = { { type = 'string', required = true, pattern = '^[%a][%w_]*$', maxLength = 48 } },
-    rateLimit = RATE }, function(src, name) start(src, name) end)
+M.netEvent('wasteland:crafting:server:craft', { args = { { type = 'string', required = true, pattern = '^[%a][%w_]*$', maxLength = 48 },
+    { type = 'integer', min = 1, max = MAX_BATCH } }, rateLimit = RATE }, function(src, name, count) start(src, name, count) end)
 
 M.netEvent('wasteland:crafting:server:finish', { rateLimit = RATE }, function(src) finish(src) end)
 M.netEvent('wasteland:crafting:server:cancel', { rateLimit = RATE }, function(src) crafting[src] = nil end)

@@ -11,8 +11,16 @@
         return !!recipe && (recipe.ingredients || []).every((i) => i.have >= i.need);
     }
 
+    // How many can be made with what is carried (at most 50 in one go).
+    function maxCraft(recipe) {
+        if (!recipe || !(recipe.ingredients || []).length) return 0;
+        let n = 50;
+        recipe.ingredients.forEach((i) => { n = Math.min(n, Math.floor(i.have / Math.max(1, i.need))); });
+        return Math.max(0, n);
+    }
+
     if (typeof module === 'object' && module.exports) {
-        module.exports = { canCraft: canCraft };
+        module.exports = { canCraft: canCraft, maxCraft: maxCraft };
         return;
     }
 
@@ -36,14 +44,27 @@
             const needs = h('div', { class: 'wcr-needs' });
             r.ingredients.forEach((i) => needs.appendChild(h('div', { class: 'wcr-need' + (i.have >= i.need ? '' : ' is-missing') },
                 img(i.image, 'wcr-needimg'), h('span', { text: i.need + ' x ' + i.label }), h('span', { class: 'wl-hint', text: '(' + i.have + ')' }))));
-            const btn = UI.button('Craft', () => st.api.post('craft', { recipe: r.name }), 'primary');
+            // How many: - / number / + / Max (kept per recipe while the screen is open).
+            const max = maxCraft(r);
+            st.qty = st.qty || {};
+            const qty = Math.max(1, Math.min(Math.max(1, max), st.qty[r.name] || 1));
+            st.qty[r.name] = qty;
+            const btn = UI.button(qty > 1 ? 'Craft x' + qty : 'Craft', () => st.api.post('craft', { recipe: r.name, count: st.qty[r.name] || 1 }), 'primary');
             btn.disabled = !ok;
+            const field = h('input', { class: 'wl-input wcr-qty', attrs: { type: 'number', min: '1', max: String(Math.max(1, max)) } });
+            field.value = String(qty);
+            const set = (n) => { st.qty[r.name] = Math.max(1, Math.min(Math.max(1, max), Math.floor(Number(n) || 1))); render(); };
+            field.addEventListener('change', () => set(field.value));
+            const amount = h('div', { class: 'wcr-amount' },
+                UI.button('−', () => set(qty - 1)), field, UI.button('+', () => set(qty + 1)), UI.button('Max', () => set(max)),
+                h('span', { class: 'wl-hint', text: max > 0 ? 'can make ' + max : '' }));
+            if (!ok) [...amount.querySelectorAll('button, input')].forEach((b) => { b.disabled = true; });
             list.appendChild(h('div', { class: 'wcr-row' + (ok ? '' : ' is-locked') },
                 img(r.image, 'wcr-img'),
                 h('div', { class: 'wcr-what' },
                     h('div', { class: 'wcr-name', text: r.label + (r.result.count > 1 ? ' (x' + r.result.count + ')' : '') }),
                     h('div', { class: 'wl-hint', text: r.seconds + ' s' })),
-                needs, btn));
+                needs, h('div', { class: 'wcr-do' }, amount, btn)));
         });
         if (!(d.recipes || []).length) list.appendChild(h('div', { class: 'wl-hint', text: 'You know no recipes yet.' }));
         st.root.appendChild(h('div', { class: 'wcr-panel' },
@@ -71,6 +92,10 @@
     });
 
     const CSS = [
+        '.wcr-do { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }',
+        '.wcr-amount { display: flex; align-items: center; gap: 4px; }',
+        '.wcr-amount .wl-btn { padding: 3px 9px; min-width: 0; }',
+        '.wcr-qty { width: 52px; text-align: center; padding: 4px; }',
         '.wcr-root { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }',
         '.wcr-panel { width: min(820px, 94vw); max-height: 86vh; display: flex; flex-direction: column; gap: 10px; padding: 18px 20px;',
         '  background: var(--wl-bg); border: 1px solid var(--wl-border); border-radius: var(--wl-radius); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }',

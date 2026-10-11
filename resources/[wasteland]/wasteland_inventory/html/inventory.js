@@ -122,6 +122,18 @@
         return { error: heavy ? 'Too heavy to carry.' : 'No room for that.' };
     }
 
+    // Body temperature in Fahrenheit, and how it feels.
+    function toF(c) { return Math.round((c * 9 / 5 + 32) * 10) / 10; }
+    function feels(c, lim) {
+        if (typeof c !== 'number') return null;
+        const l = lim || {};
+        if (c <= (l.hypothermia || 35)) return 'Freezing';
+        if (c <= 35.5) return 'Cold';
+        if (c >= (l.hyperthermia || 39.5)) return 'Overheating';
+        if (c >= 38.5) return 'Hot';
+        return 'Comfortable';
+    }
+
     // Health panel: what is wrong and how to fix it.
     // v = { health, armor, hunger, thirst, temperature, bleeding, infection, treatment, dead, cures, limits }
     // -> [{ key, level: 'low' | 'critical', title, fix }]
@@ -161,11 +173,11 @@
             const t = Math.round(v.temperature * 10) / 10;
             if (t <= 35.5) {
                 out.push({ key: 'cold', level: t <= (lim.hypothermia || 35) ? 'critical' : 'low',
-                    title: (t <= (lim.hypothermia || 35) ? 'Hypothermia' : 'Cold') + ' (' + t.toFixed(1) + ' °C)',
+                    title: (t <= (lim.hypothermia || 35) ? 'Hypothermia' : 'Cold') + ' (' + toF(t).toFixed(1) + ' °F)',
                     fix: 'Wear warm clothes (mend worn ones), get out of the rain, stay out of the cold at night.' + list(c.cold, ' Warm up with:', '') });
             } else if (t >= 38.5) {
                 out.push({ key: 'hot', level: t >= (lim.hyperthermia || 39.5) ? 'critical' : 'low',
-                    title: (t >= (lim.hyperthermia || 39.5) ? 'Overheating' : 'Hot') + ' (' + t.toFixed(1) + ' °C)',
+                    title: (t >= (lim.hyperthermia || 39.5) ? 'Overheating' : 'Hot') + ' (' + toF(t).toFixed(1) + ' °F)',
                     fix: 'Take off warm clothes, find shade, drink.' });
             }
         }
@@ -196,7 +208,7 @@
 
     if (typeof module === 'object' && module.exports) {
         module.exports = { footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
-            formatKg: formatKg, shortLabel: shortLabel, condition: condition, conditions: conditions };
+            formatKg: formatKg, shortLabel: shortLabel, condition: condition, conditions: conditions, toF: toF, feels: feels };
         return;
     }
 
@@ -341,7 +353,8 @@
             bar('Food', r(v.hunger), r(v.hunger) + '%'),
             bar('Water', r(v.thirst), r(v.thirst) + '%'),
             typeof v.armor === 'number' ? bar('Armor', r(v.armor), r(v.armor) + '%') : null,
-            h('div', { class: 'wli-vtemp', text: 'Body temperature ' + (typeof v.temperature === 'number' ? v.temperature.toFixed(1) + ' °C' : '?') }));
+            h('div', { class: 'wli-vtemp is-' + String(feels(v.temperature, v.limits) || '').toLowerCase(),
+                text: 'Body temperature ' + (typeof v.temperature === 'number' ? toF(v.temperature).toFixed(1) + ' °F · ' + feels(v.temperature, v.limits) : '?') }));
         const list = h('div', { class: 'wli-conds' });
         const conds = conditions(v);
         if (!conds.length) list.appendChild(h('div', { class: 'wli-cond is-ok' }, h('b', { text: 'You are in good shape.' })));
@@ -684,7 +697,9 @@
         '.wli-vbar__track { height: 6px; background: var(--wl-bg-sunken); border-radius: 3px; overflow: hidden; }',
         '.wli-vbar__fill { height: 100%; }',
         '.wli-vbar__val { text-align: right; font-variant-numeric: tabular-nums; }',
-        '.wli-vtemp { font-size: 11px; color: var(--wl-text-dim); margin-top: 2px; }',
+        '.wli-vtemp { font-size: 12px; color: var(--wl-text-dim); margin-top: 2px; }',
+        '.wli-vtemp.is-comfortable { color: #7fc75a; } .wli-vtemp.is-cold { color: #6db7ff; } .wli-vtemp.is-freezing { color: #4d8dff; font-weight: 700; }',
+        '.wli-vtemp.is-hot { color: #ff9a3c; } .wli-vtemp.is-overheating { color: #ff5a3c; font-weight: 700; }',
         '.wli-conds { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; max-width: 420px; }',
         '.wli-cond { font-size: 12px; padding: 5px 8px; border-radius: 4px; background: var(--wl-bg-sunken); border-left: 3px solid #d6b23c; }',
         '.wli-cond.is-critical { border-left-color: #e0533f; } .wli-cond.is-critical b { color: #ff9c90; }',

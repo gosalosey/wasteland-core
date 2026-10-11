@@ -137,9 +137,18 @@ test('health panel: what is wrong and how to fix it', () => {
     assert.strictEqual(byKey.health.title, 'Hurt (health 20%)');
     assert.strictEqual(byKey.hunger.level, 'critical');
     assert.strictEqual(byKey.thirst, undefined);
-    assert.strictEqual(byKey.cold.title, 'Hypothermia (34.8 °C)');
+    assert.strictEqual(byKey.cold.title, 'Hypothermia (94.6 °F)');
     assert.strictEqual(byKey.armor.title, 'Armor plate broken');
     const treated = inv.conditions({ infection: 30, treatment: true, cures });
     assert.strictEqual(treated[0].title, 'Infected 30% (treated)');
+});
+
+test('body temperature in Fahrenheit and how it feels', () => {
+    assert.strictEqual(inv.toF(37), 98.6);
+    assert.strictEqual(inv.feels(37), 'Comfortable');
+    assert.strictEqual(inv.feels(35.3), 'Cold');
+    assert.strictEqual(inv.feels(34.9, { hypothermia: 35 }), 'Freezing');
+    assert.strictEqual(inv.feels(38.7), 'Hot');
+    assert.strictEqual(inv.feels(39.6, { hyperthermia: 39.5 }), 'Overheating');
 });
 

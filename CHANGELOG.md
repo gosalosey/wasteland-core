@@ -1,5 +1,11 @@
 # Changelog
 
+## Fahrenheit, craft several at once (owner request)
+* Inventory health panel: body temperature in °F with how it feels: Freezing / Cold / Comfortable / Hot / Overheating (coloured). The Cold/Hot advice shows °F too.
+* Crafting: choose how many (−, number, +, Max; "can make N"), then "Craft xN". They are made one after another (each one timed, "Making bandage (2 of 5)"); moving or X cancels the rest; it stops early if the materials run out ("Made 2 of 3 x Bandage: out of materials."). Up to 50 at once.
+* Tests: 646.
+
+
 ## Hotbar on screen, hands up, emotes (owner request)
 * Hotbar on screen (bottom middle): the five hotbar slots with picture, key, count and condition. /hotbar shows or hides it (remembered on the player's computer). Hidden in vehicles, while the inventory is open and while dead.
 * New resource wasteland_emotes (ensure it after wasteland_ui; added to server.cfg):

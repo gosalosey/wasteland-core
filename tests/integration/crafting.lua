@@ -81,6 +81,22 @@ describe('crafting', function()
         expect(I(server, 'GetItemCount', id, 'bandage')).toBe(3) -- 2 starting + 1
     end)
 
+    it('makes several one after another, and stops when the materials run out', function()
+        I(server, 'AddItem', id, 'rag', 3); server:advance(100) -- 2 left + 3 = 5 rags: two bandages
+        server:clientEvent(id, 'wasteland:crafting:server:craft', 'bandage', 3); server:advance(100)
+        expect(last(events(server, id, 'wasteland:crafting:client:progress')).args[1].label).toBe('Making bandage (1 of 3)')
+        server:advance(3100)
+        server:clientEvent(id, 'wasteland:crafting:server:finish'); server:advance(200)
+        expect(last(events(server, id, 'wasteland:crafting:client:progress')).args[1].label).toBe('Making bandage (2 of 3)')
+        expect(last(events(server, id, 'wasteland:crafting:client:notice')).args[1]).toBe('Made 1 of 3.')
+        server:advance(3100)
+        server:clientEvent(id, 'wasteland:crafting:server:finish'); server:advance(200)
+        expect(screen(server, id).message).toBe('Made 2 of 3 x Bandage: out of materials.')
+        expect(I(server, 'GetItemCount', id, 'bandage')).toBe(5)
+        expect(I(server, 'GetItemCount', id, 'rag')).toBe(1)
+        I(server, 'AddItem', id, 'rag', 1); server:advance(100) -- back to 2 for the tests below
+    end)
+
     it('recipes with a blueprint are refused until learned', function()
         I(server, 'AddItem', id, 'scrap_metal', 4); I(server, 'AddItem', id, 'duct_tape', 2); server:advance(100)
         craft(server, id, 'weapon_machete')

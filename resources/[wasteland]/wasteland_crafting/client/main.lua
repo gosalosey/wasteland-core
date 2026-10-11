@@ -49,7 +49,8 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     if screen ~= SCREEN then return end
     if action == 'close' then close()
     elseif action == 'craft' and type(payload) == 'table' and type(payload.recipe) == 'string' and not active then
-        TriggerServerEvent('wasteland:crafting:server:craft', payload.recipe)
+        local count = math.tointeger(tonumber(payload.count) or 1) or 1
+        TriggerServerEvent('wasteland:crafting:server:craft', payload.recipe, math.max(1, math.min(50, count)))
     end
 end)
 
