@@ -517,6 +517,10 @@ function Mock:buildEnv(r)
         local list = rr.meta[SINGULAR[key] or key]
         return list and list[(idx or 0) + 1] or nil
     end
+    env.SetRoutingBucketPopulationEnabled = function(bucket, enabled)
+        mock.population = mock.population or {}
+        mock.population[bucket] = enabled
+    end
     env.GetNumResourceMetadata = function(res, key)
         local rr = mock.resources[res]
         if not rr then return 0 end
