@@ -179,12 +179,33 @@ local function canTarget()
 end
 
 local CONTROLS = { 24, 25, 140, 141, 142, 257, 263, 264, 14, 15, 16, 17, 37, 38, 44 }
+local ATTACK = { 24, 25, 140, 141, 142, 257, 263, 264 }
+
+-- No shooting, aiming or melee: disabling the buttons alone is not enough
+-- (a held weapon can still fire), so firing itself is switched off too.
+local function blockAttack()
+    DisablePlayerFiring(PlayerId(), true)
+    for _, c in ipairs(ATTACK) do DisableControlAction(0, c, true) end
+end
+
+-- After the target closes, keep blocking until the mouse button is let go,
+-- or the click that chose an option fires the gun in the next frame.
+local function blockUntilReleased()
+    local deadline = GetGameTimer() + 1500
+    repeat
+        blockAttack()
+        Citizen.Wait(0)
+    until not (IsDisabledControlPressed(0, 24) or IsDisabledControlPressed(0, 257)) or GetGameTimer() > deadline
+    -- one more frame so the release itself does not count as a shot
+    blockAttack()
+end
 
 local function run()
     local sinceScan = 1000
     while holding do
         if not canTarget() then break end
         for _, c in ipairs(CONTROLS) do DisableControlAction(0, c, true) end
+        DisablePlayerFiring(PlayerId(), true)
         sinceScan = sinceScan + GetFrameTime() * 1000
         if sinceScan >= 100 then
             sinceScan = 0
@@ -213,6 +234,7 @@ local function run()
     holding = false
     current, currentHit, lastKey, selected = {}, nil, nil, 1
     hide()
+    blockUntilReleased()
 end
 
 RegisterCommand('+wl_target', function()
