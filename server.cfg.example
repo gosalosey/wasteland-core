@@ -1,6 +1,11 @@
 # Wasteland Core - example server.cfg fragment (Milestone 2)
 # Merge into your server.cfg. Do not put secrets in files you commit or share.
 
+# --- game build ---
+# 3570 (mp2025_01, Money Fronts) is the build the framework is tested on.
+# 3751 (mp2025_02) showed missing map parts on the owner's server (2026-10).
+sv_enforceGameBuild 3570
+
 # --- database (see docs/DATABASE.md) ---
 set mysql_connection_string "mysql://wasteland:PASSWORD@127.0.0.1/wasteland?charset=utf8mb4"
 ensure oxmysql

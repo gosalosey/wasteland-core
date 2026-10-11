@@ -38,3 +38,4 @@
 | K-34 | Weapons | No attachments (scopes, suppressors, extended magazines) yet. | Later |
 | K-35 | Weapons | The client counts shots (ammo going down) and melee hits and reports them once a second. The server never takes more ammo than the player has and logs reports above it, but a modified client could under-report shots (saving ammo and durability). | By design for now |
 | K-36 | Weapons | Melee hits are counted from the game's damage events; on a server without NPCs they can only be checked on other players until zombies exist (5B). | Verify at runtime (R8.6) |
+| K-37 | Server | Game build 3751 (mp2025_02) showed missing map parts on the owner's server; the server runs build 3570 (`sv_enforceGameBuild 3570`, in server.cfg.example). Nothing in the framework needs a newer build. | Workaround: build 3570 |
