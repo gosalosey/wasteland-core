@@ -206,4 +206,8 @@ Tell me what does not match, especially the temperatures (they are estimated fro
 | R10.2 | Admin panel: set Food to 30, then 10 | The tray drains to a third and turns amber; at 10 it is red and pulses |
 | R10.3 | Get hurt | The drop drains with health |
 | R10.4 | Start bleeding / get infected (admin panel stats) | Badges under the icons: "Bleeding", "Infection 40%" |
-| R10.5 | `/hud` twice, then once more | Only icons that matter; nothing; all icons again |
+| R10.5 | `/hud` | Mouse appears, the HUD has a dashed outline and a toolbar shows at the top |
+| R10.6 | Drag the HUD to the left side, choose Column and size L, Save | It stays there; after reconnecting it is still there |
+| R10.7 | `/hud`, drag it somewhere else, press Esc (or Cancel) | It goes back to where it was |
+| R10.8 | `/hud`, Show: When it matters, Save | Icons disappear while everything is fine; low food brings the tray back |
+| R10.9 | `/hud`, Reset, Save | Back in the bottom-right corner, as a row, size M |

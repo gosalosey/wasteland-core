@@ -1,7 +1,8 @@
 # Changelog
 
 ## HUD redesign (owner request)
-* The survival HUD is now four green outlined icons in the bottom-right corner that drain like a liquid level: health (drop), food (tray with fork and knife), drink (bottle), temperature (thermometer, 33-39 °C). They turn amber at 35% or below (or cold/hot) and red and pulsing at 15% or below. Bleeding and infection show as small badges under the icons. Stamina is no longer shown (GTA shows its own). `/hud` still cycles always / only when it matters / off.
+* The survival HUD is now four green outlined icons in the bottom-right corner that drain like a liquid level: health (drop), food (tray with fork and knife), drink (bottle), temperature (thermometer, 33-39 °C). They turn amber at 35% or below (or cold/hot) and red and pulsing at 15% or below. Bleeding and infection show as small badges under the icons. Stamina is no longer shown (GTA shows its own).
+* `/hud` opens edit mode: drag the HUD anywhere, choose Always / When it matters / Off, Row or Column, size S/M/L; Save keeps it on the player's PC (each player their own), Cancel or Esc keeps the old one, Reset returns to the bottom-right corner.
 
 ## Item pictures (owner request)
 

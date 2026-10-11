@@ -44,3 +44,22 @@ test('badges: bleeding level and infection', () => {
     assert.deepStrictEqual(hud.badges({ mode: 'compact', stats: stats() }), []);
     assert.deepStrictEqual(hud.badges({ mode: 'off', stats: stats({ bleeding: 3 }) }), []);
 });
+
+test('layout: default corner, clamped fractions, known sizes only', () => {
+    assert.deepStrictEqual(hud.normalizeLayout(undefined), { x: null, y: null, vertical: false, size: 'm' });
+    assert.deepStrictEqual(hud.normalizeLayout({ x: 0.5, y: 'top', size: 'xl' }), { x: null, y: null, vertical: false, size: 'm' });
+    assert.deepStrictEqual(hud.normalizeLayout({ x: -1, y: 7, vertical: true, size: 'l' }), { x: 0, y: 1, vertical: true, size: 'l' });
+    assert.strictEqual(hud.toPixels({}, { w: 200, h: 50 }, { w: 1920, h: 1080 }), null);
+});
+
+test('layout: dragging maps to fractions of the free space and back', () => {
+    const box = { w: 220, h: 60 };
+    const view = { w: 1920, h: 1080 };
+    const f = hud.toFractions(850, 510, box, view);
+    assert.deepStrictEqual(f, { x: 0.5, y: 0.5 });
+    assert.deepStrictEqual(hud.toPixels(f, box, view), { left: 850, top: 510 });
+    // dragged past the edges: stays on screen
+    assert.deepStrictEqual(hud.toFractions(-300, 5000, box, view), { x: 0, y: 1 });
+    // same layout on a smaller screen keeps the HUD inside it
+    assert.deepStrictEqual(hud.toPixels({ x: 1, y: 1 }, box, { w: 1280, h: 720 }), { left: 1060, top: 660 });
+});

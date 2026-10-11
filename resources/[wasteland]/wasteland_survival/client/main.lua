@@ -5,7 +5,7 @@
 
 local HUD, DEATH = 'hud', 'death'
 local stats = nil             -- last stats from the server
-local hudMode = 'compact'     -- compact | immersive | off   (/hud cycles)
+local hudMode = 'compact'     -- compact | immersive | off   (/hud: edit mode)
 local active = false          -- a character is loaded and placed
 local reportedDead = false
 local expectedDrop = 0        -- health the server's own damage will remove
@@ -26,9 +26,28 @@ end
 -- HUD
 -------------------------------------------------------------------------------
 
+local MODES = { compact = true, immersive = true, off = true }
+local SIZES = { s = true, m = true, l = true }
+local hudLayout = { vertical = false, size = 'm' } -- x, y: share of the free screen space (nil = default corner)
+local hudEditing = false
+
+-- Layout from the screen or storage (only numbers 0-1 and known sizes).
+local function cleanLayout(p)
+    if type(p) ~= 'table' then return { vertical = false, size = 'm' } end
+    local function unit(v) return type(v) == 'number' and v == v and math.max(0.0, math.min(1.0, v)) or nil end
+    local x, y = unit(p.x), unit(p.y)
+    if not x or not y then x, y = nil, nil end
+    return { x = x, y = y, vertical = p.vertical == true, size = SIZES[p.size] and p.size or 'm' }
+end
+
 local function loadHudMode()
     local ok, v = pcall(GetResourceKvpString, 'hudMode')
-    if ok and (v == 'compact' or v == 'immersive' or v == 'off') then hudMode = v end
+    if ok and MODES[v] then hudMode = v end
+    local okL, raw = pcall(GetResourceKvpString, 'hudLayout')
+    if okL and type(raw) == 'string' then
+        local okJ, decoded = pcall(json.decode, raw)
+        if okJ then hudLayout = cleanLayout(decoded) end
+    end
 end
 
 local function healthPercent(ped)
@@ -44,6 +63,8 @@ local function hudData()
         mode = hudMode,
         health = healthPercent(ped),
         stats = stats,
+        layout = hudLayout,
+        editing = hudEditing,
     }
 end
 
@@ -56,11 +77,22 @@ local function ensureHud()
     end
 end
 
-RegisterCommand('hud', function()
-    hudMode = (hudMode == 'compact' and 'immersive') or (hudMode == 'immersive' and 'off') or 'compact'
-    SetResourceKvp('hudMode', hudMode)
-    notice('HUD: ' .. (hudMode == 'immersive' and 'only when it matters' or hudMode))
+local function stopEditing()
+    hudEditing = false
+    if uiRunning() and exports.wasteland_ui:IsOpen(HUD) then exports.wasteland_ui:SetFocus(HUD, false, false) end
     ensureHud()
+end
+
+-- /hud: move the HUD and choose what it shows, row or column, and size.
+RegisterCommand('hud', function()
+    if not uiRunning() or not active then
+        notice('The HUD can be moved once your character is in the world.')
+        return
+    end
+    if hudEditing then stopEditing(); return end
+    hudEditing = true
+    ensureHud()
+    exports.wasteland_ui:SetFocus(HUD, true, true)
 end, false)
 
 -------------------------------------------------------------------------------
@@ -146,6 +178,7 @@ end)
 
 RegisterNetEvent('wasteland:survival:client:dead', function(info)
     reportedDead = true
+    if hudEditing then stopEditing() end
     if not uiRunning() then
         notice('You died. Type /respawn when the timer allows it.')
         return
@@ -155,8 +188,20 @@ end)
 
 RegisterCommand('respawn', function() TriggerServerEvent('wasteland:survival:server:respawn') end, false)
 
-AddEventHandler('wasteland:ui:client:action', function(screen, action)
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     if screen == DEATH and action == 'respawn' then TriggerServerEvent('wasteland:survival:server:respawn') end
+    if screen == HUD and hudEditing then
+        if action == 'saveLayout' and type(payload) == 'table' then
+            hudLayout = cleanLayout(payload)
+            if MODES[payload.mode] then hudMode = payload.mode end
+            SetResourceKvp('hudLayout', json.encode(hudLayout))
+            SetResourceKvp('hudMode', hudMode)
+            notice('HUD saved.')
+            stopEditing()
+        elseif action == 'cancelLayout' then
+            stopEditing()
+        end
+    end
 end)
 
 local function groundZ(x, y, z)

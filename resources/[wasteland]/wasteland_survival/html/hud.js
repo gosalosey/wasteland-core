@@ -6,7 +6,10 @@
 //   compact    - every icon, always
 //   immersive  - an icon only while it matters (low, cold, hot)
 //   off        - nothing
-// Data: { mode, health, stats = { hunger, thirst, infection, bleeding, temperature, treatment, dead } }
+// /hud opens edit mode: drag the HUD anywhere, pick mode, row/column and
+// size, then Save (client/main.lua stores it on the player's PC).
+// Data: { mode, health, editing, layout = { x, y, vertical, size },
+//         stats = { hunger, thirst, infection, bleeding, temperature, treatment, dead } }
 
 (function () {
     'use strict';
@@ -67,8 +70,40 @@
         return out;
     }
 
+    // Layout: x/y are the share of the free space left of / above the HUD
+    // (0 = left/top edge, 1 = right/bottom edge), so the HUD stays on screen
+    // at any resolution or size. x/y null = default corner (bottom right).
+    const SIZES = { s: 0.8, m: 1, l: 1.3 };
+    const unit = (v) => (typeof v === 'number' && isFinite(v) ? Math.max(0, Math.min(1, v)) : null);
+
+    function normalizeLayout(l) {
+        l = l || {};
+        let x = unit(l.x);
+        let y = unit(l.y);
+        if (x === null || y === null) { x = null; y = null; }
+        return { x: x, y: y, vertical: l.vertical === true, size: SIZES[l.size] ? l.size : 'm' };
+    }
+
+    // Pixel position of the HUD's top-left corner (null = default corner).
+    function toPixels(layout, box, view) {
+        const l = normalizeLayout(layout);
+        if (l.x === null) return null;
+        return {
+            left: Math.round(l.x * Math.max(0, view.w - box.w)),
+            top: Math.round(l.y * Math.max(0, view.h - box.h)),
+        };
+    }
+
+    // Layout x/y for a HUD dragged to left/top (clamped to the screen).
+    function toFractions(left, top, box, view) {
+        const fw = view.w - box.w;
+        const fh = view.h - box.h;
+        const r = (v) => Math.round(Math.max(0, Math.min(1, v)) * 10000) / 10000;
+        return { x: fw > 0 ? r(left / fw) : 0, y: fh > 0 ? r(top / fh) : 0 };
+    }
+
     if (typeof module === 'object' && module.exports) {
-        module.exports = { icons: icons, badges: badges };
+        module.exports = { icons: icons, badges: badges, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
         return;
     }
 
@@ -127,39 +162,150 @@
         return svg('svg', { viewBox: '0 0 40 48', class: 'wlh-svg' }, kids);
     }
 
+    // ------------------------------------------------------------------
+    // Edit mode (/hud)
+    // ------------------------------------------------------------------
+
+    let host;           // the screen element
+    let post;           // api.post(action, payload)
+    let toolbar = null;
+    let draft = null;   // while editing: { mode, x, y, vertical, size }
+    let drag = null;    // { dx, dy } while the mouse holds the HUD
+    let last = null;    // last data from the game
+
+    const MODES = [['compact', 'Always'], ['immersive', 'When it matters'], ['off', 'Off']];
+    const DEMO = { hunger: 80, thirst: 60, temperature: 37, infection: 0, bleeding: 0 };
+
+    function view() { return { w: window.innerWidth, h: window.innerHeight }; }
+    function box() { const r = root.getBoundingClientRect(); return { w: r.width, h: r.height }; }
+
+    function place(layout) {
+        root.style.setProperty('--wlh-scale', String(SIZES[layout.size] || 1));
+        root.classList.toggle('is-vertical', layout.vertical === true);
+        const px = toPixels(layout, box(), view());
+        if (px) {
+            root.style.left = px.left + 'px';
+            root.style.top = px.top + 'px';
+            root.style.right = 'auto';
+            root.style.bottom = 'auto';
+        } else {
+            root.style.left = '';
+            root.style.top = '';
+            root.style.right = '';
+            root.style.bottom = '';
+        }
+    }
+
+    function finish(save) {
+        if (save && draft) {
+            post('saveLayout', { mode: draft.mode, x: draft.x, y: draft.y, vertical: draft.vertical, size: draft.size });
+        } else {
+            post('cancelLayout', {});
+        }
+    }
+
+    function buildToolbar() {
+        const group = (label, options, current, pick) => {
+            const g = h('div', { class: 'wlh-tb__group' }, h('span', { class: 'wlh-tb__label', text: label }));
+            options.forEach((o) => {
+                g.appendChild(UI.button(o[1], () => { pick(o[0]); render(last); }, o[0] === current ? 'primary' : undefined));
+            });
+            return g;
+        };
+        return h('div', { class: 'wlh-tb' },
+            h('div', { class: 'wlh-tb__title', text: 'Drag the HUD anywhere on the screen, then Save' }),
+            group('Show', MODES, draft.mode, (v) => { draft.mode = v; }),
+            group('Layout', [[false, 'Row'], [true, 'Column']], draft.vertical, (v) => { draft.vertical = v; }),
+            group('Size', [['s', 'S'], ['m', 'M'], ['l', 'L']], draft.size, (v) => { draft.size = v; }),
+            h('div', { class: 'wlh-tb__group' },
+                UI.button('Reset', () => { draft.x = null; draft.y = null; draft.vertical = false; draft.size = 'm'; render(last); }),
+                UI.button('Cancel', () => finish(false)),
+                UI.button('Save', () => finish(true), 'primary')));
+    }
+
     function render(data) {
+        last = data;
+        const editing = data.editing === true;
+        if (editing && !draft) draft = Object.assign({ mode: data.mode || 'compact' }, normalizeLayout(data.layout));
+        if (!editing) { draft = null; drag = null; }
+
         root.innerHTML = '';
+        root.classList.toggle('is-editing', editing);
+        // While editing every icon shows, so there is always something to move.
+        const shown = editing
+            ? Object.assign({}, data, {
+                mode: 'compact',
+                health: typeof data.health === 'number' ? data.health : 100,
+                stats: Object.assign({}, DEMO, data.stats || {}, { dead: false }),
+            })
+            : data;
         const row = h('div', { class: 'wlh-row' });
-        icons(data).forEach((i) => {
+        icons(shown).forEach((i) => {
             const el = h('div', { class: 'wlh-icon is-' + i.level });
             el.appendChild(iconSvg(i));
             row.appendChild(el);
         });
         root.appendChild(row);
-        const b = badges(data);
+        const b = badges(shown);
         if (b.length) {
             const list = h('div', { class: 'wlh-badges' });
             b.forEach((x) => list.appendChild(h('span', { class: 'wlh-badge wlh-badge--' + x.key, text: x.text })));
             root.appendChild(list);
         }
+        place(editing ? draft : normalizeLayout(data.layout));
+
+        if (toolbar) { toolbar.remove(); toolbar = null; }
+        if (editing) { toolbar = buildToolbar(); host.appendChild(toolbar); }
     }
 
+    function onDown(e) {
+        if (!draft || e.button !== 0) return;
+        const r = root.getBoundingClientRect();
+        drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+        e.preventDefault();
+    }
+    function onMove(e) {
+        if (!drag || !draft) return;
+        const f = toFractions(e.clientX - drag.dx, e.clientY - drag.dy, box(), view());
+        draft.x = f.x;
+        draft.y = f.y;
+        place(draft);
+    }
+    function onUp() { drag = null; }
+    function onKey(e) { if (draft && e.key === 'Escape') finish(false); }
+
     UI.registerScreen('hud', {
-        mount: function (el, data) {
+        mount: function (el, data, api) {
+            host = el;
+            post = api.post;
             root = h('div', { class: 'wlh-root' });
             el.appendChild(root);
             el.appendChild(h('style', { text: CSS }));
+            root.addEventListener('mousedown', onDown);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+            document.addEventListener('keydown', onKey);
             render(data);
         },
         update: render,
-        unmount: function () { root = null; },
+        unmount: function () {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            document.removeEventListener('keydown', onKey);
+            root = null; host = null; toolbar = null; draft = null; drag = null;
+        },
     });
 
     const CSS = [
         '.wlh-root { position: absolute; right: 1.6vw; bottom: 3vh; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none;',
-        '  --wlh-ok: #7fc75a; --wlh-low: #d6b23c; --wlh-critical: #e0533f; --wlh-cut: #0b0f0a; }',
-        '.wlh-row { display: flex; gap: 14px; }',
-        '.wlh-icon { width: 36px; height: 43px; color: var(--wlh-ok); filter: drop-shadow(0 0 4px rgba(127,199,90,0.55)) drop-shadow(0 1px 1px #000); }',
+        '  --wlh-ok: #7fc75a; --wlh-low: #d6b23c; --wlh-critical: #e0533f; --wlh-cut: #0b0f0a; --wlh-scale: 1; }',
+        '.wlh-root.is-editing { pointer-events: auto; cursor: move; outline: 2px dashed rgba(127,199,90,0.85); outline-offset: 8px;',
+        '  border-radius: 6px; background: rgba(10,14,9,0.35); }',
+        '.wlh-row { display: flex; gap: calc(14px * var(--wlh-scale)); }',
+        '.wlh-root.is-vertical .wlh-row { flex-direction: column; }',
+        '.wlh-root.is-vertical .wlh-badges { flex-direction: column; align-items: flex-end; }',
+        '.wlh-icon { width: calc(36px * var(--wlh-scale)); height: calc(43px * var(--wlh-scale)); color: var(--wlh-ok);',
+        '  filter: drop-shadow(0 0 4px rgba(127,199,90,0.55)) drop-shadow(0 1px 1px #000); }',
         '.wlh-icon.is-low { color: var(--wlh-low); filter: drop-shadow(0 0 4px rgba(214,178,60,0.55)) drop-shadow(0 1px 1px #000); }',
         '.wlh-icon.is-critical { color: var(--wlh-critical); filter: drop-shadow(0 0 5px rgba(224,83,63,0.7)) drop-shadow(0 1px 1px #000);',
         '  animation: wlhPulse 1.1s ease-in-out infinite; }',
@@ -172,5 +318,11 @@
         '.wlh-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(10,14,9,0.7); text-shadow: 0 1px 2px #000; }',
         '.wlh-badge--bleeding { color: #ff8a80; border: 1px solid var(--wlh-critical); }',
         '.wlh-badge--infection { color: #b6e39a; border: 1px solid var(--wlh-ok); }',
+        '.wlh-tb { position: absolute; top: 3vh; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center;',
+        '  gap: 10px 16px; max-width: 92vw; padding: 10px 14px; background: var(--wl-bg); border: 1px solid var(--wl-border);',
+        '  border-radius: var(--wl-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; }',
+        '.wlh-tb__title { width: 100%; text-align: center; font-size: 13px; color: var(--wl-text-dim); }',
+        '.wlh-tb__group { display: flex; align-items: center; gap: 6px; }',
+        '.wlh-tb__label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--wl-text-dim); margin-right: 2px; }',
     ].join('\n');
 })();
