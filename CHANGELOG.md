@@ -1,5 +1,20 @@
 # Changelog
 
+## Milestone 3B: inventory and item API
+
+### wasteland_inventory 0.1.0 (new)
+* Tetris-style grids: items have a size and can be rotated; weights; stacks; durability; metadata.
+* Pockets (6x4, 12 kg), worn items (head, eyes, torso, back, legs, feet), backpacks that add their own grid when worn (never nested).
+* Operations: move, rotate, merge, split, wear (with swap), take off, drop, use, hotbar (keys 1-5). All decided by the server, atomic, saved as one transaction each in an ordered write queue; refused while the database is down.
+* Items on the ground (stored, visible as bags, E to search, expire after 60 minutes) and stashes for modules (`OpenStash`).
+* Clothing as items: the starting outfit from the creator becomes worn clothing; empty slots show configurable "naked" parts.
+* Exports: AddItem/RemoveItem (all or nothing), GetItemCount, RegisterItem, RegisterUsable, OpenStash, GetInventory, GetItemDefinition, IsLoaded. Admin `/give`.
+* Inventory screen (key I): drag and drop with placement preview, R to rotate, right-click menu, shift-click quick move.
+
+### Other
+* wasteland_appearance: fires `wasteland:appearance:saved` (server) and `wasteland:appearance:client:applied` (client); client export `IsEditing()`.
+* Tests: 302 (grid unit tests, 30 inventory integration tests incl. duplication, races, forged requests, disconnects and database failures, 6 Node tests for the screen, inventory SQL on real MariaDB).
+
 ## Milestone 3A: UI shell, character select, character creator
 
 ### wasteland_ui 0.1.0 (new)

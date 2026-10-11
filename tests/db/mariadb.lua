@@ -178,3 +178,91 @@ describe('real MariaDB (' .. cfg.user .. '@' .. cfg.host .. ':' .. cfg.port .. '
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('real MariaDB: inventory', function()
+    local env = { WLI = {} }
+    assert(loadfile(RESOURCES .. '/wasteland_inventory/server/sql.lua', 't', env))()
+    local WLI = env.WLI
+    local appearanceEnv = setmetatable({}, { __index = _G })
+    assert(loadfile(RESOURCES .. '/wasteland_appearance/shared/defs.lua', 't', appearanceEnv))()
+
+    local server = newServer({ dbBackend = backend, config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 60000, slowQueryWarningMs = 60000 }',
+        ['players.lua'] = 'return { maxCharacters = 2 }',
+    } })
+    server.db.latencyMs = 0
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory' })
+    local id = server:connectAndJoin({ name = 'Zed', license = 'zed' })
+    server:advance(200)
+    server.players[id].coords = { x = 50.0, y = 50.0, z = 30.0 }
+    server:command(id, 'character create Zed Zero'); server:advance(300)
+    server:command(id, 'character select 1'); server:advance(500)
+    server:clientEvent(id, 'wasteland:appearance:server:save', appearanceEnv.WLA.defaults('mp_f_freemode_01'))
+    server:advance(1000)
+    local function snap()
+        local l = server:clientEventsFor(id, 'wasteland:inventory:client:sync')
+        return l[#l].args[1]
+    end
+    local function find(name)
+        for _, i in ipairs(snap().inventories) do
+            for _, s in ipairs(i.items) do if s.name == name then return s, i.id end end
+        end
+    end
+    local function op(name, ...) server:clientEvent(id, 'wasteland:inventory:server:' .. name, ...); server:advance(1500) end
+    local pockets = snap().pockets
+
+    it('runs the inventory migrations and stores starting items and worn clothes', function()
+        expect(states(server).inventory).toBe('running')
+        local items = backend:rows('SELECT name, count, pos_x, slot, metadata FROM wl_items WHERE inventory_id = ?', { pockets })
+        expect(#items).toBe(3)
+        local worn = backend:rows("SELECT name, slot, metadata FROM wl_items WHERE inventory_id LIKE 'equip:%'")
+        expect(#worn).toBe(3)
+        expect(worn[1].metadata).toContain('mp_f_freemode_01')
+    end)
+
+    it('moves, splits and merges with real rows (a fully merged stack is deleted)', function()
+        local beans = find('canned_beans')
+        op('move', beans.uid, pockets, pockets, 5, 3, false)
+        expect(backend:rows('SELECT pos_x, pos_y FROM wl_items WHERE uid = ?', { beans.uid })[1].pos_x).toBe(5)
+        op('split', beans.uid, pockets, 1)
+        local stacks = backend:rows("SELECT uid, count FROM wl_items WHERE name = 'canned_beans' AND uid <> ?", { beans.uid })
+        expect(#stacks).toBe(1) -- the new stack from the split
+        op('merge', stacks[1].uid, pockets, beans.uid, pockets, 1)
+        local after = backend:rows("SELECT uid, count FROM wl_items WHERE name = 'canned_beans'")
+        expect(#after).toBe(1)
+        expect(after[1].count).toBe(2)
+    end)
+
+    it('drops to the ground (wl_drops) and picks up again (the empty drop is removed)', function()
+        local bottle = find('water_bottle')
+        op('drop', bottle.uid, pockets)
+        local drops = backend:rows('SELECT id FROM wl_drops')
+        expect(#drops).toBe(1)
+        expect(backend:rows('SELECT inventory_id FROM wl_items WHERE uid = ?', { bottle.uid })[1].inventory_id).toBe('drop:' .. drops[1].id)
+        op('openDrop', drops[1].id)
+        op('move', bottle.uid, 'drop:' .. drops[1].id, pockets, 0, 2, false)
+        expect(#backend:rows('SELECT id FROM wl_drops')).toBe(0)
+        expect(backend:rows('SELECT inventory_id FROM wl_items WHERE uid = ?', { bottle.uid })[1].inventory_id).toBe(pockets)
+    end)
+
+    it('reloads the same inventory after a restart of the resource', function()
+        server:restart('wasteland_inventory')
+        server:advance(5000)
+        local bottle = find('water_bottle')
+        expect(bottle.x).toBe(0)
+        expect(bottle.y).toBe(2)
+    end)
+
+    it('ran every inventory statement against the real database', function()
+        local ran = {}
+        for _, l in ipairs(backend.log) do ran[l.sql] = true end
+        local missing = {}
+        for key, sql in pairs(WLI.SQL) do
+            if not ran[(sql:gsub('%s+', ' '))] then missing[#missing + 1] = key end
+        end
+        table.sort(missing)
+        expect(missing).toEqual({})
+        for _, e in ipairs(server.scriptErrors) do print('       ' .. e) end
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

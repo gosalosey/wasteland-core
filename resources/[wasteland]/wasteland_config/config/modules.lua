@@ -15,10 +15,12 @@ return {
         ui         = true,
         appearance = true,
 
+        -- Inventory (Milestone 3B).
+        inventory  = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.
-        -- inventory = true,   -- Milestone 3
         -- survival  = true,   -- Milestone 4
         -- zombies   = true,   -- Milestone 5
         -- loot      = true,   -- Milestone 6

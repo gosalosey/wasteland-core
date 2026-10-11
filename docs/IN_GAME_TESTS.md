@@ -90,3 +90,27 @@ Report anything that does not match, with the console lines around it.
 | R3.15 | `stop wasteland_ui`, rejoin | Without the UI you are still held until you pick a character with the chat command (`/character select 1`). Afterwards: `start wasteland_ui`. |
 
 Report anything that does not match, and include any F8 lines starting with `[wasteland_ui]`.
+
+## Milestone 3B: inventory
+
+**Setup:** `server.cfg` has `ensure wasteland_inventory` after `ensure wasteland_appearance` (done on the owner's server). Restart the server. Keys can be changed in Settings → Key Bindings → FiveM.
+
+| # | Step | Expected result |
+|---|---|---|
+| R4.1 | `wasteland status` | `inventory` is `running` |
+| R4.2 | Join with a **new** character (finish the creator), press **I** | The inventory opens. The pockets (6x4) hold a water bottle, 2 canned beans and 2 bandages. Under **Worn**, Torso, Legs and Feet hold the clothes chosen in the creator. |
+| R4.3 | Join with **Gosa Row** (or any character that already had a look) and press **I** | The clothes from its look are now worn items |
+| R4.4 | Drag the water bottle to another cell. Start dragging again and press **R** | A green preview shows where it lands (red if it cannot). It moves. R turns it sideways. |
+| R4.5 | Close (I or Esc), reopen, then rejoin | Everything is where you left it |
+| R4.6 | Console: `give <your id> backpack_small` then right-click the backpack → **Wear** | A **Small backpack** grid appears in the middle column, with its weight. |
+| R4.7 | Move items into the backpack. Console: `give <id> scrap_metal 30` | Scrap fills the pockets and bag up to their weight limits. Whatever does not fit is **not** given: "Could not give: not enough room". |
+| R4.8 | Right-click the canned beans → **Split…** 1, then drag one stack onto the other | Two stacks, then one again |
+| R4.9 | Drag the **Top** from Worn into the pockets | Your character's top comes off (bare torso). Drag it back onto Torso: it is on again. |
+| R4.10 | Drag an item onto **Drop here...** | A bag appears on the ground at your feet. Close the inventory and walk up to it: "Press E to search". E opens it on the right. Drag the item back. When the pile is empty the bag disappears. |
+| R4.11 | Drop something, then restart the server | The bag on the ground is still there with the item (until `dropLifetimeMinutes`, 60 by default) |
+| R4.12 | Right-click a bandage → **Hotbar 1**. Close the inventory and press **1** | A message that it cannot be used. Nothing uses bandages yet: survival (Milestone 4) adds that. Right-click the hotbar slot in the inventory to clear it. |
+| R4.13 | Two players: one drops an item, both search the pile, both drag the same item at once | Only one gets it, and the other sees "that item is no longer there" |
+| R4.14 | Die and respawn | You keep your worn clothes (not the skater model) |
+| R4.15 | Watch F8 while doing all of the above | No `[wasteland_ui] error` lines and no SCRIPT ERROR |
+
+If an empty clothing slot looks wrong (for example underwear that does not match), the `naked` values in `wasteland_config/config/inventory.lua` need adjusting for your game build; tell me what you see.

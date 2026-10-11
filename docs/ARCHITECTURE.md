@@ -49,7 +49,7 @@ survival  loot     world       crafting     vehicles      quests
 | wasteland_players | `players` | core, database | none | 2 ✅ |
 | wasteland_ui | `ui` | core | none | 3A ✅ (shell, character screens), 3B (inventory UI), 4 (HUD) |
 | wasteland_appearance | `appearance` | core, players, ui | inventory (clothing items, 3B) | 3A ✅ |
-| wasteland_inventory | `inventory` | core, database, players, ui | none | 3 |
+| wasteland_inventory | `inventory` | core, database, players, ui | appearance | 3B ✅ |
 | wasteland_survival | `survival` | core, database, inventory, ui | none | 4 |
 | wasteland_zombies | `zombies` | core | world, survival, loot | 5 |
 | wasteland_loot | `loot` | core, database, inventory | world | 6 |
@@ -123,8 +123,8 @@ running ──(own resource stops)──► stopped ──(resource starts, re-r
 
 **Planned contracts** (defined in the milestone that introduces them; listed so the design is visible now):
 
-* **ItemStack (M3):** `{ name, count, metadata = { durability?, serial?, ... }, slot }`. Item definitions are registered by name, and the item `name` is the stable key.
-* **Inventory ID (M3):** `'<type>:<id>'`, for example `player:42`, `vehicle:veh_9f2c`, `container:loot_123`, `stash:camp_a`.
+* **ItemStack (M3B, implemented):** `{ uid, name, count, x, y, rotated, slot, metadata = { durability?, ... } }`. Item definitions are registered by name; `name` is the stable key and `uid` identifies a stack.
+* **Inventory ID (M3B, implemented):** `'<type>:<id>'`: `player:42` (pockets), `equip:42` (worn), `item:<uid>` (a bag's grid), `stash:camp_a`, `drop:<id>`; later `vehicle:<uid>` (M9) and `container:<id>` (M6).
 * **Zone (M7):** `{ id, type, shape = circle|polygon, rules = {...} }`.
 * **Vehicle record (M9):** `{ uid, model, coords, heading, components = { [componentId] = { installed, condition } }, fuel, ... }`.
 

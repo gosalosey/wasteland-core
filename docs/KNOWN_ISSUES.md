@@ -22,3 +22,8 @@
 | K-18 | Appearance | The server cannot know how many clothing/hair styles exist (client game data). It checks bounds and allowed slots; the client clamps to real counts before applying. A tampered client can only choose styles that exist anyway. | By design |
 | K-19 | Appearance | Characters created before 3A have no look; the creator opens for them on their next load. | Expected |
 | K-20 | Appearance | `spawnmanager` replaces the model on every respawn; the look is re-applied on `playerSpawned`. Death and respawn rules arrive in Milestone 4. | Interim, planned M4 |
+| K-21 | Inventory | Weapons are not items yet; they need ammo, attachments and combat rules and are scheduled with zombies and combat (Milestone 5). | Planned M5 |
+| K-22 | Inventory | The `naked` component values (what an empty clothing slot shows) differ between game builds; the shipped values are the common freemode ones and must be checked in-game (R4.9). | Verify at runtime |
+| K-23 | Inventory | Hotbar keys 1-5 are also GTA's weapon-category keys. Harmless while there are no weapons; rebind in Key Bindings if needed. | By design for now |
+| K-24 | Inventory | If the database keeps refusing one queued change while it is reachable (a permanent error, not an outage), that change is dropped after 10 attempts with an error so later changes are not blocked forever. | By design; investigate any such log line |
+| K-25 | Inventory | Drops and stash distance checks use server-side positions (OneSync). Without OneSync, dropping and searching are refused with a message. | Platform requirement |

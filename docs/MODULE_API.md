@@ -314,3 +314,25 @@ Screens of a stopped resource are closed automatically. Use the design-system cl
 * The look is stored as character data key `appearance` (format in `shared/defs.lua`), validated on the server (schema, allowed clothing slots, `blockedClothing`), saved write-through, and applied on every load and after every respawn.
 * Export: `GetAppearance(characterId)`. Client events: `wasteland:appearance:client:openCreator|apply|saved|saveFailed`. Guarded server events: `wasteland:appearance:server:save(appearance)`, `request`, `cancel`.
 * Players module (client export): `exports.wasteland_players:IsReady()` is true once a character is loaded and the player is placed in the world.
+
+## Inventory (`wasteland_inventory`, inventory api 0.1)
+
+**Model.** Items are defined by name (config `inventory.lua` → `items`, or the `RegisterItem` export) with a size in grid cells, weight, stack size, optional durability, an optional `equip` slot and, for bags, a `container` grid. Players have **pockets** (`player:<characterId>`), **worn items** (`equip:<characterId>`, slots `head eyes torso back legs feet`) and, while wearing a bag, its grid (`item:<uid>`). Items on the ground are `drop:<id>` and stashes `stash:<name>`.
+
+**ItemStack contract:** `{ uid, name, count, x, y, rotated, slot, metadata }`. `x`/`y` are 0-based cells (grid stacks) and `slot` is set for worn items. `metadata.durability` is set for items with durability. Clothing metadata is `{ model, <part> = { drawable, texture } }`.
+
+Server exports:
+
+| Export | Returns |
+|---|---|
+| `AddItem(target, name, count, metadata?)` | `ok, err`. `target` is a player server id (pockets, then worn bag) or an inventory id. **All or nothing**: tops up stacks, then free space; fails without changes if it does not all fit. |
+| `RemoveItem(target, name, count)` | `ok, err`. All or nothing. |
+| `GetItemCount(target, name)` | number |
+| `GetItemDefinition(name)` | definition copy or `nil` |
+| `RegisterItem(name, definition)` | `ok, err`. Add a module's own item (same fields as the config). |
+| `RegisterUsable(name, handler)` | `ok, err`. `handler(source, stack, inventoryId)` returns the number of units to consume (0 for none), or `false, message` to refuse. A message returned after a successful use is shown to the player. |
+| `OpenStash(source, name, opts)` | `true` (loading starts) or `false, err`. `opts`: `label, width, height, maxWeight, coords` (with coords the player must be within `reachDistance`). |
+| `GetInventory(id)` | snapshot or `nil` |
+| `IsLoaded(source)` | boolean |
+
+Rules the server enforces on every request: the player must be able to reach both inventories (own pockets, worn items and worn bag, or a drop or stash the server opened for them, within reach). The item must still be there. The target cells must be free and inside the grid. Weight limits apply. Bags never go inside bags, and worn items must match their slot and the character's body. Every operation runs without yielding and is saved as one transaction in an ordered queue. While the database is down, operations are refused.

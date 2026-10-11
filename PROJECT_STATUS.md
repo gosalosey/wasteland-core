@@ -1,7 +1,7 @@
 # Project status and development checklist
 
-**Current milestone:** 3A complete in automated tests; installed on the owner's server; runtime verification pending (R2.x and R3.x in docs/IN_GAME_TESTS.md).
-**Next milestone:** 3B, inventory and item API.
+**Current milestone:** 3B complete in automated tests; installed on the owner's server; runtime verification pending (R4.x; also R2.x leftovers).
+**Next milestone:** 4, survival and HUD.
 **Last updated:** 2026-10-10
 
 ## How to resume work
@@ -50,22 +50,26 @@ and ships first, with the screens players hit on joining.
       players held until a character is loaded (K-15)
 - [x] Admin command to reopen the creator for a player
 - [x] Tests: appearance validation, persistence, select/create flow, invalid payloads (Lua), UI logic (Node)
-- [~] Installed on the owner's server; runtime tests R3.1-R3.15 pending
+- [x] Installed on the owner's server; owner confirmed the creator works (camera framing adjusted)
 Body (face, hair, features) is fixed after creation. Clothing is set only once (starter outfit) here;
 from M3B clothes become wearable inventory items in equipment slots, found as loot and swapped in play.
 
 ## Milestone 3B: inventory and item API
-- [ ] Item definition registry (config + API) · [ ] grid inventory model, weight, stacks, metadata, durability
-- [ ] Containers (player/stash/vehicle/container) · [ ] equipment slots, including clothing items applied to the ped
-- [ ] Transactions with locking; split/merge/move/drop/pickup/use · [ ] persistence
-- [ ] Inventory UI (on the M3A UI shell)
-- [ ] Tests: duplication, concurrency, disconnect mid-action, invalid client events
+Decisions (owner, 2026-10-10): Tetris grid with item sizes; backpacks add their own grid; 5-slot hotbar.
+- [x] Item definition registry (config + RegisterItem) · [x] grid model, rotation, weight, stacks, metadata, durability
+- [x] Containers: pockets, worn bag, stash, ground drops (vehicle containers come with M9) · [x] equipment slots, clothing items applied to the ped
+- [x] Atomic operations (no yields) + ordered transactional write queue; move/rotate/merge/split/wear/take off/drop/pick up/use · [x] persistence
+- [x] Inventory UI (drag and drop, preview, context menu, hotbar)
+- [x] Tests: duplication, concurrency (two players, one item), disconnect mid-action, database failure, invalid client events; SQL on real MariaDB
+- [~] Installed on the owner's server; runtime tests R4.1-R4.15 pending
+Weapons as items are deferred to Milestone 5 (K-21).
 
 ## Milestone 4: survival and HUD
 - [ ] Hunger, thirst, stamina, health; consumable effects · [ ] optional bleeding/infection/temperature
 - [ ] Death/respawn rules, item loss options · [ ] HUD (configurable, compact/immersive modes)
 
 ## Milestone 5: zombies
+- [ ] Weapons as inventory items: ammo, attachments, durability (moved here from M3B)
 - [ ] Archetypes, spawning, population manager, ownership strategy · [ ] AI states, detection (sight/sound)
 - [ ] Combat, damage, infection hook, loot drops · [ ] ambient population control · [ ] multiplayer tests
 
