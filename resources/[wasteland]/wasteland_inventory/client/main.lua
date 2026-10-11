@@ -123,10 +123,11 @@ local function vitals()
     return ok and v or nil
 end
 
-local function openScreen()
+local function openScreen(pickRepair)
     if not uiRunning() or not defs or not snapshot then return end
     if exports.wasteland_ui:IsOpen(SCREEN) then return end
-    exports.wasteland_ui:Open(SCREEN, { script = 'html/inventory.js', data = { defs = defs, snapshot = snapshot, vitals = vitals() } })
+    exports.wasteland_ui:Open(SCREEN, { script = 'html/inventory.js',
+        data = { defs = defs, snapshot = snapshot, vitals = vitals(), pickRepair = pickRepair } })
     -- Keep the health panel current while the screen is open.
     Citizen.CreateThread(function()
         while isOpen() do
@@ -466,5 +467,13 @@ exports('GetClothingInfo', function()
         end
     end
     return { model = model, parts = defs.clothingParts, worn = out }
+end)
+
+-- A repair item used from the hotbar: open the inventory with the list of
+-- what it can repair.
+RegisterNetEvent('wasteland:inventory:client:pickRepair', function(uid)
+    if type(uid) ~= 'string' then return end
+    if isOpen() then exports.wasteland_ui:Update(SCREEN, { pickRepair = uid })
+    elseif canOpen() then openScreen(uid) end
 end)
 

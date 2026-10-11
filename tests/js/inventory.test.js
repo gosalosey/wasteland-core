@@ -152,3 +152,19 @@ test('body temperature in Fahrenheit and how it feels', () => {
     assert.strictEqual(inv.feels(39.6, { hyperthermia: 39.5 }), 'Overheating');
 });
 
+test('a repair kit lists the damaged pieces of its category, most worn first', () => {
+    const defs = { items: { clothing_top: { label: 'Top', category: 'clothing', durability: 100 },
+        clothing_pants: { label: 'Pants', category: 'clothing', durability: 100 },
+        armor_plate: { label: 'Armor plate', category: 'armor', durability: 100 } } };
+    const snap = { equip: 'equip:1', pockets: 'player:1', inventories: [
+        { id: 'equip:1', items: [{ uid: 'a', name: 'clothing_top', metadata: { durability: 60 } }, { uid: 'p', name: 'armor_plate', metadata: { durability: 10 } }] },
+        { id: 'player:1', items: [{ uid: 'b', name: 'clothing_pants', metadata: { durability: 20 } }, { uid: 'c', name: 'clothing_pants', metadata: {} }] },
+        { id: 'stash:x', items: [{ uid: 'd', name: 'clothing_top', metadata: { durability: 1 } }] },
+    ] };
+    assert.deepStrictEqual(inv.repairChoices(snap, defs, 'clothing'), [
+        { uid: 'b', label: 'Pants', share: 0.2, worn: false },
+        { uid: 'a', label: 'Top', share: 0.6, worn: true },
+    ]);
+    assert.strictEqual(inv.repairChoices(snap, defs, 'armor')[0].uid, 'p');
+});
+

@@ -1,5 +1,11 @@
 # Changelog
 
+## Repair kits ask what to repair (owner request)
+* Using a sewing kit or an armor repair kit ("Use (choose what to repair)…" in its right-click menu, or its hotbar key) opens a list of the damaged pieces it can fix, worn and carried, most worn first ("Pants · 42% (worn)"); pick one, or Cancel. Nothing is used until you pick. From the hotbar the inventory opens with the list.
+* Right-clicking a damaged piece still offers "Repair with ..." directly.
+* Tests: 674.
+
+
 ## Milestone 10B: SDK guide and example module
 * docs/SDK_GUIDE.md: recipes for adding items, food and medicine, weapons, loot (files and in-game), recipes and blueprints, camps, traders and shops, jobs, zombie kinds, vehicles, emotes, tailors and supply drops; a step-by-step walk-through of writing a module; how to test it.
 * New resource wasteland_supplydrops (module "supplydrops", config supplydrops.lua; added to server.cfg): the SDK example and a real feature. Every 45 minutes (with players online) a military crate comes down at one of 8 points: map blip and area, a message for everyone, red smoke. The first player to open it fills it (loot table "crate", or its own item list); everyone shares what is inside; gone after 20 minutes. Drops are recorded in `wl_supply_drops`. Admins: /supplydrop, /supplydrop here.

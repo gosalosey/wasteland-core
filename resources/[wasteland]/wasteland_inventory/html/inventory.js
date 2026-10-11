@@ -122,6 +122,26 @@
         return { error: heavy ? 'Too heavy to carry.' : 'No room for that.' };
     }
 
+    // What a repair item (def.repairs = category) can fix: damaged items of
+    // that category worn or carried, most worn first.
+    // -> [{ uid, label, share, worn }]
+    function repairChoices(snap, defs, category) {
+        const out = [];
+        if (!snap || !defs || !category) return out;
+        const own = [snap.equip, snap.pockets, snap.backpack];
+        (snap.inventories || []).forEach((inv) => {
+            if (own.indexOf(inv.id) < 0) return;
+            (inv.items || []).forEach((s) => {
+                const d = defs.items[s.name];
+                if (!d || d.category !== category) return;
+                const c = condition(d, s);
+                if (c && c.share < 1) out.push({ uid: s.uid, label: d.label, share: c.share, worn: inv.id === snap.equip });
+            });
+        });
+        out.sort((a, b) => a.share - b.share || a.label.localeCompare(b.label));
+        return out;
+    }
+
     // Body temperature in Fahrenheit, and how it feels.
     function toF(c) { return Math.round((c * 9 / 5 + 32) * 10) / 10; }
     function feels(c, lim) {
@@ -208,7 +228,7 @@
 
     if (typeof module === 'object' && module.exports) {
         module.exports = { footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
-            formatKg: formatKg, shortLabel: shortLabel, condition: condition, conditions: conditions, toF: toF, feels: feels };
+            formatKg: formatKg, shortLabel: shortLabel, condition: condition, conditions: conditions, toF: toF, feels: feels, repairChoices: repairChoices };
         return;
     }
 
@@ -533,7 +553,8 @@
         const def = st.defs.items[stack.name];
         const worn = fromId === st.snap.equip;
         const items = [];
-        if (def.usable) items.push(['Use', () => st.api.post('use', { uid: stack.uid, from: fromId })]);
+        if (def.usable && def.repairs) items.push(['Use (choose what to repair)…', () => openRepairPicker(stack, fromId, e.clientX, e.clientY)]);
+        else if (def.usable) items.push(['Use', () => st.api.post('use', { uid: stack.uid, from: fromId })]);
         // Damaged: offer every carried item that repairs this category.
         const cond = condition(def, stack);
         if (cond && cond.share < 1) {
@@ -564,6 +585,34 @@
         menu.style.top = Math.min(e.clientY, window.innerHeight - 40 - items.length * 30) + 'px';
         st.root.appendChild(menu);
         st.menu = menu;
+    }
+
+    // A repair kit: pick the damaged piece to repair.
+    function openRepairPicker(kit, kitInvId, x, y) {
+        closeMenu();
+        const kd = st.defs.items[kit.name];
+        const choices = repairChoices(st.snap, st.defs, kd && kd.repairs);
+        const menu = h('div', { class: 'wli-menu wli-menu--repair' },
+            h('div', { class: 'wli-menu__title', text: 'Repair what? (' + (kd ? kd.label : kit.name) + ')' }));
+        if (!choices.length) {
+            menu.appendChild(h('div', { class: 'wli-menu__empty', text: 'Nothing you wear or carry needs repairing.' }));
+        }
+        choices.forEach((c) => menu.appendChild(h('button', { class: 'wli-menu__item',
+            text: c.label + ' · ' + Math.round(c.share * 100) + '%' + (c.worn ? ' (worn)' : ''),
+            onclick: () => { closeMenu(); st.api.post('use', { uid: kit.uid, from: kitInvId, target: c.uid }); } })));
+        menu.appendChild(h('button', { class: 'wli-menu__item', text: 'Cancel', onclick: () => closeMenu() }));
+        menu.style.left = Math.min(x, window.innerWidth - 240) + 'px';
+        menu.style.top = Math.min(y, window.innerHeight - 70 - (choices.length + 1) * 30) + 'px';
+        st.root.appendChild(menu);
+        st.menu = menu;
+    }
+
+    // Asked from the hotbar: find the kit and open the picker in the middle.
+    function pickRepairFor(uid) {
+        for (const inv of st.snap.inventories || []) {
+            const s = (inv.items || []).find((x) => x.uid === uid);
+            if (s) { openRepairPicker(s, inv.id, window.innerWidth / 2 - 110, window.innerHeight / 2 - 80); return; }
+        }
     }
 
     function openSplit(e, stack, fromId) {
@@ -631,6 +680,7 @@
             document.addEventListener('keydown', onKey);
             document.addEventListener('click', onClick);
             render();
+            if (data.pickRepair) setTimeout(() => { if (st) pickRepairFor(data.pickRepair); }, 0);
         },
         update: function (data) {
             if (data.defs) st.defs = data.defs;
@@ -642,6 +692,7 @@
             }
             if (data.error) setMessage(data.error, 'error');
             if (data.notice) setMessage(data.notice, 'ok');
+            if (data.pickRepair) pickRepairFor(data.pickRepair);
         },
         unmount: function () {
             document.removeEventListener('mousemove', onMouseMove);
@@ -721,6 +772,8 @@
         '.wli-menu { position: fixed; z-index: 60; min-width: 170px; background: var(--wl-bg-raised); border: 1px solid var(--wl-border);',
         '  border-radius: var(--wl-radius); box-shadow: 0 8px 24px rgba(0,0,0,0.6); padding: 6px; display: flex; flex-direction: column; gap: 2px; }',
         '.wli-menu__title { font-size: 12px; color: var(--wl-accent); padding: 4px 8px 6px; }',
+        '.wli-menu--repair { min-width: 220px; }',
+        '.wli-menu__empty { padding: 6px 10px; font-size: 12px; color: var(--wl-text-dim); }',
         '.wli-menu__item { font: inherit; font-size: 13px; text-align: left; color: var(--wl-text); background: transparent; border: 0;',
         '  border-radius: 4px; padding: 6px 8px; cursor: pointer; }',
         '.wli-menu__item:hover { background: rgba(217,130,43,0.2); }',

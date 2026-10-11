@@ -699,7 +699,15 @@ function Inv.useHotbar(src, index)
     if not uid then return false, 'nothing is on that key' end
     for _, id in ipairs(Inv.ownInventories(c)) do
         local inv = WLI.invs[id]
-        if inv and inv.items[uid] then return Inv.use(src, uid, id) end
+        if inv and inv.items[uid] then
+            -- A repair item asks what to repair: the inventory opens with a list.
+            local d = WLI.defs[inv.items[uid].name]
+            if d and d.repairs and WLI.usable[inv.items[uid].name] then
+                TriggerClientEvent('wasteland:inventory:client:pickRepair', src, uid)
+                return true
+            end
+            return Inv.use(src, uid, id)
+        end
     end
     return false, 'that item is no longer in your inventory'
 end
