@@ -1,5 +1,12 @@
 # Changelog
 
+## Admin: prop names, own loot categories (owner request)
+* "Looking at" shows a name where one is known: vehicles (their game name), props listed in loot.lua, and props you named when adding them (new optional "Prop name" box). GTA cannot turn a prop's model number back into its name, so other props show "(name unknown)".
+* New Loot tab: make your own loot categories. Name, search time, refill time, size, chance it is empty, how many items per search, and the items it can hold (item, least, most, chance weight). Edit and delete them; deleting one stops its props being searchable. They show up in the Coords tab's "Loot as" list. Kept in wasteland_loot's KVP (loot.lua is not changed).
+* Loot exports: `SaveLootCategory(id, def)`, `DeleteLootCategory(id)`; `AddContainerModel(hash, type, name?)`. Admin actions `lootTypeSave`, `lootTypeDelete`.
+* Tests: 627.
+
+
 ## Admin: make any prop lootable (owner request)
 * Admin panel, Coords tab, "Make it lootable": look at a prop, pick a loot container type (Dumpster / Trash can / Fridge / Vending machine / Tool chest / Crate / Mailbox / Wrecked vehicle, each with its loot table) and press "Add to loot". Every prop of that model on the map can then be searched by everyone, right away (no restart). "Change" and "Remove" for props added this way; a list of all of them. Props loot.lua already lists show "Already searchable".
 * Kept in wasteland_loot's server KVP (survives restarts; loot.lua is not changed). Loot exports: `GetLootAdminData()`, `AddContainerModel(hash, type)`, `RemoveContainerModel(hash)`. Admin actions `lootAdd`, `lootRemove` (in the action log).

@@ -82,6 +82,11 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
                 if ok and math.tointeger(model) then
                     local u = math.tointeger(model) & 0xffffffff -- signed, like GetHashKey
                     looking = { hash = u >= 0x80000000 and u - 0x100000000 or u, kind = ({ 'ped', 'vehicle', 'object' })[kind] }
+                    if kind == 2 then
+                        local display = GetDisplayNameFromVehicleModel(model)
+                        local text = display and GetLabelText(display)
+                        looking.name = (text and text ~= 'NULL' and text ~= '') and (text .. ' (' .. display:lower() .. ')') or display
+                    end
                 end
             end
         end

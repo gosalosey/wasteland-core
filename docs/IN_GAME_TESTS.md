@@ -444,3 +444,13 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R27.3 | Restart the server | Still searchable; listed under "Props added here" |
 | R27.4 | Look at it again: "Change" to another type / "Remove" (click twice) | The search changes / is gone for everyone |
 | R27.5 | Look at a dumpster | "Already searchable: Dumpster (trash loot) (set in loot.lua)" |
+
+## R28: prop names and own loot categories
+
+| # | Do | Expect |
+|---|---|---|
+| R28.1 | Coords tab, look at a car / a dumpster / some other prop | "vehicle Rebel (rebel) · model ..." / "object prop_dumpster_01a · ..." / "object (name unknown) · ..." |
+| R28.2 | Loot tab, "+ New loot category": name "Gun safe", add ammo and a pistol, Save | It is listed; "Loot category saved" |
+| R28.3 | Coords tab, look at a prop, "Loot as" Gun safe, type a prop name, Add to loot | The prop can be searched and gives only the items you chose; the name shows from then on |
+| R28.4 | Edit the category (change items), Save; restart the server | The changes stay |
+| R28.5 | Delete the category (click twice) | Its props can no longer be searched |

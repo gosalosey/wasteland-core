@@ -261,3 +261,53 @@ describe('props made lootable in the admin panel', function()
     end)
 end)
 
+
+describe('loot categories made in the admin panel', function()
+    local server = world()
+    local id = player(server, 'boss', { x = 300.0, y = 300.0, z = 30.0 })
+    local function L(fn, ...) return server:export('wasteland_loot', fn, ...) end
+    local SAFE = -55555
+    local def = { label = 'Gun safe', searchSeconds = 1, refillMinutes = 5, gridW = 3, gridH = 3, emptyChance = 0, rollsMin = 1, rollsMax = 1,
+        items = { { name = 'ammo_9mm', min = 7, max = 7, weight = 1 } } }
+
+    it('checks the definition', function()
+        expect(select(2, L('SaveLootCategory', 'Bad Id', def))).toContain('lower case')
+        expect(select(2, L('SaveLootCategory', 'dumpster', def))).toBe('"dumpster" is already a loot type in loot.lua')
+        expect(select(2, L('SaveLootCategory', 'safe', { label = '', items = def.items }))).toContain('give it a name')
+        expect(select(2, L('SaveLootCategory', 'safe', { label = 'X', items = {} }))).toBe('add at least one item')
+        expect(select(2, L('SaveLootCategory', 'safe', { label = 'X', items = { { name = 'no_such_item' } } }))).toBe('unknown item "no_such_item"')
+        expect(select(2, L('SaveLootCategory', 'safe', { label = 'X', rollsMin = 3, rollsMax = 1, items = def.items }))).toContain('least items')
+    end)
+
+    it('is created, props can use it, and it gives its own loot', function()
+        expect(L('SaveLootCategory', 'gun_safe', def)).toBe(true)
+        expect(L('GetLootAdminData').custom.gun_safe.label).toBe('Gun safe')
+        expect(L('AddContainerModel', SAFE, 'gun_safe', 'prop_ld_int_safe_01')).toBe(true)
+        expect(L('GetLootAdminData').known[tostring(SAFE)].name).toBe('prop_ld_int_safe_01')
+        server:clientEvent(id, 'wasteland:loot:server:start', SAFE, { x = 301.0, y = 300.0, z = 30.0 })
+        server:advance(1200)
+        server:clientEvent(id, 'wasteland:loot:server:finish')
+        server:advance(300)
+        local snap = server:export('wasteland_inventory', 'GetInventory', 'stash:loot_gun_safe_301_300_30')
+        expect(snap.items[1].name).toBe('ammo_9mm'); expect(snap.items[1].count).toBe(7)
+    end)
+
+    it('is kept after a restart and can be changed', function()
+        server:restart('wasteland_loot'); server:advance(500)
+        expect(L('GetLootAdminData').custom.gun_safe.items[1].name).toBe('ammo_9mm')
+        expect(L('GetLootAdminData').known[tostring(SAFE)].type).toBe('gun_safe')
+        def.label = 'Big gun safe'
+        expect(L('SaveLootCategory', 'gun_safe', def)).toBe(true)
+        expect(L('GetLootAdminData').custom.gun_safe.label).toBe('Big gun safe')
+    end)
+
+    it('deleting it stops its props being searchable', function()
+        expect(L('DeleteLootCategory', 'gun_safe')).toBe(true)
+        expect(L('GetLootAdminData').custom.gun_safe == nil).toBe(true)
+        expect(L('GetLootAdminData').known[tostring(SAFE)] == nil).toBe(true)
+        expect(select(2, L('DeleteLootCategory', 'dumpster'))).toBe('that is not a loot category made in the admin panel')
+        server:restart('wasteland_loot'); server:advance(500)
+        expect(L('GetLootAdminData').custom.gun_safe == nil).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

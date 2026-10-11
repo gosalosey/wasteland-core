@@ -383,8 +383,21 @@ end
 ACTIONS.lootAdd = function(src, p)
     if not started('wasteland_loot') then return false, 'loot module is not running' end
     if not p.model or not p.container then return false, 'look at a prop and pick what it should be' end
-    local ok, err = exports.wasteland_loot:AddContainerModel(p.model, p.container)
+    local ok, err = exports.wasteland_loot:AddContainerModel(p.model, p.container, p.propName)
     return ok, ok and string.format('Every prop of this model (%d) can now be searched as "%s"', p.model, p.container) or err
+end
+
+ACTIONS.lootTypeSave = function(src, p)
+    if not started('wasteland_loot') then return false, 'loot module is not running' end
+    if not p.container or not p.lootType then return false, 'nothing to save' end
+    local ok, err = exports.wasteland_loot:SaveLootCategory(p.container, p.lootType)
+    return ok, ok and string.format('Loot category "%s" saved', p.lootType.label) or err
+end
+
+ACTIONS.lootTypeDelete = function(src, p)
+    if not started('wasteland_loot') then return false, 'loot module is not running' end
+    local ok, err = exports.wasteland_loot:DeleteLootCategory(p.container)
+    return ok, ok and string.format('Loot category "%s" deleted', p.container) or err
 end
 
 ACTIONS.lootRemove = function(src, p)
@@ -458,7 +471,7 @@ end
 local NO_TARGET = { banLicense = true, unban = true, announce = true, setTime = true, freezeTime = true,
     setWeather = true, weatherDynamic = true, noclip = true, invisible = true, zombieSpawn = true, zombieClear = true,
     vehicleWreck = true, vehicleWorking = true, vehicleFix = true, refillPumps = true, tpWaypoint = true, overlay = true,
-    lootAdd = true, lootRemove = true }
+    lootAdd = true, lootRemove = true, lootTypeSave = true, lootTypeDelete = true }
 -- Read-only actions are not written to the action log.
 local QUIET = { teleportTo = true, inventory = true, overlay = true, tpWaypoint = true }
 
@@ -477,7 +490,7 @@ local function act(src, action, p)
         local target = p.target and string.format('player %d (%s)', p.target, tostring(GetPlayerName(tostring(p.target)))) or nil
         local details = {}
         for _, k in ipairs({ 'reason', 'minutes', 'stat', 'value', 'item', 'count', 'text', 'hour', 'minute', 'weather', 'enabled', 'banId',
-            'license', 'quest', 'recipe', 'netId', 'model', 'container' }) do
+            'license', 'quest', 'recipe', 'netId', 'model', 'container', 'propName' }) do
             if p[k] ~= nil then details[#details + 1] = k .. '=' .. tostring(p[k]) end
         end
         audit(src, action, target, table.concat(details, ' '))
@@ -555,6 +568,19 @@ local PAYLOAD = { type = 'table', fields = {
     netId = { type = 'integer', min = 1 },
     model = { type = 'integer', min = -2147483648, max = 4294967295 },
     container = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },
+    propName = { type = 'string', pattern = '^[%w_%-]*$', maxLength = 64 },
+    lootType = { type = 'table', fields = {
+        label = { type = 'string', maxLength = 40 },
+        searchSeconds = { type = 'number', min = 0.5, max = 60 }, refillMinutes = { type = 'number', min = 1, max = 100000 },
+        gridW = { type = 'integer', min = 1, max = 12 }, gridH = { type = 'integer', min = 1, max = 12 },
+        emptyChance = { type = 'number', min = 0, max = 1 },
+        rollsMin = { type = 'integer', min = 0, max = 20 }, rollsMax = { type = 'integer', min = 0, max = 20 },
+        items = { type = 'array', maxItems = 40, items = { type = 'table', fields = {
+            name = { type = 'string', required = true, pattern = '^[%w_]+$', maxLength = 48 },
+            min = { type = 'integer', min = 1, max = 1000000 }, max = { type = 'integer', min = 1, max = 1000000 },
+            weight = { type = 'integer', min = 1, max = 100000 },
+        } } },
+    } },
     overlay = { type = 'string', pattern = '^[a-z]+$', maxLength = 16 },
     quest = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },
     recipe = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },

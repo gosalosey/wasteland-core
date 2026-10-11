@@ -61,6 +61,18 @@ test('coordinates as text for scripts', () => {
 
 test('the model the camera faces, as text', () => {
     assert.strictEqual(admin.lookingText(null), 'Nothing (look at a prop or vehicle within 25 m)');
-    assert.strictEqual(admin.lookingText({ hash: -1, kind: 'object' }), 'object model -1 (0xFFFFFFFF)');
-    assert.strictEqual(admin.lookingText({ hash: 255, kind: 'vehicle' }), 'vehicle model 255 (0x000000FF)');
+    assert.strictEqual(admin.lookingText({ hash: -1, kind: 'object' }), 'object (name unknown) · model -1 (0xFFFFFFFF)');
+    assert.strictEqual(admin.lookingText({ hash: 255, kind: 'vehicle', name: 'Rebel (rebel)' }), 'vehicle Rebel (rebel) · model 255 (0x000000FF)');
+    assert.strictEqual(admin.lookingText({ hash: 7, kind: 'object' }, { '7': { name: 'prop_bin_01a' } }), 'object prop_bin_01a · model 7 (0x00000007)');
 });
+
+test('loot category form: numbers, percent, empty item lines; ids from names', () => {
+    const p = admin.lootPayload({ label: ' Gun safe ', searchSeconds: '5', refillMinutes: '', gridW: '6', gridH: '4', emptyPercent: '30',
+        rollsMin: '1', rollsMax: '3', items: [{ name: 'ammo_9mm', min: '5', max: '20', weight: '10' }, { name: '', min: '1', max: '1', weight: '1' }] });
+    assert.deepStrictEqual(p, { label: 'Gun safe', searchSeconds: 5, refillMinutes: 45, gridW: 6, gridH: 4, emptyChance: 0.3, rollsMin: 1, rollsMax: 3,
+        items: [{ name: 'ammo_9mm', min: 5, max: 20, weight: 10 }] });
+    assert.strictEqual(admin.lootId('Gun Safe #2'), 'gun_safe_2');
+    assert.strictEqual(admin.lootId('2 crates'), 'loot_2_crates');
+    assert.strictEqual(admin.lootId(''), '');
+});
+

@@ -316,6 +316,16 @@ describe('admin world tools, live view, overlays and player tools', function()
         expect(server:export('wasteland_loot', 'GetLootAdminData').known['-99999'] == nil).toBe(true)
     end)
 
+    it('creates and deletes loot categories through the guarded action', function()
+        local r = act(server, admin, 'lootTypeSave', { container = 'gun_safe', lootType = { label = 'Gun safe', gridW = 4, gridH = 3,
+            emptyChance = 0.2, rollsMin = 1, rollsMax = 2, items = { { name = 'ammo_9mm', min = 5, max = 10, weight = 3 } } } })
+        expect(r.ok).toBe(true)
+        expect(server:export('wasteland_loot', 'GetLootAdminData').custom.gun_safe.grid[1]).toBe(4)
+        expect(act(server, admin, 'lootAdd', { model = -4242, container = 'gun_safe', propName = 'prop_safe' }).ok).toBe(true)
+        expect(act(server, admin, 'lootTypeDelete', { container = 'gun_safe' }).ok).toBe(true)
+        expect(server:export('wasteland_loot', 'GetLootAdminData').known['-4242'] == nil).toBe(true)
+    end)
+
     it('logs the changes but not the read-only tools, and raised nothing', function()
         local actions = {}
         for _, row in ipairs(server.db.backend.data.wl_admin_log) do actions[row.action] = true end

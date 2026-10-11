@@ -66,13 +66,37 @@
     }
 
     // The model the camera faces: hash as GTA reports it (signed) and as hex.
-    function lookingText(l) {
+    // known: { [hash]: { name } } (props whose name the server knows).
+    function lookingText(l, known) {
         if (!l || typeof l.hash !== 'number') return 'Nothing (look at a prop or vehicle within 25 m)';
-        return l.kind + ' model ' + l.hash + ' (0x' + (l.hash >>> 0).toString(16).toUpperCase().padStart(8, '0') + ')';
+        const k = known && known[String(l.hash)];
+        const name = l.name || (k && k.name) || null;
+        return l.kind + (name ? ' ' + name : ' (name unknown)') + ' · model ' + l.hash +
+            ' (0x' + (l.hash >>> 0).toString(16).toUpperCase().padStart(8, '0') + ')';
+    }
+
+    // A loot category form (strings from inputs) -> the payload the server checks.
+    function lootPayload(f) {
+        const n = (v, d) => { const x = Number(v); return isFinite(x) && String(v).trim() !== '' ? x : d; };
+        const i = (v, d) => Math.round(n(v, d));
+        return {
+            label: String(f.label || '').trim(),
+            searchSeconds: n(f.searchSeconds, 4), refillMinutes: n(f.refillMinutes, 45),
+            gridW: i(f.gridW, 5), gridH: i(f.gridH, 4),
+            emptyChance: Math.max(0, Math.min(100, n(f.emptyPercent, 50))) / 100,
+            rollsMin: i(f.rollsMin, 1), rollsMax: i(f.rollsMax, 2),
+            items: (f.items || []).filter((it) => it.name).map((it) => ({ name: it.name, min: i(it.min, 1), max: i(it.max, 1), weight: i(it.weight, 1) })),
+        };
+    }
+
+    // An id from a name: "Gun safe" -> "gun_safe".
+    function lootId(label) {
+        const id = String(label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 32);
+        return /^[a-z]/.test(id) ? id : (id ? 'loot_' + id : '').slice(0, 32);
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { lookingText: lookingText, filterPlayers: filterPlayers, filterItems: filterItems, groupItems: groupItems, banStatus: banStatus,
+        module.exports = { lookingText: lookingText, lootPayload: lootPayload, lootId: lootId, filterPlayers: filterPlayers, filterItems: filterItems, groupItems: groupItems, banStatus: banStatus,
             formatTime: formatTime, coordText: coordText, DURATIONS: DURATIONS };
         return;
     }
@@ -434,6 +458,8 @@
         }
     }
 
+    function lootKnown() { return st.data.loot ? st.data.loot.known : null; }
+
     function containerLabel(name) {
         const c = (st.data.loot ? st.data.loot.containers : []).find((x) => x.name === name);
         return c ? c.label + ' (' + c.table + ' loot)' : name;
@@ -457,16 +483,21 @@
         const pick = select(st.data.loot.containers.map((c) => ({ label: c.label + ' (' + c.table + ' loot)', value: c.name })),
             known ? known.type : (st.lootChoice || st.data.loot.containers[0].name));
         pick.addEventListener('change', () => { st.lootChoice = pick.value; });
+        const name = input({ placeholder: 'Prop name (optional), e.g. prop_barrel_01a', maxlength: '64' }, known && known.name ? known.name : '');
         st.lootBox.appendChild(h('div', { class: 'wla-coordrow' },
-            h('span', { class: 'wla-label', text: known ? 'Now' : 'Loot as' }), pick,
-            UI.button(known ? 'Change' : 'Add to loot', () => act('lootAdd', { model: Number(key), container: pick.value }), 'primary'),
+            h('span', { class: 'wla-label', text: known ? 'Now' : 'Loot as' }), pick, name,
+            UI.button(known ? 'Change' : 'Add to loot', () => {
+                const propName = name.value.trim().replace(/[^A-Za-z0-9_-]/g, '');
+                act('lootAdd', { model: Number(key), container: pick.value, propName: propName });
+            }, 'primary'),
             known ? confirmButton('Remove', () => act('lootRemove', { model: Number(key) })) : null));
+        st.lootBox.appendChild(h('div', { class: 'wl-hint', text: 'Missing a category? Make your own in the Loot tab.' }));
     }
 
     function showCoords() {
         if (!st.coordsEls || !st.coords) return;
         fillLootBox();
-        st.coordsEls.forEach((e) => { e.el.textContent = e.kind === 'looking' ? lookingText(st.coords.looking) : coordText(st.coords, e.kind); });
+        st.coordsEls.forEach((e) => { e.el.textContent = e.kind === 'looking' ? lookingText(st.coords.looking, lootKnown()) : coordText(st.coords, e.kind); });
     }
 
     function coordsTab() {
@@ -480,12 +511,12 @@
         };
         const big = h('div', { class: 'wla-coordbig', text: coordText(c, 'xyz') });
         st.coordsEls.push({ el: big, kind: 'xyz' });
-        const look = h('code', { class: 'wla-coord', text: lookingText(c.looking) });
+        const look = h('code', { class: 'wla-coord', text: lookingText(c.looking, lootKnown()) });
         st.coordsEls.push({ el: look, kind: 'looking' });
         const parts = [h('div', { class: 'wl-hint', text: 'Where you are standing now (updates live while this tab is open).' }), big,
             line('vector3', 'vector3'), line('vector4', 'vector4'), line('Heading', 'heading'),
             section('Looking at (prop or vehicle in front of the camera)'),
-            h('div', { class: 'wla-coordrow' }, look, UI.button('Copy', () => copyText(lookingText((st.coords || c).looking)), 'primary'))];
+            h('div', { class: 'wla-coordrow' }, look, UI.button('Copy', () => copyText(lookingText((st.coords || c).looking, lootKnown())), 'primary'))];
         if (st.data.loot) {
             // Make the prop in view a loot container (every copy of it on the map).
             st.lootBox = h('div', { class: 'wla-lootbox' });
@@ -496,7 +527,7 @@
             if (added.length) {
                 parts.push(section('Props added here'));
                 added.forEach((k) => parts.push(h('div', { class: 'wla-coordrow' },
-                    h('code', { class: 'wla-coord', text: 'model ' + k + ' → ' + containerLabel(st.data.loot.known[k].type) }),
+                    h('code', { class: 'wla-coord', text: (st.data.loot.known[k].name || 'model ' + k) + ' → ' + containerLabel(st.data.loot.known[k].type) }),
                     confirmButton('Remove', () => act('lootRemove', { model: Number(k) })))));
             }
         }
@@ -508,11 +539,98 @@
         return h('div', {}, ...parts);
     }
 
+    // ---------------------------------------------------------------- loot categories
+
+    function blankLootForm() {
+        return { isNew: true, id: '', label: '', searchSeconds: '4', refillMinutes: '45', gridW: '5', gridH: '4', emptyPercent: '40',
+            rollsMin: '1', rollsMax: '2', items: [{ name: '', min: '1', max: '1', weight: '10' }] };
+    }
+
+    function formFrom(id, d) {
+        return { isNew: false, id: id, label: d.label, searchSeconds: String(d.searchSeconds), refillMinutes: String(d.refillMinutes),
+            gridW: String(d.grid[0]), gridH: String(d.grid[1]), emptyPercent: String(Math.round(d.emptyChance * 100)),
+            rollsMin: String(d.rolls[0]), rollsMax: String(d.rolls[1]),
+            items: d.items.map((it) => ({ name: it.name, min: String(it.min), max: String(it.max), weight: String(it.weight) })) };
+    }
+
+    // A text input bound to obj[key] (the form survives re-renders).
+    function bound(obj, key, attrs, width) {
+        const el = input(Object.assign({}, attrs || {}), obj[key]);
+        if (width) el.style.width = width;
+        el.addEventListener('input', () => { obj[key] = el.value; });
+        return el;
+    }
+
+    function field(label, el, hint) {
+        return h('label', { class: 'wla-field' }, h('span', { class: 'wla-label', text: label }), el,
+            hint ? h('span', { class: 'wl-hint', text: hint }) : null);
+    }
+
+    function lootForm() {
+        const f = st.lootForm;
+        const items = (st.data.items || []).slice().sort((a, b) => a.label.localeCompare(b.label));
+        const idInput = bound(f, 'id', { placeholder: 'e.g. gun_safe', maxlength: '32' }, '180px');
+        if (!f.isNew) idInput.disabled = true;
+        const labelInput = bound(f, 'label', { placeholder: 'e.g. Gun safe', maxlength: '40' }, '220px');
+        labelInput.addEventListener('input', () => { if (f.isNew && !f.idTouched) { f.id = lootId(f.label); idInput.value = f.id; } });
+        idInput.addEventListener('input', () => { f.idTouched = true; });
+        const num = (key, attrs) => bound(f, key, Object.assign({ type: 'number' }, attrs), '90px');
+        const rows = h('div', { class: 'wla-lootitems' },
+            h('div', { class: 'wla-lootitem wla-lootitem--head' }, h('span', { text: 'Item' }), h('span', { text: 'Least' }),
+                h('span', { text: 'Most' }), h('span', { text: 'Chance weight' }), h('span')));
+        f.items.forEach((it, idx) => {
+            const pick = select([{ label: '– pick an item –', value: '' }].concat(items.map((x) => ({ label: x.label + ' (' + x.name + ')', value: x.name }))), it.name);
+            pick.addEventListener('change', () => { it.name = pick.value; });
+            const n = (key) => { const el = input({ type: 'number', min: '1' }, it[key]); el.addEventListener('input', () => { it[key] = el.value; }); return el; };
+            rows.appendChild(h('div', { class: 'wla-lootitem' }, pick, n('min'), n('max'), n('weight'),
+                UI.button('✕', () => { f.items.splice(idx, 1); render(); })));
+        });
+        return h('div', { class: 'wla-lootform' },
+            section(f.isNew ? 'New loot category' : 'Edit: ' + f.label),
+            h('div', { class: 'wla-fields' },
+                field('Name', labelInput), field('Id', idInput, f.isNew ? 'made from the name' : 'cannot change')),
+            h('div', { class: 'wla-fields' },
+                field('Search time', num('searchSeconds', { min: '0.5', max: '60', step: '0.5' }), 'seconds'),
+                field('Refills after', num('refillMinutes', { min: '1' }), 'minutes'),
+                field('Size', h('span', { class: 'wla-pair' }, num('gridW', { min: '1', max: '12' }), h('span', { text: '×' }), num('gridH', { min: '1', max: '12' })), 'grid cells'),
+                field('Empty', num('emptyPercent', { min: '0', max: '100' }), '% chance there is nothing'),
+                field('Items found', h('span', { class: 'wla-pair' }, num('rollsMin', { min: '0', max: '20' }), h('span', { text: 'to' }), num('rollsMax', { min: '0', max: '20' })), 'picks per search')),
+            section('What can be in it'),
+            h('div', { class: 'wl-hint', text: 'Each pick chooses one line; a higher chance weight means it comes up more often (10 vs 1 = ten times as often). Least/most: how many of it.' }),
+            rows,
+            row(UI.button('+ Add item', () => { f.items.push({ name: '', min: '1', max: '1', weight: '10' }); render(); })),
+            row(UI.button('Save', () => {
+                if (!f.id) { message('Give it a name.', 'error'); return; }
+                st.lootSaving = true;
+                act('lootTypeSave', { container: f.id, lootType: lootPayload(f) });
+            }, 'primary'), UI.button('Cancel', () => { st.lootForm = null; render(); })));
+    }
+
+    function lootTab() {
+        const loot = st.data.loot;
+        if (!loot) return h('div', { class: 'wl-hint', text: 'The loot module is not running.' });
+        const parts = [h('div', { class: 'wl-hint', text: 'Your own loot categories. Give props one in the Coords tab (look at a prop, "Make it lootable").' })];
+        const names = Object.keys(loot.custom || {}).sort();
+        parts.push(section('Your loot categories'));
+        if (!names.length) parts.push(h('div', { class: 'wl-hint', text: 'None yet.' }));
+        names.forEach((id) => {
+            const d = loot.custom[id];
+            const props = Object.keys(loot.known).filter((k) => loot.known[k].type === id).length;
+            parts.push(h('div', { class: 'wla-coordrow' },
+                h('code', { class: 'wla-coord', text: d.label + ' (' + id + ') · ' + d.items.length + ' items · ' + props + ' prop model(s)' }),
+                UI.button('Edit', () => { st.lootForm = formFrom(id, d); render(); }),
+                confirmButton('Delete', () => act('lootTypeDelete', { container: id }))));
+        });
+        if (st.lootForm) parts.push(lootForm());
+        else parts.push(row(UI.button('+ New loot category', () => { st.lootForm = blankLootForm(); render(); }, 'primary')));
+        return h('div', {}, ...parts);
+    }
+
     // ---------------------------------------------------------------- frame
 
-    const TABS = [{ id: 'players', label: 'Players' }, { id: 'live', label: 'Live' }, { id: 'coords', label: 'Coords' },
+    const TABS = [{ id: 'players', label: 'Players' }, { id: 'live', label: 'Live' }, { id: 'coords', label: 'Coords' }, { id: 'loot', label: 'Loot' },
         { id: 'bans', label: 'Bans' }, { id: 'server', label: 'Server & world' }, { id: 'log', label: 'Action log' }];
-    const RENDER = { players: playersTab, live: liveTab, coords: coordsTab, bans: bansTab, server: serverTab, log: logTab };
+    const RENDER = { players: playersTab, live: liveTab, coords: coordsTab, loot: lootTab, bans: bansTab, server: serverTab, log: logTab };
 
     function render() {
         st.content.innerHTML = '';
@@ -562,7 +680,7 @@
                 st.data = data.data;
                 if (self && st.data.self) { st.data.self.noclip = self.noclip; st.data.self.invisible = self.invisible; }
                 if (!st.data.players.find((p) => p.id === st.selected) && st.data.players.length) st.selected = st.data.players[0].id;
-                if (st.tab === 'players' || st.tab === 'server' || st.tab === 'live') render();
+                if (st.tab === 'players' || st.tab === 'server' || st.tab === 'live' || st.tab === 'loot') render();
             }
             if (data.list) {
                 st[data.list.which] = data.list.rows || [];
@@ -570,6 +688,10 @@
                 if (st.tab === data.list.which) render();
             }
             if (data.result) message(data.result.message, data.result.ok ? 'ok' : 'error');
+            if (data.result && st.lootSaving) {
+                st.lootSaving = false;
+                if (data.result.ok) { st.lootForm = null; if (st.tab === 'loot') render(); }
+            }
             if (data.coords) { st.coords = data.coords; showCoords(); }
         },
         unmount: function () { document.removeEventListener('keydown', onKey); clearInterval(st.liveTimer); clearInterval(st.coordsTimer); st = null; },
@@ -579,6 +701,13 @@
         '.wla-root { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }',
         '.wla-panel { position: relative; width: min(1180px, 94vw); height: 86vh; display: flex; flex-direction: column; }',
         '.wla-header { display: flex; align-items: center; gap: 10px; } .wla-header .wl-title { flex: 1; }',
+        '.wla-fields { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 6px 0; }',
+        '.wla-field { display: flex; flex-direction: column; gap: 3px; }',
+        '.wla-pair { display: flex; align-items: center; gap: 6px; }',
+        '.wla-lootitems { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }',
+        '.wla-lootitem { display: grid; grid-template-columns: minmax(220px, 1fr) 80px 80px 110px 44px; gap: 8px; align-items: center; }',
+        '.wla-lootitem--head span { font-size: 11px; color: var(--wl-text-dim); text-transform: uppercase; letter-spacing: 0.06em; }',
+        '.wla-lootform { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--wl-border); border-radius: var(--wl-radius); }',
         '.wla-clip { position: fixed; left: -1000px; top: -1000px; opacity: 0; }',
         '.wla-coordbig { font-family: Consolas, monospace; font-size: 22px; color: var(--wl-accent); margin: 12px 0 14px; }',
         '.wla-coordrow { display: flex; align-items: center; gap: 10px; margin: 6px 0; }',

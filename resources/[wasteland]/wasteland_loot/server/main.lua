@@ -17,6 +17,9 @@ local searching = {}   -- source -> { name, type, startedAt, coords, label }
 local searches = 0     -- finished searches since start (admin live view)
 local extra = {}       -- signed model hash -> container type (added by admins, kept in KVP)
 local EXTRA_KVP = 'extraModels'
+local extraNames = {}  -- signed model hash -> prop name the admin gave (optional)
+local custom = {}      -- loot categories made in the admin panel: name -> definition (KVP)
+local CUSTOM_KVP = 'customTypes'
 
 local function inv() return exports.wasteland_inventory end
 local function now() return GetGameTimer() end
@@ -157,23 +160,98 @@ local function signed(h)
 end
 
 local function loadExtra()
-    extra = {}
+    extra, extraNames = {}, {}
     local ok, raw = pcall(GetResourceKvpString, EXTRA_KVP)
     if not ok or type(raw) ~= 'string' then return end
     local okJ, list = pcall(json.decode, raw)
     if not okJ or type(list) ~= 'table' then return end
     for _, e in ipairs(list) do
         local h = signed(e.hash)
-        if h and M.config.containers[e.type] and e.type ~= 'body' then extra[h] = e.type
+        if h and M.config.containers[e.type] and e.type ~= 'body' then
+            extra[h] = e.type
+            if type(e.name) == 'string' and e.name ~= '' then extraNames[h] = e.name end
         elseif h then M.log:warn('admin-added loot prop %s: container type "%s" no longer exists (ignored)', tostring(h), tostring(e.type)) end
     end
 end
 
 local function saveExtra()
     local list = {}
-    for h, t in pairs(extra) do list[#list + 1] = { hash = h, type = t } end
+    for h, t in pairs(extra) do list[#list + 1] = { hash = h, type = t, name = extraNames[h] } end
     table.sort(list, function(a, b) return a.hash < b.hash end)
     SetResourceKvp(EXTRA_KVP, json.encode(list))
+end
+
+-------------------------------------------------------------------------------
+-- Loot categories made in the admin panel: a container type with its own
+-- loot table ("custom_<name>"), kept in KVP and added to the config at start.
+-------------------------------------------------------------------------------
+
+local function num(v, lo, hi, default)
+    v = tonumber(v)
+    if not v or v ~= v then return default end
+    return math.max(lo, math.min(hi, v))
+end
+
+--- A clean definition or nil, error.
+local function cleanCustom(name, d)
+    if type(name) ~= 'string' or not name:match('^[a-z][a-z0-9_]*$') or #name > 32 then
+        return nil, 'the id must be lower case letters, digits and _ (start with a letter, up to 32)'
+    end
+    if name == 'body' or (M.config.containers[name] and not M.config.containers[name].custom) then
+        return nil, '"' .. name .. '" is already a loot type in loot.lua'
+    end
+    if type(d) ~= 'table' then return nil, 'no definition' end
+    local label = type(d.label) == 'string' and d.label:gsub('^%s+', ''):gsub('%s+$', '') or ''
+    if label == '' or #label > 40 then return nil, 'give it a name (up to 40 characters)' end
+    local out = {
+        label = label,
+        searchSeconds = num(d.searchSeconds, 0.5, 60, 4),
+        refillMinutes = num(d.refillMinutes, 1, 100000, 45),
+        grid = { math.floor(num(d.gridW, 1, 12, 5)), math.floor(num(d.gridH, 1, 12, 4)) },
+        emptyChance = num(d.emptyChance, 0, 1, 0.5),
+        rolls = { math.floor(num(d.rollsMin, 0, 20, 1)), math.floor(num(d.rollsMax, 0, 20, 2)) },
+        items = {},
+    }
+    if out.rolls[1] > out.rolls[2] then return nil, 'the least items found is more than the most' end
+    if type(d.items) ~= 'table' or #d.items == 0 then return nil, 'add at least one item' end
+    if #d.items > 40 then return nil, 'up to 40 items' end
+    for _, it in ipairs(d.items) do
+        if type(it) ~= 'table' or type(it.name) ~= 'string' or not inv():GetItemDefinition(it.name) then
+            return nil, 'unknown item "' .. tostring(type(it) == 'table' and it.name) .. '"'
+        end
+        local mn, mx = math.floor(num(it.min, 1, 1000000, 1)), math.floor(num(it.max, 1, 1000000, 1))
+        if mn > mx then return nil, it.name .. ': the least is more than the most' end
+        out.items[#out.items + 1] = { name = it.name, min = mn, max = mx, weight = math.floor(num(it.weight, 1, 100000, 1)) }
+    end
+    return out
+end
+
+local function applyCustom(name, d)
+    M.config.tables['custom_' .. name] = { emptyChance = d.emptyChance, rolls = d.rolls, items = d.items }
+    M.config.containers[name] = { label = d.label, table = 'custom_' .. name, searchSeconds = d.searchSeconds,
+        refillMinutes = d.refillMinutes, grid = d.grid, anim = 'search', models = {}, custom = true }
+end
+
+local function loadCustom()
+    custom = {}
+    local ok, raw = pcall(GetResourceKvpString, CUSTOM_KVP)
+    if not ok or type(raw) ~= 'string' then return end
+    local okJ, list = pcall(json.decode, raw)
+    if not okJ or type(list) ~= 'table' then return end
+    for name, d in pairs(list) do
+        local clean, err = cleanCustom(name, {
+            label = d.label, searchSeconds = d.searchSeconds, refillMinutes = d.refillMinutes,
+            gridW = d.grid and d.grid[1], gridH = d.grid and d.grid[2], emptyChance = d.emptyChance,
+            rollsMin = d.rolls and d.rolls[1], rollsMax = d.rolls and d.rolls[2], items = d.items })
+        if clean then custom[name] = clean; applyCustom(name, clean)
+        else M.log:warn('loot category "%s" made in the admin panel is skipped: %s', tostring(name), tostring(err)) end
+    end
+end
+
+local function saveCustom()
+    local out = {}
+    for name, d in pairs(custom) do out[name] = d end
+    SetResourceKvp(CUSTOM_KVP, json.encode(out))
 end
 
 -- Model lists per container type: loot.lua names plus admin-added hashes.
@@ -229,6 +307,7 @@ M = Wasteland.DefineModule({
                 end
             end
         end
+        loadCustom()
         loadExtra()
         rebuildIndex()
         state, searching = {}, {}
@@ -297,22 +376,54 @@ exports('GetContainerModels', function()
     return out
 end)
 
---- GetLootAdminData() -> { containers = { { name, label, table } }, known = { [signedHash] = { type, added } } }
---- (admin panel: what a prop can become, and which props already are containers)
+--- GetLootAdminData() -> { containers = { { name, label, table, custom } }, known = { [signedHash] = { type, added, name } },
+---   custom = { [name] = definition } }   (admin panel)
 exports('GetLootAdminData', function()
     if not (M and M.active) then return nil end
     local list, known = {}, {}
     for name, c in pairs(M.config.containers) do
-        if name ~= 'body' then list[#list + 1] = { name = name, label = c.label, table = c.table } end
-        for _, m in ipairs(c.models or {}) do known[tostring(signed(GetHashKey(m)))] = { type = name, added = false } end
+        if name ~= 'body' then list[#list + 1] = { name = name, label = c.label, table = c.custom and 'own' or c.table, custom = c.custom == true } end
+        for _, m in ipairs(c.models or {}) do known[tostring(signed(GetHashKey(m)))] = { type = name, added = false, name = m } end
     end
-    for h, t in pairs(extra) do known[tostring(h)] = { type = t, added = true } end
+    for h, t in pairs(extra) do known[tostring(h)] = { type = t, added = true, name = extraNames[h] } end
     table.sort(list, function(a, b) return a.label < b.label end)
-    return { containers = list, known = known }
+    return { containers = list, known = known, custom = custom }
 end)
 
---- AddContainerModel(modelHash, containerType) -> ok, err   (admin: make a prop searchable)
-exports('AddContainerModel', function(model, typeName)
+--- SaveLootCategory(name, def) -> ok, err   (admin: create or change an own loot category)
+--- def: { label, searchSeconds, refillMinutes, gridW, gridH, emptyChance (0-1), rollsMin, rollsMax,
+---        items = { { name, min, max, weight } } }
+exports('SaveLootCategory', function(name, d)
+    if not (M and M.active) then return false, 'loot module is not running' end
+    local clean, err = cleanCustom(name, d)
+    if not clean then return false, err end
+    custom[name] = clean
+    applyCustom(name, clean)
+    saveCustom()
+    rebuildIndex()
+    TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
+    M.log:info('loot category "%s" saved (%d items)', name, #clean.items)
+    return true
+end)
+
+--- DeleteLootCategory(name) -> ok, err   (its props stop being searchable)
+exports('DeleteLootCategory', function(name)
+    if not (M and M.active) then return false, 'loot module is not running' end
+    if not custom[name] then return false, 'that is not a loot category made in the admin panel' end
+    custom[name] = nil
+    M.config.containers[name] = nil
+    M.config.tables['custom_' .. name] = nil
+    for h, t in pairs(extra) do if t == name then extra[h] = nil; extraNames[h] = nil end end
+    saveCustom()
+    saveExtra()
+    rebuildIndex()
+    TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
+    M.log:info('loot category "%s" deleted', name)
+    return true
+end)
+
+--- AddContainerModel(modelHash, containerType, name?) -> ok, err   (admin: make a prop searchable)
+exports('AddContainerModel', function(model, typeName, propName)
     if not (M and M.active) then return false, 'loot module is not running' end
     local h = signed(model)
     if not h then return false, 'bad model' end
@@ -320,6 +431,7 @@ exports('AddContainerModel', function(model, typeName)
     local current = modelType[h]
     if current and not extra[h] then return false, 'that prop is already a ' .. M.config.containers[current].label:lower() .. ' (loot.lua)' end
     extra[h] = typeName
+    if type(propName) == 'string' and propName:match('^[%w_%-]+$') and #propName <= 64 then extraNames[h] = propName end
     saveExtra()
     rebuildIndex()
     TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
@@ -333,6 +445,7 @@ exports('RemoveContainerModel', function(model)
     local h = signed(model)
     if not h or not extra[h] then return false, 'that prop was not added in the admin panel' end
     extra[h] = nil
+    extraNames[h] = nil
     saveExtra()
     rebuildIndex()
     TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
