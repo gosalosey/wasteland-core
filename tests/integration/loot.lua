@@ -311,3 +311,28 @@ describe('loot categories made in the admin panel', function()
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe('named loot props', function()
+    local server = world()
+    local id = player(server, 'namer', { x = 400.0, y = 400.0, z = 30.0 })
+    local function L(fn, ...) return server:export('wasteland_loot', fn, ...) end
+    local BARREL = -777777
+
+    it('players see the name: target option list, search bar and container', function()
+        expect(L('AddContainerModel', BARREL, 'dumpster', '  Old  barrel ')).toBe(true)
+        local c = last(events(server, -1, 'wasteland:loot:client:config')).args[1]
+        expect(c.names[tostring(BARREL)]).toBe('Old  barrel')
+        server:clientEvent(id, 'wasteland:loot:server:start', BARREL, { x = 401.0, y = 400.0, z = 30.0 })
+        server:advance(200)
+        expect(last(events(server, id, 'wasteland:loot:client:search')).args[1].label).toBe('Searching Old  barrel')
+        server:advance(2100)
+        server:clientEvent(id, 'wasteland:loot:server:finish'); server:advance(300)
+        expect(#events(server, id, 'wasteland:inventory:client:open')).toBe(1)
+    end)
+
+    it('odd characters are not kept as a name', function()
+        expect(L('AddContainerModel', BARREL, 'dumpster', '<b>bad</b>')).toBe(true)
+        expect(last(events(server, -1, 'wasteland:loot:client:config')).args[1].names[tostring(BARREL)] == nil).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

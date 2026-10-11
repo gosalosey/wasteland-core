@@ -34,13 +34,13 @@
                     if (known && known.type === c.name) o.selected = true;
                     pick.appendChild(o);
                 });
-                const prop = h('input', { class: 'wl-input', attrs: { placeholder: 'Prop name (optional)', maxlength: '64' } });
+                const prop = h('input', { class: 'wl-input', attrs: { placeholder: 'Name players see (optional), e.g. Old barrel', maxlength: '40' } });
                 prop.value = name;
                 body.push(h('label', { class: 'wlp2-field' }, h('span', { text: 'Loot category' }), pick));
-                body.push(h('label', { class: 'wlp2-field' }, h('span', { text: 'Prop name' }), prop));
+                body.push(h('label', { class: 'wlp2-field' }, h('span', { text: 'Name players see' }), prop));
                 body.push(h('div', { class: 'wlp2-row' },
                     UI.button(known ? 'Change' : 'Make lootable', () => api.post('add', {
-                        container: pick.value, propName: prop.value.trim().replace(/[^A-Za-z0-9_-]/g, '') }), 'primary'),
+                        container: pick.value, propName: prop.value.replace(/[^A-Za-z0-9 _.'()-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40) }), 'primary'),
                     known ? UI.button('Remove', () => api.post('remove', {})) : null,
                     UI.button('Close', () => api.post('close'))));
                 body.push(h('div', { class: 'wl-hint', text: 'Every copy of this prop on the map becomes searchable. New categories: admin panel (F10), Loot tab.' }));

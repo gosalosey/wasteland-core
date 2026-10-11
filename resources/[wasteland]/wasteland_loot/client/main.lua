@@ -39,17 +39,29 @@ local function register()
     for _, id in ipairs(targetIds) do pcall(function() exports.wasteland_target:Remove(id) end) end
     targetIds = {}
     if not cfg or not targetRunning() then return end
+    local function option(label)
+        return { label = label, icon = '⌕', distance = 2.2,
+            canInteract = function() return active == nil end,
+            onSelect = function(data)
+                if not data.entity then return end
+                local p = GetEntityCoords(data.entity)
+                TriggerServerEvent('wasteland:loot:server:start', GetEntityModel(data.entity), { x = p.x, y = p.y, z = p.z })
+            end }
+    end
+    local names = cfg.names or {}
     for _, c in pairs(cfg.containers) do
-        if c.models and #c.models > 0 then
-            targetIds[#targetIds + 1] = exports.wasteland_target:AddModel(c.models, {
-                { label = 'Search ' .. c.label:lower(), icon = '⌕', distance = 2.2,
-                    canInteract = function() return active == nil end,
-                    onSelect = function(data)
-                        if not data.entity then return end
-                        local p = GetEntityCoords(data.entity)
-                        TriggerServerEvent('wasteland:loot:server:start', GetEntityModel(data.entity), { x = p.x, y = p.y, z = p.z })
-                    end },
-            })
+        -- Props an admin named get their own option ("Search Old barrel").
+        local plain = {}
+        for _, m in ipairs(c.models or {}) do
+            local n = type(m) == 'number' and names[tostring(m)]
+            if n then
+                targetIds[#targetIds + 1] = exports.wasteland_target:AddModel({ m }, { option('Search ' .. n) })
+            else
+                plain[#plain + 1] = m
+            end
+        end
+        if #plain > 0 then
+            targetIds[#targetIds + 1] = exports.wasteland_target:AddModel(plain, { option('Search ' .. c.label:lower()) })
         end
     end
     if cfg.containers.body then

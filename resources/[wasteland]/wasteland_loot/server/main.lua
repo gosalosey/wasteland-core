@@ -44,8 +44,8 @@ local function reachFor(typeName)
     return (c and c.reach) or M.config.reach
 end
 
-local function stashOpts(c, coords, open)
-    return { label = c.label, width = c.grid[1], height = c.grid[2], maxWeight = 200, coords = coords, open = open, reach = c.reach }
+local function stashOpts(c, coords, open, label)
+    return { label = label or c.label, width = c.grid[1], height = c.grid[2], maxWeight = 200, coords = coords, open = open, reach = c.reach }
 end
 
 local function isEmpty(id)
@@ -58,13 +58,13 @@ end
 -------------------------------------------------------------------------------
 
 -- Thread only (loading a stash may read the database).
-local function begin(src, name, typeName, coords)
+local function begin(src, name, typeName, coords, label)
     local busy = searching[src]
     -- A search that was never finished or cancelled (lost message) expires.
     if busy and now() - busy.startedAt < (M.config.containers[busy.type].searchSeconds + 10) * 1000 then return end
     searching[src] = nil
     local c = M.config.containers[typeName]
-    local id, err = inv():EnsureStash(name, stashOpts(c, coords))
+    local id, err = inv():EnsureStash(name, stashOpts(c, coords, nil, label))
     if not id then notice(src, 'That cannot be searched right now.'); M.log:warn('stash %s: %s', name, tostring(err)); return end
     if isEmpty(id) and not Rules.needsFill(state[name], true, now(), c.refillMinutes) then
         local left = Rules.minutesLeft(state[name], now(), c.refillMinutes)
@@ -72,8 +72,9 @@ local function begin(src, name, typeName, coords)
             or string.format('Already searched. Nothing left (check back in about %d min).', left))
         return
     end
-    searching[src] = { name = name, type = typeName, startedAt = now(), coords = coords, id = id }
-    TriggerClientEvent('wasteland:loot:client:search', src, { seconds = c.searchSeconds, label = 'Searching ' .. c.label:lower(), anim = c.anim })
+    searching[src] = { name = name, type = typeName, startedAt = now(), coords = coords, id = id, label = label }
+    TriggerClientEvent('wasteland:loot:client:search', src, { seconds = c.searchSeconds,
+        label = 'Searching ' .. (label or c.label:lower()), anim = c.anim })
 end
 
 local function finish(src)
@@ -99,7 +100,7 @@ local function finish(src)
     end
     if empty then notice(src, 'You found nothing.'); return end
     searches = searches + 1
-    inv():OpenStash(src, s.name, stashOpts(c, s.coords, true))
+    inv():OpenStash(src, s.name, stashOpts(c, s.coords, true, s.label))
     TriggerEvent('wasteland:loot:searched', src, s.type, s.name)
 end
 
@@ -273,7 +274,9 @@ local function clientConfig()
     for name, c in pairs(M.config.containers) do
         out[name] = { label = c.label, models = modelsOf(name, c), anim = c.anim, searchSeconds = c.searchSeconds }
     end
-    return { containers = out, reach = M.config.reach }
+    local names = {}
+    for h, n in pairs(extraNames) do names[tostring(h)] = n end
+    return { containers = out, reach = M.config.reach, names = names }
 end
 
 M = Wasteland.DefineModule({
@@ -340,7 +343,9 @@ M.netEvent('wasteland:loot:server:start', { args = { { type = 'integer', require
         end
         local p = playerCoords(src)
         if not p or dist(p, coords) > reachFor(typeName) then notice(src, 'You are too far away.'); return end
-        Citizen.CreateThread(function() begin(src, Rules.key(typeName, coords), typeName, coords) end)
+        -- A prop an admin named shows that name (target, search bar, container).
+        local label = extraNames[signed(model)]
+        Citizen.CreateThread(function() begin(src, Rules.key(typeName, coords), typeName, coords, label) end)
     end)
 
 -- Search a dead zombie.
@@ -431,7 +436,8 @@ exports('AddContainerModel', function(model, typeName, propName)
     local current = modelType[h]
     if current and not extra[h] then return false, 'that prop is already a ' .. M.config.containers[current].label:lower() .. ' (loot.lua)' end
     extra[h] = typeName
-    if type(propName) == 'string' and propName:match('^[%w_%-]+$') and #propName <= 64 then extraNames[h] = propName end
+    propName = type(propName) == 'string' and propName:gsub('^%s+', ''):gsub('%s+$', '') or ''
+    if propName:match("^[%w _%-%.'%(%)]+$") and #propName <= 40 then extraNames[h] = propName else extraNames[h] = nil end
     saveExtra()
     rebuildIndex()
     TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())

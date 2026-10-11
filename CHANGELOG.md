@@ -1,5 +1,10 @@
 # Changelog
 
+## Named loot props (owner request)
+* A prop an admin made lootable and named shows that name to players: the target says "Search Old barrel", the bar "Searching Old barrel", and the container opens as "Old barrel". Names can now have spaces (letters, digits, space, _ - . ' ( ), up to 40); the field is called "Name players see". Unnamed props still show their category.
+* Tests: 635.
+
+
 ## Wrecks spawn on clear ground (owner request)
 * Before a vehicle first appears, the nearest player's game checks its spot: no prop within 3.2 m, no other vehicle within 4.5 m, nothing solid across a car-sized box (walls, poles, fences, props), no steep ground. If blocked it is moved to the nearest clear spot within 12 m; a new wreck with no room at all goes to another spawn point. Checked once per vehicle (new column `wl_vehicles.spot_checked`, migration 3); vehicles players parked are only ever nudged, never sent elsewhere. If no player answers within 8 s, it appears where it is.
 * vehicles.lua: `spotCheck = { enabled, radius, clearance }`. Vehicles admins spawn are placed as they are.

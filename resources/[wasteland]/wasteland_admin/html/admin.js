@@ -483,11 +483,11 @@
         const pick = select(st.data.loot.containers.map((c) => ({ label: c.label + ' (' + c.table + ' loot)', value: c.name })),
             known ? known.type : (st.lootChoice || st.data.loot.containers[0].name));
         pick.addEventListener('change', () => { st.lootChoice = pick.value; });
-        const name = input({ placeholder: 'Prop name (optional), e.g. prop_barrel_01a', maxlength: '64' }, known && known.name ? known.name : '');
+        const name = input({ placeholder: 'Name players see (optional), e.g. Old barrel', maxlength: '40' }, known && known.name ? known.name : '');
         st.lootBox.appendChild(h('div', { class: 'wla-coordrow' },
             h('span', { class: 'wla-label', text: known ? 'Now' : 'Loot as' }), pick, name,
             UI.button(known ? 'Change' : 'Add to loot', () => {
-                const propName = name.value.trim().replace(/[^A-Za-z0-9_-]/g, '');
+                const propName = name.value.replace(/[^A-Za-z0-9 _.'()-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
                 act('lootAdd', { model: Number(key), container: pick.value, propName: propName });
             }, 'primary'),
             known ? confirmButton('Remove', () => act('lootRemove', { model: Number(key) })) : null));

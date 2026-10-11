@@ -568,7 +568,7 @@ local PAYLOAD = { type = 'table', fields = {
     netId = { type = 'integer', min = 1 },
     model = { type = 'integer', min = -2147483648, max = 4294967295 },
     container = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },
-    propName = { type = 'string', pattern = '^[%w_%-]*$', maxLength = 64 },
+    propName = { type = 'string', pattern = "^[%w _%-%.'%(%)]*$", maxLength = 40 },
     lootType = { type = 'table', fields = {
         label = { type = 'string', maxLength = 40 },
         searchSeconds = { type = 'number', min = 0.5, max = 60 }, refillMinutes = { type = 'number', min = 1, max = 100000 },
