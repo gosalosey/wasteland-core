@@ -635,6 +635,16 @@ function Mock:buildEnv(r)
             coords = { x = x, y = y, z = z }, heading = heading or 0.0, health = 200, owner = owner, state = {} }
         return handle
     end
+    env.CreateVehicleServerSetter = function(model, vtype, x, y, z, heading)
+        local handle = env.CreatePed(0, model, x, y, z, heading, true, true)
+        local e = mock.entities[handle]
+        e.vehicle, e.engine, e.body, e.doorLock, e.driver = true, 1000.0, 1000.0, 1, 0
+        return handle
+    end
+    env.GetVehicleEngineHealth = function(ent) local e = mock:entity(ent); return e and e.engine or 0 end
+    env.GetVehicleBodyHealth = function(ent) local e = mock:entity(ent); return e and e.body or 0 end
+    env.SetVehicleDoorsLocked = function(ent, lock) local e = mock:entity(ent); if e then e.doorLock = lock end end
+    env.GetPedInVehicleSeat = function(ent, seat) local e = mock:entity(ent); return e and seat == -1 and e.driver or 0 end
     env.DeleteEntity = function(ent) mock.entities[tonumber(ent) or -1] = nil end
     env.GetEntityHealth = function(ent)
         local e = mock:entity(ent)
@@ -683,6 +693,8 @@ function Mock:buildEnv(r)
         return { x = c.x, y = c.y, z = c.z }
     end
     env.GetEntityHeading = function(ent)
+        local e = mock:entity(ent)
+        if e then return e.heading end
         local p = mock:getPlayer(math.floor((tonumber(ent) or 0) / 100))
         return p and p.heading or 0.0
     end

@@ -57,6 +57,8 @@ return {
             { name = 'weapon_knife', min = 1, max = 1, weight = 2 },
             { name = 'weapon_bat', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_knife', min = 1, max = 1, weight = 1 },
+            { name = 'jerry_can', min = 1, max = 1, weight = 2 },
+            { name = 'lockpick', min = 1, max = 1, weight = 2 },
         } },
         food = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
@@ -81,6 +83,11 @@ return {
             { name = 'blueprint_repair_kit', min = 1, max = 1, weight = 3 },
             { name = 'blueprint_hatchet', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_crowbar', min = 1, max = 1, weight = 2 },
+            { name = 'vehicle_repair_kit', min = 1, max = 1, weight = 3 },
+            { name = 'engine_parts', min = 1, max = 1, weight = 3 },
+            { name = 'car_battery', min = 1, max = 1, weight = 2 },
+            { name = 'lockpick', min = 1, max = 2, weight = 4 },
+            { name = 'vehicle_lock', min = 1, max = 1, weight = 2 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
             { name = 'scrap_metal', min = 1, max = 3, weight = 30 },
@@ -93,6 +100,8 @@ return {
             { name = 'weapon_pistol', min = 1, max = 1, weight = 1 },
             { name = 'blueprint_knife', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_machete', min = 1, max = 1, weight = 2 },
+            { name = 'car_wheel', min = 1, max = 1, weight = 3 },
+            { name = 'jerry_can', min = 1, max = 1, weight = 3 },
         } },
         mail = { emptyChance = 0.7, rolls = { 1, 1 }, items = {
             { name = 'cash', min = 5, max = 60, weight = 70 },

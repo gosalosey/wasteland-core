@@ -1,5 +1,23 @@
 # Changelog
 
+## Milestone 9: persistent vehicles
+
+### wasteland_vehicles 0.1.0 (new)
+* 30 abandoned wrecks at 22 spots around the map (Sandy Shores, Grapeseed, Route 68, Paleto Bay, Los Santos, Senora). Nobody owns a vehicle. Each is stored in the database (wl_vehicles) and stays where it was left; the car appears when a player is within 250 m.
+* A vehicle needs engine parts, a battery, four wheels, fuel and an engine that is not wrecked. Wrecks miss parts by chance and have little fuel.
+* Hold Left Alt on a vehicle: Check vehicle, Open trunk, Install battery, Fit engine parts, Mount a wheel, Refuel (jerry can), Repair (toolkit), Fit a lock, Lock / unlock (key), Pick the lock. Each takes a few seconds (moving cancels); the server checks and does it.
+* Fuel: 50 L tank, used while driving (idle and per km); jerry cans (20 L) are filled at gas pumps (Left Alt, "Fill jerry can").
+* Trunk: every vehicle has a 6x5 trunk that stays with it.
+* Locks (owner request): a car lock locks the vehicle and makes the only key; whoever carries the key can lock, unlock and open the trunk. Without it, a lockpick opens the lock 30% of the time (and breaks it off), snaps half of the times it fails, and the noise draws zombies.
+* Destroyed vehicles are gone (record and trunk); new wrecks appear over time.
+
+### Other
+* Items: car battery, engine parts, wheel, jerry can, toolkit, car lock, car key, lockpick (pictures from the pack). Sold by the general traders, found in tool chests, crates and trash; lockpicks can be crafted from scrap (known from the start).
+* Inventory: `FindItems(source, name)`; stashes that move (trunks) take their current position when opened.
+* Zombies: react to any `wasteland:noise(coords, radius)` (lock picking), not only weapons.
+* Tests: 560 simulated + 24 on real MariaDB (new: vehicle rules, wrecks, spawning, saving, parts, fuel, repairs, locks, keys, lock picking, trunks, destruction, restarts).
+
+
 ## Milestone 8: quests
 
 ### wasteland_quests 0.1.0 (new)

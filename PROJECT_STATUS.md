@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** 8 (quests) complete in automated tests; installed; runtime verification pending (R18.x). Next: Milestone 9 persistent vehicles.
+**Current milestone:** 9 (persistent vehicles) complete in automated tests; installed; runtime verification pending (R19.x). Next: Milestone 10 admin tools and SDK.
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -132,7 +132,12 @@ Decisions (owner, 2026-10-11): camp traders give jobs; bring, kill, visit/search
 Not done: quest chains (one-time story lines) - not chosen.
 
 ## Milestone 9: persistent vehicles
-- [ ] Registry and schema · [ ] discovery/spawning · [ ] components and parts · [ ] repair · [ ] fuel · [ ] entity lifecycle · [ ] restart tests
+Decisions (owner, 2026-10-11): wrecks to find and repair; no ownership, but a lock item with a key lowers the chance of theft (lockpicks); parts: engine, battery, wheels, fuel; a trunk in every vehicle.
+- [x] Registry and schema (wl_vehicles), wrecks at spawn points, respawn of destroyed ones
+- [x] Spawning near players / despawning, saving position and damage (damage trusted only after the owning client applied the state)
+- [x] Parts, repair (toolkit), fuel (jerry cans, pumps), trunks, locks and keys, lock picking
+- [x] Tests: rules, every action, abuse (early finish, distance, fuel only down, only from the driver), restart, real MariaDB
+- [~] Installed on the owner's server; runtime tests R19.1-R19.12 pending
 
 ## Milestone 10: admin and SDK
 - [ ] Diagnostics and admin tools · [ ] debug visualisation · [ ] example extension · [ ] SDK docs complete

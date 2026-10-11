@@ -323,3 +323,47 @@ describe('real MariaDB: admin', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('real MariaDB: vehicles', function()
+    local env = { WLV = {} }
+    assert(loadfile(RESOURCES .. '/wasteland_vehicles/server/sql.lua', 't', env))()
+    local SQLV = env.WLV.SQL
+    local server = newServer({ dbBackend = backend, config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 60000, slowQueryWarningMs = 60000 }',
+        ['vehicles.lua'] = [[return { maxVehicles = 2, respawnMinutes = 1000, saveSeconds = 4, despawnAfterSeconds = 4,
+            models = { 'rebel' }, spawnPoints = { { x = 1000.0, y = 0.0, z = 30.0 }, { x = 5000.0, y = 0.0, z = 30.0 } } }]],
+    } })
+    server.db.latencyMs = 0
+    boot(server, { 'wasteland_players', 'wasteland_inventory', 'wasteland_vehicles' })
+
+    it('stores wrecks, saves position and damage, deletes destroyed ones', function()
+        expect(states(server).vehicles).toBe('running')
+        expect(#backend:rows('SELECT id FROM wl_vehicles')).toBe(2)
+        local id = server:connectAndJoin({ name = 'Driver', license = 'driver' })
+        server.players[id].coords = { x = 990.0, y = 0.0, z = 30.0 }
+        server:advance(3000)
+        local e = server:entityList('wlVeh')[1]
+        server:clientEvent(e.owner, 'wasteland:vehicles:server:applied', e.netId, e.state.wlVeh.seq); server:advance(500)
+        e.coords = { x = 1010.5, y = 2.0, z = 30.0 }
+        e.engine = 321.0
+        server:advance(5000)
+        local row = backend:rows('SELECT x, engine, parts FROM wl_vehicles WHERE x > 1005 AND x < 1020')[1]
+        expect(row ~= nil).toBe(true)
+        expect(math.floor(row.engine)).toBe(321)
+        e.engine = -4000.0
+        server:advance(3000)
+        expect(#backend:rows('SELECT id FROM wl_vehicles')).toBe(1)
+    end)
+
+    it('ran every vehicle statement against the real database', function()
+        local ran = {}
+        for _, l in ipairs(backend.log) do ran[l.sql] = true end
+        local missing = {}
+        for key, sql in pairs(SQLV) do
+            if not ran[(sql:gsub('%s+', ' '))] then missing[#missing + 1] = key end
+        end
+        table.sort(missing)
+        expect(missing).toEqual({})
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

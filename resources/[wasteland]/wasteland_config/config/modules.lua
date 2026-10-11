@@ -43,10 +43,12 @@ return {
         -- Quests (Milestone 8).
         quests     = true,
 
+        -- Persistent vehicles (Milestone 9).
+        vehicles   = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.
-        -- vehicles  = true,   -- Milestone 9
     },
 
     -- What to do with a module that registers but is not listed above:

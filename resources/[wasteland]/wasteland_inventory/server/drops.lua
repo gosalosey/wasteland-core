@@ -245,6 +245,8 @@ end
 function Drops.openStash(src, name, opts)
     local inv, err = Drops.ensureStash(name, opts)
     if not inv then return false, err end
+    -- Stashes that move (vehicle trunks) get their current position.
+    if opts and opts.coords then inv.coords = opts.coords end
     local id = inv.id
     local ok, why = Drops.inRange(src, inv)
     if not ok then return false, why end

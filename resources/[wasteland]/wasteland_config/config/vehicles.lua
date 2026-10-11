@@ -1,0 +1,77 @@
+-- Vehicles: abandoned wrecks around the map that anyone can repair and drive.
+-- Nobody owns a vehicle. A car lock (item) locks it and makes a key; with
+-- the key you lock, unlock and open the trunk. Without it, a lockpick may
+-- open it (and breaks the lock).
+--
+-- A vehicle needs engine parts, a battery, four wheels, fuel and an engine
+-- that is not wrecked. Hold Left Alt on a vehicle to see what you can do.
+-- Vehicles stay where they are left (saved); destroyed ones are replaced by
+-- new wrecks over time.
+--
+-- VERIFY IN-GAME: spawn points are picked from the map; a point in the
+-- wrong place can be moved or removed here.
+return {
+    maxVehicles = 30,            -- wrecks in the world
+    respawnMinutes = 20,         -- a new wreck every ... while under the limit
+    spawnDistance = 250,         -- a vehicle appears when a player is this close
+    despawnDistance = 350,       -- ... and is put away when nobody is this close
+    despawnAfterSeconds = 30,
+    saveSeconds = 30,            -- how often positions and damage are saved
+
+    tankLitres = 50,
+    jerryCanLitres = 20,
+    fuel = { idlePerMinute = 0.06, per100km = 14 },
+    repair = { engine = 400, body = 400 },   -- health a toolkit restores (of 1000)
+
+    seconds = { battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8, fillCan = 8 },
+
+    lockpick = {
+        chance = 0.3,         -- chance to open the lock per try
+        breakChance = 0.5,    -- chance the lockpick breaks when it fails
+        noise = 60,           -- metres zombies hear the attempt
+    },
+
+    wreck = {
+        batteryMissing = 0.6, engineMissing = 0.5,
+        wheelsMissingChance = 0.4, wheelsMissingMax = 2,
+        fuel = { 0, 8 }, engine = { 250, 700 }, body = { 300, 800 },
+    },
+
+    -- Rusty and ordinary cars (GTA model names).
+    models = { 'emperor2', 'rebel', 'tornado3', 'surfer2', 'ratloader', 'bodhi2', 'regina', 'dloader', 'sadler', 'bison',
+        'rumpo', 'youga', 'mesa', 'voodoo2', 'asea', 'ingot', 'primo', 'stanier' },
+
+    -- Gas pumps: hold Left Alt, "Fill jerry can".
+    pumps = { 'prop_gas_pump_1a', 'prop_gas_pump_1b', 'prop_gas_pump_1c', 'prop_gas_pump_1d', 'prop_gas_pump_old2',
+        'prop_gas_pump_old3', 'prop_vintage_pump' },
+
+    -- Where wrecks appear: { x, y, z, heading }.
+    spawnPoints = {
+        -- Sandy Shores / Grapeseed / Route 68
+        { x = 1960.0, y = 3742.0, z = 32.3, heading = 300.0 },
+        { x = 1702.0, y = 3598.0, z = 35.4, heading = 210.0 },
+        { x = 1393.0, y = 3604.0, z = 34.9, heading = 200.0 },
+        { x = 2003.0, y = 3779.0, z = 32.2, heading = 120.0 },
+        { x = 1697.0, y = 4806.0, z = 42.0, heading = 90.0 },
+        { x = 1180.0, y = 2691.0, z = 37.9, heading = 180.0 },
+        { x = 547.0, y = 2671.0, z = 42.2, heading = 10.0 },
+        { x = 1737.0, y = 3290.0, z = 41.1, heading = 195.0 },
+        -- Paleto Bay
+        { x = -153.0, y = 6302.0, z = 31.4, heading = 315.0 },
+        { x = -332.0, y = 6150.0, z = 32.3, heading = 45.0 },
+        { x = 170.0, y = 6604.0, z = 31.8, heading = 180.0 },
+        { x = -94.0, y = 6400.0, z = 31.5, heading = 45.0 },
+        -- Los Santos
+        { x = 228.0, y = -787.0, z = 30.7, heading = 160.0 },
+        { x = -341.0, y = -756.0, z = 33.9, heading = 90.0 },
+        { x = 405.0, y = -1001.0, z = 29.3, heading = 0.0 },
+        { x = -45.0, y = -1098.0, z = 26.4, heading = 70.0 },
+        { x = 1155.0, y = -331.0, z = 69.0, heading = 100.0 },
+        { x = -706.0, y = -918.0, z = 19.0, heading = 90.0 },
+        { x = 290.0, y = -1265.0, z = 29.4, heading = 90.0 },
+        { x = -1050.0, y = -2650.0, z = 13.8, heading = 330.0 },
+        -- Senora Freeway / east
+        { x = 2581.0, y = 362.0, z = 108.5, heading = 0.0 },
+        { x = 2680.0, y = 3280.0, z = 55.2, heading = 330.0 },
+    },
+}

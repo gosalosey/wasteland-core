@@ -305,6 +305,23 @@ exports('CreateLootDrop', function(coords, items, opts)
     return Drops.createLoot(coords, items, opts)
 end)
 
+--- FindItems(source, name) -> list of { uid, count, metadata, inventoryId }
+--- Every stack of `name` the player carries (pockets, worn items, worn bag),
+--- e.g. to find the key that fits or a jerry can with fuel.
+exports('FindItems', function(src, name)
+    local c = Inv.characterOf(tonumber(src))
+    local out = {}
+    if not c or not c.loaded then return out end
+    for _, id in ipairs(Inv.ownInventories(c)) do
+        local inv = WLI.invs[id]
+        for _, s in pairs(inv and inv.items or {}) do
+            if s.name == name then out[#out + 1] = { uid = s.uid, count = s.count, metadata = Inv.copy(s.metadata or {}), inventoryId = id } end
+        end
+    end
+    table.sort(out, function(a, b) return a.uid < b.uid end)
+    return out
+end)
+
 --- FindItem(source, uid) -> { uid, name, count, metadata }, inventoryId | nil
 --- Only stacks the player carries (pockets, worn items, worn bag).
 exports('FindItem', function(src, uid)

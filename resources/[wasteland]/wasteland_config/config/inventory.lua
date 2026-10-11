@@ -133,6 +133,24 @@ return {
         ammo_762 = { label = '7.62 rounds', image = 'ammo762mmbulletball', category = 'ammo', width = 1, height = 1, weight = 0.016, stack = 250, color = '#5a6a3a' },
         ammo_308 = { label = '.308 rounds', image = 'ammo762mmbullethp', category = 'ammo', width = 1, height = 1, weight = 0.025, stack = 100, color = '#4a5a3a' },
 
+        -- Vehicles (vehicles.lua): parts, fuel, tools, locks.
+        car_battery = { label = 'Car battery', image = 'car-battery', category = 'material', width = 2, height = 2, weight = 12, stack = 1,
+            description = 'A vehicle needs one to start.' },
+        engine_parts = { label = 'Engine parts', image = 'engine_parts_a', category = 'material', width = 2, height = 2, weight = 6, stack = 1,
+            description = 'Belts, plugs and hoses. A vehicle needs them to run.' },
+        car_wheel = { label = 'Wheel', image = 'wheel_1', category = 'material', width = 3, height = 3, weight = 14, stack = 1,
+            description = 'A car needs four.' },
+        jerry_can = { label = 'Jerry can', category = 'tool', width = 2, height = 3, weight = 2, stack = 1,
+            description = 'Holds 20 L of fuel. Fill it at a gas pump.' },
+        vehicle_repair_kit = { label = 'Toolkit', image = 'repairkit', category = 'tool', width = 3, height = 2, weight = 4, stack = 1,
+            description = 'Repairs a damaged vehicle (engine and body).' },
+        vehicle_lock = { label = 'Car lock', image = 'elock', category = 'tool', width = 1, height = 1, weight = 0.5,
+            description = 'Fit it to a vehicle to lock it. You get the only key.' },
+        vehicle_key = { label = 'Car key', image = 'key', category = 'misc', width = 1, height = 1, weight = 0.05, stack = 1,
+            description = 'Opens the lock it was made for.' },
+        lockpick = { label = 'Lockpick', category = 'tool', width = 1, height = 1, weight = 0.05,
+            description = 'Can open a locked vehicle. Often breaks.' },
+
         -- Blueprints: use one to learn a crafting recipe (crafting.lua).
         blueprint_repair_kit = { label = 'Blueprint: repair kit', image = '1-blank-blurprint', category = 'misc', width = 1, height = 1,
             weight = 0.05, description = 'Use to learn how to make weapon repair kits.' },

@@ -250,18 +250,22 @@ local function hit(src, netId, victim)
     TriggerEvent('wasteland:zombies:hit', victim, z.netId, r)
 end
 
--- Noise from weapons: zombies that hear it go and look.
-AddEventHandler('wasteland:weapons:used', function(_, _, _, noise, coords)
+-- Noise: zombies that hear it go and look.
+local function noise(coords, radius)
     if not (M and M.active) or type(coords) ~= 'table' or type(coords.x) ~= 'number' then return end
     local list = {}
     for _, z in pairs(zombies) do
         if not z.dead and DoesEntityExist(z.handle) then list[#list + 1] = { id = z.handle, coords = coordsOf(z.handle) } end
     end
-    for _, handle in ipairs(Rules.hearers(list, coords, tonumber(noise) or 0)) do
+    for _, handle in ipairs(Rules.hearers(list, coords, tonumber(radius) or 0)) do
         Entity(handle).state:set('wlInvestigate', { x = coords.x, y = coords.y, z = coords.z,
             untilMs = M.config.noise.investigateSeconds * 1000, at = now() }, true)
     end
-end)
+end
+
+-- Gunshots and hits (weapons), and any other noise (lock picking, alarms).
+AddEventHandler('wasteland:weapons:used', function(_, _, _, radius, coords) noise(coords, radius) end)
+AddEventHandler('wasteland:noise', function(coords, radius) noise(coords, radius) end)
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)

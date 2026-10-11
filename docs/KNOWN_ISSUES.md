@@ -52,3 +52,6 @@
 | K-48 | Camps | Trader stock is kept in memory (full again after a restart). | By design for now |
 | K-49 | Quests | Kill credit comes from the client running the zombie (who killed it, checked to be a player near the body). A modified client could credit kills to the wrong nearby player. | By design for now |
 | K-50 | Quests | The places of the camp-specific jobs (airfield, sawmill, Pillbox) are picked from the map, not checked in-game. | Verify at runtime (R18.5) |
+| K-51 | Vehicles | Wreck spawn points are picked from the map but not checked in-game; a wreck may float, sink into the ground or stand in a wall. The client puts each car on the ground once when it appears. | Verify at runtime (R19.1) |
+| K-52 | Vehicles | Jerry cans are filled where the player says a pump is (the server checks the player is close to that spot, not that it is a pump): a modified client could fill cans anywhere. | By design for now |
+| K-53 | Vehicles | Fuel use is calculated by the driver's client (the server only accepts less fuel, never more). Missing wheels are shown as burst tyres (rims). Only cars (automobiles) are used as wrecks. | By design for now |

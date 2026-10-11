@@ -457,3 +457,11 @@ Progress comes from `wasteland:zombies:died` (killer), `wasteland:loot:searched`
 Net events: `wasteland:quests:server:board|accept|abandon|handIn(campId, questId?)`, `...:givers`, `...:tracker`; the player must stand at one of that camp's traders. Hand-in gives the reward first (refused if it does not fit), then takes the items, then pays the cash.
 
 Exports: `GetActiveQuests(source) -> ids`, `AddProgress(source, { type, ... }) -> ok` (custom events from other modules). Server event: `wasteland:quests:completed(source, questId)`.
+
+## Vehicles (`wasteland_vehicles`, vehicles api 0.1)
+
+Records in `wl_vehicles` (id, model, position, fuel, engine, body, parts `{"battery","engine","wheels"}`, lock_code, locked). The server creates the entity (`CreateVehicleServerSetter`) when a player is within `spawnDistance` and removes it (saving first) when nobody is within `despawnDistance` for `despawnAfterSeconds`. Entity state `wlVeh = { id, fuel, tank, engine, body, parts, locked, hasLock, seq, acked }`; the owning client applies damage and missing wheels once per `seq` and confirms (`wasteland:vehicles:server:applied`); until then the server does not read damage from the entity.
+
+Actions (`wasteland:vehicles:server:act(netId, action)`, then `...:finish`): battery, engine, wheel, refuel, repair, fitLock, toggleLock, pickLock, trunk (no wait). Pumps: `...:fillCan(coords)`. Fuel: the driver reports litres (`...:fuel`), accepted only from the driver seat and only going down. A car lock creates a `vehicle_key` item with metadata `{ code }`; the key fits when its code matches. Trunks are stashes `veh_<id>`.
+
+Exports: `GetVehicleCount()`, `SpawnWreck(coords, model?) -> id`, `GetVehicleState(id)`. Server events: `wasteland:vehicles:action(source, action, id)`, `wasteland:noise(coords, radius)` (lock picking). New inventory export: `FindItems(source, name) -> list of { uid, count, metadata, inventoryId }`.

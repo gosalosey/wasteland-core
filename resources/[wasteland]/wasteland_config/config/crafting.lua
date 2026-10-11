@@ -15,6 +15,8 @@ return {
             ingredients = { { name = 'clothing_top', count = 1 } }, seconds = 3 },
         bandage = { label = 'Bandage', result = { name = 'bandage', count = 1 },
             ingredients = { { name = 'rag', count = 2 } }, seconds = 3 },
+        lockpick = { label = 'Lockpicks', result = { name = 'lockpick', count = 2 },
+            ingredients = { { name = 'scrap_metal', count = 1 } }, seconds = 4 },
 
         weapon_repair_kit = { label = 'Weapon repair kit', result = { name = 'weapon_repair_kit', count = 1 },
             ingredients = { { name = 'scrap_metal', count = 3 }, { name = 'duct_tape', count = 2 } }, seconds = 6,

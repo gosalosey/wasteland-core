@@ -33,6 +33,13 @@ return {
                 { name = 'clothing_hat', buy = 20, sell = 5, stock = 4, restock = 1 },
                 { name = 'scrap_metal', sell = 4 },
                 { name = 'rag', sell = 2 },
+                { name = 'jerry_can', buy = 120, sell = 30, stock = 3, restock = 1 },
+                { name = 'vehicle_repair_kit', buy = 350, sell = 90, stock = 2, restock = 1 },
+                { name = 'car_battery', buy = 500, sell = 120, stock = 1, restock = 1 },
+                { name = 'engine_parts', buy = 600, sell = 150, stock = 1, restock = 1 },
+                { name = 'car_wheel', buy = 250, sell = 60, stock = 4, restock = 1 },
+                { name = 'vehicle_lock', buy = 200, sell = 50, stock = 3, restock = 1 },
+                { name = 'lockpick', buy = 60, sell = 15, stock = 5, restock = 2 },
             },
         },
         medic = {

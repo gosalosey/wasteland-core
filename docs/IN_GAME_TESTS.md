@@ -330,3 +330,22 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R18.7 | Try to take a 4th job | "You can only have 3 jobs at once." |
 | R18.8 | Reconnect with a job half done | The tracker shows the same progress |
 | R18.9 | Accept "Field dressings", craft 3 bandages (K), hand in 3 bandages | It counts the crafts, then takes the bandages |
+
+## Vehicles (9)
+
+**Setup:** `server.cfg` has `ensure wasteland_vehicles` after `ensure wasteland_quests` (done on the owner's server). Restart the server (the database table is created on start). Give yourself parts with the admin panel: `car_battery`, `engine_parts`, `car_wheel`, `jerry_can`, `vehicle_repair_kit`, `vehicle_lock`, `lockpick`.
+
+| # | Step | Expected result |
+|---|---|---|
+| R19.1 | Go to Sandy Shores (by the 24/7) or a Los Santos car park | A rusty wreck stands there. Tell me if one floats, sinks or stands in a wall. |
+| R19.2 | Left Alt on it, "Check vehicle" | e.g. "Fuel 4/50 L · Engine 45% · Body 60% · Battery: missing · Engine parts: OK · Wheels 3/4" |
+| R19.3 | Get in and try to drive | "There is no battery." (or what is missing); the engine does not start |
+| R19.4 | Install the battery / engine parts / a wheel | A short animation and bar; the part is used up; a missing wheel shows as a bare rim until mounted |
+| R19.5 | Fill a jerry can at a gas pump (Left Alt on the pump), then "Refuel" the car | The can is full (20 L), then empty; the fuel gauge rises |
+| R19.6 | Drive | It runs; fuel goes down while driving; at 0 the engine stops |
+| R19.7 | Crash it, then "Repair (toolkit)" | Engine and body get better |
+| R19.8 | Put things in the trunk, drive far away, come back later (or after a restart) | The car is where you left it, with its damage, fuel and trunk |
+| R19.9 | "Fit a lock" | Locked; you get a "Car key"; doors stay shut for others |
+| R19.10 | Another player (without the key): "Pick the lock" with lockpicks | Usually fails ("The lock holds." / "The lockpick snaps."); sometimes "The lock breaks open."; nearby zombies come to look |
+| R19.11 | Give the key to someone else | They can unlock it and open the trunk |
+| R19.12 | Blow a car up | It burns out and disappears after a while; later another wreck appears somewhere else |

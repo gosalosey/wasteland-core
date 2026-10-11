@@ -44,6 +44,7 @@ function MemoryDB.new(resourcesDir)
         wl_drops = {},      -- [id] = row
         wl_bans = {},       -- [id] = row
         wl_admin_log = {},  -- list
+        wl_vehicles = {},   -- [id] = row
         autoinc = { wl_accounts = 0, wl_characters = 0, wl_bans = 0 },
     }
     self.ddl = {}          -- DDL statements seen
@@ -57,10 +58,12 @@ function MemoryDB.new(resourcesDir)
     local wlp = loadSqlFile(resourcesDir .. '/wasteland_players/server/sql.lua', 'WLP')
     local wli = loadSqlFile(resourcesDir .. '/wasteland_inventory/server/sql.lua', 'WLI')
     local wla = loadSqlFile(resourcesDir .. '/wasteland_admin/server/sql.lua', 'WLA_ADMIN')
+    local wlv = loadSqlFile(resourcesDir .. '/wasteland_vehicles/server/sql.lua', 'WLV')
     self:installDatabase(wld.SQL)
     self:installPlayers(wlp.SQL)
     self:installInventory(wli.SQL)
     self:installAdmin(wla.SQL)
+    self:installVehicles(wlv.SQL)
     return self
 end
 
@@ -264,6 +267,33 @@ end
 -------------------------------------------------------------------------------
 -- wasteland_admin statements
 -------------------------------------------------------------------------------
+
+function MemoryDB:installVehicles(SQL)
+    local cols = { 'x', 'y', 'z', 'heading', 'fuel', 'engine', 'body', 'parts', 'lock_code', 'locked', 'updated_unix' }
+    self:on(SQL.selectAll, function(db)
+        local rows = {}
+        for _, v in pairs(db.data.wl_vehicles) do rows[#rows + 1] = deepCopy(v) end
+        table.sort(rows, function(a, b) return a.id < b.id end)
+        return rows
+    end)
+    self:on(SQL.insert, function(db, p)
+        if db.data.wl_vehicles[p[1]] then error("Duplicate entry '" .. p[1] .. "' for key 'PRIMARY'", 0) end
+        db.data.wl_vehicles[p[1]] = { id = p[1], model = p[2], x = p[3], y = p[4], z = p[5], heading = p[6], fuel = p[7],
+            engine = p[8], body = p[9], parts = p[10], lock_code = p[11], locked = p[12], updated_unix = p[13] }
+        return header(1)
+    end)
+    self:on(SQL.update, function(db, p)
+        local v = db.data.wl_vehicles[p[12]]
+        if not v then return header(0) end
+        for i, c in ipairs(cols) do v[c] = p[i] end
+        return header(1)
+    end)
+    self:on(SQL.delete, function(db, p)
+        if not db.data.wl_vehicles[p[1]] then return header(0) end
+        db.data.wl_vehicles[p[1]] = nil
+        return header(1)
+    end)
+end
 
 function MemoryDB:installAdmin(SQL)
     self:on(SQL.selectActiveBans, function(db, p)
