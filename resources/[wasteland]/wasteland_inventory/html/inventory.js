@@ -242,7 +242,8 @@
         moveGhost(e);
     }
 
-    function targetAt(clientX, clientY) {
+    // `drag` is passed in: on release st.drag is already cleared.
+    function targetAt(clientX, clientY, drag) {
         const under = document.elementsFromPoint(clientX, clientY);
         for (const el of under) {
             if (el.dataset && el.dataset.inv) {
@@ -251,7 +252,7 @@
                 const cellX = Math.floor((clientX - rect.left) / CELL);
                 const cellY = Math.floor((clientY - rect.top) / CELL);
                 return { kind: 'grid', inv: inv, el: el, cellX: cellX, cellY: cellY,
-                    x: cellX - st.drag.grabX, y: cellY - st.drag.grabY };
+                    x: cellX - drag.grabX, y: cellY - drag.grabY };
             }
             if (el.dataset && el.dataset.slot) return { kind: 'slot', slot: el.dataset.slot, el: el };
             if (el.dataset && el.dataset.hotbar) return { kind: 'hotbar', index: Number(el.dataset.hotbar), el: el };
@@ -274,7 +275,7 @@
         d.ghost.style.left = (e.clientX - d.grabX * CELL - CELL / 2) + 'px';
         d.ghost.style.top = (e.clientY - d.grabY * CELL - CELL / 2) + 'px';
         clearPreview();
-        const target = targetAt(e.clientX, e.clientY);
+        const target = targetAt(e.clientX, e.clientY, d);
         const decision = decideDrop(d, target, st.defs.items, st.snap.equip);
         if (target && target.kind === 'grid' && target.inv) {
             const p = h('div', { class: 'wli-preview' + (decision ? '' : ' is-bad') });
@@ -296,7 +297,7 @@
         clearPreview();
         d.ghost.remove();
         d.el.classList.remove('is-dragging');
-        const target = targetAt(e.clientX, e.clientY);
+        const target = targetAt(e.clientX, e.clientY, d);
         const decision = decideDrop(d, target, st.defs.items, st.snap.equip);
         if (decision) st.api.post(decision.action, decision.payload);
         else if (target) setMessage('That does not fit there.', 'error');

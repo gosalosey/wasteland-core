@@ -98,10 +98,10 @@ Report anything that does not match, and include any F8 lines starting with `[wa
 | # | Step | Expected result |
 |---|---|---|
 | R4.1 | `wasteland status` | `inventory` is `running` |
-| R4.2 | Join with a **new** character (finish the creator), press **I** | The inventory opens. The pockets (6x4) hold a water bottle, 2 canned beans and 2 bandages. Under **Worn**, Torso, Legs and Feet hold the clothes chosen in the creator. |
-| R4.3 | Join with **Gosa Row** (or any character that already had a look) and press **I** | The clothes from its look are now worn items |
+| R4.2 | Join with a **new** character (finish the creator), press **TAB** | The inventory opens. The pockets (6x4) hold a water bottle, 2 canned beans and 2 bandages. Under **Worn**, Torso, Legs and Feet hold the clothes chosen in the creator. |
+| R4.3 | Join with **Gosa Row** (or any character that already had a look) and press **TAB** | The clothes from its look are now worn items |
 | R4.4 | Drag the water bottle to another cell. Start dragging again and press **R** | A green preview shows where it lands (red if it cannot). It moves. R turns it sideways. |
-| R4.5 | Close (I or Esc), reopen, then rejoin | Everything is where you left it |
+| R4.5 | Close (TAB or Esc), reopen, then rejoin | Everything is where you left it |
 | R4.6 | Console: `give <your id> backpack_small` then right-click the backpack → **Wear** | A **Small backpack** grid appears in the middle column, with its weight. |
 | R4.7 | Move items into the backpack. Console: `give <id> scrap_metal 30` | Scrap fills the pockets and bag up to their weight limits. Whatever does not fit is **not** given: "Could not give: not enough room". |
 | R4.8 | Right-click the canned beans → **Split…** 1, then drag one stack onto the other | Two stacks, then one again |

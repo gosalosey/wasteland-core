@@ -9,7 +9,7 @@
 * Items on the ground (stored, visible as bags, E to search, expire after 60 minutes) and stashes for modules (`OpenStash`).
 * Clothing as items: the starting outfit from the creator becomes worn clothing; empty slots show configurable "naked" parts.
 * Exports: AddItem/RemoveItem (all or nothing), GetItemCount, RegisterItem, RegisterUsable, OpenStash, GetInventory, GetItemDefinition, IsLoaded. Admin `/give`.
-* Inventory screen (key I): drag and drop with placement preview, R to rotate, right-click menu, shift-click quick move.
+* Inventory screen (key TAB): drag and drop with placement preview, R to rotate, right-click menu, shift-click quick move.
 
 ### Other
 * wasteland_appearance: fires `wasteland:appearance:saved` (server) and `wasteland:appearance:client:applied` (client); client export `IsEditing()`.

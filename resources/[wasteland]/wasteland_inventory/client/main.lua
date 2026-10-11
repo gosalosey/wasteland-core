@@ -1,5 +1,5 @@
 -- wasteland_inventory :: client/main.lua
--- Inventory screen (key I by default), hotbar keys 1-5, items on the
+-- Inventory screen (key TAB by default), hotbar keys 1-5, items on the
 -- ground (props + "press E"), and worn clothing applied to the ped.
 -- The server decides every change; this script shows its snapshots and
 -- forwards requests.
@@ -133,10 +133,21 @@ local function canOpen()
     return not IsPauseMenuActive()
 end
 
-RegisterCommand('wl_inventory', function()
+-- Default key TAB. (The command name changed from wl_inventory so players
+-- who already had the old I binding get the new default.)
+RegisterCommand('wl_inventory_tab', function()
     if isOpen() then closeScreen() elseif canOpen() then openScreen() end
 end, false)
-RegisterKeyMapping('wl_inventory', 'Inventory: open / close', 'keyboard', 'I')
+RegisterKeyMapping('wl_inventory_tab', 'Inventory: open / close', 'keyboard', 'TAB')
+
+-- TAB is also GTA's weapon wheel; keep the wheel from opening. Disabling a
+-- control only lasts one frame, so this has to run every frame.
+Citizen.CreateThread(function()
+    while true do
+        DisableControlAction(0, 37, true) -- INPUT_SELECT_WEAPON (weapon wheel)
+        Citizen.Wait(0)
+    end
+end)
 
 for i = 1, 5 do
     RegisterCommand('wl_hotbar_' .. i, function()
