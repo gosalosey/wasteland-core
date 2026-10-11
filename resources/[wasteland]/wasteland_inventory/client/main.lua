@@ -72,9 +72,11 @@ local function applyClothing()
     end
 end
 
+-- What is worn and how it looks: when this changes, the clothes are applied
+-- again (a new item, or a new look for the same item, e.g. from a tailor).
 local function equipKey()
     local parts = {}
-    for slot, s in pairs(wornBySlot()) do parts[#parts + 1] = slot .. '=' .. s.uid end
+    for slot, s in pairs(wornBySlot()) do parts[#parts + 1] = slot .. '=' .. s.uid .. ':' .. json.encode(s.metadata or {}) end
     table.sort(parts)
     return table.concat(parts, ',')
 end
@@ -436,4 +438,33 @@ RegisterCommand('hotbar', function()
     AddTextComponentSubstringPlayerName(hotbarShown and 'Hotbar shown. Type /hotbar to hide it.' or 'Hotbar hidden. Type /hotbar to show it.')
     EndTextCommandThefeedPostTicker(false, false)
 end, false)
+
+--- ApplyClothing() - put the worn items' looks on the ped again (after a preview).
+exports('ApplyClothing', function() applyClothing() end)
+
+--- GetClothingInfo() -> { model, parts = { [slot] = { { key, component | prop } } },
+---   worn = { [slot] = { uid, name, look = { [key] = { drawable, texture } } } } } | nil
+--- (the tailor: what can be restyled and how it looks now)
+exports('GetClothingInfo', function()
+    if not defs or not snapshot then return nil end
+    local ped = PlayerPedId()
+    local model = MODELS[GetEntityModel(ped)]
+    if not model then return nil end
+    local naked = (defs.naked or {})[model] or {}
+    local out = {}
+    for slot, item in pairs(wornBySlot()) do
+        local parts = (defs.clothingParts or {})[slot]
+        if parts then
+            local meta = item.metadata
+            if not (meta and meta.model == model) then meta = (defs.plain or {})[model] or {} end
+            local look = {}
+            for _, part in ipairs(parts) do
+                local v = meta[part.key] or (part.component and naked[part.key]) or nil
+                look[part.key] = v and { v[1], v[2] } or nil
+            end
+            out[slot] = { uid = item.uid, name = item.name, look = look }
+        end
+    end
+    return { model = model, parts = defs.clothingParts, worn = out }
+end)
 

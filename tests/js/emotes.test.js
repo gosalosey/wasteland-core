@@ -26,3 +26,16 @@ test('hotbar slot counts', () => {
     assert.strictEqual(hotbar.countText({ label: 'Pistol', count: 1 }), '');
     assert.strictEqual(hotbar.countText({ label: 'Cash', count: 1500, cash: true }), '$1,500');
 });
+
+const tailor = require(path.join(R, 'wasteland_tailor', 'html', 'tailor.js'));
+
+test('tailor: arrows wrap; only changed pieces are paid for', () => {
+    assert.strictEqual(tailor.step(0, -1, 5), 5);
+    assert.strictEqual(tailor.step(5, 1, 5), 0);
+    assert.strictEqual(tailor.step(2, 1, 0), 0);
+    const pieces = [
+        { slot: 'legs', parts: [{ key: 'legs', d: 3, t: 1, od: 3, ot: 0 }] },
+        { slot: 'feet', parts: [{ key: 'shoes', d: 2, t: 0, od: 2, ot: 0 }] },
+    ];
+    assert.deepStrictEqual(tailor.changes(pieces), [{ slot: 'legs', look: { legs: [3, 1] } }]);
+});

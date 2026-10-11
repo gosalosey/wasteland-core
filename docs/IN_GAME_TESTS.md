@@ -483,3 +483,14 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R31.5 | /e wave while walking; /e smoke; /e c | Wave while walking; smoking; stops |
 | R31.6 | /e nothing | "No emote ... Press F4 or type /e for the list." |
 | R31.7 | Try every emote once | Tell me any that do nothing (wrong animation name) |
+
+## R32: tailors
+
+| # | Do | Expect |
+|---|---|---|
+| R32.1 | Map | Three "Tailor" blips: Paleto Bay, Sandy Shores, Legion Square |
+| R32.2 | Go to one; Left Alt on the shopkeeper | "Restyle my clothes ($25 a piece)"; the screen opens, the camera looks at you |
+| R32.3 | Click the style / colour arrows | Your clothes change at once; changed parts are outlined; Pay shows the price |
+| R32.4 | Cancel | Your old clothes come back, nothing paid |
+| R32.5 | Change pants and shoes, Pay $50 (with the cash) | "The tailor restyled 2 pieces for $50."; the look stays after relog |
+| R32.6 | Without enough cash | "That costs $X. You do not have enough cash." |

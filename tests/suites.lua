@@ -34,6 +34,7 @@ return {
     'integration/crafting.lua',
     'integration/quests.lua',
     'integration/vehicles.lua',
+    'integration/tailor.lua',
     'integration/shipped_configs.lua',
     'db/mariadb.lua',
     'js/node.lua',

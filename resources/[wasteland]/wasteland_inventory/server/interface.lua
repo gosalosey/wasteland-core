@@ -179,6 +179,9 @@ exports('GetItemList', function()
 end)
 
 --- GetItemDefinition(name) -> definition copy | nil
+--- GetClothingParts() -> { [slot] = { { key, component | prop } } }   (which ped parts each worn slot sets)
+exports('GetClothingParts', function() return Inv.copy(WLI.CLOTHING_PARTS) end)
+
 exports('GetItemDefinition', function(name)
     local d = WLI.defs[name]
     return d and Inv.copy(d) or nil

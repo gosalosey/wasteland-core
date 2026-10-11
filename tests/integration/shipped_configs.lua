@@ -7,13 +7,13 @@ describe('shipped configs', function()
     } })
     local list = { 'wasteland_players', 'wasteland_ui', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival',
         'wasteland_world', 'wasteland_admin', 'wasteland_weapons', 'wasteland_zombies', 'wasteland_loot', 'wasteland_camps',
-        'wasteland_crafting', 'wasteland_quests', 'wasteland_vehicles' }
+        'wasteland_crafting', 'wasteland_quests', 'wasteland_vehicles', 'wasteland_tailor' }
     boot(server, list)
 
     it('every module is running', function()
         local s = states(server)
         for _, name in ipairs({ 'players', 'ui', 'appearance', 'inventory', 'survival', 'world', 'admin', 'weapons', 'zombies',
-            'loot', 'camps', 'crafting', 'quests', 'vehicles' }) do
+            'loot', 'camps', 'crafting', 'quests', 'vehicles', 'tailor' }) do
             if s[name] ~= 'running' then
                 for _, l in ipairs(server:lines('[' .. name .. ']')) do print('       ' .. l) end
             end
