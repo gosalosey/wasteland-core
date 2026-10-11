@@ -2,6 +2,7 @@
 
 ## Tailor camera controls (owner request)
 * At the tailor: drag anywhere outside the panel to look around (left/right circles your character, up/down raises or lowers the camera), scroll to zoom in and out, and quick views: Full body, Face, Top, Pants, Shoes. "Turn around" now swings the camera to your back instead of turning the character.
+* Turn the character too: "⟲ Left" / "Right ⟳" (45°), "Half turn", or Q / E (15°); the camera stays put. The character faces the way it did when you leave.
 
 
 ## Tailors (owner request)

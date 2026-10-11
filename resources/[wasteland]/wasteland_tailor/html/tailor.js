@@ -60,7 +60,12 @@
         st.api.post('set', { slot: p.slot, key: x.key, d: next.d, t: next.t });
     }
 
-    function onKey(e) { if (st && e.key === 'Escape') st.api.post('close'); }
+    function onKey(e) {
+        if (!st) return;
+        if (e.key === 'Escape') st.api.post('close');
+        else if (e.key === 'q' || e.key === 'Q') st.api.post('rotate', { deg: 15 });
+        else if (e.key === 'e' || e.key === 'E') st.api.post('rotate', { deg: -15 });
+    }
 
     UI.registerScreen('tailor', {
         mount: function (el, data, api) {
@@ -76,7 +81,11 @@
                     h('div', { class: 'wlt-views' }, h('span', { class: 'wlt-what', text: 'Camera' }),
                         ...[['full', 'Full body'], ['face', 'Face'], ['top', 'Top'], ['legs', 'Pants'], ['feet', 'Shoes']]
                             .map(([v, label]) => UI.button(label, () => api.post('view', { view: v })))),
-                    h('div', { class: 'wl-hint', text: 'Drag outside this box to look around (left/right turns, up/down moves) · scroll to zoom' }),
+                    h('div', { class: 'wlt-views' }, h('span', { class: 'wlt-what', text: 'Turn' }),
+                        UI.button('⟲ Left', () => api.post('rotate', { deg: 45 })),
+                        UI.button('Right ⟳', () => api.post('rotate', { deg: -45 })),
+                        UI.button('Half turn', () => api.post('rotate', { deg: 180 }))),
+                    h('div', { class: 'wl-hint', text: 'Drag outside this box to look around (left/right circles, up/down moves) · scroll to zoom · Q / E turn your character' }),
                     h('div', { class: 'wlt-buttons' },
                         UI.button('Turn around', () => api.post('turn')),
                         UI.button('Undo all', () => {

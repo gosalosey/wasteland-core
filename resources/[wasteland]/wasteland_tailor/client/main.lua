@@ -155,6 +155,10 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
         v.look = math.max(-0.95, math.min(0.8, v.look + dy))
         v.dist = math.max(0.7, math.min(4.0, v.dist + (tonumber(payload.zoom) or 0) * 0.15))
         placeCamera(ped)
+    elseif action == 'rotate' and type(payload) == 'table' then
+        -- Turn the character (the camera stays where it is).
+        local deg = math.max(-180, math.min(180, tonumber(payload.deg) or 0))
+        SetEntityHeading(ped, (GetEntityHeading(ped) + deg) % 360.0)
     elseif action == 'view' and type(payload) == 'table' and VIEWS[payload.view] then
         local p = VIEWS[payload.view]
         session.view.dist, session.view.height, session.view.look = p.dist, p.height, p.look
