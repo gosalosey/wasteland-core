@@ -405,6 +405,8 @@ Hits: the owning client reports `wasteland:zombies:server:hit(netId, victim)`; t
 
 Server events: `wasteland:zombies:died(netId, kind, cause)`, `wasteland:zombies:hit(victim, netId, { damage, infection, bleeding })`.
 
+Server event used by survival: `wasteland:zombies:hit` wears out one worn clothing piece (survival `clothing.hitWear`).
+
 Exports: `GetZombieCount() -> total, alive`, `SpawnZombie(coords, kind?) -> netId | nil`, `ClearZombies() -> removed`, `SpawnNear(source, n)` (asks that client for spots 15-35 m away). Client export: `GetZombieMode(ped) -> mode | nil`.
 
 Admin command: `/zombies count | clear | spawn <n>` (ACE `wasteland.admin`).

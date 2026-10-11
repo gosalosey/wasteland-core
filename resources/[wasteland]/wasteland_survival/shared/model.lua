@@ -155,4 +155,14 @@ function Model.useful(state, effect)
     return false
 end
 
+--- Warmth a worn piece still gives: full when new, half when nearly worn
+--- out, nothing when ruined. max = 0: no durability (always full).
+function Model.clothingWarmth(warmth, current, max)
+    warmth = tonumber(warmth) or 0
+    if not max or max <= 0 then return warmth end
+    current = tonumber(current) or max
+    if current <= 0 then return 0 end
+    return warmth * (0.5 + 0.5 * math.min(1, current / max))
+end
+
 return Model

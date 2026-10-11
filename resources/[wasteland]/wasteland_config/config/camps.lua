@@ -31,6 +31,7 @@ return {
                 { name = 'clothing_pants', buy = 40, sell = 10, stock = 4, restock = 1 },
                 { name = 'clothing_shoes', buy = 35, sell = 8, stock = 4, restock = 1 },
                 { name = 'clothing_hat', buy = 20, sell = 5, stock = 4, restock = 1 },
+                { name = 'sewing_kit', buy = 70, sell = 15, stock = 3, restock = 1 },
                 { name = 'scrap_metal', sell = 4 },
                 { name = 'rag', sell = 2 },
                 { name = 'jerry_can', buy = 120, sell = 30, stock = 3, restock = 1 },

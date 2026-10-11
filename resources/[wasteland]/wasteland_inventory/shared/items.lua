@@ -54,6 +54,8 @@ WLI.ITEM_SCHEMA = {
         color = { type = 'string', pattern = '^#%x%x%x%x%x%x$', description = 'Tile colour in the UI' },
         warmth = { type = 'number', default = 0, min = 0, max = 30,
             description = 'Degrees C of insulation while worn (survival temperature)' },
+        repairs = { type = 'enum', values = WLI.CATEGORIES,
+            description = 'Category of items this one repairs: the screen offers "Repair with ..." on damaged items of it' },
     },
 }
 

@@ -63,7 +63,7 @@ function Interface.sendDefinitions(target)
             image = Interface.imageFor(name, d),
             name = name, label = d.label, description = d.description, category = d.category,
             width = d.width, height = d.height, weight = d.weight, stack = d.stack,
-            durability = d.durability, equip = d.equip, container = d.container, color = d.color, warmth = d.warmth,
+            durability = d.durability, equip = d.equip, container = d.container, color = d.color, warmth = d.warmth, repairs = d.repairs,
             usable = WLI.usable[name] ~= nil,
         }
     end
@@ -93,9 +93,10 @@ function Interface.registerNetEvents(M)
     }, function(src, slot, toId, x, y, rotated) answer(src, Inv.unequip(src, slot, toId, x, y, rotated)) end)
     M.netEvent('wasteland:inventory:server:drop', { args = { UID, INV_ID, COUNT }, rateLimit = OPS_RATE },
         function(src, uid, fromId, count) answer(src, Inv.drop(src, uid, fromId, count)) end)
-    M.netEvent('wasteland:inventory:server:use', { args = { UID, INV_ID }, rateLimit = { burst = 5, perSecond = 2 } },
-        function(src, uid, invId)
-            local ok, msg = Inv.use(src, uid, invId)
+    M.netEvent('wasteland:inventory:server:use', {
+        args = { UID, INV_ID, { type = 'string', pattern = '^%x+$', maxLength = 16 } }, rateLimit = { burst = 5, perSecond = 2 } },
+        function(src, uid, invId, targetUid)
+            local ok, msg = Inv.use(src, uid, invId, targetUid)
             answer(src, ok, msg)
             if ok and msg then TriggerClientEvent('wasteland:inventory:client:notice', src, msg) end
         end)
@@ -193,7 +194,8 @@ exports('RegisterItem', function(name, def)
     return true
 end)
 
---- RegisterUsable(name, handler(source, stack, inventoryId) -> consumed | false, message)
+--- RegisterUsable(name, handler(source, stack, inventoryId, targetUid?) -> consumed | false, message)
+--- targetUid: the item the player chose to use it on ("Repair with ..."), checked by the handler.
 exports('RegisterUsable', function(name, handler)
     if not WLI.defs[name] then return false, string.format('unknown item "%s"', tostring(name)) end
     WLI.usable[name] = handler
@@ -267,14 +269,15 @@ exports('ClearInventory', function(src)
     return Inv.clear(tonumber(src))
 end)
 
---- GetWornItems(source) -> list of { name, slot, metadata, warmth }
+--- GetWornItems(source) -> list of { uid, name, label, category, slot, metadata, warmth, durability (max; 0 = none) }
 exports('GetWornItems', function(src)
     local c = Inv.characterOf(tonumber(src))
     if not c or not c.loaded or not WLI.invs[c.equip] then return {} end
     local out = {}
     for _, s in pairs(WLI.invs[c.equip].items) do
         local d = WLI.defs[s.name]
-        out[#out + 1] = { name = s.name, slot = s.slot, metadata = Inv.copy(s.metadata), warmth = d and d.warmth or 0 }
+        out[#out + 1] = { uid = s.uid, name = s.name, slot = s.slot, metadata = Inv.copy(s.metadata), warmth = d and d.warmth or 0,
+            durability = d and d.durability or 0, label = d and d.label or s.name, category = d and d.category or 'misc' }
     end
     return out
 end)

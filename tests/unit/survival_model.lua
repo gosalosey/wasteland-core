@@ -120,3 +120,14 @@ describe('consumables', function()
         expect(Model.useful(s, cfg.consumables.bandage)).toBe(true)       -- heals
     end)
 end)
+
+describe('clothing warmth', function()
+    it('full when new, at least half while worn, none when ruined', function()
+        expect(Model.clothingWarmth(6, 100, 100)).toBe(6)
+        expect(Model.clothingWarmth(6, nil, 100)).toBe(6)
+        expect(Model.clothingWarmth(6, 50, 100)).toBe(4.5)
+        expect(Model.clothingWarmth(6, 1, 100) >= 3).toBe(true)
+        expect(Model.clothingWarmth(6, 0, 100)).toBe(0)
+        expect(Model.clothingWarmth(6, 0, 0)).toBe(6) -- no durability
+    end)
+end)

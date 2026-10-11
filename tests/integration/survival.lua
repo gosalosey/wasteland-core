@@ -224,3 +224,65 @@ describe('exports and guarded events', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('clothing durability and mending', function()
+    local server = world()
+    local id = player(server, 'tailor')
+    local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+    local function worn(name)
+        for _, w in ipairs(I('GetWornItems', id)) do if w.name == name then return w end end
+    end
+    local function cond(w) return w.metadata.durability or w.durability end
+    local function hit() server:triggerEvent('wasteland_zombies', 'wasteland:zombies:hit', id, 7, { damage = 5 }); server:advance(100) end
+
+    it('worn clothing has durability and new pieces count as new', function()
+        local top = worn('clothing_top')
+        expect(top ~= nil).toBe(true)
+        expect(top.durability).toBe(100)
+        expect(cond(top)).toBe(100)
+    end)
+
+    it('zombie hits wear out one worn piece at a time', function()
+        local before = 0
+        for _, w in ipairs(I('GetWornItems', id)) do if w.durability > 0 then before = before + cond(w) end end
+        hit()
+        local after = 0
+        for _, w in ipairs(I('GetWornItems', id)) do if w.durability > 0 then after = after + cond(w) end end
+        expect(before - after >= 4 and before - after <= 10).toBe(true)
+    end)
+
+    it('a ruined piece says so and gives no warmth', function()
+        for _ = 1, 200 do hit() end
+        for _, w in ipairs(I('GetWornItems', id)) do if w.durability > 0 then expect(cond(w)).toBe(0) end end
+        local notes = events(server, id, 'wasteland:survival:client:notice')
+        local ruined = 0
+        for _, n in ipairs(notes) do if tostring(n.args[1]):find('is ruined') then ruined = ruined + 1 end end
+        expect(ruined >= 3).toBe(true)
+    end)
+
+    it('a sewing kit mends the most worn piece, or the piece chosen; it is used up', function()
+        I('AddItem', id, 'sewing_kit', 3); server:advance(100)
+        local kit, from = find(invSnap(server, id), 'sewing_kit')
+        server:clientEvent(id, 'wasteland:inventory:server:use', kit.uid, from); server:advance(200)
+        expect(last(events(server, id, 'wasteland:inventory:client:notice')).args[1]).toContain('You mend your')
+        expect(I('GetItemCount', id, 'sewing_kit')).toBe(2)
+        local pants = worn('clothing_pants')
+        server:clientEvent(id, 'wasteland:inventory:server:use', kit.uid, from, pants.uid); server:advance(200)
+        expect(last(events(server, id, 'wasteland:inventory:client:notice')).args[1]).toBe('You mend your pants (0% -> 50%).')
+        expect(cond(worn('clothing_pants'))).toBe(50)
+        server:clientEvent(id, 'wasteland:inventory:server:use', kit.uid, from, pants.uid); server:advance(200)
+        expect(cond(worn('clothing_pants'))).toBe(100)
+        expect(I('GetItemCount', id, 'sewing_kit')).toBe(0)
+    end)
+
+    it('only clothing can be mended, and only when damaged', function()
+        I('AddItem', id, 'sewing_kit', 1); I('AddItem', id, 'canned_beans', 1); server:advance(100)
+        local kit, from = find(invSnap(server, id), 'sewing_kit')
+        local beans = find(invSnap(server, id), 'canned_beans')
+        server:clientEvent(id, 'wasteland:inventory:server:use', kit.uid, from, beans.uid); server:advance(200)
+        expect(I('GetItemCount', id, 'sewing_kit')).toBe(1)
+        server:clientEvent(id, 'wasteland:inventory:server:use', kit.uid, from, worn('clothing_pants').uid); server:advance(200)
+        expect(I('GetItemCount', id, 'sewing_kit')).toBe(1)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

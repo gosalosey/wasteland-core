@@ -82,4 +82,13 @@ return {
         antibiotics = { infection = -40, treatmentMinutes = 20, animation = 'eat', prop = 'prop_cs_pills',
             message = 'You take the antibiotics.' },
     },
+
+    -- Clothing durability (clothing items with `durability` in inventory.lua).
+    -- A zombie hit wears one worn piece; a ruined piece gives no warmth
+    -- (a worn one gives at least half). Repair items: how much one use mends
+    -- (percent of new); each use uses up one.
+    clothing = {
+        hitWear = { 4, 10 },
+        repairItems = { sewing_kit = { percent = 50 } },
+    },
 }

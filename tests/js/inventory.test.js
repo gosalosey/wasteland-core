@@ -113,3 +113,11 @@ test('quickTarget: takes into pockets, tops up a stack first, falls back to the 
     // nothing open: nothing to do
     assert.strictEqual(inv.quickTarget(pockets.items[1], 'player:1', Object.assign({}, snap, { secondary: [] }), defs), null);
 });
+
+test('condition of items with durability', () => {
+    const def = { durability: 100 };
+    assert.strictEqual(inv.condition({ durability: 0 }, {}), null);
+    assert.deepStrictEqual(inv.condition(def, { metadata: {} }), { share: 1, text: 'Condition 100%', ruined: false });
+    assert.deepStrictEqual(inv.condition(def, { metadata: { durability: 37 } }), { share: 0.37, text: 'Condition 37%', ruined: false });
+    assert.deepStrictEqual(inv.condition(def, { metadata: { durability: 0 } }), { share: 0, text: 'Ruined', ruined: true });
+});

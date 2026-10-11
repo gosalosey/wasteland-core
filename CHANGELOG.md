@@ -1,5 +1,14 @@
 # Changelog
 
+## Clothing durability and mending (owner request)
+* Tops, pants, shoes, hats and glasses have durability (100). Every zombie hit wears out one worn piece (4-10, `survival.lua` clothing.hitWear). The inventory shows a condition bar (red at 25% or less), "Condition 64%" on hover and in the right-click menu; a ruined piece is greyed out and marked RUINED.
+* Worn-out clothing keeps you less warm: full warmth when new, at least half while worn, none when ruined (until mended).
+* New item: Sewing kit. Right-click a damaged piece: "Repair with Sewing kit" (or just use the kit: it mends the most worn piece you wear, then what you carry). One kit mends 50% (`clothing.repairItems`) and is used up. Found in trash and crates, sold by the general trader ($70), craftable from the start (2 rags + 1 scrap metal).
+* Clothing from before this update counts as new.
+* Inventory (for every module): item setting `repairs = '<category>'` makes the screen offer "Repair with ..." on damaged items of that category; usable handlers get the chosen item as a 4th argument (`targetUid`). `GetWornItems` now also returns uid, label, category and max durability.
+* Tests: 606.
+
+
 ## Vehicle HUD: move and resize (owner request)
 * /hud now also edits the vehicle HUD (shown with example values when you are not in a vehicle): drag it anywhere; resize it with the mouse wheel or the - / + buttons above it (60% to 180%); Reset puts it back at the bottom middle, normal size. Saving the HUD keeps it (stored on the player's computer, like the main HUD); Esc / cancel puts it back.
 * survival sends the local event `wasteland:hud:editing(on, saved)` so other HUD pieces can join the edit mode.

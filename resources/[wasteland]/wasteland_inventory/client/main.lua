@@ -174,7 +174,7 @@ local OPS = {
     equip = function(p) return 'equip', p.uid, p.from, p.slot end,
     unequip = function(p) return 'unequip', p.slot, p.to, p.x, p.y, p.rotated == true end,
     drop = function(p) return 'drop', p.uid, p.from, p.count end,
-    use = function(p) return 'use', p.uid, p.from end,
+    use = function(p) return 'use', p.uid, p.from, type(p.target) == 'string' and p.target or nil end,
     setHotbar = function(p) return 'setHotbar', p.index, p.uid end,
 }
 

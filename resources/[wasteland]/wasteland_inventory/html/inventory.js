@@ -122,6 +122,16 @@
         return { error: heavy ? 'Too heavy to carry.' : 'No room for that.' };
     }
 
+    // Condition of an item with durability: { share 0-1, text, ruined } or null.
+    // Items made before durability existed count as new.
+    function condition(def, stack) {
+        if (!def || !(def.durability > 0)) return null;
+        const cur = stack && stack.metadata && typeof stack.metadata.durability === 'number' ? stack.metadata.durability : def.durability;
+        const share = Math.max(0, Math.min(1, cur / def.durability));
+        if (share <= 0) return { share: 0, text: 'Ruined', ruined: true };
+        return { share: share, text: 'Condition ' + Math.round(share * 100) + '%', ruined: false };
+    }
+
     function formatKg(v) { return (Math.round(v * 10) / 10).toFixed(1); }
 
     // Short label for a tile: whole label when it fits, else initials.
@@ -132,7 +142,7 @@
 
     if (typeof module === 'object' && module.exports) {
         module.exports = { footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
-            formatKg: formatKg, shortLabel: shortLabel };
+            formatKg: formatKg, shortLabel: shortLabel, condition: condition };
         return;
     }
 
@@ -163,7 +173,9 @@
     function tile(stack, inv, opts) {
         const def = st.defs.items[stack.name] || { label: stack.name, width: 1, height: 1, category: 'misc' };
         const f = opts && opts.fixed ? { w: opts.fixed, h: opts.fixed } : footprint(def, stack.rotated);
-        const el = h('div', { class: 'wli-item', title: def.label + (def.description ? ' – ' + def.description : '') });
+        const cond = condition(def, stack);
+        const el = h('div', { class: 'wli-item' + (cond && cond.ruined ? ' is-ruined' : ''),
+            title: def.label + (cond ? ' (' + cond.text + ')' : '') + (def.description ? ' – ' + def.description : '') });
         el.style.width = (f.w * CELL - 4) + 'px';
         el.style.height = (f.h * CELL - 4) + 'px';
         el.style.background = def.color || CATEGORY_COLORS[def.category] || CATEGORY_COLORS.misc;
@@ -188,9 +200,9 @@
         } else if (stack.count > 1) {
             el.appendChild(h('span', { class: 'wli-item__count', text: 'x' + stack.count }));
         }
-        if (def.durability > 0 && stack.metadata && typeof stack.metadata.durability === 'number') {
-            const bar = h('span', { class: 'wli-item__dur' });
-            bar.style.width = Math.max(0, Math.min(100, stack.metadata.durability / def.durability * 100)) + '%';
+        if (cond) {
+            const bar = h('span', { class: 'wli-item__dur' + (cond.share <= 0.25 ? ' is-low' : '') });
+            bar.style.width = Math.round(cond.share * 100) + '%';
             el.appendChild(bar);
         }
         const hot = st.snap.hotbar ? st.snap.hotbar.indexOf(stack.uid) : -1;
@@ -381,6 +393,21 @@
         const worn = fromId === st.snap.equip;
         const items = [];
         if (def.usable) items.push(['Use', () => st.api.post('use', { uid: stack.uid, from: fromId })]);
+        // Damaged: offer every carried item that repairs this category.
+        const cond = condition(def, stack);
+        if (cond && cond.share < 1) {
+            const seen = {};
+            [st.snap.pockets, st.snap.backpack].forEach((id) => {
+                const inv = id && invById(id);
+                (inv ? inv.items : []).forEach((k) => {
+                    const kd = st.defs.items[k.name];
+                    if (kd && kd.usable && kd.repairs === def.category && !seen[k.name]) {
+                        seen[k.name] = true;
+                        items.push(['Repair with ' + kd.label, () => st.api.post('use', { uid: k.uid, from: inv.id, target: stack.uid })]);
+                    }
+                });
+            });
+        }
         if (def.equip && !worn) items.push(['Wear', () => st.api.post('equip', { uid: stack.uid, from: fromId, slot: def.equip })]);
         if (worn) items.push(['Take off', () => st.api.post('unequip', { slot: stack.slot, to: st.snap.pockets })]);
         if (!worn && stack.count > 1) items.push(['Split…', () => openSplit(e, stack, fromId)]);
@@ -389,7 +416,7 @@
         }
         items.push(['Drop', () => st.api.post('drop', { uid: stack.uid, from: fromId, count: stack.count })]);
         const menu = h('div', { class: 'wli-menu' },
-            h('div', { class: 'wli-menu__title', text: def.label + (stack.count > 1 ? ' x' + stack.count : '') }));
+            h('div', { class: 'wli-menu__title', text: def.label + (stack.count > 1 ? ' x' + stack.count : '') + (cond ? ' · ' + cond.text : '') }));
         items.forEach(([label, fn]) => menu.appendChild(h('button', { class: 'wli-menu__item', text: label,
             onclick: () => { closeMenu(); fn(); } })));
         menu.style.left = Math.min(e.clientX, window.innerWidth - 190) + 'px';
@@ -510,6 +537,9 @@
         '.wli-item__count { position: absolute; right: 3px; bottom: 1px; font-size: 11px; font-weight: 600; text-shadow: 0 1px 2px #000; }',
         '.wli-item__hot { position: absolute; left: 3px; top: 1px; font-size: 10px; color: var(--wl-accent-strong); font-weight: 700; }',
         '.wli-item__dur { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--wl-ok); }',
+        '.wli-item__dur.is-low { background: #e0533f; }',
+        '.wli-item.is-ruined { filter: grayscale(0.85) brightness(0.75); }',
+        '.wli-item.is-ruined::after { content: "RUINED"; position: absolute; right: 3px; bottom: 5px; font-size: 9px; font-weight: 700; color: #ff9c90; letter-spacing: 0.05em; }',
         '.wli-ghost { position: fixed; pointer-events: none; z-index: 50; opacity: 0.9; }',
         '.wli-preview { position: absolute; pointer-events: none; background: rgba(127,174,90,0.25); border: 1px solid var(--wl-ok); }',
         '.wli-preview.is-bad { background: rgba(196,69,58,0.25); border-color: var(--wl-danger); }',

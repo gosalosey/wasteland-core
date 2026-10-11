@@ -346,7 +346,7 @@ function Inv.drop(src, uid, fromId, count)
 end
 
 --- Use an item through the handler a module registered for it.
-function Inv.use(src, uid, invId)
+function Inv.use(src, uid, invId, targetUid)
     local inv, e = Inv.access(src, invId)
     if not inv then return false, e end
     local s = inv.items[uid]
@@ -355,7 +355,7 @@ function Inv.use(src, uid, invId)
     if not handler then return false, string.format('%s cannot be used', WLI.defs[s.name].label) end
     local accepting, why = Store.accepting()
     if not accepting then return false, 'Inventory changes are paused: ' .. why .. '.' end
-    local ok, consumed, message = pcall(handler, src, copy(s), invId)
+    local ok, consumed, message = pcall(handler, src, copy(s), invId, targetUid)
     if not ok then
         log():error('use handler for "%s" failed: %s', s.name, tostring(consumed))
         return false, 'that did not work'

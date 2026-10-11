@@ -55,7 +55,9 @@ local function warmthOf(src)
     local ok, worn = pcall(function() return exports.wasteland_inventory:GetWornItems(src) end)
     if not ok or type(worn) ~= 'table' then return 0 end
     local total = 0
-    for _, w in ipairs(worn) do total = total + (tonumber(w.warmth) or 0) end
+    for _, w in ipairs(worn) do
+        total = total + Model.clothingWarmth(w.warmth, w.metadata and w.metadata.durability, w.durability)
+    end
     return total
 end
 
@@ -159,9 +161,91 @@ local function registerConsumables()
     end
 end
 
+-------------------------------------------------------------------------------
+-- Clothing: zombie hits wear it out; repair items (sewing kit) mend it.
+-- A ruined piece (0) stays on but gives no warmth until it is mended.
+-------------------------------------------------------------------------------
+
+local function clothingRunning() return GetResourceState('wasteland_inventory') == 'started' end
+local function notice(src, msg) TriggerClientEvent('wasteland:survival:client:notice', src, msg) end
+
+local function currentOf(stack, max) return stack.metadata and stack.metadata.durability or max end
+
+AddEventHandler('wasteland:zombies:hit', function(victim)
+    if not (M and M.active) or not clothingRunning() then return end
+    local wear = M.config.clothing.hitWear
+    if wear[2] <= 0 then return end
+    local ok, worn = pcall(function() return exports.wasteland_inventory:GetWornItems(victim) end)
+    if not ok or type(worn) ~= 'table' then return end
+    local pieces = {}
+    for _, w in ipairs(worn) do
+        if w.category == 'clothing' and (w.durability or 0) > 0 and currentOf(w, w.durability) > 0 then pieces[#pieces + 1] = w end
+    end
+    if #pieces == 0 then return end
+    local w = pieces[math.random(#pieces)]
+    local before = currentOf(w, w.durability)
+    local after = math.max(0, before - math.random(wear[1], math.max(wear[1], wear[2])))
+    exports.wasteland_inventory:SetItemMetadata(victim, w.uid, { durability = after })
+    if after <= 0 then notice(victim, string.format('Your %s is ruined. Mend it with a sewing kit.', w.label:lower())) end
+end)
+
+-- What to mend: the piece the player chose, else the most worn piece they
+-- wear, else the most worn piece they carry.
+local function clothingTarget(src, targetUid)
+    local inv = exports.wasteland_inventory
+    if targetUid then
+        local s = inv:FindItem(src, targetUid)
+        local d = s and inv:GetItemDefinition(s.name)
+        if not d or d.category ~= 'clothing' or (d.durability or 0) <= 0 then return nil, 'That cannot be mended with this.' end
+        return { uid = s.uid, label = d.label, current = currentOf(s, d.durability), max = d.durability }
+    end
+    local best
+    local function consider(uid, label, current, max)
+        if current < max and (not best or current / max < best.current / best.max) then
+            best = { uid = uid, label = label, current = current, max = max }
+        end
+    end
+    for _, w in ipairs(inv:GetWornItems(src)) do
+        if w.category == 'clothing' and (w.durability or 0) > 0 then consider(w.uid, w.label, currentOf(w, w.durability), w.durability) end
+    end
+    if best then return best end
+    for _, it in ipairs(inv:GetItemList()) do
+        if it.category == 'clothing' then
+            local d = inv:GetItemDefinition(it.name)
+            if d and (d.durability or 0) > 0 then
+                for _, s in ipairs(inv:FindItems(src, it.name)) do consider(s.uid, d.label, currentOf(s, d.durability), d.durability) end
+            end
+        end
+    end
+    return best
+end
+
+local function useClothingRepair(src, stack, _, targetUid)
+    local cid = characterOf(src)
+    local s = cid and states[cid]
+    if not s or s.dead then return false, 'You cannot do that right now.' end
+    local t, err = clothingTarget(src, targetUid)
+    if not t then return false, err or 'Nothing you wear or carry needs mending.' end
+    if t.current >= t.max then return false, string.format('Your %s does not need mending.', t.label:lower()) end
+    local after = math.min(t.max, t.current + math.ceil(t.max * M.config.clothing.repairItems[stack.name].percent / 100))
+    local ok, e = exports.wasteland_inventory:SetItemMetadata(src, t.uid, { durability = after })
+    if not ok then return false, e end
+    TriggerClientEvent('wasteland:survival:client:consumed', src, 'treat', nil)
+    return 1, string.format('You mend your %s (%d%% -> %d%%).', t.label:lower(), math.floor(t.current / t.max * 100 + 0.5),
+        math.floor(after / t.max * 100 + 0.5))
+end
+
+local function registerClothingRepairs()
+    if not clothingRunning() then return end
+    for name in pairs(M.config.clothing.repairItems) do
+        local ok, err = exports.wasteland_inventory:RegisterUsable(name, useClothingRepair)
+        if not ok then M.log:warn('clothing repair item "%s": %s', name, tostring(err)) end
+    end
+end
+
 -- The inventory restarted: register again.
 AddEventHandler('wasteland:core:moduleState', function(name, state)
-    if name == 'inventory' and state == 'running' and M and M.active then registerConsumables() end
+    if name == 'inventory' and state == 'running' and M and M.active then registerConsumables(); registerClothingRepairs() end
 end)
 
 -------------------------------------------------------------------------------
@@ -302,6 +386,12 @@ M = Wasteland.DefineModule({
                     } } },
             } },
             consumables = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[a-z][a-z0-9_]*$' }, values = EFFECT },
+            clothing = { type = 'table', fields = {
+                hitWear = { type = 'array', default = { 4, 10 }, minItems = 2, maxItems = 2, items = { type = 'integer', min = 0, max = 100000 },
+                    description = 'Durability one worn piece loses when a zombie hits (min, max)' },
+                repairItems = { type = 'map', default = { sewing_kit = { percent = 50 } }, keys = { type = 'string', pattern = '^[a-z][a-z0-9_]*$' },
+                    values = { type = 'table', fields = { percent = { type = 'number', default = 50, min = 1, max = 100 } } } },
+            } },
         } },
     },
 
@@ -316,6 +406,7 @@ M = Wasteland.DefineModule({
             commandRegistered = true
         end
         registerConsumables()
+        registerClothingRepairs()
         for _, c in ipairs(players():GetOnlineCharacters()) do
             if c.source then load(c.source, c.id) end
         end

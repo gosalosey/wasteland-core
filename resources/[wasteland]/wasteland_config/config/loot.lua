@@ -42,6 +42,7 @@ return {
     tables = {
         trash = { emptyChance = 0.55, rolls = { 1, 2 }, items = {
             { name = 'scrap_metal', min = 1, max = 2, weight = 25 },
+            { name = 'sewing_kit', min = 1, max = 1, weight = 4 },
             { name = 'rag', min = 1, max = 2, weight = 15 },
             { name = 'duct_tape', min = 1, max = 1, weight = 10 },
             { name = 'soda_can', min = 1, max = 1, weight = 10 },
@@ -91,6 +92,7 @@ return {
             { name = 'vehicle_lock', min = 1, max = 1, weight = 2 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
+            { name = 'sewing_kit', min = 1, max = 1, weight = 3 },
             { name = 'scrap_metal', min = 1, max = 3, weight = 30 },
             { name = 'duct_tape', min = 1, max = 1, weight = 15 },
             { name = 'rag', min = 1, max = 2, weight = 15 },

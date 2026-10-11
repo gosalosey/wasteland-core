@@ -403,3 +403,13 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R23.3 | Save the HUD, get in a car; reconnect | The vehicle HUD is where you put it, at that size, after reconnecting too |
 | R23.4 | /hud, move it, then cancel (Esc) | It goes back to where it was |
 | R23.5 | /hud, Reset, save | Bottom middle, normal size again |
+
+## R24: clothing durability
+
+| # | Do | Expect |
+|---|---|---|
+| R24.1 | Open the inventory (TAB) | Worn clothes have a green condition bar; hovering shows "Condition 100%" |
+| R24.2 | Let zombies hit you a few times | The bars of your clothes go down (one piece per hit) |
+| R24.3 | Keep getting hit until a piece is ruined | "Your top is ruined. Mend it with a sewing kit."; the tile is grey with RUINED; in the cold you get colder faster |
+| R24.4 | Get a sewing kit (general trader / craft from 2 rags + scrap); right-click the ruined piece | "Repair with Sewing kit"; "You mend your top (0% -> 50%)."; one kit is gone; a short animation |
+| R24.5 | Use a sewing kit from its own menu ("Use") | It mends the most worn piece you wear |

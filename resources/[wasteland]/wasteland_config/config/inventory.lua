@@ -173,10 +173,12 @@ return {
         backpack_large = { label = 'Hiking backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 1.8,
             equip = 'back', container = { width = 7, height = 6, maxWeight = 60 } },
 
-        clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6 },
-        clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4 },
-        clothing_shoes = { label = 'Shoes', image = 'shoes_blue', category = 'clothing', width = 2, height = 1, weight = 0.8, equip = 'feet', warmth = 2 },
-        clothing_hat = { label = 'Hat', image = 'cap', category = 'clothing', width = 1, height = 1, weight = 0.2, equip = 'head', warmth = 2 },
-        clothing_glasses = { label = 'Glasses', image = 'sunglasses', category = 'clothing', width = 1, height = 1, weight = 0.05, equip = 'eyes' },
+        clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6, durability = 100 },
+        clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4, durability = 100 },
+        clothing_shoes = { label = 'Shoes', image = 'shoes_blue', category = 'clothing', width = 2, height = 1, weight = 0.8, equip = 'feet', warmth = 2, durability = 100 },
+        clothing_hat = { label = 'Hat', image = 'cap', category = 'clothing', width = 1, height = 1, weight = 0.2, equip = 'head', warmth = 2, durability = 100 },
+        clothing_glasses = { label = 'Glasses', image = 'sunglasses', category = 'clothing', width = 1, height = 1, weight = 0.05, equip = 'eyes', durability = 100 },
+        sewing_kit = { label = 'Sewing kit', category = 'tool', width = 1, height = 1, weight = 0.2, repairs = 'clothing',
+            description = 'Mends worn or ruined clothing. Right-click a damaged piece: "Repair with Sewing kit".' },
     },
 }
