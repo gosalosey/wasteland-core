@@ -14,6 +14,8 @@ ensure wasteland_ui
 ensure wasteland_appearance
 ensure wasteland_inventory
 ensure wasteland_survival
+ensure wasteland_world
+ensure wasteland_admin
 ensure wasteland_template      # SDK example module; optional
 
 # --- permissions ---

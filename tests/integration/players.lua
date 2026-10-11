@@ -450,3 +450,35 @@ describe('net events for the character UI', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('admission checks from other modules', function()
+    local server = world()
+    addModule(server, 'fx_gate', [[
+Wasteland.DefineModule({ name = 'gate', version = '1.0.0', core = '^1.1.0', dependencies = { players = '^0.1.0' },
+    onInit = function()
+        exports.wasteland_players:RegisterAdmissionCheck('gate', function(info)
+            if info.license == 'license:blocked' then return 'Not today.' end
+            if info.license == 'license:crash' then error('oops') end
+            return nil
+        end)
+    end })
+]], { 'wasteland_players' })
+    server:start('fx_gate')
+    server:advance(100)
+
+    it('refuses with the message the check returns', function()
+        local id, err = server:connectAndJoin({ name = 'B', license = 'blocked' })
+        expect(id).toBe(nil)
+        expect(err).toBe('Not today.')
+    end)
+    it('lets players in when a check breaks (and logs it)', function()
+        local id = server:connectAndJoin({ name = 'C', license = 'crash' })
+        expect(id ~= nil).toBe(true)
+        expect(#server:lines('admission check "gate" failed') > 0).toBe(true)
+    end)
+    it('drops the check when its resource stops', function()
+        server:stop('fx_gate')
+        local id = server:connectAndJoin({ name = 'B', license = 'blocked' })
+        expect(id ~= nil).toBe(true)
+    end)
+end)

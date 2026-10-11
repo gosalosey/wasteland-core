@@ -354,3 +354,21 @@ Exports:
 Server events: `wasteland:survival:died (source, characterId, cause)` and `wasteland:survival:respawned (source, characterId)`. On death, the inventory's `DeathDrop` puts everything except hotbar items into a body bag (see Inventory), and the respawn point is random from `respawn.points`.
 
 Inventory additions: `DeathDrop(source, label)`, `GetWornItems(source)`, an item field `warmth` (insulation in °C while worn), and drops carry `owner` and `label` (body bags show as a map marker for their owner).
+
+## World (`wasteland_world`, world api 0.1)
+
+One game clock and one weather for everyone, decided by the server. Ambient population is off: OneSync population is disabled for routing bucket 0, and clients set density to 0 and turn off dispatch, police, trains and boats. Ambient audio is off: ambience, music and radio, the police scanner, distant sirens and music emitters. Everything is switchable in `world.lua`. Scripted peds and vehicles are not affected.
+
+Exports: `GetTime() -> hour, minute, frozen`, `SetTime(hour, minute)`, `FreezeTime(bool)`, `GetWeather() -> name, dynamic`, `SetWeather(name, keepDynamic?)` (stops the cycle unless `keepDynamic`), `SetWeatherDynamic(bool)`, `GetWeatherNames()`.
+
+## Admin (`wasteland_admin`, admin api 0.1)
+
+The panel opens with F10 or `/admin`. Every action goes through one guarded event and is checked against `admin.adminAce` on the server. Changes are written to `wl_admin_log` and the console (teleporting and viewing inventories are not logged).
+
+Actions: teleport to and bring a player, heal, revive, freeze, kick, ban (by player or by license, with a duration or permanent), lift a ban, set survival stats, give items, open a player's inventory (pockets and bag, in the admin's own inventory screen), clear an inventory, announcements, time and weather, noclip and invisibility for the admin.
+
+Bans are stored in `wl_bans`, cached in memory and checked when a player connects (players `RegisterAdmissionCheck`).
+
+Exports: `IsAdmin(source)`, `IsBanned(license)`.
+
+New exports used by the panel: players `RegisterAdmissionCheck(name, fn)`. Survival `Heal(source)` and `Revive(source)`. Inventory `OpenForAdmin(admin, target)`, `ClearInventory(source)` and `GetItemList()`.

@@ -18,6 +18,7 @@ return {
     'integration/inventory.lua',
     'integration/survival.lua',
     'integration/world.lua',
+    'integration/admin.lua',
     'db/mariadb.lua',
     'js/node.lua',
 }

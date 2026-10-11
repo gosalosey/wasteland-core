@@ -136,6 +136,14 @@ exports('GetItemCount', function(target, name)
     return Inv.countItem(target, name)
 end)
 
+--- GetItemList() -> list of { name, label, category } sorted by label
+exports('GetItemList', function()
+    local out = {}
+    for name, d in pairs(WLI.defs) do out[#out + 1] = { name = name, label = d.label, category = d.category } end
+    table.sort(out, function(a, b) return a.label < b.label end)
+    return out
+end)
+
 --- GetItemDefinition(name) -> definition copy | nil
 exports('GetItemDefinition', function(name)
     local d = WLI.defs[name]
@@ -187,6 +195,28 @@ end)
 exports('DeathDrop', function(src, label)
     if inactive() then return nil, 'inventory module is not running' end
     return Inv.deathDrop(tonumber(src), type(label) == 'string' and label:sub(1, 64) or 'Body')
+end)
+
+--- OpenForAdmin(adminSource, targetSource) -> ok, err
+--- Lets an admin see and move the target's pockets and worn bag in their
+--- own inventory screen (the admin module checks permissions first).
+exports('OpenForAdmin', function(adminSrc, targetSrc)
+    adminSrc, targetSrc = tonumber(adminSrc), tonumber(targetSrc)
+    local c = Inv.characterOf(targetSrc)
+    if not c or not c.loaded then return false, 'that player has no loaded inventory' end
+    WLI.views[adminSrc] = WLI.views[adminSrc] or {}
+    WLI.views[adminSrc][c.pockets] = true
+    local bag = Inv.backpack(c)
+    if bag and WLI.invs['item:' .. bag.uid] then WLI.views[adminSrc]['item:' .. bag.uid] = true end
+    Sync.player(adminSrc)
+    TriggerClientEvent('wasteland:inventory:client:open', adminSrc)
+    return true
+end)
+
+--- ClearInventory(source) -> ok, err   (pockets, worn items and the worn bag's contents)
+exports('ClearInventory', function(src)
+    if inactive() then return false, 'inventory module is not running' end
+    return Inv.clear(tonumber(src))
 end)
 
 --- GetWornItems(source) -> list of { name, slot, metadata, warmth }

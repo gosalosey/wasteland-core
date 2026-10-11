@@ -193,6 +193,21 @@ RegisterNetEvent('wasteland:survival:client:respawn', function(p)
     end)
 end)
 
+-- An admin revived us where we lie.
+RegisterNetEvent('wasteland:survival:client:revive', function()
+    Citizen.CreateThread(function()
+        if uiRunning() then exports.wasteland_ui:Close(DEATH) end
+        local ped = PlayerPedId()
+        local c = GetEntityCoords(ped)
+        NetworkResurrectLocalPlayer(c.x, c.y, c.z, GetEntityHeading(ped), true, false)
+        ped = PlayerPedId()
+        ClearPedTasksImmediately(ped)
+        SetEntityHealth(ped, GetEntityMaxHealth(ped))
+        reportedDead, expectedDrop, lastHealth = false, 0, nil
+        TriggerEvent('playerSpawned', { x = c.x, y = c.y, z = c.z })
+    end)
+end)
+
 -------------------------------------------------------------------------------
 -- Body bag markers (from the inventory's drop list)
 -------------------------------------------------------------------------------

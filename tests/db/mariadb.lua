@@ -275,3 +275,51 @@ describe('real MariaDB: inventory', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('real MariaDB: admin', function()
+    local env = { WLA_ADMIN = {} }
+    assert(loadfile(RESOURCES .. '/wasteland_admin/server/sql.lua', 't', env))()
+    local SQLA = env.WLA_ADMIN.SQL
+    local server = newServer({ dbBackend = backend, config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 60000, slowQueryWarningMs = 60000 }',
+    } })
+    server.db.latencyMs = 0
+    boot(server, { 'wasteland_players', 'wasteland_admin' })
+    local admin = server:connectAndJoin({ name = 'Boss', license = 'boss' })
+    server.aces[admin .. '|wasteland.admin'] = true
+    local function act(action, args)
+        server:clientEvent(admin, 'wasteland:admin:server:act', action, args)
+        server:advance(3000)
+        local l = server:clientEventsFor(admin, 'wasteland:admin:client:result')
+        return l[#l].args[1]
+    end
+
+    it('stores, enforces and lifts bans, and writes the action log', function()
+        expect(states(server).admin).toBe('running')
+        expect(act('banLicense', { license = 'license:feedbeef', name = 'Ghost', reason = "can't play", minutes = 60 }).ok).toBe(true)
+        local b = backend:rows('SELECT id, reason, expires_unix - created_unix AS life FROM wl_bans WHERE license = ?', { 'license:feedbeef' })
+        expect(b[1].reason).toBe("can't play")
+        expect(b[1].life).toBe(3600)
+        local _, err = server:connectAndJoin({ name = 'Ghost', license = 'feedbeef' })
+        expect(err).toContain("Reason: can't play")
+        server:clientEvent(admin, 'wasteland:admin:server:list', 'bans'); server:advance(2000)
+        expect(act('unban', { banId = b[1].id }).ok).toBe(true)
+        expect(backend:rows('SELECT revoked_by FROM wl_bans WHERE id = ?', { b[1].id })[1].revoked_by).toBe('Boss')
+        server:clientEvent(admin, 'wasteland:admin:server:list', 'log'); server:advance(2000)
+        local log = backend:rows('SELECT action, admin FROM wl_admin_log ORDER BY id')
+        expect(log[1].action).toBe('ban')
+        expect(log[1].admin).toBe('Boss')
+    end)
+
+    it('ran every admin statement against the real database', function()
+        local ran = {}
+        for _, l in ipairs(backend.log) do ran[l.sql] = true end
+        local missing = {}
+        for key, sql in pairs(SQLA) do
+            if not ran[(sql:gsub('%s+', ' '))] then missing[#missing + 1] = key end
+        end
+        table.sort(missing)
+        expect(missing).toEqual({})
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

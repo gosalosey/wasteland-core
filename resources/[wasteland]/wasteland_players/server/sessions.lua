@@ -15,6 +15,32 @@ WLP.Sessions = Sessions
 
 local PENDING_TTL_MS = 120000
 
+-- Admission checks other modules add (bans): [name] = { fn, owner }.
+-- fn({ license, name, identifiers }) returns nil to allow or a message to refuse.
+WLP.admissionChecks = WLP.admissionChecks or {}
+
+local function runAdmissionChecks(src, license, name)
+    local info = { license = license, name = name, identifiers = GetPlayerIdentifiers(tostring(src)) or {} }
+    local names = {}
+    for n in pairs(WLP.admissionChecks) do names[#names + 1] = n end
+    table.sort(names)
+    for _, n in ipairs(names) do
+        local check = WLP.admissionChecks[n]
+        if GetResourceState(check.owner) ~= 'started' then
+            WLP.admissionChecks[n] = nil
+        else
+            local ok, refusal = pcall(check.fn, info)
+            if not ok then
+                WLP.M.log:error('admission check "%s" failed: %s (letting %s in)', n, tostring(refusal), tostring(name))
+            elseif type(refusal) == 'string' and refusal ~= '' then
+                WLP.M.log:info('admission check "%s" refused %s (%s)', n, tostring(name), license)
+                return refusal
+            end
+        end
+    end
+    return nil
+end
+
 local function log() return WLP.M.log end
 
 --- Upsert the account row and return its id (thread only).
@@ -79,6 +105,8 @@ local function admit(src, name, deferrals, token)
     if not WDB.isUp() then
         return 'The server database is unavailable. Please try again in a few minutes.'
     end
+    local refusal = runAdmissionChecks(src, license, name)
+    if refusal then return refusal end
 
     local existing = WLP.byLicense[license]
     if existing and existing.source and not WLP.isOnline(existing.source) and existing.state ~= 'unloading' then

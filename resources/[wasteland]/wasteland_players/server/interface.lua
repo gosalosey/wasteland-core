@@ -323,6 +323,16 @@ exports('SaveCharacter', function(characterId, cb)
     return true
 end)
 
+--- RegisterAdmissionCheck(name, fn) -> ok   (fn({ license, name, identifiers }) -> nil | refusal message)
+--- Runs while a player connects, before the account is loaded. Keep it fast
+--- (no database calls): it is called synchronously. Removed automatically
+--- when the registering resource stops.
+exports('RegisterAdmissionCheck', function(name, fn)
+    if type(name) ~= 'string' or name == '' then return false, 'name required' end
+    WLP.admissionChecks[name] = { fn = fn, owner = GetInvokingResource() or GetCurrentResourceName() }
+    return true
+end)
+
 --- IsCharacterLoaded(source) -> boolean
 exports('IsCharacterLoaded', function(src)
     if inactive() then return false end

@@ -42,7 +42,9 @@ function MemoryDB.new(resourcesDir)
         wl_character_data = {}, -- ["cid|key"] = row
         wl_items = {},      -- [uid] = row
         wl_drops = {},      -- [id] = row
-        autoinc = { wl_accounts = 0, wl_characters = 0 },
+        wl_bans = {},       -- [id] = row
+        wl_admin_log = {},  -- list
+        autoinc = { wl_accounts = 0, wl_characters = 0, wl_bans = 0 },
     }
     self.ddl = {}          -- DDL statements seen
     self.unhandled = {}    -- statements this backend does not know
@@ -54,9 +56,11 @@ function MemoryDB.new(resourcesDir)
     local wld = loadSqlFile(resourcesDir .. '/wasteland_database/server/sql.lua', 'WLD')
     local wlp = loadSqlFile(resourcesDir .. '/wasteland_players/server/sql.lua', 'WLP')
     local wli = loadSqlFile(resourcesDir .. '/wasteland_inventory/server/sql.lua', 'WLI')
+    local wla = loadSqlFile(resourcesDir .. '/wasteland_admin/server/sql.lua', 'WLA_ADMIN')
     self:installDatabase(wld.SQL)
     self:installPlayers(wlp.SQL)
     self:installInventory(wli.SQL)
+    self:installAdmin(wla.SQL)
     return self
 end
 
@@ -254,6 +258,49 @@ function MemoryDB:installInventory(SQL)
         local existed = db.data.wl_drops[p[1]] ~= nil
         db.data.wl_drops[p[1]] = nil
         return header(existed and 1 or 0)
+    end)
+end
+
+-------------------------------------------------------------------------------
+-- wasteland_admin statements
+-------------------------------------------------------------------------------
+
+function MemoryDB:installAdmin(SQL)
+    self:on(SQL.selectActiveBans, function(db, p)
+        local rows = {}
+        for _, b in pairs(db.data.wl_bans) do
+            if b.revoked_unix == nil and (b.expires_unix == nil or b.expires_unix > p[1]) then rows[#rows + 1] = deepCopy(b) end
+        end
+        return rows
+    end)
+    self:on(SQL.selectRecentBans, function(db)
+        local rows = {}
+        for _, b in pairs(db.data.wl_bans) do rows[#rows + 1] = deepCopy(b) end
+        table.sort(rows, function(a, b) return a.id > b.id end)
+        return rows
+    end)
+    self:on(SQL.insertBan, function(db, p)
+        db.data.autoinc.wl_bans = db.data.autoinc.wl_bans + 1
+        local id = db.data.autoinc.wl_bans
+        db.data.wl_bans[id] = { id = id, license = p[1], name = p[2], reason = p[3], banned_by = p[4],
+            created_unix = p[5], expires_unix = p[6] }
+        return header(1, id)
+    end)
+    self:on(SQL.revokeBan, function(db, p)
+        local b = db.data.wl_bans[p[3]]
+        if not b or b.revoked_unix then return header(0) end
+        b.revoked_unix, b.revoked_by = p[1], p[2]
+        return header(1)
+    end)
+    self:on(SQL.insertLog, function(db, p)
+        local id = #db.data.wl_admin_log + 1
+        db.data.wl_admin_log[id] = { id = id, admin = p[1], action = p[2], target = p[3], details = p[4], created_unix = p[5] }
+        return header(1, id)
+    end)
+    self:on(SQL.selectLog, function(db)
+        local rows = {}
+        for i = #db.data.wl_admin_log, 1, -1 do rows[#rows + 1] = deepCopy(db.data.wl_admin_log[i]) end
+        return rows
     end)
 end
 

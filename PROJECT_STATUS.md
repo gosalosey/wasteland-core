@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** 4 complete in automated tests; installed on the owner's server; runtime verification pending (R5.x).
+**Current milestone:** World + admin (owner requests) complete in automated tests; installed; runtime verification pending (R6.x, R7.x).
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -69,8 +69,15 @@ Decisions (owner, 2026-10-10): drop everything into a body bag with a map marker
 - [x] Hunger, thirst, health (client ped, server-driven damage/heal); consumable effects · [x] bleeding, infection, temperature
 - [x] Death/respawn rules, body bags (hotbar kept), respawn delay and points · [x] HUD (compact / only when it matters / off)
 - [x] Tests: rules (unit), server flows, body bags, HUD logic, real MariaDB
-- [~] Installed on the owner's server; runtime tests R5.1-R5.14 pending
+- [x] Installed on the owner's server; owner confirmed it works (hand props added on request)
 Stamina is shown, not changed (GTA's own). Weather/time sync for temperature: Milestone 7 (K-27).
+
+## Owner requests (2026-10-10): empty silent world, admin panel
+Brought forward: part of Milestone 7 (world) and Milestone 10 (admin).
+- [x] wasteland_world: no ambient NPCs or traffic, ambient audio off, server clock and weather (also fixes K-27)
+- [x] wasteland_admin: panel (players, items, bans, server & world, action log), bans checked on connect
+- [x] Tests: world rules, admin permissions and every action, bans, real MariaDB
+- [~] Installed on the owner's server; runtime tests R6.1-R6.5 and R7.1-R7.15 pending
 
 ## Milestone 5: zombies
 - [ ] Weapons as inventory items: ammo, attachments, durability (moved here from M3B)

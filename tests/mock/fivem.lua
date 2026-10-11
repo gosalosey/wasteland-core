@@ -583,6 +583,7 @@ function Mock:buildEnv(r)
         end
         return nil
     end
+    env.GetPlayerPing = function(src) return mock:getPlayer(src) and 42 or 0 end
     env.DropPlayer = function(src, reason)
         local id = tonumber(src)
         mock:schedule(0, function() mock:dropPlayer(id, reason) end)

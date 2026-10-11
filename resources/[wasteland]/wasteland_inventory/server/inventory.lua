@@ -612,6 +612,32 @@ function Inv.deathDrop(src, label)
     return { dropIds = ids }
 end
 
+--- Delete everything a character carries and wears (admin). One transaction.
+function Inv.clear(src)
+    local c = Inv.characterOf(src)
+    if not c or not c.loaded then return false, 'that player has no loaded inventory' end
+    local accepting, why = Store.accepting()
+    if not accepting then return false, why end
+    local statements, changed = {}, changedSet(c.pockets, c.equip)
+    for _, id in ipairs({ c.pockets, c.equip }) do
+        local inv = WLI.invs[id]
+        for uid, s in pairs(inv.items) do
+            local d = WLI.defs[s.name]
+            if d and d.container then
+                statements[#statements + 1] = { WLI.SQL.deleteInventoryItems, { 'item:' .. uid } }
+                WLI.invs['item:' .. uid] = nil
+            end
+            statements[#statements + 1] = Store.delete(uid)
+            inv.items[uid] = nil
+        end
+    end
+    for i = 1, 5 do c.hotbar[i] = false end
+    exports.wasteland_players:SetCharacterData(c.id, 'hotbar', c.hotbar)
+    Store.enqueue(statements, string.format('clear inventory of character %d', c.id))
+    WLI.Sync.changed(changed, src)
+    return true
+end
+
 -------------------------------------------------------------------------------
 -- Hotbar (5 references to stacks, stored as character data "hotbar")
 -------------------------------------------------------------------------------

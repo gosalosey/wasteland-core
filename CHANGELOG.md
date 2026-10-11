@@ -1,5 +1,23 @@
 # Changelog
 
+## World and admin (owner requests, brought forward from Milestones 7 and 10)
+
+### wasteland_world 0.1.0 (new)
+* One server clock (48-minute day by default) and one weather for everyone (dynamic, weighted, transitions), with exports to control them.
+* Empty world: no pedestrians, traffic, parked cars, police, trains or boats (OneSync population off for bucket 0, plus client density).
+* Silence: no ambience, music or radio, police scanner, distant sirens or music emitters. Gameplay sounds are kept. Everything is switchable in `world.lua`.
+
+### wasteland_admin 0.1.0 (new)
+* Admin panel (F10 or `/admin`) with Players, Bans, Server & world, and Action log tabs. Every action is checked on the server and logged to `wl_admin_log`.
+* Players: teleport to, bring, heal, revive, freeze, kick, ban, set survival stats, give items, open or clear inventory.
+* Bans by player or license, timed or permanent, stored in `wl_bans`, checked on connect, can be lifted.
+* Server: module status, recent warnings and errors, announcements, time and weather, noclip and invisibility.
+
+### Other
+* wasteland_players: `RegisterAdmissionCheck` (other modules can refuse connections; a broken check never locks players out).
+* wasteland_survival: `Heal`, `Revive`. wasteland_inventory: `OpenForAdmin`, `ClearInventory`, `GetItemList`, and a client "open" event.
+* Tests: 383 simulated + 22 on real MariaDB (bans, action log).
+
 ## Milestone 4: survival, HUD, death and respawn
 
 ### wasteland_survival 0.1.0 (new)

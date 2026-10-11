@@ -137,3 +137,35 @@ If an empty clothing slot looks wrong (for example underwear that does not match
 | R5.14 | Watch F8 throughout | No `[wasteland_ui] error` and no SCRIPT ERROR |
 
 Tell me what does not match, especially the temperatures (they are estimated from your game's weather) and whether the animations play.
+
+## World: empty, silent, one clock and weather
+
+**Setup:** `server.cfg` has `ensure wasteland_world` and `ensure wasteland_admin` after `ensure wasteland_survival` (done on the owner's server). Restart the server.
+
+| # | Step | Expected result |
+|---|---|---|
+| R6.1 | Join and look around a busy area (for example downtown Los Santos) | No pedestrians, no traffic, no parked cars, no police. Players' own vehicles still work. |
+| R6.2 | Listen | No city hum, birds, music from buildings, radio or police scanner. Gunshots, footsteps, doors and your own car still make sound. Tell me any sound that is still there (for example a specific building's music). |
+| R6.3 | Get in a vehicle | The radio stays off and cannot be switched on |
+| R6.4 | Two players compare the time and weather (the sky) | They are the same. One game day lasts 48 real minutes, and the weather changes every 30 minutes. |
+| R6.5 | Commit a crime in front of where police would be | No wanted level |
+
+## Admin panel
+
+| # | Step | Expected result |
+|---|---|---|
+| R7.1 | As a player **without** admin rights, press F10 | "You are not an admin." The console logs the attempt. |
+| R7.2 | As an admin (`add_ace group.admin wasteland.admin allow` and your principal), press F10 | The panel opens with Players, Bans, Server & world and Action log |
+| R7.3 | Players: select someone, then **Teleport to** and **Bring** | You go to them; they come to you |
+| R7.4 | **Freeze**, then **Unfreeze** | They cannot move, then they can |
+| R7.5 | Survival: set Food to 10, then **Heal** | Their HUD shows 10, then full. Bleeding and infection are cleared. |
+| R7.6 | Kill a test character, then **Revive** | They stand up where they fell. Their body bag stays where it is. |
+| R7.7 | Items: search "bandage", give 3, then **Open inventory** | They get 3 bandages. Your inventory screen opens with their pockets on the right, and you can drag items out. |
+| R7.8 | **Clear inventory** (click twice) | Everything they carried and wore is gone |
+| R7.9 | **Kick** with a reason | They are disconnected with "Kicked: <reason>" |
+| R7.10 | **Ban** for 1 hour with a reason, then they try to reconnect | They are kicked, and on reconnect they see "You are banned from this server until … Reason: …". Bans tab: the ban is active; **Lift** it and they can join again. |
+| R7.11 | Bans: ban a license that is not online (from `wl_accounts` or a friend) | It is listed, and that account cannot join |
+| R7.12 | Server & world: set the time to 22:00, freeze time, set the weather to THUNDER, then let the weather change by itself again | Everyone's sky follows each change |
+| R7.13 | Send an announcement | Every player sees a banner at the top for 10 seconds and a chat line |
+| R7.14 | Noclip on: fly with W A S D, Space and Ctrl (Shift is faster). Invisible on. | You fly through walls; others cannot see you. Turning them off puts you back to normal. |
+| R7.15 | Modules and recent warnings, then the Action log tab | All modules are running. Every change you made above is listed with your name. |

@@ -416,6 +416,33 @@ exports('ModifyStats', function(src, deltas)
     return true
 end)
 
+--- Heal(source) -> ok   (admin: full health, fed, no bleeding/infection, normal temperature)
+exports('Heal', function(src)
+    local s, cid = stateOf(src)
+    if not s or s.dead then return false end
+    s.hunger, s.thirst, s.bleeding, s.infection, s.treatment = 100, 100, 0, 0, 0
+    s.temperature = M.config.temperature.normal
+    damageCarry[cid] = 0
+    players():SetCharacterData(cid, DATA_KEY, s)
+    TriggerClientEvent('wasteland:survival:client:heal', tonumber(src), 400)
+    sendStats(tonumber(src), cid)
+    return true
+end)
+
+--- Revive(source) -> ok   (admin: a dead character gets up where it lies;
+--- the body bag stays where it is)
+exports('Revive', function(src)
+    local s, cid = stateOf(src)
+    if not s or not s.dead then return false end
+    local fresh = Model.fresh(M.config)
+    fresh.hunger, fresh.thirst = M.config.respawn.stats.hunger, M.config.respawn.stats.thirst
+    states[cid], damageCarry[cid], deathAt[cid] = fresh, 0, nil
+    save(cid, true)
+    TriggerClientEvent('wasteland:survival:client:revive', tonumber(src))
+    sendStats(tonumber(src), cid)
+    return true
+end)
+
 --- IsDead(source) -> boolean
 exports('IsDead', function(src)
     local s = stateOf(src)

@@ -126,6 +126,14 @@ local function closeScreen()
     end
 end
 
+-- The server opened something for us (admin view, stash): show the screen.
+RegisterNetEvent('wasteland:inventory:client:open', function()
+    Citizen.CreateThread(function()
+        Citizen.Wait(100) -- the sync with the new inventory arrives first
+        openScreen()
+    end)
+end)
+
 local function canOpen()
     local ok, ready = pcall(function() return exports.wasteland_players:IsReady() end)
     if not ok or not ready then return false end
