@@ -227,4 +227,36 @@ function Drops.close(src, id)
     WLI.Sync.player(src)
 end
 
+--- A drop with items placed by the server (zombie loot). items = list of
+--- { name, count }; unknown items or ones that do not fit are skipped.
+--- Returns the drop id, or nil and a reason.
+function Drops.createLoot(coords, items, opts)
+    local accepting, why = Store.accepting()
+    if not accepting then return nil, why end
+    if type(coords) ~= 'table' or type(coords.x) ~= 'number' or type(items) ~= 'table' then
+        return nil, 'createLoot needs coords and a list of items'
+    end
+    opts = opts or {}
+    local inv, insert = createDrop({ x = coords.x, y = coords.y, z = coords.z }, {
+        label = opts.label or 'Loot', grid = opts.grid, lifetimeMinutes = opts.lifetimeMinutes,
+    })
+    Store.enqueue({ insert }, 'create loot ' .. inv.id)
+    local added = 0
+    for _, it in ipairs(items) do
+        local count = math.tointeger(tonumber(it.count) or 1)
+        if WLI.defs[it.name] and count and count > 0 then
+            local ok, err = Inv.addItem(inv.id, it.name, count)
+            if ok then added = added + 1 else log():warn('loot %s: %s', inv.id, tostring(err)) end
+        end
+    end
+    if added == 0 then
+        local statements = {}
+        removeDrop(inv.id:sub(6), statements)
+        Store.enqueue(statements, 'remove empty loot ' .. inv.id)
+        return nil, 'no item could be placed'
+    end
+    Drops.broadcast()
+    return inv.id:sub(6)
+end
+
 return Drops

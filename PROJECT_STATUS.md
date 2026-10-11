@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** 5A (weapons) complete in automated tests; installed; runtime verification pending (R8.x). Next: 5B zombies.
+**Current milestone:** 5B (zombies) complete in automated tests; installed; runtime verification pending (R12.x). Next: Milestone 6 looting.
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -90,9 +90,11 @@ Decisions (owner, 2026-10-10): mostly walkers, some runners; moderate numbers, g
 Attachments: later (not chosen for 5A, K-34).
 
 ### 5B: zombies
-- [ ] Archetypes (walkers, runners), spawning around players, population manager, ownership strategy
-- [ ] AI states, detection (sight, sound: gunshots via `wasteland:weapons:used`)
-- [ ] Attacks: damage, chance of infection and bleeding · [ ] multiplayer tests
+- [x] Walkers and runners, spawning around players (client finds ground, server checks and creates), population manager (per player, night, world cap, despawn), ownership: OneSync owner runs the AI
+- [x] AI states (wander, chase, attack, investigate), detection by sight and sound; gunshots via `wasteland:weapons:used`
+- [x] Attacks decided by the server: damage, chance of infection and bleeding; deaths, corpses, loot drops
+- [x] Tests: rules, population, hits and their checks, noise, loot, despawn, admin, abuse (simulated server-side; AI is runtime only)
+- [~] Installed on the owner's server; runtime tests R12.1-R12.12 pending (also the 5A weapons R8.x, confirmed working by the owner)
 
 ## Milestone 6: looting
 - [ ] Searchable containers, loot tables, rarity · [ ] durations, cooldowns, respawn · [ ] registration API · [ ] concurrency tests

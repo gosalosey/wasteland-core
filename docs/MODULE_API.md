@@ -392,3 +392,19 @@ New inventory exports: `FindItem(source, uid) -> stack, inventoryId | nil` (only
 ## Money (cash item)
 
 Cash is the item named by `cashItem` in `inventory.lua` (default `cash`); there is no bank. Inventory exports: `GetCash(source) -> amount` (pockets and worn bag), `AddCash(source, amount) -> ok, err` (needs room), `RemoveCash(source, amount) -> ok, err` (all or nothing; `false, 'not enough items'` when short). `AddItem`/`RemoveItem`/`GetItemCount` with the cash item work the same. Definitions sent to clients include `cashItem`.
+
+## Zombies (`wasteland_zombies`, zombies api 0.1)
+
+The server keeps a population around living players (`zombies.lua` → `population`), asks each player's client for ground spots in a ring around them (`wasteland:zombies:client:findSpawns`), checks every spot and creates the ped itself (OneSync). A zombie is a networked ped with entity state `wlZombie = { kind = 'walker' | 'runner' }`. The client that owns the ped (OneSync) runs its AI; on ownership change the new owner takes over.
+
+Noise: on `wasteland:weapons:used(source, item, count, noise, coords)` every zombie within `noise` metres gets entity state `wlInvestigate = { x, y, z, untilMs, at }` and its owner walks it there.
+
+Hits: the owning client reports `wasteland:zombies:server:hit(netId, victim)`; the server checks ownership, life, distance and cooldown, then applies `kinds.<kind>` damage/infection/bleeding through survival (`Damage`, `AddInfection`, `AddBleeding`). Deaths: reported by the owner (`...:server:died`, only accepted for a hurt zombie) or seen by the server (health 0); corpses are removed after `corpseSeconds`; `loot` may create a drop with `CreateLootDrop`.
+
+Server events: `wasteland:zombies:died(netId, kind, cause)`, `wasteland:zombies:hit(victim, netId, { damage, infection, bleeding })`.
+
+Exports: `GetZombieCount() -> total, alive`, `SpawnZombie(coords, kind?) -> netId | nil`, `ClearZombies() -> removed`.
+
+Admin command: `/zombies count | clear | spawn <n>` (ACE `wasteland.admin`).
+
+New exports elsewhere: inventory `CreateLootDrop(coords, items, opts) -> dropId | nil, err` (items: list of { name, count }; opts: label, lifetimeMinutes, grid); survival `Damage(source, amount) -> ok`.

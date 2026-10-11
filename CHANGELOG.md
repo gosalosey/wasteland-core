@@ -1,5 +1,21 @@
 # Changelog
 
+## Milestone 5B: zombies
+
+### wasteland_zombies 0.1.0 (new)
+* The server keeps zombies around every living player (8 by day, 12 at night; at most 60 in the world), 70-140 m away, topping up every 6 seconds. The player's game finds spots on the ground; the server checks every spot (ring around the player, not next to anyone) and creates the zombie itself.
+* Walkers (drunk shuffle) and runners (15% by day, 30% at night). GTA ambient models (tramps, meth heads, GTA's own zombie) with blood and dirt; silent.
+* AI runs on the client that owns each zombie: wander; notice players by sight (35 m by day, 18 m at night, needs a clear line) and sound (sprinting 25 m, walking 9 m, crouching 3 m; vehicles are loud); chase; attack; give up after 10 s without seeing or hearing them.
+* Gunshots: every zombie within the weapon's noise radius (pistol 120 m, rifles 250 m...) walks to the shot.
+* Hits are decided by the server (zombie owned by the reporting client, alive, close, cooldown): 6-10 damage (runners 5-8), a 25% chance of infection, a 15% chance of bleeding (survival).
+* Dead zombies lie 90 seconds; 25% leave "Zombie remains" with a little loot (cash, ammo, bandage, food, scrap). Zombies far from everyone disappear.
+* `/zombies count | clear | spawn <n>` (admin). Exports `GetZombieCount`, `SpawnZombie`, `ClearZombies`; events `wasteland:zombies:died`, `wasteland:zombies:hit`.
+
+### Other
+* wasteland_inventory: `CreateLootDrop(coords, items, opts)`. wasteland_survival: `Damage(source, amount)`.
+* Tests: 441 simulated (new: zombie rules, population, hits, noise, loot, despawning, admin, abuse); the mock simulates server-created entities.
+
+
 ## Cash, HUD info line, stamina bar (owner request)
 * Cash is an item (`cash`, weightless, stacks to 1,000,000, picture `cashroll`) and the only money: no bank. It is carried in pockets or a worn bag, can be dropped, handed over and looted, and goes into the body bag on death like other items (unless on the hotbar). Inventory exports `GetCash`, `AddCash`, `RemoveCash`; config `cashItem` in inventory.lua. Tiles show cash as `$1,250`. Inventory and admin limits for one action raised to 1,000,000 for cash.
 * HUD: a line with the player's server id, character name and cash above the icons (moves with the HUD).

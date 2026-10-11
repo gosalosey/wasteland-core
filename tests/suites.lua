@@ -7,6 +7,7 @@ return {
     'unit/config_loader.lua',
     'unit/inventory_grid.lua',
     'unit/survival_model.lua',
+    'unit/zombie_rules.lua',
     'integration/boot.lua',
     'integration/registry.lua',
     'integration/lifecycle.lua',
@@ -20,6 +21,7 @@ return {
     'integration/world.lua',
     'integration/admin.lua',
     'integration/weapons.lua',
+    'integration/zombies.lua',
     'db/mariadb.lua',
     'js/node.lua',
 }

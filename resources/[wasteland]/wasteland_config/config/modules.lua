@@ -28,10 +28,12 @@ return {
         -- Weapons (Milestone 5A).
         weapons    = true,
 
+        -- Zombies (Milestone 5B).
+        zombies    = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.
-        -- zombies   = true,   -- Milestone 5
         -- loot      = true,   -- Milestone 6
         -- quests    = true,   -- Milestone 8
         -- vehicles  = true,   -- Milestone 9

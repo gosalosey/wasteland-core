@@ -222,3 +222,24 @@ Tell me what does not match, especially the temperatures (they are estimated fro
 | R11.4 | Drop 500 of it (split, then drop) and pick it up again | HUD goes to $1,000, then back to $1,500 |
 | R11.5 | Sprint | A thin bar appears at the bottom middle and shrinks; it turns yellow when almost empty and fades out once stamina is full again |
 | R11.6 | Die with cash not on the hotbar | The cash is in the body bag |
+
+## Zombies (5B)
+
+**Setup:** `server.cfg` has `ensure wasteland_zombies` after `ensure wasteland_weapons` (done on the owner's server). Restart the server. Two players make R12.9 possible.
+
+| # | Step | Expected result |
+|---|---|---|
+| R12.1 | Join and wait 10-20 seconds outside | Zombies appear in the distance (never right next to you), shuffling or wandering. `/zombies count` (admin) shows them. |
+| R12.2 | Walk normally towards one | It notices you at about 30 m in daylight when it can see you, and comes at you. Walkers shuffle; runners run. |
+| R12.3 | Crouch (Ctrl) and sneak behind one | It does not notice you until very close |
+| R12.4 | Let it reach you | An attack animation; you lose health; sometimes "Bleeding" or "Infection" appears under the HUD |
+| R12.5 | Kill it with a melee weapon, then with a gun | It dies; the weapon wears (5A). After about 90 s the body is gone. Sometimes a "Zombie remains" bag with loot lies there (press E). |
+| R12.6 | Fire a gun with zombies 50-100 m away that have not seen you | They walk towards where you fired |
+| R12.7 | Run away far (or drive) | Zombies give up after about 10 s; ones left far behind disappear |
+| R12.8 | Wait until night (or set 22:00 in the admin panel) | More zombies, more runners; they see you less far |
+| R12.9 | Two players near each other | Both see the same zombies doing the same things; both can be attacked |
+| R12.10 | `/zombies spawn 5` (admin) | Up to 5 zombies 15-35 m around you |
+| R12.11 | `/zombies clear` | All zombies disappear |
+| R12.12 | Watch the F8 console and the server console while playing | No errors from wasteland_zombies |
+
+Tell me how they feel: too many, too few, too slow, too fast, too weak, too strong. Every number is in `zombies.lua`.

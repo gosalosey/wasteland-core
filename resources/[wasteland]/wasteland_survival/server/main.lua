@@ -446,6 +446,15 @@ exports('Revive', function(src)
     return true
 end)
 
+--- Damage(source, amount) -> ok   (zombie hits; health points of 100)
+exports('Damage', function(src, amount)
+    local s = stateOf(src)
+    amount = math.floor(tonumber(amount) or 0)
+    if not s or s.dead or amount <= 0 then return false end
+    TriggerClientEvent('wasteland:survival:client:damage', tonumber(src), math.min(amount, 400))
+    return true
+end)
+
 --- IsDead(source) -> boolean
 exports('IsDead', function(src)
     local s = stateOf(src)

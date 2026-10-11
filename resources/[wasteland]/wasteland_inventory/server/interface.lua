@@ -283,6 +283,13 @@ exports('RemoveCash', function(src, amount)
     return Inv.removeItem(tonumber(src), WLI.cfg.cashItem, math.tointeger(tonumber(amount)) or amount)
 end)
 
+--- CreateLootDrop(coords, items, opts) -> dropId | nil, err
+--- items: list of { name, count }; opts: { label, lifetimeMinutes, grid = { width, height } }
+exports('CreateLootDrop', function(coords, items, opts)
+    if inactive() then return nil, 'inventory module is not running' end
+    return Drops.createLoot(coords, items, opts)
+end)
+
 --- FindItem(source, uid) -> { uid, name, count, metadata }, inventoryId | nil
 --- Only stacks the player carries (pockets, worn items, worn bag).
 exports('FindItem', function(src, uid)

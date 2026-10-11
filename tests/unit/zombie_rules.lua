@@ -1,0 +1,74 @@
+-- Zombie rules (wasteland_zombies/shared/rules.lua) with the shipped config.
+
+local env = setmetatable({}, { __index = _G })
+assert(loadfile(RESOURCES .. '/wasteland_zombies/shared/rules.lua', 't', env))()
+local Rules = env.WLZ.Rules
+
+local function shippedConfig()
+    local f = assert(io.open(RESOURCES .. '/wasteland_config/config/zombies.lua', 'rb'))
+    local src = f:read('a'); f:close()
+    return assert(load(src, '@zombies.lua', 't', { math = math }))()
+end
+local cfg = shippedConfig()
+local pop = cfg.population
+
+describe('zombie population', function()
+    it('keeps 8 around a player by day and 12 at night', function()
+        expect(Rules.target(pop, false)).toBe(8)
+        expect(Rules.target(pop, true)).toBe(12)
+        expect(Rules.isNight(22)).toBe(true); expect(Rules.isNight(5)).toBe(true); expect(Rules.isNight(12)).toBe(false)
+    end)
+    it('tops up in batches and never past the world cap', function()
+        expect(Rules.toSpawn(pop, false, 0, 0)).toBe(3)
+        expect(Rules.toSpawn(pop, false, 7, 0)).toBe(1)
+        expect(Rules.toSpawn(pop, false, 8, 0)).toBe(0)
+        expect(Rules.toSpawn(pop, false, 0, 59)).toBe(1)
+        expect(Rules.toSpawn(pop, false, 0, 60)).toBe(0)
+    end)
+    it('mostly walkers; more runners at night', function()
+        expect(Rules.pickKind(cfg.kinds, false, 0.10)).toBe('runner')
+        expect(Rules.pickKind(cfg.kinds, false, 0.20)).toBe('walker')
+        expect(Rules.pickKind(cfg.kinds, true, 0.20)).toBe('runner')
+        expect(Rules.pickKind(cfg.kinds, true, 0.35)).toBe('walker')
+    end)
+end)
+
+describe('spawn points', function()
+    local me = { x = 0, y = 0, z = 30 }
+    local players = { { source = 1, coords = me }, { source = 2, coords = { x = 300, y = 0, z = 30 } } }
+    it('must be in the ring around the player and away from everyone', function()
+        expect(Rules.validSpawn(pop, { x = 100, y = 0, z = 30 }, me, players)).toBe(true)
+        local _, why = Rules.validSpawn(pop, { x = 20, y = 0, z = 30 }, me, players)
+        expect(why).toBe('outside the spawn ring')
+        _, why = Rules.validSpawn(pop, { x = 500, y = 0, z = 30 }, me, players)
+        expect(why).toBe('outside the spawn ring')
+        _, why = Rules.validSpawn(pop, { x = 160, y = 0, z = 30 }, me, { { source = 1, coords = me }, { source = 2, coords = { x = 170, y = 0, z = 30 } } })
+        expect(why).toBe('too close to a player')
+        _, why = Rules.validSpawn(pop, { x = 'a' }, me, players)
+        expect(why).toBe('not a point')
+    end)
+end)
+
+describe('hits, noise and loot', function()
+    it('a hit does damage, sometimes infects and starts bleeding', function()
+        local w = cfg.kinds.walker
+        local clean = Rules.hit(w, { damage = 0, infection = 0.9, infectionAmount = 0, bleeding = 0.9 })
+        expect(clean.damage).toBe(6); expect(clean.infection).toBe(0); expect(clean.bleeding).toBe(0)
+        local bad = Rules.hit(w, { damage = 0.999, infection = 0.1, infectionAmount = 0.999, bleeding = 0.1 })
+        expect(bad.damage).toBe(10); expect(bad.infection).toBe(12); expect(bad.bleeding).toBe(1)
+    end)
+    it('zombies within the noise radius hear it; dead ones do not', function()
+        local zs = { { id = 1, coords = { x = 50, y = 0, z = 0 } }, { id = 2, coords = { x = 200, y = 0, z = 0 } },
+            { id = 3, coords = { x = 10, y = 0, z = 0 }, dead = true } }
+        local heard = Rules.hearers(zs, { x = 0, y = 0, z = 0 }, 120)
+        expect(#heard).toBe(1); expect(heard[1]).toBe(1)
+        expect(#Rules.hearers(zs, { x = 0, y = 0, z = 0 }, 0)).toBe(0)
+    end)
+    it('loot: by chance, one weighted item with a count in range', function()
+        expect(Rules.loot(cfg.loot, 0.9, math.random)).toBe(nil)
+        local items = Rules.loot(cfg.loot, 0.0, function(a, b) return a end) -- first pick, lowest count
+        expect(items[1].name).toBe('cash'); expect(items[1].count).toBe(5)
+        local last = Rules.loot(cfg.loot, 0.0, function(a, b) return b end)
+        expect(last[1].name).toBe('scrap_metal'); expect(last[1].count).toBe(2)
+    end)
+end)

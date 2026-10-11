@@ -104,7 +104,24 @@ function Mock.new(opts)
     self.nextTempId = 65536
     self.dropped = {}       -- { id, reason }
     self.connections = {}   -- connection attempts (see connectPlayer)
+    -- Server-created entities (peds): [handle] = { handle, netId, model,
+    -- coords, heading, health, owner (server id), state = {} }
+    self.entities = {}
+    self.nextEntity = 100001
     return self
+end
+
+--- A server-created entity (ped) by handle, or nil.
+function Mock:entity(handle) return self.entities[tonumber(handle) or -1] end
+
+--- Test helper: list of live entities (optionally only those with state key).
+function Mock:entityList(stateKey)
+    local out = {}
+    for _, e in pairs(self.entities) do
+        if not stateKey or e.state[stateKey] ~= nil then out[#out + 1] = e end
+    end
+    table.sort(out, function(a, b) return a.handle < b.handle end)
+    return out
 end
 
 --- Register a resource directory. `path` is the folder containing fxmanifest.lua.
@@ -597,15 +614,70 @@ function Mock:buildEnv(r)
         local id = tonumber(src)
         mock:schedule(0, function() mock:dropPlayer(id, reason) end)
     end
+    -- Entities created by the server (OneSync). Players' peds are id * 100.
+    env.GetHashKey = function(str)
+        local h = 0
+        for i = 1, #tostring(str) do h = (h * 31 + tostring(str):lower():byte(i)) % 4294967296 end
+        return h
+    end
+    env.CreatePed = function(pedType, model, x, y, z, heading, isNetwork, scriptHost)
+        local handle = mock.nextEntity
+        mock.nextEntity = mock.nextEntity + 1
+        -- owner: the nearest player, like OneSync
+        local owner, best = nil, math.huge
+        for id, pl in pairs(mock.players) do
+            if pl.coords and not pl.connecting then
+                local d = math.sqrt((pl.coords.x - x) ^ 2 + (pl.coords.y - y) ^ 2)
+                if d < best then owner, best = id, d end
+            end
+        end
+        mock.entities[handle] = { handle = handle, netId = handle + 5000, model = model,
+            coords = { x = x, y = y, z = z }, heading = heading or 0.0, health = 200, owner = owner, state = {} }
+        return handle
+    end
+    env.DeleteEntity = function(ent) mock.entities[tonumber(ent) or -1] = nil end
+    env.GetEntityHealth = function(ent)
+        local e = mock:entity(ent)
+        if e then return e.health end
+        return mock:getPlayer(math.floor((tonumber(ent) or 0) / 100)) and 200 or 0
+    end
+    env.NetworkGetNetworkIdFromEntity = function(ent)
+        local e = mock:entity(ent)
+        return e and e.netId or 0
+    end
+    env.NetworkGetEntityFromNetworkId = function(netId)
+        for h, e in pairs(mock.entities) do if e.netId == netId then return h end end
+        return 0
+    end
+    env.NetworkGetEntityOwner = function(ent)
+        local e = mock:entity(ent)
+        if e then return e.owner or -1 end
+        return math.floor((tonumber(ent) or 0) / 100)
+    end
+    env.Entity = function(ent)
+        local e = mock:entity(ent)
+        local bag = e and e.state or {}
+        local state = setmetatable({}, {
+            __index = function(_, k)
+                if k == 'set' then return function(_, key, value) bag[key] = value end end
+                return bag[k]
+            end,
+            __newindex = function(_, k, v) bag[k] = v end,
+        })
+        return { state = state }
+    end
     env.GetPlayerPed = function(src)
         local p = mock:getPlayer(src)
         if not p or not p.coords then return 0 end
         return p.id * 100
     end
     env.DoesEntityExist = function(ent)
+        if mock:entity(ent) then return true end
         return mock:getPlayer(math.floor((tonumber(ent) or 0) / 100)) ~= nil
     end
     env.GetEntityCoords = function(ent)
+        local e = mock:entity(ent)
+        if e then return { x = e.coords.x, y = e.coords.y, z = e.coords.z } end
         local p = mock:getPlayer(math.floor((tonumber(ent) or 0) / 100))
         local c = p and p.coords or { x = 0.0, y = 0.0, z = 0.0 }
         return { x = c.x, y = c.y, z = c.z }
