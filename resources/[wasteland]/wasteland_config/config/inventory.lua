@@ -142,9 +142,9 @@ return {
             equip = 'back', container = { width = 7, height = 6, maxWeight = 30 } },
 
         clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6 },
-        clothing_pants = { label = 'Pants', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4 },
+        clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4 },
         clothing_shoes = { label = 'Shoes', image = 'shoes_blue', category = 'clothing', width = 2, height = 1, weight = 0.8, equip = 'feet', warmth = 2 },
-        clothing_hat = { label = 'Hat', category = 'clothing', width = 1, height = 1, weight = 0.2, equip = 'head', warmth = 2 },
-        clothing_glasses = { label = 'Glasses', category = 'clothing', width = 1, height = 1, weight = 0.05, equip = 'eyes' },
+        clothing_hat = { label = 'Hat', image = 'cap', category = 'clothing', width = 1, height = 1, weight = 0.2, equip = 'head', warmth = 2 },
+        clothing_glasses = { label = 'Glasses', image = 'sunglasses', category = 'clothing', width = 1, height = 1, weight = 0.05, equip = 'eyes' },
     },
 }

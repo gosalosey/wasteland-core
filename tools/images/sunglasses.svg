@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="lens" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#5b6470"/><stop offset="0.45" stop-color="#1d232b"/><stop offset="1" stop-color="#0b0e12"/>
+    </linearGradient>
+  </defs>
+  <path d="M8 104 Q4 92 18 90 L48 92" fill="none" stroke="#1a1d22" stroke-width="8" stroke-linecap="round"/>
+  <path d="M248 104 Q252 92 238 90 L208 92" fill="none" stroke="#1a1d22" stroke-width="8" stroke-linecap="round"/>
+  <path d="M20 92 H118 Q122 92 120 104 Q114 162 70 166 Q30 166 22 120 Q18 100 20 92 Z" fill="url(#lens)" stroke="#2b3038" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M236 92 H138 Q134 92 136 104 Q142 162 186 166 Q226 166 234 120 Q238 100 236 92 Z" fill="url(#lens)" stroke="#2b3038" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M118 98 Q128 88 138 98" fill="none" stroke="#2b3038" stroke-width="7" stroke-linecap="round"/>
+  <path d="M38 104 Q58 100 82 104" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
+  <path d="M154 104 Q174 100 198 104" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
+  <path d="M44 140 L66 116" stroke="#ffffff" stroke-opacity="0.12" stroke-width="10" stroke-linecap="round"/>
+  <path d="M160 140 L182 116" stroke="#ffffff" stroke-opacity="0.12" stroke-width="10" stroke-linecap="round"/>
+</svg>

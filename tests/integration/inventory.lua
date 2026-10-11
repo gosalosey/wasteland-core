@@ -137,7 +137,8 @@ describe('inventory startup and new characters', function()
         local d = defs[#defs].args[1]
         expect(d.items.bandage.image).toBe('https://cfx-nui-wasteland_images/html/images/bandage.webp')
         expect(d.items.backpack_small.image).toBe('https://cfx-nui-wasteland_images/html/images/bag.webp')
-        expect(d.items.clothing_pants.image).toBe(nil)
+        expect(d.items.clothing_pants.image).toBe('https://cfx-nui-wasteland_images/html/images/jeans.webp') -- own picture (tools/images)
+        expect(d.items.flashlight.image).toContain('weapon_flashlight')
         local list = server:export('wasteland_inventory', 'GetItemList')
         local byName = {}
         for _, it in ipairs(list) do byName[it.name] = it end

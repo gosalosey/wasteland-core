@@ -195,7 +195,7 @@ Tell me what does not match, especially the temperatures (they are estimated fro
 |---|---|---|
 | R9.1 | Open the inventory (TAB) | Items show pictures: water bottle, bandages, beans (a can), backpack (a bag), weapons, ammo |
 | R9.2 | Rotate a long item while dragging (R), e.g. a rifle or the bat | The picture turns with the item and fits the tile |
-| R9.3 | Look at pants, hat and glasses (no picture in the pack) | They show their colour and name as before |
+| R9.3 | Look at pants, hat and glasses | Drawn pictures: blue jeans, a green cap, sunglasses |
 | R9.4 | Admin panel, Players, Items: pick different items in the list | A small picture of the chosen item is shown next to the list |
 
 ## HUD (icons)

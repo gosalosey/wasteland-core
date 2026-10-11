@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <radialGradient id="crown" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#7b8a5a"/><stop offset="0.6" stop-color="#55633c"/><stop offset="1" stop-color="#36402a"/>
+    </radialGradient>
+    <linearGradient id="brim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a5634"/><stop offset="1" stop-color="#2b3320"/>
+    </linearGradient>
+  </defs>
+  <path d="M30 168 Q120 200 236 176 Q238 196 214 204 Q120 222 38 194 Q24 186 30 168 Z" fill="url(#brim)" stroke="#1f2617" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M44 172 Q40 70 128 56 Q206 60 214 168 Q130 196 44 172 Z" fill="url(#crown)" stroke="#1f2617" stroke-width="4" stroke-linejoin="round"/>
+  <g fill="none" stroke="#2a3220" stroke-width="3" stroke-linecap="round">
+    <path d="M128 58 Q118 110 120 186"/>
+    <path d="M128 58 Q170 100 186 178"/>
+    <path d="M128 58 Q82 100 72 178"/>
+  </g>
+  <g fill="none" stroke="#a7b48a" stroke-width="2" stroke-dasharray="5 5" stroke-linecap="round" opacity="0.8">
+    <path d="M52 168 Q130 192 208 166"/>
+  </g>
+  <circle cx="128" cy="58" r="8" fill="#55633c" stroke="#1f2617" stroke-width="3"/>
+  <path d="M60 110 Q80 80 112 72" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="10" stroke-linecap="round"/>
+</svg>

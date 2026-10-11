@@ -502,6 +502,7 @@ canned_salmon
 canned_tuna
 cannoli
 cannoli__pizzathis
+cap
 capacitors
 cappucc
 capsimax
@@ -1815,6 +1816,7 @@ java_chip_frappuccino
 jb700
 jb7002
 jbcocktail
+jeans
 jellal
 jerry_can
 jessrabbit
@@ -2980,6 +2982,7 @@ sultan3
 sultanrs
 sunchips1
 sunchips2
+sunglasses
 suntrap
 superd
 supervolito

@@ -1,6 +1,7 @@
 """Import an item image pack into wasteland_images.
 
     python tools/import_images.py "F:/FIVEM SHIT/items-images-main"
+    python tools/import_images.py --custom-only
 
 Every PNG in the pack (any sub-folder) is copied to
 resources/[wasteland]/wasteland_images/html/images/<name>.webp, where <name>
@@ -11,6 +12,10 @@ down to fit MAX_SIDE, and everything is saved as WebP (about a quarter of
 the size of PNG; players download every image once). The pack itself is
 never changed. Empty transparent borders are trimmed. index.txt lists
 every image name, one per line.
+
+Our own pictures live in tools/images (PNG; the SVG next to each is its
+source). They are added after the pack and win over a pack picture with
+the same name. --custom-only adds just those to the current import.
 """
 import os
 import re
@@ -23,10 +28,58 @@ MAX_BYTES = 100 * 1024
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'resources', '[wasteland]', 'wasteland_images', 'html', 'images')
+INDEX = os.path.join(os.path.dirname(OUT), 'index.txt')
+CUSTOM = os.path.join(ROOT, 'tools', 'images')
 
 
 def clean(name):
     return re.sub(r'[^a-z0-9_-]', '_', name.lower())
+
+
+def convert(src, dest):
+    """Trim, scale and save one picture as WebP. Returns True if scaled down."""
+    size = os.path.getsize(src)
+    img = Image.open(src)
+    if img.mode not in ('RGBA', 'RGB'):
+        img = img.convert('RGBA')
+    if img.mode == 'RGBA':
+        # Trim the empty transparent border so long items (rifles) fill
+        # their tile; keep a small margin.
+        box = img.getchannel('A').point(lambda a: 255 if a > 8 else 0).getbbox()
+        if box:
+            pad = max(2, round(max(box[2] - box[0], box[3] - box[1]) * 0.04))
+            img = img.crop((max(0, box[0] - pad), max(0, box[1] - pad),
+                            min(img.width, box[2] + pad), min(img.height, box[3] + pad)))
+    scaled = size > MAX_BYTES or max(img.size) > MAX_SIDE
+    if scaled:
+        img.thumbnail((MAX_SIDE, MAX_SIDE), Image.LANCZOS)
+    img.save(dest, 'WEBP', quality=90, method=4)
+    return scaled
+
+
+def read_index():
+    if not os.path.exists(INDEX):
+        return set()
+    with open(INDEX, encoding='utf-8') as f:
+        return {line.strip() for line in f if line.strip()}
+
+
+def write_index(names):
+    with open(INDEX, 'w', encoding='utf-8', newline='\n') as f:
+        f.write('\n'.join(sorted(names)) + '\n')
+
+
+def add_custom(names):
+    added = []
+    if not os.path.isdir(CUSTOM):
+        return added
+    for f in sorted(os.listdir(CUSTOM)):
+        if f.lower().endswith('.png'):
+            name = clean(os.path.splitext(f)[0])
+            convert(os.path.join(CUSTOM, f), os.path.join(OUT, name + '.webp'))
+            names.add(name)
+            added.append(name)
+    return added
 
 
 def main(pack):
@@ -50,35 +103,28 @@ def main(pack):
             while name in names:
                 name = f'{base}__{folder}{n}'
                 n += 1
-        names[name] = p
         dest = os.path.join(OUT, name + '.webp')
-        size = os.path.getsize(p)
-        before += size
+        before += os.path.getsize(p)
         try:
-            img = Image.open(p)
-            if img.mode not in ('RGBA', 'RGB'):
-                img = img.convert('RGBA')
-            if img.mode == 'RGBA':
-                # Trim the empty transparent border so long items (rifles)
-                # fill their tile; keep a small margin.
-                box = img.getchannel('A').point(lambda a: 255 if a > 8 else 0).getbbox()
-                if box:
-                    pad = max(2, round(max(box[2] - box[0], box[3] - box[1]) * 0.04))
-                    img = img.crop((max(0, box[0] - pad), max(0, box[1] - pad),
-                                    min(img.width, box[2] + pad), min(img.height, box[3] + pad)))
-            if size > MAX_BYTES or max(img.size) > MAX_SIDE:
-                img.thumbnail((MAX_SIDE, MAX_SIDE), Image.LANCZOS)
+            if convert(p, dest):
                 resized += 1
-            img.save(dest, 'WEBP', quality=90, method=4)
         except Exception as e:  # unreadable file: skip it
             print(f'skipped {p}: {e}')
-            del names[name]
             continue
+        names[name] = p
         after += os.path.getsize(dest)
-    with open(os.path.join(os.path.dirname(OUT), 'index.txt'), 'w', encoding='utf-8', newline='\n') as f:
-        f.write('\n'.join(sorted(names)) + '\n')
-    print(f'{len(names)} images, {resized} scaled down, {before / 2**20:.1f} MB -> {after / 2**20:.1f} MB')
+    all_names = set(names)
+    custom = add_custom(all_names)
+    write_index(all_names)
+    print(f'{len(names)} pack images ({resized} scaled down, {before / 2**20:.1f} MB -> {after / 2**20:.1f} MB), '
+          f'{len(custom)} own: {", ".join(custom)}')
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    if len(sys.argv) > 1 and sys.argv[1] == '--custom-only':
+        index = read_index()
+        added = add_custom(index)
+        write_index(index)
+        print(f'added {len(added)} own pictures: {", ".join(added)}; index has {len(index)}')
+    else:
+        main(sys.argv[1])
