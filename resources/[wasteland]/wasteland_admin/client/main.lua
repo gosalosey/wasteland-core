@@ -42,7 +42,68 @@ RegisterNetEvent('wasteland:admin:client:data', function(data)
     end
 end)
 
+-------------------------------------------------------------------------------
+-- Admin target option on props: make the prop lootable (see html/lootpick.js)
+-------------------------------------------------------------------------------
+
+local PICK = 'adminLootPick'
+local amAdmin = false
+local pickHash, pickTarget = nil, nil
+
+RegisterNetEvent('wasteland:admin:client:isAdmin', function(yes) amAdmin = yes == true end)
+
+local function registerTarget()
+    if GetResourceState('wasteland_target') ~= 'started' then return end
+    if pickTarget then pcall(function() exports.wasteland_target:Remove(pickTarget) end) end
+    pickTarget = exports.wasteland_target:AddGlobal('object', {
+        { label = 'Admin: loot container…', icon = '⚙', distance = 6.0,
+            canInteract = function() return amAdmin end,
+            onSelect = function(data)
+                if not data.model then return end
+                local u = math.tointeger(data.model) & 0xffffffff
+                pickHash = u >= 0x80000000 and u - 0x100000000 or u
+                TriggerServerEvent('wasteland:admin:server:lootPick')
+            end },
+    })
+end
+
+Citizen.CreateThread(function()
+    registerTarget()
+    while true do
+        TriggerServerEvent('wasteland:admin:server:amIAdmin')
+        Citizen.Wait(60000)
+    end
+end)
+AddEventHandler('onClientResourceStart', function(res) if res == 'wasteland_target' then registerTarget() end end)
+
+RegisterNetEvent('wasteland:admin:client:lootPick', function(data)
+    if not uiRunning() or not pickHash or type(data) ~= 'table' then return end
+    data.hash = pickHash
+    if exports.wasteland_ui:IsOpen(PICK) then exports.wasteland_ui:Close(PICK) end
+    exports.wasteland_ui:Open(PICK, { script = 'html/lootpick.js', data = data })
+end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen ~= PICK then return end
+    if action == 'close' then exports.wasteland_ui:Close(PICK); return end
+    if not pickHash then return end
+    payload = type(payload) == 'table' and payload or {}
+    if action == 'add' and type(payload.container) == 'string' then
+        TriggerServerEvent('wasteland:admin:server:act', 'lootAdd', { model = pickHash, container = payload.container,
+            propName = type(payload.propName) == 'string' and payload.propName or nil })
+    elseif action == 'remove' then
+        TriggerServerEvent('wasteland:admin:server:act', 'lootRemove', { model = pickHash })
+    end
+end)
+
 RegisterNetEvent('wasteland:admin:client:result', function(r)
+    if uiRunning() and exports.wasteland_ui:IsOpen(PICK) and type(r) == 'table' then
+        exports.wasteland_ui:Update(PICK, { result = r })
+        if r.ok then
+            Citizen.SetTimeout(900, function() if exports.wasteland_ui:IsOpen(PICK) then exports.wasteland_ui:Close(PICK) end end)
+        end
+        return
+    end
     if uiRunning() and exports.wasteland_ui:IsOpen(PANEL) then
         exports.wasteland_ui:Update(PANEL, { result = r })
     elseif type(r) == 'table' and r.message then

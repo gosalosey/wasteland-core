@@ -121,3 +121,25 @@ test('condition of items with durability', () => {
     assert.deepStrictEqual(inv.condition(def, { metadata: { durability: 37 } }), { share: 0.37, text: 'Condition 37%', ruined: false });
     assert.deepStrictEqual(inv.condition(def, { metadata: { durability: 0 } }), { share: 0, text: 'Ruined', ruined: true });
 });
+
+test('health panel: what is wrong and how to fix it', () => {
+    const cures = { bleeding: ['Bandage', 'Rag'], infection: ['Antibiotics'], hunger: ['Canned beans'], thirst: ['Water bottle'], health: ['Painkillers'], cold: [] };
+    assert.deepStrictEqual(inv.conditions({ health: 100, hunger: 80, thirst: 80, temperature: 37, bleeding: 0, infection: 0, cures }), []);
+    assert.deepStrictEqual(inv.conditions({ dead: true, bleeding: 3 }), []);
+    const c = inv.conditions({ health: 20, hunger: 10, thirst: 50, temperature: 34.8, bleeding: 2, infection: 70, treatment: false, armor: 0,
+        cures, limits: { hypothermia: 35, hyperthermia: 39.5, infectionDamage: 60 } });
+    const byKey = {};
+    c.forEach((x) => { byKey[x.key] = x; });
+    assert.strictEqual(byKey.bleeding.title, 'Bleeding heavily');
+    assert.ok(byKey.bleeding.fix.startsWith('Stop it with: Bandage, Rag.'));
+    assert.strictEqual(byKey.infection.level, 'critical');
+    assert.ok(byKey.infection.fix.includes('Antibiotics') && byKey.infection.fix.includes('hurting you now'));
+    assert.strictEqual(byKey.health.title, 'Hurt (health 20%)');
+    assert.strictEqual(byKey.hunger.level, 'critical');
+    assert.strictEqual(byKey.thirst, undefined);
+    assert.strictEqual(byKey.cold.title, 'Hypothermia (34.8 °C)');
+    assert.strictEqual(byKey.armor.title, 'Armor plate broken');
+    const treated = inv.conditions({ infection: 30, treatment: true, cures });
+    assert.strictEqual(treated[0].title, 'Infected 30% (treated)');
+});
+

@@ -1,5 +1,12 @@
 # Changelog
 
+## Admin loot target, health panel in the inventory (owner request)
+* Admins: Left Alt on any prop, "Admin: loot container…": a small window to make that prop (every copy of its model) a loot container of a chosen category, with an optional prop name; Change / Remove for props added before. Only admins see the option (the client asks the server once a minute); the server still checks every request.
+* Inventory: a Health panel (right column, under anything being looted) with a body outline (colour by health, green tint when infected, blood drops when bleeding, blue/orange edge when cold/hot, a plate when wearing armor), bars for health, food, water and armor, body temperature, and a list of what is wrong with how to fix it (the items that help come from survival.lua consumables).
+* Survival client export `GetVitals()`; survival stats carry `cures` and `limits`.
+* Tests: 630.
+
+
 ## Admin: prop names, own loot categories (owner request)
 * "Looking at" shows a name where one is known: vehicles (their game name), props listed in loot.lua, and props you named when adding them (new optional "Prop name" box). GTA cannot turn a prop's model number back into its name, so other props show "(name unknown)".
 * New Loot tab: make your own loot categories. Name, search time, refill time, size, chance it is empty, how many items per search, and the items it can hold (item, least, most, chance weight). Edit and delete them; deleting one stops its props being searchable. They show up in the Coords tab's "Loot as" list. Kept in wasteland_loot's KVP (loot.lua is not changed).

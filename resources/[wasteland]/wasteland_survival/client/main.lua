@@ -501,3 +501,17 @@ AddEventHandler('onResourceStop', function(res)
     for _, blip in pairs(bodyBlips) do RemoveBlip(blip) end
     if GetResourceState('spawnmanager') == 'started' then exports.spawnmanager:setAutoSpawn(true) end
 end)
+
+--- GetVitals() -> { health, armor, hunger, thirst, temperature, bleeding, infection, treatment, dead, cures, limits } | nil
+--- (the inventory's health panel)
+exports('GetVitals', function()
+    if not stats then return nil end
+    local ped = PlayerPedId()
+    return {
+        health = healthPercent(ped),
+        armor = plate and math.max(0, math.min(100, math.floor(plate.current / plate.max * 100 + 0.5))) or nil,
+        hunger = stats.hunger, thirst = stats.thirst, temperature = stats.temperature,
+        bleeding = stats.bleeding, infection = stats.infection, treatment = stats.treatment, dead = stats.dead,
+        cures = stats.cures, limits = stats.limits,
+    }
+end)

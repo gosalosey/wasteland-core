@@ -36,6 +36,30 @@ local function save(cid, now)
     if now then players():SaveCharacter(cid) end
 end
 
+-- Which items help with what (for the inventory's health panel), from the
+-- consumables in survival.lua and the item labels.
+local function curesList()
+    local out = { bleeding = {}, infection = {}, hunger = {}, thirst = {}, health = {}, cold = {} }
+    local function label(name)
+        if GetResourceState('wasteland_inventory') ~= 'started' then return name end
+        local ok, d = pcall(function() return exports.wasteland_inventory:GetItemDefinition(name) end)
+        return ok and d and d.label or name
+    end
+    local names = {}
+    for name in pairs(M.config.consumables) do names[#names + 1] = name end
+    table.sort(names)
+    for _, name in ipairs(names) do
+        local e = M.config.consumables[name]
+        if (e.stopBleeding or 0) > 0 then out.bleeding[#out.bleeding + 1] = label(name) end
+        if (e.infection or 0) < 0 then out.infection[#out.infection + 1] = label(name) end
+        if (e.hunger or 0) > 0 then out.hunger[#out.hunger + 1] = label(name) end
+        if (e.thirst or 0) > 0 then out.thirst[#out.thirst + 1] = label(name) end
+        if (e.health or 0) > 0 then out.health[#out.health + 1] = label(name) end
+        if (e.temperature or 0) > 0 then out.cold[#out.cold + 1] = label(name) end
+    end
+    return out
+end
+
 local function sendStats(src, cid)
     local s = states[cid]
     if not s then return end
@@ -47,6 +71,9 @@ local function sendStats(src, cid)
         hunger = s.hunger, thirst = s.thirst, infection = s.infection, bleeding = s.bleeding,
         temperature = s.temperature, treatment = s.treatment > 0, dead = s.dead,
         ambient = e.ambient,
+        cures = curesList(),
+        limits = { hypothermia = M.config.temperature.hypothermia, hyperthermia = M.config.temperature.hyperthermia,
+            infectionDamage = M.config.infection.damageThreshold },
     })
 end
 

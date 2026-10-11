@@ -454,3 +454,13 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R28.3 | Coords tab, look at a prop, "Loot as" Gun safe, type a prop name, Add to loot | The prop can be searched and gives only the items you chose; the name shows from then on |
 | R28.4 | Edit the category (change items), Save; restart the server | The changes stay |
 | R28.5 | Delete the category (click twice) | Its props can no longer be searched |
+
+## R29: admin loot target and health panel
+
+| # | Do | Expect |
+|---|---|---|
+| R29.1 | As admin, Left Alt on a barrel / box | "Admin: loot container…" (not shown to normal players) |
+| R29.2 | Pick it, choose a category, Make lootable | "Every prop of this model ... can now be searched"; the window closes; "Search ..." works on it |
+| R29.3 | Do it again on the same prop | The window shows the current category with Change / Remove |
+| R29.4 | Open the inventory (TAB) when healthy | Health panel: body outline, bars, "You are in good shape." |
+| R29.5 | Get hit by zombies until bleeding / infected, get hungry | Blood drops / green tint on the body; "Bleeding ... Stop it with: Bandage, Rag." and the others, updating every second |

@@ -326,6 +326,17 @@ describe('admin world tools, live view, overlays and player tools', function()
         expect(server:export('wasteland_loot', 'GetLootAdminData').known['-4242'] == nil).toBe(true)
     end)
 
+    it('the prop target: only admins learn they are admins and get the loot choices', function()
+        server:clientEvent(admin, 'wasteland:admin:server:amIAdmin'); server:advance(100)
+        expect(last(events(server, admin, 'wasteland:admin:client:isAdmin')).args[1]).toBe(true)
+        server:clientEvent(target, 'wasteland:admin:server:amIAdmin'); server:advance(100)
+        expect(last(events(server, target, 'wasteland:admin:client:isAdmin')).args[1]).toBe(false)
+        server:clientEvent(admin, 'wasteland:admin:server:lootPick'); server:advance(100)
+        expect(#last(events(server, admin, 'wasteland:admin:client:lootPick')).args[1].containers > 3).toBe(true)
+        server:clientEvent(target, 'wasteland:admin:server:lootPick'); server:advance(100)
+        expect(#events(server, target, 'wasteland:admin:client:lootPick')).toBe(0)
+    end)
+
     it('logs the changes but not the read-only tools, and raised nothing', function()
         local actions = {}
         for _, row in ipairs(server.db.backend.data.wl_admin_log) do actions[row.action] = true end

@@ -29,4 +29,5 @@ client_scripts {
 files {
     'html/admin.js',
     'html/announce.js',
+    'html/lootpick.js',
 }

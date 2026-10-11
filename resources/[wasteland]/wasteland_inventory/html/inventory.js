@@ -122,6 +122,60 @@
         return { error: heavy ? 'Too heavy to carry.' : 'No room for that.' };
     }
 
+    // Health panel: what is wrong and how to fix it.
+    // v = { health, armor, hunger, thirst, temperature, bleeding, infection, treatment, dead, cures, limits }
+    // -> [{ key, level: 'low' | 'critical', title, fix }]
+    function conditions(v) {
+        if (!v || v.dead) return [];
+        const c = v.cures || {};
+        const lim = v.limits || {};
+        const list = (names, verb, fallback) => (names && names.length ? verb + ' ' + names.join(', ') + '.' : fallback);
+        const out = [];
+        const r = (x) => Math.round(Number(x) || 0);
+        if (v.bleeding > 0) {
+            const lvl = Math.min(3, v.bleeding);
+            out.push({ key: 'bleeding', level: lvl >= 2 ? 'critical' : 'low',
+                title: ['', 'Bleeding', 'Bleeding heavily', 'Bleeding severely'][lvl],
+                fix: list(c.bleeding, 'Stop it with:', 'Find something to stop the bleeding.') + ' Light bleeding may stop by itself; heavy bleeding will not.' });
+        }
+        if (v.infection > 0) {
+            const hurts = r(v.infection) >= (lim.infectionDamage || 60);
+            out.push({ key: 'infection', level: hurts ? 'critical' : 'low',
+                title: 'Infected ' + r(v.infection) + '%' + (v.treatment ? ' (treated)' : ''),
+                fix: v.treatment ? 'The medicine is working; it cannot get worse for now.'
+                    : list(c.infection, 'Treat it with:', 'Find antibiotics.') + (hurts ? ' It is hurting you now.' : ' It grows over time and hurts you at ' + (lim.infectionDamage || 60) + '%.') });
+        }
+        if (typeof v.health === 'number' && v.health < 60) {
+            out.push({ key: 'health', level: v.health <= 25 ? 'critical' : 'low', title: 'Hurt (health ' + r(v.health) + '%)',
+                fix: list(c.health, 'Heal with:', 'Find medical supplies.') });
+        }
+        if (typeof v.hunger === 'number' && v.hunger <= 35) {
+            out.push({ key: 'hunger', level: v.hunger <= 15 ? 'critical' : 'low', title: v.hunger <= 0 ? 'Starving' : 'Hungry (' + r(v.hunger) + '%)',
+                fix: list(c.hunger, 'Eat:', 'Find food.') });
+        }
+        if (typeof v.thirst === 'number' && v.thirst <= 35) {
+            out.push({ key: 'thirst', level: v.thirst <= 15 ? 'critical' : 'low', title: v.thirst <= 0 ? 'Dehydrated' : 'Thirsty (' + r(v.thirst) + '%)',
+                fix: list(c.thirst, 'Drink:', 'Find water.') });
+        }
+        if (typeof v.temperature === 'number') {
+            const t = Math.round(v.temperature * 10) / 10;
+            if (t <= 35.5) {
+                out.push({ key: 'cold', level: t <= (lim.hypothermia || 35) ? 'critical' : 'low',
+                    title: (t <= (lim.hypothermia || 35) ? 'Hypothermia' : 'Cold') + ' (' + t.toFixed(1) + ' °C)',
+                    fix: 'Wear warm clothes (mend worn ones), get out of the rain, stay out of the cold at night.' + list(c.cold, ' Warm up with:', '') });
+            } else if (t >= 38.5) {
+                out.push({ key: 'hot', level: t >= (lim.hyperthermia || 39.5) ? 'critical' : 'low',
+                    title: (t >= (lim.hyperthermia || 39.5) ? 'Overheating' : 'Hot') + ' (' + t.toFixed(1) + ' °C)',
+                    fix: 'Take off warm clothes, find shade, drink.' });
+            }
+        }
+        if (typeof v.armor === 'number' && v.armor <= 25) {
+            out.push({ key: 'armor', level: v.armor <= 0 ? 'critical' : 'low', title: v.armor <= 0 ? 'Armor plate broken' : 'Armor plate ' + r(v.armor) + '%',
+                fix: 'Repair it with an armor repair kit (right-click the plate).' });
+        }
+        return out;
+    }
+
     // Condition of an item with durability: { share 0-1, text, ruined } or null.
     // Items made before durability existed count as new.
     function condition(def, stack) {
@@ -142,7 +196,7 @@
 
     if (typeof module === 'object' && module.exports) {
         module.exports = { footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
-            formatKg: formatKg, shortLabel: shortLabel, condition: condition };
+            formatKg: formatKg, shortLabel: shortLabel, condition: condition, conditions: conditions };
         return;
     }
 
@@ -227,6 +281,77 @@
             grid);
     }
 
+    // ---------------------------------------------------------------- health panel
+
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    function svgEl(tag, attrs) {
+        const e = document.createElementNS(SVGNS, tag);
+        Object.keys(attrs).forEach((k) => e.setAttribute(k, attrs[k]));
+        return e;
+    }
+    // A simple human outline (front), 60 x 120.
+    const BODY = 'M30 4 a9 9 0 1 1 0 18 a9 9 0 1 1 0 -18 Z ' +
+        'M19 25 H41 Q48 25 50 32 L56 60 Q57 64 53 65 Q50 65 49 61 L44 40 V64 L46 112 Q46 117 41 117 Q37 117 36 112 L31 72 H29 L24 112 ' +
+        'Q23 117 19 117 Q14 117 14 112 L16 64 V40 L11 61 Q10 65 7 65 Q3 64 4 60 L10 32 Q12 25 19 25 Z';
+
+    function healthColor(p) {
+        if (p <= 25) return '#e0533f';
+        if (p <= 60) return '#d6b23c';
+        return '#7fc75a';
+    }
+
+    function bodyFigure(v) {
+        const svg = svgEl('svg', { viewBox: '0 0 60 120', class: 'wli-body' });
+        const hp = typeof v.health === 'number' ? v.health : 100;
+        svg.appendChild(svgEl('path', { d: BODY, fill: healthColor(hp), 'fill-opacity': String(0.25 + 0.55 * hp / 100), stroke: '#cfe8c0', 'stroke-width': '1.2' }));
+        if (v.infection > 0) {
+            svg.appendChild(svgEl('path', { d: BODY, fill: '#6fbf3a', 'fill-opacity': String(Math.min(0.7, v.infection / 100)), class: 'wli-body__infect' }));
+        }
+        const t = v.temperature;
+        if (typeof t === 'number' && (t <= 35.5 || t >= 38.5)) {
+            svg.appendChild(svgEl('path', { d: BODY, fill: 'none', stroke: t <= 35.5 ? '#6db7ff' : '#ff9a3c', 'stroke-width': '2.4', 'stroke-opacity': '0.9' }));
+        }
+        if (typeof v.armor === 'number') {
+            svg.appendChild(svgEl('rect', { x: '19', y: '29', width: '22', height: '24', rx: '3', fill: v.armor > 0 ? '#8a9aa8' : '#5a5a5a',
+                'fill-opacity': v.armor > 0 ? '0.75' : '0.45', stroke: '#1d242b', 'stroke-width': '1' }));
+        }
+        for (let i = 0; i < Math.min(3, v.bleeding || 0); i++) {
+            svg.appendChild(svgEl('path', { d: 'M' + (24 + i * 6) + ' 44 q-2.5 4 0 6 q2.5 -2 0 -6 Z', fill: '#d1202a', class: 'wli-body__drop' }));
+        }
+        return svg;
+    }
+
+    function bar(label, value, text) {
+        const fill = h('div', { class: 'wli-vbar__fill' });
+        fill.style.width = Math.max(0, Math.min(100, value)) + '%';
+        fill.style.background = healthColor(value);
+        return h('div', { class: 'wli-vbar' }, h('span', { class: 'wli-vbar__label', text: label }),
+            h('div', { class: 'wli-vbar__track' }, fill), h('span', { class: 'wli-vbar__val', text: text }));
+    }
+
+    function renderVitals() {
+        if (!st || !st.vitalsEl) return;
+        const v = st.vitals;
+        st.vitalsEl.innerHTML = '';
+        if (!v) { st.vitalsEl.hidden = true; return; }
+        st.vitalsEl.hidden = false;
+        const r = (x) => Math.round(Number(x) || 0);
+        const bars = h('div', { class: 'wli-vbars' },
+            bar('Health', r(v.health), r(v.health) + '%'),
+            bar('Food', r(v.hunger), r(v.hunger) + '%'),
+            bar('Water', r(v.thirst), r(v.thirst) + '%'),
+            typeof v.armor === 'number' ? bar('Armor', r(v.armor), r(v.armor) + '%') : null,
+            h('div', { class: 'wli-vtemp', text: 'Body temperature ' + (typeof v.temperature === 'number' ? v.temperature.toFixed(1) + ' °C' : '?') }));
+        const list = h('div', { class: 'wli-conds' });
+        const conds = conditions(v);
+        if (!conds.length) list.appendChild(h('div', { class: 'wli-cond is-ok' }, h('b', { text: 'You are in good shape.' })));
+        conds.forEach((c) => list.appendChild(h('div', { class: 'wli-cond is-' + c.level },
+            h('b', { text: c.title }), h('div', { class: 'wli-cond__fix', text: c.fix }))));
+        st.vitalsEl.appendChild(h('div', { class: 'wli-section__head' }, h('span', { class: 'wl-section-title', text: 'Health' })));
+        st.vitalsEl.appendChild(h('div', { class: 'wli-vitals' }, bodyFigure(v), bars));
+        st.vitalsEl.appendChild(list);
+    }
+
     function equipmentPanel() {
         const equip = invById(st.snap.equip);
         const bySlot = {};
@@ -277,7 +402,10 @@
         const pockets = invById(st.snap.pockets);
         if (pockets) st.middle.appendChild(gridPanel(pockets, 'Pockets'));
         if (st.snap.backpack && invById(st.snap.backpack)) st.middle.appendChild(gridPanel(invById(st.snap.backpack)));
+        // Health under what is being looted (that comes first).
         (st.snap.secondary || []).forEach((id) => { const inv = invById(id); if (inv) st.right.appendChild(gridPanel(inv)); });
+        st.right.appendChild(st.vitalsEl);
+        renderVitals();
         const ground = h('div', { class: 'wli-ground', text: 'Drop here to put items on the ground' });
         ground.dataset.ground = '1';
         st.right.appendChild(ground);
@@ -468,7 +596,8 @@
 
     UI.registerScreen('inventory', {
         mount: function (el, data, api) {
-            st = { api: api, defs: data.defs, snap: data.snapshot, drag: null, menu: null, preview: null };
+            st = { api: api, defs: data.defs, snap: data.snapshot, drag: null, menu: null, preview: null, vitals: data.vitals || null };
+            st.vitalsEl = h('div', { class: 'wli-section wli-health' });
             st.left = h('div', { class: 'wli-col' });
             st.middle = h('div', { class: 'wli-col wli-col--main' });
             st.right = h('div', { class: 'wli-col' });
@@ -492,6 +621,7 @@
         },
         update: function (data) {
             if (data.defs) st.defs = data.defs;
+            if (data.vitals !== undefined) { st.vitals = data.vitals; renderVitals(); }
             if (data.snapshot) {
                 st.snap = data.snapshot;
                 if (st.drag) { st.drag.ghost.remove(); st.drag = null; clearPreview(); }
@@ -543,6 +673,23 @@
         '.wli-ghost { position: fixed; pointer-events: none; z-index: 50; opacity: 0.9; }',
         '.wli-preview { position: absolute; pointer-events: none; background: rgba(127,174,90,0.25); border: 1px solid var(--wl-ok); }',
         '.wli-preview.is-bad { background: rgba(196,69,58,0.25); border-color: var(--wl-danger); }',
+        '.wli-health { margin-bottom: 4px; min-width: 300px; max-width: 440px; }',
+        '.wli-vitals { display: grid; grid-template-columns: 80px 1fr; gap: 12px; align-items: center; }',
+        '.wli-body { width: 80px; height: 160px; }',
+        '.wli-body__drop { animation: wli-drip 1.4s ease-in infinite; }',
+        '@keyframes wli-drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(10px); opacity: 0; } }',
+        '.wli-vbars { display: flex; flex-direction: column; gap: 5px; }',
+        '.wli-vbar { display: grid; grid-template-columns: 48px 1fr 38px; gap: 6px; align-items: center; font-size: 11px; }',
+        '.wli-vbar__label { color: var(--wl-text-dim); }',
+        '.wli-vbar__track { height: 6px; background: var(--wl-bg-sunken); border-radius: 3px; overflow: hidden; }',
+        '.wli-vbar__fill { height: 100%; }',
+        '.wli-vbar__val { text-align: right; font-variant-numeric: tabular-nums; }',
+        '.wli-vtemp { font-size: 11px; color: var(--wl-text-dim); margin-top: 2px; }',
+        '.wli-conds { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; max-width: 420px; }',
+        '.wli-cond { font-size: 12px; padding: 5px 8px; border-radius: 4px; background: var(--wl-bg-sunken); border-left: 3px solid #d6b23c; }',
+        '.wli-cond.is-critical { border-left-color: #e0533f; } .wli-cond.is-critical b { color: #ff9c90; }',
+        '.wli-cond.is-ok { border-left-color: #7fc75a; }',
+        '.wli-cond__fix { color: var(--wl-text-dim); margin-top: 2px; line-height: 1.3; }',
         '.wli-slots { display: grid; grid-template-columns: repeat(2, ' + (2 * CELL + 8) + 'px); gap: 8px; }',
         '.wli-slot { position: relative; width: ' + (2 * CELL + 8) + 'px; height: ' + (2 * CELL + 22) + 'px; background: var(--wl-bg-sunken);',
         '  border: 1px dashed var(--wl-border); border-radius: var(--wl-radius); display: flex; flex-direction: column; align-items: center; padding-top: 2px; }',

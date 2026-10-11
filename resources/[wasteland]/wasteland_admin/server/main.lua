@@ -590,6 +590,19 @@ local ACTION_NAMES = {}
 for name in pairs(ACTIONS) do ACTION_NAMES[#ACTION_NAMES + 1] = name end
 table.sort(ACTION_NAMES)
 
+-- The client shows the admin target option only to admins (the server
+-- still checks every action).
+M.netEvent('wasteland:admin:server:amIAdmin', { rateLimit = { burst = 3, perSecond = 0.2 } }, function(src)
+    TriggerClientEvent('wasteland:admin:client:isAdmin', src, isAdmin(src))
+end)
+
+-- Admin target on a prop: what it can become.
+M.netEvent('wasteland:admin:server:lootPick', { rateLimit = { burst = 4, perSecond = 1 } }, function(src)
+    if not isAdmin(src) then TriggerClientEvent('wasteland:admin:client:denied', src); return end
+    if not started('wasteland_loot') then TriggerClientEvent('wasteland:admin:client:result', src, { ok = false, message = 'loot module is not running' }); return end
+    TriggerClientEvent('wasteland:admin:client:lootPick', src, exports.wasteland_loot:GetLootAdminData())
+end)
+
 M.netEvent('wasteland:admin:server:open', { rateLimit = { burst = 5, perSecond = 1 } }, function(src)
     if not isAdmin(src) then
         M.log:warn('player %d tried to open the admin panel without the %s ACE', src, M.config.adminAce)

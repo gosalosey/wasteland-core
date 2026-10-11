@@ -114,10 +114,24 @@ end)
 -- Screen
 -------------------------------------------------------------------------------
 
+-- Health, wounds and the rest from wasteland_survival (nil if not running).
+local function vitals()
+    if GetResourceState('wasteland_survival') ~= 'started' then return nil end
+    local ok, v = pcall(function() return exports.wasteland_survival:GetVitals() end)
+    return ok and v or nil
+end
+
 local function openScreen()
     if not uiRunning() or not defs or not snapshot then return end
     if exports.wasteland_ui:IsOpen(SCREEN) then return end
-    exports.wasteland_ui:Open(SCREEN, { script = 'html/inventory.js', data = { defs = defs, snapshot = snapshot } })
+    exports.wasteland_ui:Open(SCREEN, { script = 'html/inventory.js', data = { defs = defs, snapshot = snapshot, vitals = vitals() } })
+    -- Keep the health panel current while the screen is open.
+    Citizen.CreateThread(function()
+        while isOpen() do
+            Citizen.Wait(1000)
+            if isOpen() then exports.wasteland_ui:Update(SCREEN, { vitals = vitals() }) end
+        end
+    end)
 end
 
 local function closeScreen()
