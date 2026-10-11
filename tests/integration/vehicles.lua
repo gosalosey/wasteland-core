@@ -221,6 +221,38 @@ describe('vehicles', function()
     end)
 end)
 
+describe('vehicles are saved at once when the driver gets out or leaves', function()
+    it('getting out saves position, damage and fuel straight away', function()
+        local server = world()
+        local id = player(server, 'quick', { x = 990.0, y = 0.0, z = 30.0 })
+        server:advance(2100)
+        ack(server)
+        local e = veh(server)
+        e.driver = server.resources.wasteland_vehicles.env.GetPlayerPed(id)
+        server:clientEvent(id, 'wasteland:vehicles:server:fuel', e.netId, 1.5); server:advance(100)
+        e.coords = { x = 1040.0, y = 7.0, z = 30.0 }
+        e.engine = 410.0
+        e.driver = 0 -- got out; the client reports the last fuel
+        server:clientEvent(id, 'wasteland:vehicles:server:fuel', e.netId, 1.25); server:advance(200)
+        local row
+        for _, r in pairs(server.db.backend.data.wl_vehicles) do if r.x == 1040.0 then row = r end end
+        expect(row ~= nil).toBe(true); expect(row.engine).toBe(410.0); expect(row.fuel).toBe(1.25)
+    end)
+
+    it('a player leaving the server saves the vehicles that are out', function()
+        local server = world()
+        local id = player(server, 'gone', { x = 990.0, y = 0.0, z = 30.0 })
+        server:advance(2100)
+        ack(server)
+        veh(server).coords = { x = 1060.0, y = 3.0, z = 30.0 }
+        server:dropPlayer(id); server:advance(300)
+        local found = false
+        for _, r in pairs(server.db.backend.data.wl_vehicles) do if r.x == 1060.0 then found = true end end
+        expect(found).toBe(true)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+
 describe('vehicles after a restart', function()
     it('come back as they were left', function()
         local server = world()

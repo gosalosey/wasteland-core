@@ -1,5 +1,13 @@
 # Changelog
 
+## Vehicles: never lose a car on relog or restart (owner request)
+* Players already come back where they left (their position is checked every 10 s, saved every 60 s and when they leave). Vehicles are now saved as reliably:
+  * when the driver gets out (position, damage, the last fuel used), right away;
+  * when a player leaves the server (every vehicle that is out);
+  * on a server stop or txAdmin restart: one final save that the database finishes on its own (before, the final save waited for the database, which a stopping resource cannot do, so it could be lost; then only the 30-second save counted).
+* Tests: 564.
+
+
 ## Milestone 9: persistent vehicles
 
 ### wasteland_vehicles 0.1.0 (new)

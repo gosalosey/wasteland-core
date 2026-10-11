@@ -457,8 +457,26 @@ M = Wasteland.DefineModule({
     end,
     onShutdown = function()
         runToken = nil
+        -- A stopping resource cannot wait for the database: capture every
+        -- vehicle that is out, remove it, and send one final transaction
+        -- that the database resource completes on its own.
+        local statements = {}
         for _, v in pairs(vehicles) do
-            if v.handle then despawn(v) end
+            if v.handle then
+                capture(v)
+                byHandle[v.handle] = nil
+                if DoesEntityExist(v.handle) then DeleteEntity(v.handle) end
+                v.handle = nil
+                if not v.destroyed then statements[#statements + 1] = { SQL.update, params(v) } end
+            end
+        end
+        if #statements > 0 then
+            local ok, err = pcall(function()
+                exports[WDB.RESOURCE]:Transaction(statements, function(saved, saveErr)
+                    if not saved then print('^1[Wasteland] [ERROR] [vehicles] final save failed: ' .. tostring(saveErr) .. '^7') end
+                end)
+            end)
+            if not ok then print('^1[Wasteland] [ERROR] [vehicles] final save could not be sent: ' .. tostring(err) .. '^7') end
         end
         vehicles, byHandle = {}, {}
     end,
@@ -513,16 +531,32 @@ M.netEvent('wasteland:vehicles:server:fuel', {
 }, function(src, netId, litres)
     local h = NetworkGetEntityFromNetworkId(netId)
     local v = h and byHandle[h] and vehicles[byHandle[h]]
-    if not v or GetPedInVehicleSeat(h, -1) ~= GetPlayerPed(src) then return end
-    if litres < v.fuel then
+    if not v then return end
+    local driving = GetPedInVehicleSeat(h, -1) == GetPlayerPed(src)
+    if (driving or v.lastDriver == src) and litres < v.fuel then
         v.fuel = litres
         publish(v, false)
     end
+    -- The client also reports when the driver gets out: save right away, so
+    -- a crash or restart soon after does not lose where the car was left.
+    if not driving and v.lastDriver == src then
+        capture(v)
+        save(v)
+    end
+    if driving then v.lastDriver = src end
 end)
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
     if src then acting[src] = nil end
+    -- Save every vehicle that is out (the one they drove among them).
+    if M and M.active then
+        Citizen.CreateThread(function()
+            for _, v in pairs(vehicles) do
+                if v.handle then capture(v); save(v) end
+            end
+        end)
+    end
 end)
 
 -------------------------------------------------------------------------------
