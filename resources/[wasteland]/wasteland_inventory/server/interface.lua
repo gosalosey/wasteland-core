@@ -38,7 +38,7 @@ function Interface.sendDefinitions(target)
     end
     TriggerClientEvent('wasteland:inventory:client:definitions', target or -1, {
         items = defs, slots = WLI.EQUIP_SLOTS, slotLabels = WLI.EQUIP_SLOT_LABELS,
-        clothingParts = WLI.CLOTHING_PARTS, naked = WLI.cfg.naked,
+        clothingParts = WLI.CLOTHING_PARTS, naked = WLI.cfg.naked, plain = WLI.cfg.plain,
     })
 end
 

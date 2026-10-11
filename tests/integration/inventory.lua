@@ -124,6 +124,9 @@ describe('inventory startup and new characters', function()
         expect(d.items.backpack_small.container.width).toBe(5)
         expect(d.slots[1]).toBe('head')
         expect(d.naked.mp_m_freemode_01.legs[1]).toBe(61)
+        -- the look of given/looted clothing that carries none of its own
+        expect(d.plain.mp_m_freemode_01.top[1]).toBe(0)
+        expect(d.plain.mp_f_freemode_01.shoes[1]).toBe(1)
     end)
 end)
 

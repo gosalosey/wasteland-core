@@ -43,6 +43,17 @@ return {
         eyes = 'clothing_glasses',
     },
 
+    -- The look of a worn clothing item that carries no look of its own
+    -- (given with /give or the admin panel, or loot), per model and part.
+    -- Clothing from the character creator keeps its own look.
+    -- VERIFY IN-GAME: values differ between game builds.
+    plain = {
+        mp_m_freemode_01 = { top = { 0, 0 }, undershirt = { 15, 0 }, arms = { 0, 0 }, legs = { 0, 0 }, shoes = { 1, 0 },
+            hat = { 2, 0 }, glasses = { 5, 0 } },
+        mp_f_freemode_01 = { top = { 0, 0 }, undershirt = { 14, 0 }, arms = { 0, 0 }, legs = { 0, 0 }, shoes = { 1, 0 },
+            hat = { 5, 0 }, glasses = { 11, 0 } },
+    },
+
     -- What the body shows when a clothing slot is empty: { drawable, texture }
     -- per part. VERIFY IN-GAME: values differ between game builds.
     naked = {

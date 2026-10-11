@@ -55,7 +55,9 @@ local function applyClothing()
     for slot, parts in pairs(defs.clothingParts or {}) do
         local item = worn[slot]
         local meta = item and item.metadata or nil
-        if meta and meta.model ~= model then meta = nil end -- made for the other body
+        -- An item without a look of its own for this body (given, looted,
+        -- or made for the other body) shows the plain look.
+        if item and not (meta and meta.model == model) then meta = (defs.plain or {})[model] end
         for _, part in ipairs(parts) do
             local value = meta and meta[part.key] or nil
             if part.component then
