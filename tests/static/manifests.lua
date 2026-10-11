@@ -3,7 +3,7 @@
 
 local RESOURCE_NAMES = {
     'wasteland_config', 'wasteland_core', 'wasteland_template', 'wasteland_database', 'wasteland_players',
-    'wasteland_ui', 'wasteland_appearance', 'wasteland_inventory',
+    'wasteland_ui', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival',
 }
 local FORBIDDEN = { 'qb-core', 'QBCore', 'qbx_core', 'es_extended', 'ESX', 'ox_lib', 'ox_inventory', 'ox_target' }
 
