@@ -9,6 +9,7 @@
 local SCREEN = 'characterSelect'
 local loaded = false
 local placing = false
+local placedPos, placedUntil = nil, 0 -- where the character was placed (guard against spawnmanager)
 local listReceived = false
 
 --- True once a character is loaded and the player has been placed in the
@@ -114,11 +115,26 @@ RegisterNetEvent('wasteland:players:client:characterLoaded', function(info)
     end
     Citizen.CreateThread(function()
         local pos = info.position
+        -- spawnmanager (base server) must not respawn us at a map spawn point.
+        if GetResourceState('spawnmanager') == 'started' then pcall(function() exports.spawnmanager:setAutoSpawn(false) end) end
         if type(pos) == 'table' and type(pos.x) == 'number' and type(pos.y) == 'number' and type(pos.z) == 'number' then
             teleport(pos)
+            placedPos, placedUntil = pos, GetGameTimer() + 60000
         end
         setHeld(false)
         placing = false
+        TriggerServerEvent('wasteland:players:server:placed')
+    end)
+end)
+
+-- spawnmanager's own first spawn can land after we placed the character (it
+-- runs on its own timer) and drop them at a random map spawn point. Right
+-- after placing, put them back at their saved spot.
+AddEventHandler('playerSpawned', function()
+    if not loaded or placing or not placedPos or GetGameTimer() > placedUntil then return end
+    Citizen.CreateThread(function()
+        Citizen.Wait(0)
+        teleport(placedPos)
     end)
 end)
 

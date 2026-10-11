@@ -1,5 +1,11 @@
 # Changelog
 
+## Fix: sometimes spawning at a random spot after choosing a character
+* Cause: the base server's spawnmanager (with the default map spawn points) could spawn the player after we placed them at their saved spot, and the server could sample the position before the move arrived, saving that spawn point.
+* Now: the server only records positions after the client reports the character was placed (or after a minute if a client never does); autospawn is turned off as soon as a character loads; if spawnmanager still spawns the player in the first minute, they are put back at their saved spot.
+* Tests: 658.
+
+
 ## Tailor camera controls (owner request)
 * At the tailor: drag anywhere outside the panel to look around (left/right circles your character, up/down raises or lowers the camera), scroll to zoom in and out, and quick views: Full body, Face, Top, Pants, Shoes. "Turn around" now swings the camera to your back instead of turning the character.
 * Turn the character too: "⟲ Left" / "Right ⟳" (45°), "Half turn", or Q / E (15°); the camera stays put. The character faces the way it did when you leave.

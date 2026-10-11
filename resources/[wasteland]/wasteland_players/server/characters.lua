@@ -26,6 +26,9 @@ local function log() return WLP.M.log end
 --- online and has a ped; a dropped player keeps the last sample).
 function Characters.samplePosition(char)
     if not WLP.cfg.savePosition or not char.source then return false end
+    -- Not before the client put the ped at the saved spot: until then the
+    -- ped stands wherever the game spawned it, and that must not be saved.
+    if not char.placed and GetGameTimer() < (char.placedBy or 0) then return false end
     local ped = GetPlayerPed(tostring(char.source))
     if not ped or ped == 0 or not DoesEntityExist(ped) then return false end
     local c = GetEntityCoords(ped)
@@ -207,6 +210,10 @@ function Characters.load(session, characterId, opts)
         loadedAt = GetGameTimer(),
         data = {}, encoded = {}, dirty = {},
         source = session.source,
+        -- After a resource restart the player never left the world: their
+        -- ped is where they really are. Otherwise wait for the client.
+        placed = opts.restored == true,
+        placedBy = GetGameTimer() + 60000, -- a client that never answers: sample after a minute anyway
     }
     if row.pos_x ~= nil and row.pos_y ~= nil and row.pos_z ~= nil then
         char.position = { x = tonumber(row.pos_x), y = tonumber(row.pos_y), z = tonumber(row.pos_z), heading = tonumber(row.heading) or 0.0 }

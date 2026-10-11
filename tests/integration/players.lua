@@ -75,6 +75,7 @@ local function playing(extra)
     local id = join(server)
     cmd(server, id, 'character create John Doe')
     cmd(server, id, 'character select 1')
+    server:clientEvent(id, 'wasteland:players:server:placed') -- the client placed the ped
     return server, id
 end
 
@@ -168,6 +169,7 @@ describe('characters', function()
 
     it('loads a character: events, exports, state bag and spawn position', function()
         cmd(server, id, 'character select 1')
+        server:clientEvent(id, 'wasteland:players:server:placed') -- the client placed the ped
         expect(last(messages(server, id))).toBe('You are now playing John Doe.')
         expect(obs(server)).toContain('loaded 1 1 false')
         expect(P(server, 'GetCharacterId', id)).toBe(1)
@@ -181,6 +183,7 @@ describe('characters', function()
 
     it('refuses to reselect or delete the active character', function()
         cmd(server, id, 'character select 1')
+        server:clientEvent(id, 'wasteland:players:server:placed') -- the client placed the ped
         expect(last(messages(server, id))).toContain('already playing John Doe')
         cmd(server, id, 'character delete 1 John')
         expect(last(messages(server, id))).toContain('cannot delete the character you are playing')
@@ -201,6 +204,7 @@ describe('characters', function()
     it('switches characters, saving the previous one first', function()
         P(server, 'SetCharacterData', 1, 'notes', { text = 'switch' })
         cmd(server, id, 'character select 2')
+        server:clientEvent(id, 'wasteland:players:server:placed') -- the client placed the ped
         expect(last(messages(server, id))).toBe('You are now playing New Person.')
         expect(obs(server)).toContain('unloaded 1 1')
         expect(dataRow(server, 1, 'notes').data).toBe('{"text":"switch"}')
@@ -284,6 +288,7 @@ describe('leaving and reconnecting', function()
         local id2 = join(server)
         expect(id2).toBe(2)
         cmd(server, id2, 'character select 1')
+        server:clientEvent(id2, 'wasteland:players:server:placed') -- the client placed the ped
         expect(P(server, 'GetCharacterData', 1, 'survival').hunger).toBe(42)
         local ev = last(server:clientEventsFor(id2, 'wasteland:players:client:characterLoaded'))
         expect(ev.args[1].position.x).toBe(1.0)
@@ -482,3 +487,30 @@ Wasteland.DefineModule({ name = 'gate', version = '1.0.0', core = '^1.1.0', depe
         expect(id ~= nil).toBe(true)
     end)
 end)
+
+describe('positions only after the client placed the character', function()
+    local server = newServer({ config = { ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 1000, healthCheckSeconds = 2 }',
+        ['players.lua'] = 'return { saveIntervalSeconds = 10, restoreDelayMs = 200 }' } })
+    boot(server, { 'wasteland_players' })
+    local id = server:connectAndJoin({ name = 'P-race', license = 'race' })
+    server:advance(200)
+    server.players[id].coords = { x = 100.0, y = 200.0, z = 30.0 }
+    server:command(id, 'character create Race Test'); server:advance(300)
+    server:command(id, 'character select 1'); server:advance(500)
+
+    it('the spot the game spawned the ped at is never saved', function()
+        server.players[id].coords = { x = -802.3, y = 175.0, z = 72.8 } -- a map spawn point before placing
+        server:advance(10500)
+        for _, r in pairs(server.db.backend.data.wl_characters) do expect(r.pos_x == -802.3).toBe(false) end
+    end)
+
+    it('after "placed" the position counts', function()
+        server.players[id].coords = { x = 55.0, y = 66.0, z = 31.0 }
+        server:clientEvent(id, 'wasteland:players:server:placed'); server:advance(100)
+        server:advance(10500)
+        local found = false
+        for _, r in pairs(server.db.backend.data.wl_characters) do if r.pos_x == 55.0 then found = true end end
+        expect(found).toBe(true)
+    end)
+end)
+

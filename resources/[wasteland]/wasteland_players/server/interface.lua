@@ -243,6 +243,12 @@ function Interface.registerNetEvents(M)
     M.netEvent('wasteland:players:server:selectCharacter', { args = { slotNode }, rateLimit = strict }, function(src, slot)
         run(src, 'select', function(session) Interface.selectCharacter(session, slot) end)
     end)
+    -- The client put the ped at the saved position: positions count from now.
+    M.netEvent('wasteland:players:server:placed', { rateLimit = { burst = 3, perSecond = 1 } }, function(src)
+        local session = WLP.sessions and WLP.sessions[src]
+        local char = session and session.character
+        if char then char.placed = true end
+    end)
     M.netEvent('wasteland:players:server:deleteCharacter', { args = { slotNode, nameNode }, rateLimit = strict }, function(src, slot, confirm)
         run(src, 'delete', function(session) Interface.deleteCharacter(session, slot, confirm) end)
     end)

@@ -98,6 +98,7 @@ describe('real MariaDB (' .. cfg.user .. '@' .. cfg.host .. ':' .. cfg.port .. '
 
     it('loads a character', function()
         cmd(id, 'character select 1')
+        server:clientEvent(id, 'wasteland:players:server:placed')
         expect(P('GetCharacterId', id)).toBe(1)
         local r = backend:rows('SELECT last_played IS NOT NULL AS touched FROM wl_characters WHERE id = 1')
         expect(r[1].touched).toBe(1)
@@ -148,6 +149,7 @@ describe('real MariaDB (' .. cfg.user .. '@' .. cfg.host .. ':' .. cfg.port .. '
         local id2 = server:connectAndJoin({ name = 'Alice', license = 'alice' })
         server:advance(200)
         cmd(id2, 'character select 1')
+        server:clientEvent(id2, 'wasteland:players:server:placed')
         expect(P('GetCharacterData', 1, 'survival').hunger).toBe(12)
         id = id2
     end)
