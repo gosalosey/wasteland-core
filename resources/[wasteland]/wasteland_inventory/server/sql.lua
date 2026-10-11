@@ -39,6 +39,16 @@ CREATE TABLE IF NOT EXISTS wl_drops (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci]],
     },
+    {
+        -- Body bags: who died there (map marker), a label, and their own lifetime.
+        version = 3,
+        name = 'drops_owner_label_expiry',
+        up = [[
+ALTER TABLE wl_drops
+    ADD COLUMN owner_character INT UNSIGNED NULL,
+    ADD COLUMN label VARCHAR(64) NULL,
+    ADD COLUMN expires_unix INT UNSIGNED NULL]],
+    },
 }
 
 WLI.SQL = {
@@ -53,9 +63,9 @@ WLI.SQL = {
 
     deleteInventoryItems = 'DELETE FROM wl_items WHERE inventory_id = ?',
 
-    selectDrops = 'SELECT id, x, y, z, created_unix FROM wl_drops',
+    selectDrops = 'SELECT id, x, y, z, created_unix, owner_character, label, expires_unix FROM wl_drops',
 
-    insertDrop = 'INSERT INTO wl_drops (id, x, y, z, created_unix) VALUES (?, ?, ?, ?, ?)',
+    insertDrop = 'INSERT INTO wl_drops (id, x, y, z, created_unix, owner_character, label, expires_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
 
     deleteDrop = 'DELETE FROM wl_drops WHERE id = ?',
 }

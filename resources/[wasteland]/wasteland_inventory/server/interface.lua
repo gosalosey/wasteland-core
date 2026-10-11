@@ -32,7 +32,7 @@ function Interface.sendDefinitions(target)
         defs[name] = {
             name = name, label = d.label, description = d.description, category = d.category,
             width = d.width, height = d.height, weight = d.weight, stack = d.stack,
-            durability = d.durability, equip = d.equip, container = d.container, color = d.color,
+            durability = d.durability, equip = d.equip, container = d.container, color = d.color, warmth = d.warmth,
             usable = WLI.usable[name] ~= nil,
         }
     end
@@ -179,6 +179,26 @@ end)
 exports('GetInventory', function(id)
     local inv = WLI.invs[id]
     return inv and Sync.snapshot(inv) or nil
+end)
+
+--- DeathDrop(source, label) -> { dropIds } | nil, err
+--- Everything except hotbar items goes into body bag(s) at the player's
+--- position, marked with the character as owner (map marker).
+exports('DeathDrop', function(src, label)
+    if inactive() then return nil, 'inventory module is not running' end
+    return Inv.deathDrop(tonumber(src), type(label) == 'string' and label:sub(1, 64) or 'Body')
+end)
+
+--- GetWornItems(source) -> list of { name, slot, metadata, warmth }
+exports('GetWornItems', function(src)
+    local c = Inv.characterOf(tonumber(src))
+    if not c or not c.loaded or not WLI.invs[c.equip] then return {} end
+    local out = {}
+    for _, s in pairs(WLI.invs[c.equip].items) do
+        local d = WLI.defs[s.name]
+        out[#out + 1] = { name = s.name, slot = s.slot, metadata = Inv.copy(s.metadata), warmth = d and d.warmth or 0 }
+    end
+    return out
 end)
 
 --- IsLoaded(source) -> boolean

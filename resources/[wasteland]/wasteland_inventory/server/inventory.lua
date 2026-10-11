@@ -525,6 +525,94 @@ function Inv.removeItem(target, name, count)
 end
 
 -------------------------------------------------------------------------------
+-- Death: everything except hotbar items goes into a body bag
+-------------------------------------------------------------------------------
+
+--- Put a dead player's items into body bag(s) at their position.
+--- Kept: stacks on the hotbar (worn ones stay worn; ones inside the worn
+--- bag move to the pockets if they fit). Everything else drops; a bag keeps
+--- its contents. Returns { dropIds } or nil, err. One transaction.
+function Inv.deathDrop(src, label)
+    local c = Inv.characterOf(src)
+    if not c or not c.loaded then return nil, 'inventory not loaded' end
+    local accepting, why = Store.accepting()
+    if not accepting then return nil, why end
+    local p = WLI.Drops.playerCoords(src)
+    if not p then return nil, 'position unknown (OneSync is required)' end
+    local keep = {}
+    for i = 1, 5 do if c.hotbar[i] then keep[c.hotbar[i]] = true end end
+
+    local pockets, equip = WLI.invs[c.pockets], WLI.invs[c.equip]
+    local bag = Inv.backpack(c)
+    local bagGrid = bag and WLI.invs['item:' .. bag.uid]
+    local statements, changed = {}, changedSet(c.pockets, c.equip)
+
+    -- 1. hotbar items inside the worn bag try to move to the pockets
+    if bagGrid and not keep[bag.uid] then
+        for uid, s in pairs(bagGrid.items) do
+            if keep[uid] then
+                local x, y, rotated = Grid.findSpot(pockets, WLI.defs, WLI.defs[s.name])
+                if x then
+                    bagGrid.items[uid] = nil
+                    s.x, s.y, s.rotated = x, y, rotated
+                    pockets.items[uid] = s
+                    statements[#statements + 1] = Store.upsert(s, pockets.id)
+                end
+            end
+        end
+    end
+
+    -- 2. everything else into body bags (more than one if it does not fit)
+    local toDrop = {}
+    for _, inv in ipairs({ pockets, equip }) do
+        for uid, s in pairs(inv.items) do
+            if not keep[uid] then toDrop[#toDrop + 1] = { inv = inv, stack = s } end
+        end
+    end
+    -- big items first so they find room
+    table.sort(toDrop, function(a, b)
+        local da, db = WLI.defs[a.stack.name], WLI.defs[b.stack.name]
+        return da.width * da.height > db.width * db.height
+    end)
+    local bags, current = {}, nil
+    local function newBag()
+        local n = #bags
+        local coords = { x = p.x + 0.4 * n, y = p.y, z = p.z - 0.95 }
+        local inv, insert = WLI.Drops.create(coords, {
+            label = label, owner = c.id, grid = WLI.cfg.deathBagGrid, lifetimeMinutes = WLI.cfg.deathBagLifetimeMinutes,
+        })
+        statements[#statements + 1] = insert
+        bags[#bags + 1] = inv
+        changed[inv.id] = true
+        return inv
+    end
+    for _, entry in ipairs(toDrop) do
+        local s, d = entry.stack, WLI.defs[entry.stack.name]
+        current = current or newBag()
+        local x, y, rotated = Grid.findSpot(current, WLI.defs, d)
+        if not x then
+            current = newBag()
+            x, y, rotated = Grid.findSpot(current, WLI.defs, d)
+        end
+        if x then
+            entry.inv.items[s.uid] = nil
+            s.x, s.y, s.rotated, s.slot = x, y, rotated, nil
+            current.items[s.uid] = s
+            statements[#statements + 1] = Store.upsert(s, current.id)
+        else
+            log():error('death of player %d: %s does not fit in a body bag; it stays with the character', src, s.name)
+        end
+    end
+    WLI.views[src] = nil
+    Store.enqueue(statements, string.format('death of character %d', c.id))
+    WLI.Sync.changed(changed, src)
+    WLI.Drops.broadcast()
+    local ids = {}
+    for _, b in ipairs(bags) do ids[#ids + 1] = b.id:sub(6) end
+    return { dropIds = ids }
+end
+
+-------------------------------------------------------------------------------
 -- Hotbar (5 references to stacks, stored as character data "hotbar")
 -------------------------------------------------------------------------------
 

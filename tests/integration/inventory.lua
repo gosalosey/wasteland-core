@@ -88,7 +88,7 @@ describe('inventory startup and new characters', function()
         expect(states(server).inventory).toBe('running')
         local n = 0
         for _, m in ipairs(server.db.backend.data.wl_migrations) do if m.module_name == 'inventory' then n = n + 1 end end
-        expect(n).toBe(2)
+        expect(n).toBe(3)
     end)
 
     it('gives the starting items into the pockets and saves them', function()
@@ -454,6 +454,67 @@ Wasteland.DefineModule({ name = 'medic', version = '1.0.0', core = '^1.1.0', dep
         expect(#server:lines('tried "give" without the wasteland.admin ACE')).toBe(1)
         server:command(0, 'give ' .. a .. ' unicorn 1'); server:advance(100)
         expect(#server:lines('Could not give: unknown item "unicorn"')).toBe(1)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+
+describe('death: body bags', function()
+    local server = world()
+    local a = player(server, 'jack', { x = 10.0, y = 20.0, z = 30.0 })
+    give(server, a, 'backpack_small')
+    local s0 = snap(server, a)
+    local bag = find(s0, 'backpack_small')
+    op(server, a, 'equip', bag.uid, 'player:1', 'back')
+    local s1 = snap(server, a)
+    local bandage = find(s1, 'bandage')
+    local bottle = find(s1, 'water_bottle')
+    op(server, a, 'move', bottle.uid, 'player:1', s1.backpack, 0, 0, false) -- bottle inside the bag
+    op(server, a, 'setHotbar', 1, bandage.uid)                              -- kept (pockets)
+    op(server, a, 'setHotbar', 2, bottle.uid)                               -- kept (moves out of the bag)
+    local result = server:export('wasteland_inventory', 'DeathDrop', a, 'Body of John Doe')
+    server:advance(300)
+
+    it('moves everything except hotbar items into a body bag at the position', function()
+        expect(#result.dropIds).toBe(1)
+        local s = snap(server, a)
+        local pockets = inv(s, 'player:1')
+        local names = {}
+        for _, it in ipairs(pockets.items) do names[#names + 1] = it.name end
+        table.sort(names)
+        expect(names).toEqual({ 'bandage', 'water_bottle' })
+        expect(#inv(s, 'equip:1').items).toBe(0)
+        expect(s.backpack).toBe(nil)
+    end)
+
+    it('the bag is stored with owner, label and its own lifetime, and the bag keeps its contents', function()
+        local row = server.db.backend.data.wl_drops[result.dropIds[1]]
+        expect(row.owner_character).toBe(1)
+        expect(row.label).toBe('Body of John Doe')
+        expect(row.expires_unix - row.created_unix).toBe(120 * 60)
+        local inBag = rows(server, 'drop:' .. result.dropIds[1])
+        local names = {}
+        for _, r in ipairs(inBag) do names[r.name] = true end
+        expect(names.backpack_small).toBe(true)
+        expect(names.clothing_top).toBe(true)
+        expect(names.canned_beans).toBe(true)
+        expect(rowCount(server, 'bandage')).toBe(2) -- kept, not duplicated
+    end)
+
+    it('the drop list tells clients who owns the bag (map marker)', function()
+        local drops = server:clientEventsFor(a, 'wasteland:inventory:client:drops')
+        local list = drops[#drops].args[1]
+        expect(list[1].owner).toBe(1)
+        expect(list[1].label).toBe('Body of John Doe')
+    end)
+
+    it('anyone can loot it; new drops never join a body bag', function()
+        local b = player(server, 'kate', { x = 10.5, y = 20.0, z = 30.0 })
+        local beans = find(snap(server, b), 'canned_beans')
+        op(server, b, 'drop', beans.uid, 'player:2', 1)
+        local list = server:clientEventsFor(b, 'wasteland:inventory:client:drops')
+        expect(#list[#list].args[1]).toBe(2)
+        op(server, b, 'openDrop', result.dropIds[1])
+        expect(inv(snap(server, b), 'drop:' .. result.dropIds[1]).label).toBe('Body of John Doe')
         expect(#server.scriptErrors).toBe(0)
     end)
 end)

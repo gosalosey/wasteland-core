@@ -150,6 +150,12 @@ WLI.M = Wasteland.DefineModule({
                 dropMergeDistance = { type = 'number', default = 1.5, min = 0, max = 10,
                     description = 'Items dropped this close to an existing drop join it.' },
                 dropLifetimeMinutes = { type = 'integer', default = 60, min = 1, max = 10080 },
+                deathBagGrid = { type = 'table', fields = {
+                    width = { type = 'integer', default = 12, min = 4, max = 16 },
+                    height = { type = 'integer', default = 12, min = 4, max = 16 },
+                } },
+                deathBagLifetimeMinutes = { type = 'integer', default = 120, min = 1, max = 10080,
+                    description = 'How long a body bag (items of a dead character) stays.' },
                 maxQueuedWrites = { type = 'integer', default = 500, min = 10, max = 100000 },
                 adminAce = { type = 'string', default = 'wasteland.admin', minLength = 1 },
                 giveCommand = { type = 'string', default = 'give', pattern = '^[a-z][a-z0-9_]*$' },

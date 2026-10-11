@@ -17,6 +17,11 @@ return {
     -- Items on the ground disappear after this many minutes. 1 - 10080.
     dropLifetimeMinutes = 60,
 
+    -- Body bags: when a character dies, everything except hotbar items goes
+    -- into a bag at the body (the owner gets a map marker). Grid and lifetime.
+    deathBagGrid = { width = 12, height = 12 },
+    deathBagLifetimeMinutes = 120,
+
     -- Admin command to spawn items: /give <server id> <item> [count]
     giveCommand = 'give',
     adminAce = 'wasteland.admin',
@@ -55,6 +60,7 @@ return {
     --   equip       head | eyes | torso | back | legs | feet   (can be worn there)
     --   container   { width, height, maxWeight }  a bag; must have equip = 'back'
     --   color       '#rrggbb' tile colour in the inventory screen
+    --   warmth      degrees C of insulation while worn (body temperature)
     -- Other modules add their own items through the RegisterItem export.
     items = {
         water_bottle = { label = 'Water bottle', category = 'drink', width = 1, height = 2, weight = 0.6,
@@ -62,6 +68,13 @@ return {
         canned_beans = { label = 'Canned beans', category = 'food', width = 1, height = 1, weight = 0.4, stack = 4 },
         bandage = { label = 'Bandage', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 10 },
         painkillers = { label = 'Painkillers', category = 'medical', width = 1, height = 1, weight = 0.1, stack = 10 },
+        antibiotics = { label = 'Antibiotics', category = 'medical', width = 1, height = 1, weight = 0.1, stack = 5,
+            description = 'Slows and fights an infection.' },
+        rag = { label = 'Clean rag', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 5,
+            description = 'Can stop light bleeding.' },
+        soda_can = { label = 'Soda', category = 'drink', width = 1, height = 1, weight = 0.35, stack = 4 },
+        energy_bar = { label = 'Energy bar', category = 'food', width = 1, height = 1, weight = 0.1, stack = 6 },
+        canned_peaches = { label = 'Canned peaches', category = 'food', width = 1, height = 1, weight = 0.45, stack = 4 },
         scrap_metal = { label = 'Scrap metal', category = 'material', width = 2, height = 1, weight = 1.0, stack = 10 },
         duct_tape = { label = 'Duct tape', category = 'material', width = 1, height = 1, weight = 0.2, stack = 5 },
         flashlight = { label = 'Flashlight', category = 'tool', width = 1, height = 2, weight = 0.4, durability = 100 },
@@ -72,10 +85,10 @@ return {
         backpack_large = { label = 'Hiking backpack', category = 'container', width = 4, height = 4, weight = 1.8,
             equip = 'back', container = { width = 7, height = 6, maxWeight = 30 } },
 
-        clothing_top = { label = 'Top', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso' },
-        clothing_pants = { label = 'Pants', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs' },
-        clothing_shoes = { label = 'Shoes', category = 'clothing', width = 2, height = 1, weight = 0.8, equip = 'feet' },
-        clothing_hat = { label = 'Hat', category = 'clothing', width = 1, height = 1, weight = 0.2, equip = 'head' },
+        clothing_top = { label = 'Top', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6 },
+        clothing_pants = { label = 'Pants', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4 },
+        clothing_shoes = { label = 'Shoes', category = 'clothing', width = 2, height = 1, weight = 0.8, equip = 'feet', warmth = 2 },
+        clothing_hat = { label = 'Hat', category = 'clothing', width = 1, height = 1, weight = 0.2, equip = 'head', warmth = 2 },
         clothing_glasses = { label = 'Glasses', category = 'clothing', width = 1, height = 1, weight = 0.05, equip = 'eyes' },
     },
 }

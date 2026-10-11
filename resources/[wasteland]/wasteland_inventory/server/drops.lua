@@ -11,7 +11,7 @@ local SQL = WLI.SQL
 local Drops = {}
 WLI.Drops = Drops
 
-WLI.dropList = {} -- id -> { id, x, y, z, created }
+WLI.dropList = {} -- id -> { id, x, y, z, created, expires, owner, label }
 
 local function log() return WLI.M.log end
 
@@ -39,7 +39,9 @@ end
 
 function Drops.list()
     local out = {}
-    for _, d in pairs(WLI.dropList) do out[#out + 1] = { id = d.id, x = d.x, y = d.y, z = d.z } end
+    for _, d in pairs(WLI.dropList) do
+        out[#out + 1] = { id = d.id, x = d.x, y = d.y, z = d.z, owner = d.owner, label = d.label }
+    end
     table.sort(out, function(a, b) return a.id < b.id end)
     return out
 end
@@ -48,15 +50,21 @@ function Drops.broadcast(target)
     TriggerClientEvent('wasteland:inventory:client:drops', target or -1, Drops.list())
 end
 
-local function createDrop(coords)
+-- opts (body bags): { label, owner = characterId, grid = { width, height }, lifetimeMinutes }
+local function createDrop(coords, opts)
+    opts = opts or {}
     local id = Inv.newUid()
-    local g = WLI.cfg.dropGrid
+    local g = opts.grid or WLI.cfg.dropGrid
+    local now = os.time()
+    local expires = now + (opts.lifetimeMinutes or WLI.cfg.dropLifetimeMinutes) * 60
     local inv = Inv.create('drop:' .. id, 'grid', {
-        label = 'Ground', width = g.width, height = g.height, maxWeight = 100000, coords = coords,
+        label = opts.label or 'Ground', width = g.width, height = g.height, maxWeight = 100000, coords = coords,
     })
-    WLI.dropList[id] = { id = id, x = coords.x, y = coords.y, z = coords.z, created = os.time() }
-    return inv, { SQL.insertDrop, { id, coords.x, coords.y, coords.z, os.time() } }
+    WLI.dropList[id] = { id = id, x = coords.x, y = coords.y, z = coords.z, created = now, expires = expires,
+        owner = opts.owner, label = opts.label }
+    return inv, { SQL.insertDrop, { id, coords.x, coords.y, coords.z, now, opts.owner, opts.label, expires } }
 end
+Drops.create = createDrop
 
 --- Plan placing `count` units of stack `s` on the ground near `src`.
 --- Does not touch the source inventory (the caller does).
@@ -68,7 +76,7 @@ function Drops.place(src, s, count)
     local target, x, y, rotated
     for id, info in pairs(WLI.dropList) do
         local inv = WLI.invs['drop:' .. id]
-        if inv and distance(p, info) <= WLI.cfg.dropMergeDistance then
+        if inv and not info.owner and distance(p, info) <= WLI.cfg.dropMergeDistance then
             x, y, rotated = Grid.findSpot(inv, WLI.defs, d)
             if x then target = inv; break end
         end
@@ -128,10 +136,10 @@ end
 
 --- Remove drops older than the lifetime (items are deleted).
 function Drops.expire()
-    local cutoff = os.time() - WLI.cfg.dropLifetimeMinutes * 60
+    local now = os.time()
     local statements, n = {}, 0
     for id, info in pairs(WLI.dropList) do
-        if info.created <= cutoff then
+        if info.expires <= now then
             removeDrop(id, statements)
             n = n + 1
         end
@@ -151,10 +159,15 @@ function Drops.loadAll()
     for _, r in ipairs(rows) do
         local items, ierr = Store.loadItems('drop:' .. r.id)
         if not items then return false, ierr end
-        local g = WLI.cfg.dropGrid
+        local owner = tonumber(r.owner_character)
+        local g = owner and WLI.cfg.deathBagGrid or WLI.cfg.dropGrid
         local coords = { x = tonumber(r.x), y = tonumber(r.y), z = tonumber(r.z) }
-        Inv.create('drop:' .. r.id, 'grid', { label = 'Ground', width = g.width, height = g.height, maxWeight = 100000, coords = coords, items = items })
-        WLI.dropList[r.id] = { id = r.id, x = coords.x, y = coords.y, z = coords.z, created = tonumber(r.created_unix) or os.time() }
+        local created = tonumber(r.created_unix) or os.time()
+        Inv.create('drop:' .. r.id, 'grid', { label = r.label or 'Ground', width = g.width, height = g.height,
+            maxWeight = 100000, coords = coords, items = items })
+        WLI.dropList[r.id] = { id = r.id, x = coords.x, y = coords.y, z = coords.z, created = created,
+            expires = tonumber(r.expires_unix) or (created + WLI.cfg.dropLifetimeMinutes * 60),
+            owner = owner, label = r.label }
         for _, s in pairs(items) do
             if WLI.defs[s.name].container then
                 local contents = Store.loadItems('item:' .. s.uid)

@@ -246,7 +246,8 @@ function MemoryDB:installInventory(SQL)
     end)
     self:on(SQL.insertDrop, function(db, p)
         if db.data.wl_drops[p[1]] then error("Duplicate entry '" .. p[1] .. "' for key 'PRIMARY'", 0) end
-        db.data.wl_drops[p[1]] = { id = p[1], x = p[2], y = p[3], z = p[4], created_unix = p[5] }
+        db.data.wl_drops[p[1]] = { id = p[1], x = p[2], y = p[3], z = p[4], created_unix = p[5],
+            owner_character = p[6], label = p[7], expires_unix = p[8] }
         return header(1)
     end)
     self:on(SQL.deleteDrop, function(db, p)
