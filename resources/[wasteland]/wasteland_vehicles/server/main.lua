@@ -13,7 +13,8 @@ local SQL = WLV.SQL
 local M
 local vehicles = {}    -- id -> record (+ handle, farSince, seq)
 local byHandle = {}    -- entity handle -> id
-local acting = {}      -- source -> { id, action, startedAt, coords }
+local acting = {}      -- source -> { id, action, startedAt, coords, seconds }
+local pumps = {}       -- pump key -> { litres, since }  (limited fuel, refills on a timer)
 local runToken = nil
 
 local function inv() return exports.wasteland_inventory end
@@ -66,16 +67,23 @@ local function params(v)
     return { v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body, Rules.encodeParts(v.parts), v.lockCode, v.locked and 1 or 0, os.time(), v.id }
 end
 
+-- Database writes run in their own thread (they wait for the database;
+-- callers are often event handlers). The values are taken now.
+local function write(fn, sql, values, what)
+    Citizen.CreateThread(function()
+        local _, err = fn(sql, values)
+        if err then M.log:warn('%s failed: %s', what, tostring(err)) end
+    end)
+end
+
 local function save(v)
     if v.destroyed then return end
-    local _, err = WDB.update(SQL.update, params(v))
-    if err then M.log:warn('saving vehicle %s failed: %s', v.id, tostring(err)) end
+    write(WDB.update, SQL.update, params(v), 'saving vehicle ' .. v.id)
 end
 
 local function insert(v)
-    local _, err = WDB.insert(SQL.insert, { v.id, v.model, v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body,
-        Rules.encodeParts(v.parts), v.lockCode, v.locked and 1 or 0, os.time() })
-    if err then M.log:warn('storing vehicle %s failed: %s', v.id, tostring(err)) end
+    write(WDB.insert, SQL.insert, { v.id, v.model, v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body,
+        Rules.encodeParts(v.parts), v.lockCode, v.locked and 1 or 0, os.time() }, 'storing vehicle ' .. v.id)
 end
 
 -------------------------------------------------------------------------------
@@ -111,7 +119,7 @@ end
 local function destroy(v)
     v.destroyed = true
     vehicles[v.id] = nil
-    WDB.update(SQL.delete, { v.id })
+    write(WDB.update, SQL.delete, { v.id }, 'deleting vehicle ' .. v.id)
     pcall(function() inv():DeleteStash('veh_' .. v.id) end)
     M.log:info('vehicle %s (%s) was destroyed', v.id, v.model)
     -- The burnt-out wreck stays a while, then goes.
@@ -233,7 +241,22 @@ end
 
 local LABELS = { battery = 'Installing the battery', engine = 'Fitting engine parts', wheel = 'Mounting a wheel',
     refuel = 'Refuelling', repair = 'Repairing', fitLock = 'Fitting a lock', toggleLock = 'Turning the key',
-    pickLock = 'Picking the lock', fillCan = 'Filling the jerry can' }
+    pickLock = 'Picking the lock', fillCan = 'Filling the jerry can', pumpRefuel = 'Refuelling at the pump' }
+
+-- The pump at `coords` (everyone shares it), topped up for the time passed.
+local function pumpAt(coords)
+    local key = Rules.pumpKey(coords)
+    local p = pumps[key]
+    if not p then
+        p = { litres = M.config.pump.litres, since = now() }
+        pumps[key] = p
+    end
+    return Rules.pumpLevel(p, M.config.pump, now())
+end
+
+local function dry(src, pump)
+    notice(src, string.format('This pump is dry. It refills in about %d min.', Rules.pumpWait(pump, M.config.pump, now())))
+end
 
 local function keyFor(src, v)
     if not v.lockCode then return nil end
@@ -289,23 +312,46 @@ local function finish(src)
     local a = acting[src]
     acting[src] = nil
     if not a then return end
-    if now() - a.startedAt < M.config.seconds[a.action] * 1000 - 300 then
+    if now() - a.startedAt < (a.seconds or M.config.seconds[a.action]) * 1000 - 300 then
         M.log:warn('player %d finished "%s" too early', src, a.action)
         return
     end
     local p = playerCoords(src)
     if a.action == 'fillCan' then
         if not p or dist(p, a.coords) > M.config.reach then notice(src, 'You moved away.'); return end
-        local cans = inv():FindItems(src, 'jerry_can')
+        local pump = pumpAt(a.coords)
+        if pump.litres <= 0 then dry(src, pump); return end
         local cap = M.config.jerryCanLitres
-        for _, c in ipairs(cans) do
-            if (c.metadata.fuel or 0) < cap then
-                inv():SetItemMetadata(src, c.uid, { fuel = cap })
-                notice(src, string.format('The jerry can is full (%d L).', cap))
+        for _, c in ipairs(inv():FindItems(src, 'jerry_can')) do
+            local have = c.metadata.fuel or 0
+            if have < cap then
+                local amount = math.min(cap - have, pump.litres)
+                pump.litres = pump.litres - amount
+                inv():SetItemMetadata(src, c.uid, { fuel = have + amount })
+                notice(src, string.format('Jerry can: %.0f of %d L. The pump has %.0f L left.', have + amount, cap, pump.litres))
                 return
             end
         end
         notice(src, 'You have no jerry can that is not full.')
+        return
+    end
+    if a.action == 'pumpRefuel' then
+        local v = vehicles[a.id]
+        if not p or dist(p, a.coords) > M.config.reach or not v or not v.handle
+            or dist(coordsOf(v.handle), a.coords) > M.config.pump.vehicleDistance then
+            notice(src, 'You moved away (or the vehicle did).')
+            return
+        end
+        local pump = pumpAt(a.coords)
+        if pump.litres <= 0 then dry(src, pump); return end
+        local amount = math.min(M.config.tankLitres - v.fuel, pump.litres)
+        if amount <= 0 then notice(src, 'The tank is full.'); return end
+        pump.litres = pump.litres - amount
+        v.fuel = v.fuel + amount
+        publish(v, false)
+        save(v)
+        notice(src, string.format('Added %.0f L. The tank has %.0f of %d L; the pump has %.0f L left.', amount, v.fuel, M.config.tankLitres, pump.litres))
+        TriggerEvent('wasteland:vehicles:action', src, 'pumpRefuel', v.id)
         return
     end
     local v = vehicles[a.id]
@@ -402,6 +448,13 @@ M = Wasteland.DefineModule({
                 battery = SECONDS, engine = SECONDS, wheel = SECONDS, refuel = SECONDS, repair = SECONDS,
                 fitLock = SECONDS, toggleLock = SECONDS, pickLock = SECONDS, fillCan = SECONDS,
             } },
+            pump = { type = 'table', fields = {
+                litres = { type = 'number', default = 80, min = 1, max = 100000, description = 'Fuel in a full pump (litres)' },
+                refillLitres = { type = 'number', default = 20, min = 0, max = 100000 },
+                refillMinutes = { type = 'number', default = 15, min = 0.1, max = 100000 },
+                litresPerSecond = { type = 'number', default = 4, min = 0.1, max = 1000 },
+                vehicleDistance = { type = 'number', default = 8, min = 2, max = 30, description = 'How close the vehicle must be to the pump (m)' },
+            } },
             lockpick = { type = 'table', fields = { chance = { type = 'number', default = 0.3, min = 0, max = 1 },
                 breakChance = { type = 'number', default = 0.5, min = 0, max = 1 }, noise = { type = 'number', default = 60, min = 0, max = 1000 } } },
             wreck = { type = 'table', fields = {
@@ -427,7 +480,7 @@ M = Wasteland.DefineModule({
         for _, item in ipairs({ 'car_battery', 'engine_parts', 'car_wheel', 'jerry_can', 'vehicle_repair_kit', 'vehicle_lock', 'vehicle_key', 'lockpick' }) do
             if not inv():GetItemDefinition(item) then return false, string.format('vehicles need the item "%s" in inventory.lua items', item) end
         end
-        vehicles, byHandle, acting = {}, {}, {}
+        vehicles, byHandle, acting, pumps = {}, {}, {}, {}
         local token = {}
         runToken = token
         Citizen.CreateThread(function()
@@ -500,12 +553,41 @@ M.netEvent('wasteland:vehicles:server:fillCan', {
     if not p or dist(p, coords) > M.config.reach then notice(src, 'You are too far away.'); return end
     local cans = inv():FindItems(src, 'jerry_can')
     if #cans == 0 then notice(src, 'You need a jerry can.'); return end
+    local pump = pumpAt(coords)
+    if pump.litres <= 0 then dry(src, pump); return end
     acting[src] = { action = 'fillCan', startedAt = now(), coords = coords }
     TriggerClientEvent('wasteland:vehicles:client:progress', src, { seconds = M.config.seconds.fillCan, label = LABELS.fillCan })
 end)
 
+-- Refuel a vehicle parked next to a pump, straight from the pump.
+M.netEvent('wasteland:vehicles:server:pumpRefuel', {
+    args = { { type = 'integer', required = true, min = 1 }, { type = 'table', required = true, fields = {
+        x = { type = 'number', required = true }, y = { type = 'number', required = true }, z = { type = 'number', required = true } } } },
+    rateLimit = RATE,
+}, function(src, netId, coords)
+    if acting[src] and now() - acting[src].startedAt < 30000 then return end
+    local p = playerCoords(src)
+    if not p or dist(p, coords) > M.config.reach then notice(src, 'You are too far away.'); return end
+    local h = NetworkGetEntityFromNetworkId(netId)
+    local v = h and byHandle[h] and vehicles[byHandle[h]]
+    if not v or dist(coordsOf(h), coords) > M.config.pump.vehicleDistance then
+        notice(src, 'Park the vehicle next to the pump.')
+        return
+    end
+    local need = M.config.tankLitres - v.fuel
+    if need < 0.5 then notice(src, 'The tank is full.'); return end
+    local pump = pumpAt(coords)
+    if pump.litres <= 0 then dry(src, pump); return end
+    local litres = math.min(need, pump.litres)
+    local seconds = math.max(2, math.min(20, litres / M.config.pump.litresPerSecond))
+    acting[src] = { action = 'pumpRefuel', id = v.id, startedAt = now(), coords = coords, seconds = seconds }
+    TriggerClientEvent('wasteland:vehicles:client:progress', src, { seconds = seconds,
+        label = string.format('%s (%.0f L, pump has %.0f L)', LABELS.pumpRefuel, litres, pump.litres) })
+end)
+
 M.netEvent('wasteland:vehicles:server:config', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
-    TriggerClientEvent('wasteland:vehicles:client:config', src, { pumps = M.config.pumps, fuel = M.config.fuel, tank = M.config.tankLitres })
+    TriggerClientEvent('wasteland:vehicles:client:config', src, { pumps = M.config.pumps, fuel = M.config.fuel, tank = M.config.tankLitres,
+        pumpVehicleDistance = M.config.pump.vehicleDistance })
 end)
 
 M.netEvent('wasteland:vehicles:server:finish', { rateLimit = RATE }, finish)
@@ -562,6 +644,12 @@ end)
 -------------------------------------------------------------------------------
 -- Exports (vehicles api 0.1)
 -------------------------------------------------------------------------------
+
+--- GetPumpFuel(coords) -> litres left in the pump at coords
+exports('GetPumpFuel', function(coords)
+    if not (M and M.active) or type(coords) ~= 'table' then return nil end
+    return pumpAt(coords).litres
+end)
 
 --- GetVehicleCount() -> number in the world
 exports('GetVehicleCount', function() return count() end)

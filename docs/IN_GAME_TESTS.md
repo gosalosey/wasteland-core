@@ -350,3 +350,5 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R19.11 | Give the key to someone else | They can unlock it and open the trunk |
 | R19.12 | Blow a car up | It burns out and disappears after a while; later another wreck appears somewhere else |
 | R19.13 | Get in a vehicle | Bottom middle: speed (mph), fuel gauge (litres), engine and body %, lock; a red line saying why it will not run, if it will not |
+| R19.14 | Park a car next to a gas pump, Left Alt on the pump, "Refuel vehicle" | A bar ("Refuelling at the pump (30 L, pump has 80 L)"); the tank fills; "the pump has 50 L left" |
+| R19.15 | Keep taking fuel from the same pump (car or jerry cans) until it is empty | "This pump is dry. It refills in about N min."; 15 minutes later it gives 20 L again |

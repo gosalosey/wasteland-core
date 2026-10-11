@@ -218,6 +218,57 @@ describe('vehicles', function()
         server:advance(61000)
         expect(server:export('wasteland_vehicles', 'GetVehicleCount')).toBe(2)
         expect(#server.scriptErrors).toBe(0)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+
+describe('gas pumps', function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['vehicles.lua'] = (CFG['vehicles.lua']:gsub('models = ',
+        'pump = { litres = 30, refillLitres = 10, refillMinutes = 1, litresPerSecond = 10, vehicleDistance = 8 }, models = ', 1))
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_vehicles' })
+    local id = player(server, 'pumper', { x = 996.0, y = 0.0, z = 30.0 })
+    server:advance(2100)
+    local PUMP = { x = 997.0, y = 3.0, z = 30.0 }
+    local function pumpRefuel()
+        server:clientEvent(id, 'wasteland:vehicles:server:pumpRefuel', veh(server).netId, PUMP); server:advance(100)
+        local p = last(events(server, id, 'wasteland:vehicles:client:progress'))
+        server:advance(math.ceil(p.args[1].seconds * 1000) + 100)
+        server:clientEvent(id, 'wasteland:vehicles:server:finish'); server:advance(200)
+    end
+
+    it('a vehicle parked at the pump fills from the pump, up to what the pump has', function()
+        pumpRefuel() -- tank 2 of 50, pump 30
+        expect(veh(server).state.wlVeh.fuel).toBe(32)
+        expect(note(server, id)).toContain('the pump has 0 L left')
+        expect(server:export('wasteland_vehicles', 'GetPumpFuel', PUMP)).toBe(0)
+    end)
+
+    it('a dry pump says when it refills; it refills on its timer', function()
+        server:clientEvent(id, 'wasteland:vehicles:server:pumpRefuel', veh(server).netId, PUMP); server:advance(100)
+        expect(note(server, id)).toBe('This pump is dry. It refills in about 1 min.')
+        I(server, 'AddItem', id, 'jerry_can', 1); server:advance(100)
+        server:clientEvent(id, 'wasteland:vehicles:server:fillCan', PUMP); server:advance(100)
+        expect(note(server, id)).toContain('This pump is dry')
+        server:advance(61000)
+        expect(server:export('wasteland_vehicles', 'GetPumpFuel', PUMP)).toBe(10)
+        server:clientEvent(id, 'wasteland:vehicles:server:fillCan', PUMP); server:advance(1100)
+        server:clientEvent(id, 'wasteland:vehicles:server:finish'); server:advance(200)
+        expect(I(server, 'FindItems', id, 'jerry_can')[1].metadata.fuel).toBe(10) -- only what the pump had
+        expect(server:export('wasteland_vehicles', 'GetPumpFuel', PUMP)).toBe(0)
+    end)
+
+    it('the vehicle must be parked at the pump, the player at the pump', function()
+        server:advance(61000)
+        server:clientEvent(id, 'wasteland:vehicles:server:pumpRefuel', veh(server).netId, { x = 980.0, y = 0.0, z = 30.0 }); server:advance(100)
+        expect(note(server, id)).toBe('You are too far away.')
+        server.players[id].coords = { x = 1020.0, y = 0.0, z = 30.0 }
+        server:clientEvent(id, 'wasteland:vehicles:server:pumpRefuel', veh(server).netId, { x = 1021.0, y = 0.0, z = 30.0 }); server:advance(100)
+        expect(note(server, id)).toBe('Park the vehicle next to the pump.')
+        expect(#server.scriptErrors).toBe(0)
+        expect(#server:lines('raised:')).toBe(0) -- no handler failed (e.g. a database write outside a thread)
     end)
 end)
 

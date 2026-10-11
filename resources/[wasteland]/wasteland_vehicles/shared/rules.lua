@@ -78,6 +78,34 @@ function Rules.check(action, v, has, key, cfg)
     return nil, 'Unknown action.'
 end
 
+--- A gas pump is the same for everyone: its position rounded to a metre.
+function Rules.pumpKey(coords)
+    local r = function(v) return math.floor(v + 0.5) end
+    return string.format('%d_%d_%d', r(coords.x), r(coords.y), r(coords.z))
+end
+
+--- A pump's fuel now: refills `refillLitres` every `refillMinutes` since
+--- it was last topped up, up to `litres`. Mutates and returns the pump.
+--- pump = { litres, since }   p = config.pump
+function Rules.pumpLevel(pump, p, nowMs)
+    local step = p.refillMinutes * 60000
+    if pump.litres >= p.litres then
+        pump.litres, pump.since = p.litres, nowMs
+        return pump
+    end
+    local steps = math.floor((nowMs - pump.since) / step)
+    if steps > 0 then
+        pump.litres = math.min(p.litres, pump.litres + steps * p.refillLitres)
+        pump.since = pump.since + steps * step
+    end
+    return pump
+end
+
+--- Minutes until a dry pump has fuel again.
+function Rules.pumpWait(pump, p, nowMs)
+    return math.max(1, math.ceil((pump.since + p.refillMinutes * 60000 - nowMs) / 60000))
+end
+
 --- Encode / decode the parts column.
 function Rules.encodeParts(p)
     return string.format('{"battery":%s,"engine":%s,"wheels":%d}', p.battery and 'true' or 'false', p.engine and 'true' or 'false', p.wheels or 0)

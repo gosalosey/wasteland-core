@@ -89,6 +89,21 @@ local function describe(s, veh)
     return table.concat(parts, ' · ')
 end
 
+-- The nearest world vehicle parked next to a pump that is not full, or nil.
+local function vehicleAtPump(pump)
+    if not pump or pump == 0 or not cfg then return nil end
+    local pc = GetEntityCoords(pump)
+    local best, bestDist = nil, (cfg.pumpVehicleDistance or 8.0) - 0.5
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        local s = stateOf(veh)
+        if s and NetworkGetEntityIsNetworked(veh) and (s.fuel or 0) < (s.tank or 50) - 0.5 then
+            local d = #(GetEntityCoords(veh) - pc)
+            if d < bestDist then best, bestDist = veh, d end
+        end
+    end
+    return best
+end
+
 local function register()
     for _, id in ipairs(targetIds) do pcall(function() exports.wasteland_target:Remove(id) end) end
     targetIds = {}
@@ -110,6 +125,14 @@ local function register()
     })
     if cfg.pumps and #cfg.pumps > 0 then
         targetIds[#targetIds + 1] = exports.wasteland_target:AddModel(cfg.pumps, {
+            { label = 'Refuel vehicle', icon = '⛽', distance = 2.5,
+                canInteract = function(entity) return active == nil and vehicleAtPump(entity) ~= nil end,
+                onSelect = function(data)
+                    local veh = vehicleAtPump(data.entity)
+                    if not veh then return end
+                    local c = GetEntityCoords(data.entity)
+                    TriggerServerEvent('wasteland:vehicles:server:pumpRefuel', NetworkGetNetworkIdFromEntity(veh), { x = c.x, y = c.y, z = c.z })
+                end },
             { label = 'Fill jerry can', icon = '⛽', distance = 2.5, canInteract = function() return active == nil end,
                 onSelect = function(data)
                     local c = GetEntityCoords(data.entity)

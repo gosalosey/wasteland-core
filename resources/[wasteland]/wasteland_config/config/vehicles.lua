@@ -41,7 +41,18 @@ return {
     models = { 'emperor2', 'rebel', 'tornado3', 'surfer2', 'ratloader', 'bodhi2', 'regina', 'dloader', 'sadler', 'bison',
         'rumpo', 'youga', 'mesa', 'voodoo2', 'asea', 'ingot', 'primo', 'stanier' },
 
-    -- Gas pumps: hold Left Alt, "Fill jerry can".
+    -- Gas pumps have limited fuel, shared by everyone, and refill slowly.
+    -- Park next to one and hold Left Alt on the pump: "Refuel vehicle"
+    -- (no jerry can needed) or "Fill jerry can".
+    pump = {
+        litres = 80,              -- fuel in a full pump
+        refillLitres = 20,        -- added back ...
+        refillMinutes = 15,       -- ... every this many minutes (up to full)
+        litresPerSecond = 4,      -- how fast it pours into a vehicle
+        vehicleDistance = 8,      -- how close (m) the vehicle must be parked
+    },
+
+    -- Gas pump models (GTA names).
     pumps = { 'prop_gas_pump_1a', 'prop_gas_pump_1b', 'prop_gas_pump_1c', 'prop_gas_pump_1d', 'prop_gas_pump_old2',
         'prop_gas_pump_old3', 'prop_vintage_pump' },
 

@@ -464,4 +464,6 @@ Records in `wl_vehicles` (id, model, position, fuel, engine, body, parts `{"batt
 
 Actions (`wasteland:vehicles:server:act(netId, action)`, then `...:finish`): battery, engine, wheel, refuel, repair, fitLock, toggleLock, pickLock, trunk (no wait). Pumps: `...:fillCan(coords)`. Fuel: the driver reports litres (`...:fuel`), accepted only from the driver seat and only going down. A car lock creates a `vehicle_key` item with metadata `{ code }`; the key fits when its code matches. Trunks are stashes `veh_<id>`.
 
-Exports: `GetVehicleCount()`, `SpawnWreck(coords, model?) -> id`, `GetVehicleState(id)`. Server events: `wasteland:vehicles:action(source, action, id)`, `wasteland:noise(coords, radius)` (lock picking). New inventory export: `FindItems(source, name) -> list of { uid, count, metadata, inventoryId }`.
+Gas pumps (`pump` in vehicles.lua) have limited, shared fuel keyed by their position (rounded to a metre) that refills on a timer: `...:pumpRefuel(netId, pumpCoords)` fills a vehicle parked within `vehicleDistance`; `...:fillCan(pumpCoords)` fills a jerry can; both take only what the pump has.
+
+Exports: `GetVehicleCount()`, `SpawnWreck(coords, model?) -> id`, `GetVehicleState(id)`, `GetPumpFuel(coords) -> litres`. Server events: `wasteland:vehicles:action(source, action, id)`, `wasteland:noise(coords, radius)` (lock picking). New inventory export: `FindItems(source, name) -> list of { uid, count, metadata, inventoryId }`.

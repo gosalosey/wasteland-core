@@ -1,5 +1,12 @@
 # Changelog
 
+## Gas pumps: refuel at the pump, limited fuel (owner request)
+* Park within 8 m of a gas pump, hold Left Alt on the pump: "Refuel vehicle" fills the nearest vehicle straight from the pump (4 L a second; no jerry can needed). "Fill jerry can" is still there.
+* Every pump holds 80 L, shared by everyone (vehicles and jerry cans), and gets 20 L back every 15 minutes up to full. A dry pump says when it refills; a pump with little left gives what it has. All numbers in vehicles.lua (`pump`). Pump levels are kept in memory (full again after a restart).
+* Fix: vehicle database writes after an action (parts, refuelling, locks, repairs) waited for the database inside a network event and failed; they only reached the database with the next 30-second save. Every vehicle write now runs in its own thread, and the tests fail on any handler error.
+* Tests: 570 (new: pump refuel, dry pumps, refills, distance checks, pump rules).
+
+
 ## Vehicle HUD (owner request)
 * While in a vehicle (any seat), bottom middle: speed in mph, fuel gauge with litres, engine and body condition (green, yellow at 35% or less, red at 15% or less), Locked / Unlocked for vehicles with a lock, and the reason a car will not run ("There is no battery.", "The tank is empty.").
 * Tests: 566.
