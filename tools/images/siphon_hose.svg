@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="tube" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9e6c8" stop-opacity="0.85"/><stop offset="1" stop-color="#9fb08a" stop-opacity="0.85"/>
+    </linearGradient>
+    <radialGradient id="bulb" cx="0.38" cy="0.32" r="0.8">
+      <stop offset="0" stop-color="#5b5f58"/><stop offset="0.7" stop-color="#2c2e2a"/><stop offset="1" stop-color="#151614"/>
+    </radialGradient>
+  </defs>
+  <!-- coil -->
+  <g fill="none" stroke-linecap="round">
+    <ellipse cx="118" cy="140" rx="78" ry="56" stroke="#2a3020" stroke-width="20"/>
+    <ellipse cx="118" cy="140" rx="78" ry="56" stroke="url(#tube)" stroke-width="14"/>
+    <ellipse cx="122" cy="132" rx="64" ry="44" stroke="#2a3020" stroke-width="20"/>
+    <ellipse cx="122" cy="132" rx="64" ry="44" stroke="url(#tube)" stroke-width="14"/>
+    <ellipse cx="118" cy="140" rx="78" ry="56" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3" stroke-dasharray="40 260"/>
+    <!-- amber fuel inside the tube -->
+    <path d="M60 104 Q90 84 140 88" stroke="#c98a1c" stroke-width="5" stroke-opacity="0.8"/>
+    <!-- loose ends -->
+    <path d="M186 104 Q222 70 214 34" stroke="#2a3020" stroke-width="20"/>
+    <path d="M186 104 Q222 70 214 34" stroke="url(#tube)" stroke-width="14"/>
+    <path d="M52 176 Q30 210 52 232" stroke="#2a3020" stroke-width="20"/>
+    <path d="M52 176 Q30 210 52 232" stroke="url(#tube)" stroke-width="14"/>
+  </g>
+  <!-- squeeze pump bulb on the hose -->
+  <g transform="rotate(-38 212 62)">
+    <rect x="196" y="40" width="32" height="12" rx="4" fill="#1d1f1b"/>
+    <ellipse cx="212" cy="66" rx="20" ry="28" fill="url(#bulb)" stroke="#0d0e0c" stroke-width="4"/>
+    <rect x="198" y="88" width="28" height="10" rx="4" fill="#1d1f1b"/>
+  </g>
+  <!-- end clip -->
+  <rect x="42" y="226" width="22" height="14" rx="3" fill="#7a5a20" stroke="#2a1e0a" stroke-width="3"/>
+</svg>

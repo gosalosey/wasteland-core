@@ -7,7 +7,7 @@ local CFG = {
     ['players.lua'] = 'return { restoreDelayMs = 200 }',
     ['vehicles.lua'] = [[return {
         maxVehicles = 2, respawnMinutes = 1, spawnDistance = 250, despawnDistance = 350, despawnAfterSeconds = 4, saveSeconds = 4,
-        seconds = { battery = 1, engine = 1, wheel = 1, refuel = 1, repair = 1, fitLock = 1, toggleLock = 1, pickLock = 1, removeLock = 1, fillCan = 1 },
+        seconds = { battery = 1, engine = 1, wheel = 1, refuel = 1, siphon = 1, repair = 1, fitLock = 1, toggleLock = 1, pickLock = 1, removeLock = 1, fillCan = 1 },
         lockpick = { pins = 4, minSecondsPerPin = 0.35, breakChance = 1, noise = 60 },
         wreck = { batteryMissing = 1, engineMissing = 0, wheelsMissingChance = 1, wheelsMissingMax = 1,
             fuel = { 2, 2 }, engine = { 500, 500 }, body = { 600, 600 } },
@@ -408,6 +408,44 @@ describe('vehicle locks: removing your own lock, winning the lockpick minigame',
         expect(veh(server).doorLock).toBe(1)
         expect(veh(server).state.wlVeh.hasLock).toBe(false)
         expect(I(server, 'GetItemCount', other, 'lockpick')).toBe(1)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+
+describe('siphoning fuel', function()
+    local server = world()
+    local id = player(server, 'siphoner', { x = 1001.0, y = 1.0, z = 30.0 })
+    server:advance(2000)
+
+    it('needs fuel in the tank, a siphon hose and a jerry can with room', function()
+        local fuel = veh(server).state.wlVeh.fuel
+        expect(fuel > 0).toBe(true)
+        act(server, id, 'siphon')
+        expect(note(server, id)).toBe('You need a siphon hose.')
+        I(server, 'AddItem', id, 'siphon_hose', 1); server:advance(100)
+        act(server, id, 'siphon')
+        expect(note(server, id)).toBe('You need a jerry can that is not full.')
+        I(server, 'AddItem', id, 'jerry_can', 1, { fuel = 20 }); server:advance(100)
+        act(server, id, 'siphon')
+        expect(note(server, id)).toBe('You need a jerry can that is not full.')
+    end)
+
+    it('moves the fuel from the tank into the can (the hose is kept); an empty tank gives nothing', function()
+        local fuel = veh(server).state.wlVeh.fuel
+        I(server, 'AddItem', id, 'jerry_can', 1, { fuel = 0 }); server:advance(100)
+        act(server, id, 'siphon')
+        expect(note(server, id)).toContain('Siphoned ' .. string.format('%.0f', fuel) .. ' L')
+        expect(veh(server).state.wlVeh.fuel).toBe(0)
+        local total = 0
+        for _, c in ipairs(I(server, 'FindItems', id, 'jerry_can')) do total = total + (c.metadata.fuel or 0) end
+        expect(total).toBe(20 + fuel)
+        expect(I(server, 'GetItemCount', id, 'siphon_hose')).toBe(1)
+        act(server, id, 'siphon')
+        expect(note(server, id)).toBe('The tank is empty.')
+        server:advance(300)
+        local row
+        for _, r in pairs(server.db.backend.data.wl_vehicles) do if r.fuel == 0 then row = r end end
+        expect(row ~= nil).toBe(true)
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)

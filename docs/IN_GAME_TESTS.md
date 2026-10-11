@@ -384,3 +384,12 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R21.5 | Press E when the pick is in the green, 4 times | Each pin lights up, the pick turns back faster; after the 4th: "The lock turns!", then "The lock breaks open." and the car is open |
 | R21.6 | Press E outside the green | Red shake, "The pick slips."; then "The lockpick snaps." or "The pick slips. The lock holds." |
 | R21.7 | Press Esc during the minigame / get hit by a zombie during it | "You stop picking the lock." / "You were interrupted."; you can move again |
+
+## R22: siphoning fuel
+
+| # | Do | Expect |
+|---|---|---|
+| R22.1 | Left Alt on a car with fuel, "Siphon fuel (hose)" without a hose / without a jerry can with room | "You need a siphon hose." / "You need a jerry can that is not full." |
+| R22.2 | With a hose and an empty jerry can | A 10 s bar; "Siphoned 12 L. Jerry can: 12 of 20 L. The tank has 0 L left."; the car will not start ("The tank is empty.") |
+| R22.3 | Use that can on another car ("Refuel (jerry can)") | The fuel goes in |
+| R22.4 | The general trader | Sells siphon hoses; the item shows the hose picture |

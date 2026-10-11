@@ -119,6 +119,8 @@ local function register()
         { label = 'Mount a wheel', icon = '+', distance = 3.0, canInteract = when(function(s) return (s.parts.wheels or 0) < 4 end), onSelect = act('wheel') },
         { label = 'Refuel (jerry can)', icon = '⛽', distance = 3.0, canInteract = when(function(s) return (s.fuel or 0) < (s.tank or 50) - 0.5 end),
             onSelect = act('refuel') },
+        { label = 'Siphon fuel (hose)', icon = '⛽', distance = 3.0, canInteract = when(function(s) return (s.fuel or 0) >= 0.5 end),
+            onSelect = act('siphon') },
         { label = 'Repair (toolkit)', icon = '⚒', distance = 3.0,
             canInteract = when(function(_, veh) return GetVehicleEngineHealth(veh) < 990 or GetVehicleBodyHealth(veh) < 990 end), onSelect = act('repair') },
         { label = 'Fit a lock', icon = '🔒', distance = 3.0, canInteract = when(function(s) return not s.hasLock end), onSelect = act('fitLock') },
@@ -281,7 +283,8 @@ Citizen.CreateThread(function()
         local veh = GetVehiclePedIsIn(ped, false)
         local s = veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped and stateOf(veh) or nil
         if s and cfg then
-            if fuelVeh ~= veh or (s.fuel or 0) > (fuel or 0) + 0.01 then fuel, fuelVeh = s.fuel or 0, veh end
+            -- Take the saved level when it went up (refuelled) or clearly down (siphoned).
+            if fuelVeh ~= veh or (s.fuel or 0) > (fuel or 0) + 0.01 or (s.fuel or 0) < (fuel or 0) - 0.5 then fuel, fuelVeh = s.fuel or 0, veh end
             local can, why = Rules.canRun({ fuel = fuel, engine = GetVehicleEngineHealth(veh), parts = s.parts })
             driving = { veh = veh, fuel = fuel, why = (not can) and why or nil }
             if not can then

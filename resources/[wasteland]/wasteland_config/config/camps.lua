@@ -34,6 +34,7 @@ return {
                 { name = 'scrap_metal', sell = 4 },
                 { name = 'rag', sell = 2 },
                 { name = 'jerry_can', buy = 120, sell = 30, stock = 3, restock = 1 },
+                { name = 'siphon_hose', buy = 60, sell = 15, stock = 3, restock = 1 },
                 { name = 'vehicle_repair_kit', buy = 350, sell = 90, stock = 2, restock = 1 },
                 { name = 'car_battery', buy = 500, sell = 120, stock = 1, restock = 1 },
                 { name = 'engine_parts', buy = 600, sell = 150, stock = 1, restock = 1 },
@@ -76,9 +77,9 @@ return {
             id = 'sandy', label = 'Sandy Shores Camp', coords = { x = 1853.0, y = 3686.0, z = 34.3 }, radius = 70,
             blip = { sprite = 40, color = 2 },
             traders = {
-                { shop = 'general', model = 's_m_m_trucker_01', coords = { x = 1849.6, y = 3683.4, z = 34.27, heading = 210.0 } },
-                { shop = 'medic', model = 's_m_m_paramedic_01', coords = { x = 1856.2, y = 3681.0, z = 34.27, heading = 210.0 } },
-                { shop = 'gunsmith', model = 's_m_y_ammucity_01', coords = { x = 1861.0, y = 3687.6, z = 34.27, heading = 120.0 } },
+                { shop = 'general', model = 's_m_m_trucker_01', coords = { x = 1857.72, y = 3687.84, z = 34.27, heading = 110.12 } },
+                { shop = 'medic', model = 's_m_m_paramedic_01', coords = { x = 1848.97, y = 3689.71, z = 34.27, heading = 211.41 } },
+                { shop = 'gunsmith', model = 's_m_y_ammucity_01', coords = { x = 1851.35, y = 3683.84, z = 34.27, heading = 296.83 } },
             },
         },
         {

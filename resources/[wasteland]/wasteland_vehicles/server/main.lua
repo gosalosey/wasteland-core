@@ -246,7 +246,7 @@ end
 -------------------------------------------------------------------------------
 
 local LABELS = { battery = 'Installing the battery', engine = 'Fitting engine parts', wheel = 'Mounting a wheel',
-    refuel = 'Refuelling', repair = 'Repairing', fitLock = 'Fitting a lock', toggleLock = 'Turning the key',
+    refuel = 'Refuelling', siphon = 'Siphoning fuel', repair = 'Repairing', fitLock = 'Fitting a lock', toggleLock = 'Turning the key',
     pickLock = 'Picking the lock', removeLock = 'Taking the lock off', fillCan = 'Filling the jerry can', pumpRefuel = 'Refuelling at the pump' }
 
 -- The pump at `coords` (everyone shares it), topped up for the time passed.
@@ -296,9 +296,20 @@ local function canWithFuel(src)
     return best
 end
 
+-- The fullest jerry can that still has room (siphoning fills one can).
+local function canWithSpace(src)
+    local best
+    for _, c in ipairs(inv():FindItems(src, 'jerry_can')) do
+        local f = c.metadata.fuel or 0
+        if f < M.config.jerryCanLitres - 0.05 and (not best or f > (best.metadata.fuel or 0)) then best = c end
+    end
+    return best
+end
+
 local function has(src)
     return function(item)
         if item == 'jerry_can' then return canWithFuel(src) ~= nil end
+        if item == 'jerry_can_space' then return canWithSpace(src) ~= nil end
         return (inv():GetItemCount(src, item) or 0) > 0
     end
 end
@@ -405,6 +416,14 @@ local function finish(src)
         inv():SetItemMetadata(src, c.uid, { fuel = c.metadata.fuel - amount })
         v.fuel = v.fuel + amount
         notice(src, string.format('Added %.0f L. The tank has %.0f of %d L.', amount, v.fuel, cfg.tankLitres))
+    elseif a.action == 'siphon' then
+        local c = canWithSpace(src)
+        local have = c.metadata.fuel or 0
+        local amount = math.min(v.fuel, cfg.jerryCanLitres - have)
+        inv():SetItemMetadata(src, c.uid, { fuel = have + amount })
+        v.fuel = math.max(0, v.fuel - amount)
+        notice(src, string.format('Siphoned %.0f L. Jerry can: %.0f of %d L. The tank has %.0f L left.', amount, have + amount,
+            cfg.jerryCanLitres, v.fuel))
     elseif a.action == 'repair' then
         if not inv():RemoveItem(src, item, 1) then return end
         v.engine = math.min(1000, v.engine + cfg.repair.engine)
@@ -469,7 +488,7 @@ M = Wasteland.DefineModule({
             repair = { type = 'table', fields = { engine = { type = 'number', default = 400, min = 0, max = 1000 },
                 body = { type = 'number', default = 400, min = 0, max = 1000 } } },
             seconds = { type = 'table', fields = {
-                battery = SECONDS, engine = SECONDS, wheel = SECONDS, refuel = SECONDS, repair = SECONDS,
+                battery = SECONDS, engine = SECONDS, wheel = SECONDS, refuel = SECONDS, siphon = SECONDS, repair = SECONDS,
                 fitLock = SECONDS, toggleLock = SECONDS, pickLock = SECONDS, removeLock = SECONDS, fillCan = SECONDS,
             } },
             pump = { type = 'table', fields = {
@@ -504,11 +523,11 @@ M = Wasteland.DefineModule({
     },
     onInit = function(mod)
         M = mod -- DefineModule may run onInit before it returns
-        for action, s in pairs({ battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8,
+        for action, s in pairs({ battery = 6, engine = 10, wheel = 6, refuel = 8, siphon = 10, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8,
             removeLock = 6, fillCan = 8 }) do
             if not M.config.seconds[action] then M.config.seconds[action] = s end
         end
-        for _, item in ipairs({ 'car_battery', 'engine_parts', 'car_wheel', 'jerry_can', 'vehicle_repair_kit', 'vehicle_lock', 'vehicle_key', 'lockpick' }) do
+        for _, item in ipairs({ 'car_battery', 'engine_parts', 'car_wheel', 'jerry_can', 'vehicle_repair_kit', 'vehicle_lock', 'vehicle_key', 'lockpick', 'siphon_hose' }) do
             if not inv():GetItemDefinition(item) then return false, string.format('vehicles need the item "%s" in inventory.lua items', item) end
         end
         vehicles, byHandle, acting, pumps = {}, {}, {}, {}
@@ -567,7 +586,7 @@ M = Wasteland.DefineModule({
 })
 
 local RATE = { burst = 6, perSecond = 2 }
-local ACTIONS = { 'battery', 'engine', 'wheel', 'refuel', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'removeLock', 'trunk' }
+local ACTIONS = { 'battery', 'engine', 'wheel', 'refuel', 'siphon', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'removeLock', 'trunk' }
 
 M.netEvent('wasteland:vehicles:server:act', {
     args = { { type = 'integer', required = true, min = 1 }, { type = 'enum', required = true, values = ACTIONS } },

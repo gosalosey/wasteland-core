@@ -39,6 +39,17 @@ describe('vehicle rules', function()
         expect(select(2, Rules.check('repair', full, has, false, cfg))).toBe('You need a toolkit.')
         expect(select(2, Rules.check('refuel', { fuel = 50, parts = full.parts }, has, false, cfg))).toBe('The tank is full.')
     end)
+    it('siphoning needs fuel, a hose and a jerry can with room', function()
+        local carry = {}
+        local has = function(i) return carry[i] == true end
+        local v = { fuel = 10, engine = 900, body = 900, parts = full.parts }
+        expect(select(2, Rules.check('siphon', { fuel = 0.2, parts = full.parts }, has, false, cfg))).toBe('The tank is empty.')
+        expect(select(2, Rules.check('siphon', v, has, false, cfg))).toBe('You need a siphon hose.')
+        carry.siphon_hose = true
+        expect(select(2, Rules.check('siphon', v, has, false, cfg))).toBe('You need a jerry can that is not full.')
+        carry.jerry_can_space = true
+        expect(Rules.check('siphon', v, has, false, cfg)).toBe('siphon_hose')
+    end)
     it('locks: fit, key, pick, trunk', function()
         local carry = { vehicle_lock = true, lockpick = true }
         local has = function(i) return carry[i] == true end

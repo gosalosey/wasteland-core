@@ -23,7 +23,7 @@ return {
     fuel = { idlePerMinute = 0.06, per100km = 14 },
     repair = { engine = 400, body = 400 },   -- health a toolkit restores (of 1000)
 
-    seconds = { battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, removeLock = 6, fillCan = 8 },
+    seconds = { battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, removeLock = 6, siphon = 10, fillCan = 8 },
 
     -- Picking a lock needs a lockpick and a minigame: a pick turns around
     -- the lock; press E (or Space / click) while it is in the bright zone

@@ -150,6 +150,8 @@ return {
             description = 'Opens the lock it was made for.' },
         lockpick = { label = 'Lockpick', category = 'tool', width = 1, height = 1, weight = 0.05,
             description = 'Can open a locked vehicle. Often breaks.' },
+        siphon_hose = { label = 'Siphon hose', image = 'siphon_hose', category = 'tool', width = 2, height = 1, weight = 0.4,
+            description = 'Drains fuel from a vehicle into a jerry can.' },
 
         -- Blueprints: use one to learn a crafting recipe (crafting.lua).
         blueprint_repair_kit = { label = 'Blueprint: repair kit', image = '1-blank-blurprint', category = 'misc', width = 1, height = 1,

@@ -41,7 +41,7 @@ function Rules.fuelUsed(f, kmh, seconds)
 end
 
 --- What an action needs and whether it can be done now.
---- action: battery | engine | wheel | refuel | repair | fitLock | toggleLock | pickLock | removeLock | trunk
+--- action: battery | engine | wheel | refuel | repair | siphon | fitLock | toggleLock | pickLock | removeLock | trunk
 --- has(item) -> true if the player carries it; key = player holds this vehicle's key;
 --- mine = the player fitted this lock (removeLock).
 --- Returns item to use (or true) or nil, reason.
@@ -59,6 +59,11 @@ function Rules.check(action, v, has, key, cfg, mine)
     elseif action == 'refuel' then
         if v.fuel >= cfg.tankLitres - 0.5 then return nil, 'The tank is full.' end
         return has('jerry_can') and 'jerry_can' or nil, 'You need a jerry can with fuel.'
+    elseif action == 'siphon' then
+        -- has('jerry_can_space'): a jerry can that is not full.
+        if v.fuel < 0.5 then return nil, 'The tank is empty.' end
+        if not has('siphon_hose') then return nil, 'You need a siphon hose.' end
+        return has('jerry_can_space') and 'siphon_hose' or nil, 'You need a jerry can that is not full.'
     elseif action == 'repair' then
         if v.engine >= 990 and v.body >= 990 then return nil, 'It does not need repairs.' end
         return has('vehicle_repair_kit') and 'vehicle_repair_kit' or nil, 'You need a toolkit.'

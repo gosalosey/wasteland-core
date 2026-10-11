@@ -59,6 +59,7 @@ return {
             { name = 'blueprint_knife', min = 1, max = 1, weight = 1 },
             { name = 'jerry_can', min = 1, max = 1, weight = 2 },
             { name = 'lockpick', min = 1, max = 1, weight = 2 },
+            { name = 'siphon_hose', min = 1, max = 1, weight = 2 },
         } },
         food = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
@@ -102,6 +103,7 @@ return {
             { name = 'blueprint_machete', min = 1, max = 1, weight = 2 },
             { name = 'car_wheel', min = 1, max = 1, weight = 3 },
             { name = 'jerry_can', min = 1, max = 1, weight = 3 },
+            { name = 'siphon_hose', min = 1, max = 1, weight = 2 },
         } },
         mail = { emptyChance = 0.7, rolls = { 1, 1 }, items = {
             { name = 'cash', min = 5, max = 60, weight = 70 },

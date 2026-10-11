@@ -1,5 +1,13 @@
 # Changelog
 
+## Siphoning fuel (owner request)
+* New item: Siphon hose (own picture). Left Alt on any vehicle with fuel: "Siphon fuel (hose)" drains the tank into a jerry can that is not full (up to the can's 20 L) in 10 seconds (`seconds.siphon`). The hose is kept. Works on locked cars too (the fuel cap has no lock).
+* Found in garage/vehicle loot, sold by the general trader ($60, sells for $15).
+* A driver sitting in a siphoned car sees the lower level at once.
+* Trader positions at Sandy Shores taken from the live server config (moved by the owner).
+* Tests: 598.
+
+
 ## Admin coords, removing your own car lock, lockpick minigame (owner request)
 * Admin panel, new "Coords" tab: your position live (X, Y, Z, heading) with Copy buttons for `vector3(x, y, z)`, `vector4(x, y, z, heading)` and the heading alone; the last copied lines stay listed to copy again.
 * Car locks: "Take the lock off" (Left Alt on the car) for the survivor who fitted it, and only them (stored per character, new column `wl_vehicles.lock_owner`, migration 2). The lock goes back into your pockets; the old key fits nothing any more. Locks fitted before this update: whoever holds the key can take them off.
