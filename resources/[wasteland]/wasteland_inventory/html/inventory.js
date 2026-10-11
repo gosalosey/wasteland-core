@@ -398,7 +398,7 @@
                 h('div', { class: 'wli-layout' },
                     h('div', { class: 'wli-header' },
                         h('h1', { class: 'wl-title', text: 'Inventory' }),
-                        h('span', { class: 'wl-hint', text: 'Drag to move · R rotates while dragging · Right-click for actions · Shift-click to quick-move · I or Esc closes' })),
+                        h('span', { class: 'wl-hint', text: 'Drag to move · R rotates while dragging · Right-click for actions · Shift-click to quick-move · TAB or Esc closes' })),
                     h('div', { class: 'wli-columns' }, st.left, st.middle, st.right),
                     st.message));
             el.appendChild(st.root);
