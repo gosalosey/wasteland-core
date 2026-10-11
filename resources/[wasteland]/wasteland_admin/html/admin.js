@@ -165,6 +165,7 @@
                 UI.button(p.frozen ? 'Unfreeze' : 'Freeze', () => act('freeze', { target: p.id, enabled: !p.frozen }))),
             section('Survival'),
             statEditor(p),
+            ...playerTools(p),
             section('Items'),
             h('div', { class: 'wla-row wla-row--top' }, picker, count, UI.button('Give', () => {
                 const name = st.itemChoice;
@@ -178,6 +179,47 @@
             row(banReason, banTime, confirmButton('Ban', () => act('ban', {
                 target: p.id, reason: banReason.value, minutes: Number(banTime.value),
             }))));
+    }
+
+    // Cash, jobs, recipes, spectate, send to camp.
+    function playerTools(p) {
+        const t = { target: p.id };
+        const out = [];
+        if (!p.character) return out;
+        const watching = st.spectating === p.id;
+        out.push(section('Admin view'), row(
+            UI.button(watching ? 'Stop spectating' : 'Spectate', () => {
+                st.spectating = watching ? null : p.id;
+                act('spectate', { target: p.id, enabled: !watching });
+            }, watching ? 'primary' : undefined),
+            confirmButton('Send to nearest camp', () => act('sendToCamp', t))));
+        if (typeof p.cash === 'number') {
+            const amount = input({ type: 'number', min: '1', max: '1000000' }, 100);
+            const n = () => Math.max(1, Math.floor(Number(amount.value) || 1));
+            out.push(section('Cash: $' + p.cash.toLocaleString('en-US')),
+                row(amount, UI.button('Give', () => act('giveCash', { target: p.id, count: n() }), 'primary'),
+                    UI.button('Take', () => act('takeCash', { target: p.id, count: n() }))));
+        }
+        if (p.quests) {
+            const box = h('div', { class: 'wla-mini' });
+            p.quests.active.forEach((q) => box.appendChild(h('div', { class: 'wla-mini__row' },
+                h('div', {}, h('b', { text: q.label + (q.ready ? ' (ready to hand in)' : '') }), h('div', { class: 'wl-hint', text: q.objectives.join(' · ') })),
+                confirmButton('Drop', () => act('dropQuest', { target: p.id, quest: q.id })))));
+            if (!p.quests.active.length) box.appendChild(h('div', { class: 'wl-hint', text: 'No jobs taken.' }));
+            const cd = p.quests.cooldowns.map((q) => q.label + ' (' + q.minutes + ' min)').join(', ');
+            out.push(section('Jobs'), box, row(h('span', { class: 'wl-hint', text: cd ? 'Cooling down: ' + cd : 'No cooldowns.' }),
+                cd ? UI.button('Reset cooldowns', () => act('resetCooldowns', t)) : null));
+        }
+        if (p.recipes) {
+            const box = h('div', { class: 'wla-mini wla-mini--grid' });
+            p.recipes.forEach((r) => box.appendChild(h('div', { class: 'wla-mini__row' + (r.known ? ' is-known' : '') },
+                h('span', { text: (r.known ? '✓ ' : '· ') + r.label }),
+                !r.blueprint ? h('span', { class: 'wl-hint', text: 'starter' })
+                    : r.known ? UI.button('Forget', () => act('forgetRecipe', { target: p.id, recipe: r.name }))
+                        : UI.button('Teach', () => act('teachRecipe', { target: p.id, recipe: r.name })))));
+            out.push(section('Recipes'), box);
+        }
+        return out;
     }
 
     // Dropdown with every item on the server: the closed box shows the
@@ -297,6 +339,25 @@
                 row(weather, UI.button('Set weather', () => act('setWeather', { weather: weather.value })),
                     UI.button(d.world.dynamic ? 'Weather: changes' : 'Weather: fixed', () => act('weatherDynamic', { enabled: !d.world.dynamic }))));
         }
+        const zcount = input({ type: 'number', min: '1', max: '20' }, 5);
+        parts.push(section('World tools'),
+            row(h('span', { class: 'wla-label', text: 'Zombies' }), zcount,
+                UI.button('Spawn around me', () => act('zombieSpawn', { count: Math.max(1, Math.min(20, Math.floor(Number(zcount.value) || 5))) })),
+                confirmButton('Clear all zombies', () => act('zombieClear'))),
+            row(h('span', { class: 'wla-label', text: 'Vehicles' }),
+                UI.button('Spawn a wreck', () => act('vehicleWreck')), UI.button('Spawn a working car', () => act('vehicleWorking')),
+                UI.button('Fix the car I am in / next to', () => act('vehicleFix')), confirmButton('Refill all gas pumps', () => act('refillPumps'))),
+            row(h('span', { class: 'wla-label', text: 'Travel' }), UI.button('Teleport to my map waypoint', () => act('tpWaypoint'))));
+        const ov = st.overlays || (st.overlays = {});
+        const toggle = (name, label) => UI.button(label + (ov[name] ? ': on' : ': off'), () => {
+            ov[name] = !ov[name];
+            act('overlay', { overlay: name, enabled: ov[name] });
+            render();
+        }, ov[name] ? 'primary' : undefined);
+        parts.push(section('Debug overlays'),
+            row(toggle('zombies', 'Zombie AI'), toggle('vehicles', 'Vehicles & spawn points'), toggle('camps', 'Camp borders'),
+                toggle('loot', 'Loot containers')),
+            h('div', { class: 'wl-hint', text: 'Shown in the world around you (only for you) until switched off.' }));
         const text = h('textarea', { class: 'wl-input wla-textarea', attrs: { maxlength: '300', placeholder: 'Message to every player' } });
         parts.push(section('Announcement'), text, row(UI.button('Send to everyone', () => act('announce', { text: text.value }), 'primary')));
         const modules = h('table', { class: 'wla-table' }, h('tr', {}, ...['Module', 'Version', 'State', 'Details'].map((t) => h('th', { text: t }))));
@@ -312,10 +373,37 @@
         return h('div', {}, ...parts);
     }
 
+    // ---------------------------------------------------------------- live
+
+    function liveTab() {
+        const d = st.data;
+        const l = d.live || {};
+        const card = (label, value, sub) => h('div', { class: 'wla-card' },
+            h('div', { class: 'wla-card__label', text: label }), h('div', { class: 'wla-card__value', text: String(value) }),
+            sub ? h('div', { class: 'wl-hint', text: sub } ) : null);
+        const cards = h('div', { class: 'wla-cards' },
+            card('Players online', l.players || 0),
+            l.zombies ? card('Zombies alive', l.zombies.alive, l.zombies.total + ' including bodies') : null,
+            l.vehicles ? card('Vehicles', l.vehicles.total, l.vehicles.out + ' out right now') : null,
+            l.vehicles ? card('Gas pumps in use', l.vehicles.pumpsUsed, 'refilling') : null,
+            l.loot ? card('Containers searched', l.loot.searches, l.loot.containers + ' filled since start') : null,
+            card('Server up', Math.floor((l.uptimeMinutes || 0) / 60) + ' h ' + ((l.uptimeMinutes || 0) % 60) + ' min'));
+        const bad = (d.modules || []).filter((m) => m.state !== 'running' || m.health === 'degraded');
+        const modules = h('div', { class: 'wl-hint', text: (d.modules || []).length + ' modules, ' +
+            (bad.length ? bad.length + ' with problems: ' + bad.map((m) => m.name + ' (' + m.state + ')').join(', ') : 'all running') });
+        const issues = h('div', { class: 'wla-issues' });
+        (d.issues || []).slice(-12).reverse().forEach((i) => issues.appendChild(h('div', { class: 'wla-issue is-' + i.level,
+            text: (i.time || '') + ' ' + i.level.toUpperCase() + ' [' + i.module + '] ' + i.message })));
+        if (!(d.issues || []).length) issues.appendChild(h('div', { class: 'wl-hint', text: 'No recent warnings or errors.' }));
+        return h('div', {}, h('div', { class: 'wl-hint', text: 'Refreshes every 5 seconds while this tab is open.' }),
+            cards, section('Modules'), modules, section('Latest warnings and errors'), issues);
+    }
+
     // ---------------------------------------------------------------- frame
 
-    const TABS = [{ id: 'players', label: 'Players' }, { id: 'bans', label: 'Bans' }, { id: 'server', label: 'Server & world' }, { id: 'log', label: 'Action log' }];
-    const RENDER = { players: playersTab, bans: bansTab, server: serverTab, log: logTab };
+    const TABS = [{ id: 'players', label: 'Players' }, { id: 'live', label: 'Live' }, { id: 'bans', label: 'Bans' },
+        { id: 'server', label: 'Server & world' }, { id: 'log', label: 'Action log' }];
+    const RENDER = { players: playersTab, live: liveTab, bans: bansTab, server: serverTab, log: logTab };
 
     function render() {
         st.content.innerHTML = '';
@@ -324,6 +412,11 @@
 
     function selectTab(id) {
         st.tab = id;
+        clearInterval(st.liveTimer);
+        if (id === 'live') {
+            st.api.post('refresh');
+            st.liveTimer = setInterval(() => st.api.post('refresh'), 5000);
+        }
         if (id === 'bans') st.api.post('list', { which: 'bans' });
         if (id === 'log') st.api.post('list', { which: 'log' });
         render();
@@ -355,7 +448,7 @@
                 st.data = data.data;
                 if (self && st.data.self) { st.data.self.noclip = self.noclip; st.data.self.invisible = self.invisible; }
                 if (!st.data.players.find((p) => p.id === st.selected) && st.data.players.length) st.selected = st.data.players[0].id;
-                if (st.tab === 'players' || st.tab === 'server') render();
+                if (st.tab === 'players' || st.tab === 'server' || st.tab === 'live') render();
             }
             if (data.list) {
                 st[data.list.which] = data.list.rows || [];
@@ -364,13 +457,23 @@
             }
             if (data.result) message(data.result.message, data.result.ok ? 'ok' : 'error');
         },
-        unmount: function () { document.removeEventListener('keydown', onKey); st = null; },
+        unmount: function () { document.removeEventListener('keydown', onKey); clearInterval(st.liveTimer); st = null; },
     });
 
     const CSS = [
         '.wla-root { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }',
         '.wla-panel { position: relative; width: min(1180px, 94vw); height: 86vh; display: flex; flex-direction: column; }',
         '.wla-header { display: flex; align-items: center; gap: 10px; } .wla-header .wl-title { flex: 1; }',
+        '.wla-label { min-width: 70px; color: var(--wl-text-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }',
+        '.wla-mini { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }',
+        '.wla-mini--grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 10px; }',
+        '.wla-mini__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 8px;',
+        '  background: var(--wl-bg-sunken); border-radius: 4px; }',
+        '.wla-mini__row.is-known { color: #b6e39a; }',
+        '.wla-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 10px 0; }',
+        '.wla-card { background: var(--wl-bg-sunken); border: 1px solid var(--wl-border); border-radius: var(--wl-radius); padding: 12px 14px; }',
+        '.wla-card__label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--wl-text-dim); }',
+        '.wla-card__value { font-size: 28px; font-weight: 700; color: var(--wl-accent); font-variant-numeric: tabular-nums; margin: 2px 0; }',
         '.wla-content { flex: 1; overflow: auto; padding-right: 6px; }',
         '.wla-split { display: grid; grid-template-columns: 300px 1fr; gap: 16px; height: 100%; }',
         '.wla-left { display: flex; flex-direction: column; gap: 8px; min-height: 0; }',

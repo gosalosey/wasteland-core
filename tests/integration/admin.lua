@@ -203,3 +203,114 @@ describe('bans', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('admin world tools, live view, overlays and player tools', function()
+    local server = newServer({ config = CFG })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival', 'wasteland_world',
+        'wasteland_zombies', 'wasteland_loot', 'wasteland_camps', 'wasteland_crafting', 'wasteland_quests', 'wasteland_vehicles',
+        'wasteland_admin' })
+    local admin = player(server, 'boss', { x = 0.0, y = 0.0, z = 30.0 })
+    server.aces[admin .. '|wasteland.admin'] = true
+    local target = player(server, 'guy', { x = 1800.0, y = 3600.0, z = 34.0 })
+
+    it('all modules run', function()
+        local s = states(server)
+        for _, n in ipairs({ 'zombies', 'loot', 'camps', 'crafting', 'quests', 'vehicles', 'admin' }) do
+            expect(n .. ':' .. tostring(s[n])).toBe(n .. ':running')
+        end
+    end)
+
+    it('sends the live view and per-player cash, jobs and recipes', function()
+        server:clientEvent(admin, 'wasteland:admin:server:open')
+        server:advance(100)
+        local d = last(events(server, admin, 'wasteland:admin:client:data')).args[1]
+        expect(d.live.players).toBe(2)
+        expect(type(d.live.zombies.alive)).toBe('number')
+        expect(type(d.live.vehicles.total)).toBe('number')
+        expect(d.live.loot.searches).toBe(0)
+        local p
+        for _, e in ipairs(d.players) do if e.id == target then p = e end end
+        expect(type(p.cash)).toBe('number')
+        expect(#p.quests.active).toBe(0)
+        expect(#p.recipes > 3).toBe(true)
+    end)
+
+    it('gives and takes cash', function()
+        local before = server:export('wasteland_inventory', 'GetCash', target)
+        expect(act(server, admin, 'giveCash', { target = target, count = 250 }).ok).toBe(true)
+        expect(server:export('wasteland_inventory', 'GetCash', target)).toBe(before + 250)
+        expect(act(server, admin, 'takeCash', { target = target, count = 100 }).ok).toBe(true)
+        expect(server:export('wasteland_inventory', 'GetCash', target)).toBe(before + 150)
+        local r = act(server, admin, 'takeCash', { target = target, count = 900000 })
+        expect(r.ok).toBe(false)
+    end)
+
+    it('teaches and forgets a blueprint recipe', function()
+        expect(server:export('wasteland_crafting', 'KnowsRecipe', target, 'weapon_knife')).toBe(false)
+        expect(act(server, admin, 'teachRecipe', { target = target, recipe = 'weapon_knife' }).ok).toBe(true)
+        expect(server:export('wasteland_crafting', 'KnowsRecipe', target, 'weapon_knife')).toBe(true)
+        expect(act(server, admin, 'forgetRecipe', { target = target, recipe = 'weapon_knife' }).ok).toBe(true)
+        expect(server:export('wasteland_crafting', 'KnowsRecipe', target, 'weapon_knife')).toBe(false)
+        expect(act(server, admin, 'teachRecipe', { target = target, recipe = 'no_such' }).ok).toBe(false)
+    end)
+
+    it('drops jobs and resets cooldowns (nothing to drop is an error)', function()
+        expect(act(server, admin, 'dropQuest', { target = target, quest = 'nothing' }).ok).toBe(false)
+        expect(act(server, admin, 'resetCooldowns', { target = target }).ok).toBe(true)
+    end)
+
+    it('sends a player to the nearest camp', function()
+        local r = act(server, admin, 'sendToCamp', { target = target })
+        expect(r.ok).toBe(true)
+        local tp = last(events(server, target, 'wasteland:admin:client:teleport')).args[1]
+        expect(math.floor(tp.x)).toBe(1853)
+    end)
+
+    it('spectates another player but not yourself', function()
+        expect(act(server, admin, 'spectate', { target = admin, enabled = true }).ok).toBe(false)
+        expect(act(server, admin, 'spectate', { target = target, enabled = true }).ok).toBe(true)
+        local e = last(events(server, admin, 'wasteland:admin:client:spectate')).args
+        expect(e[1]).toBe(true)
+        expect(e[2]).toBe(target)
+        expect(act(server, admin, 'spectate', { target = target, enabled = false }).ok).toBe(true)
+        expect(last(events(server, admin, 'wasteland:admin:client:spectate')).args[1]).toBe(false)
+    end)
+
+    it('spawns wrecks and working cars, refills pumps', function()
+        local n = server:export('wasteland_vehicles', 'GetVehicleCount')
+        expect(act(server, admin, 'vehicleWreck').ok).toBe(true)
+        expect(act(server, admin, 'vehicleWorking').ok).toBe(true)
+        expect(server:export('wasteland_vehicles', 'GetVehicleCount')).toBe(n + 2)
+        expect(act(server, admin, 'vehicleFix').ok).toBe(false) -- no netId: not next to one
+        expect(act(server, admin, 'refillPumps').ok).toBe(true)
+    end)
+
+    it('asks the client for zombies and clears them', function()
+        expect(act(server, admin, 'zombieSpawn', { count = 3 }).ok).toBe(true)
+        expect(act(server, admin, 'zombieClear').ok).toBe(true)
+        expect(act(server, admin, 'tpWaypoint').ok).toBe(true)
+        expect(#events(server, admin, 'wasteland:admin:client:tpWaypoint')).toBe(1)
+    end)
+
+    it('turns overlays on with their data and off', function()
+        for _, name in ipairs({ 'zombies', 'vehicles', 'camps', 'loot' }) do
+            expect(act(server, admin, 'overlay', { overlay = name, enabled = true }).ok).toBe(true)
+            local e = last(events(server, admin, 'wasteland:admin:client:overlay')).args
+            expect(e[1]).toBe(name)
+            expect(e[2]).toBe(true)
+        end
+        expect(#last(events(server, admin, 'wasteland:admin:client:overlay')).args[3].containers == nil).toBe(false)
+        expect(act(server, admin, 'overlay', { overlay = 'bogus', enabled = true }).ok).toBe(false)
+        expect(act(server, admin, 'overlay', { overlay = 'loot', enabled = false }).ok).toBe(true)
+    end)
+
+    it('logs the changes but not the read-only tools, and raised nothing', function()
+        local actions = {}
+        for _, row in ipairs(server.db.backend.data.wl_admin_log) do actions[row.action] = true end
+        expect(actions.giveCash).toBe(true)
+        expect(actions.teachRecipe).toBe(true)
+        expect(actions.overlay == nil).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

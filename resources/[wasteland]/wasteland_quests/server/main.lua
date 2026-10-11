@@ -411,3 +411,48 @@ exports('AddProgress', function(src, ev)
     progress(tonumber(src), ev)
     return true
 end)
+
+--- GetQuestSummary(source) -> { active = { { id, label, ready, objectives = { text } } },
+---   cooldowns = { { id, label, minutes } } }   (admin panel)
+exports('GetQuestSummary', function(src)
+    src = tonumber(src)
+    local s = stateOf(src)
+    if not s then return nil end
+    local out = { active = {}, cooldowns = {} }
+    for id, a in pairs(s.active) do
+        local q = M.config.quests[id]
+        if q then
+            local lines = {}
+            for _, o in ipairs(objectivesOf(src, id, q, a.progress)) do lines[#lines + 1] = o.text end
+            out.active[#out.active + 1] = { id = id, label = q.label, ready = Rules.complete(q, a.progress, countFor(src)), objectives = lines }
+        end
+    end
+    for id in pairs(s.done) do
+        local q = M.config.quests[id]
+        local status, minutes = q and Rules.status(id, q, s, nowUnix(), countFor(src))
+        if status == 'cooldown' then out.cooldowns[#out.cooldowns + 1] = { id = id, label = q.label, minutes = minutes } end
+    end
+    table.sort(out.active, function(a, b) return a.label < b.label end)
+    table.sort(out.cooldowns, function(a, b) return a.label < b.label end)
+    return out
+end)
+
+--- DropQuest(source, id) -> ok   (admin)
+exports('DropQuest', function(src, id)
+    local s, cid = stateOf(tonumber(src))
+    if not s or not s.active[id] then return false end
+    s.active[id] = nil
+    save(cid)
+    sendTracker(tonumber(src))
+    return true
+end)
+
+--- ResetCooldowns(source) -> number reset   (admin)
+exports('ResetCooldowns', function(src)
+    local s, cid = stateOf(tonumber(src))
+    if not s then return 0 end
+    local n = 0
+    for id in pairs(s.done) do s.done[id] = nil; n = n + 1 end
+    save(cid)
+    return n
+end)

@@ -219,3 +219,10 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+--- GetZombieMode(ped) -> 'idle' | 'chase' | 'investigate' | nil   (admin overlay;
+--- only for zombies this client runs, others return nil)
+exports('GetZombieMode', function(ped)
+    local b = brains[ped]
+    return b and b.configured and b.mode or nil
+end)

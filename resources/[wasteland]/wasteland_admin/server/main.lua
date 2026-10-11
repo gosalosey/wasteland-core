@@ -103,6 +103,11 @@ local function playerList()
             if c then entry.character = { id = c.id, firstName = c.firstName, lastName = c.lastName } end
         end
         if started('wasteland_survival') then entry.stats = exports.wasteland_survival:GetStats(src) end
+        if entry.character then
+            if started('wasteland_inventory') then entry.cash = exports.wasteland_inventory:GetCash(src) end
+            if started('wasteland_quests') then entry.quests = exports.wasteland_quests:GetQuestSummary(src) end
+            if started('wasteland_crafting') then entry.recipes = exports.wasteland_crafting:GetRecipeSummary(src) end
+        end
         out[#out + 1] = entry
     end
     table.sort(out, function(a, b) return a.id < b.id end)
@@ -117,6 +122,15 @@ local function panelData()
     end
     for _, r in ipairs(exports.wasteland_core:GetRecentIssues(30)) do data.issues[#data.issues + 1] = r end
     if started('wasteland_inventory') then data.items = exports.wasteland_inventory:GetItemList() end
+    -- Live view: what the world is doing right now.
+    local live = { players = #data.players, uptimeMinutes = math.floor(GetGameTimer() / 60000) }
+    if started('wasteland_zombies') then
+        local total, alive = exports.wasteland_zombies:GetZombieCount()
+        live.zombies = { total = total, alive = alive }
+    end
+    if started('wasteland_vehicles') then live.vehicles = exports.wasteland_vehicles:GetVehicleStats() end
+    if started('wasteland_loot') then live.loot = exports.wasteland_loot:GetLootStats() end
+    data.live = live
     if started('wasteland_world') then
         local h, m, f = exports.wasteland_world:GetTime()
         local w, dyn = exports.wasteland_world:GetWeather()
@@ -291,11 +305,143 @@ ACTIONS.invisible = function(src, p)
     return true, p.enabled and 'Invisible' or 'Visible'
 end
 
+-- World tools ------------------------------------------------------------------
+
+-- A spot a few metres in front of the admin.
+local function inFront(src, metres)
+    local ped = GetPlayerPed(tostring(src))
+    if not ped or ped == 0 then return nil end
+    local c, h = GetEntityCoords(ped), math.rad(GetEntityHeading(ped))
+    return { x = c.x - math.sin(h) * metres, y = c.y + math.cos(h) * metres, z = c.z, heading = GetEntityHeading(ped) }
+end
+
+ACTIONS.zombieSpawn = function(src, p)
+    if not started('wasteland_zombies') then return false, 'zombies module is not running' end
+    if src == 0 then return false, 'in game only' end
+    exports.wasteland_zombies:SpawnNear(src, p.count or 5)
+    return true, string.format('Spawning up to %d zombies around you', p.count or 5)
+end
+
+ACTIONS.zombieClear = function()
+    if not started('wasteland_zombies') then return false, 'zombies module is not running' end
+    return true, string.format('Removed %d zombies', exports.wasteland_zombies:ClearZombies())
+end
+
+ACTIONS.vehicleWreck = function(src, p)
+    if not started('wasteland_vehicles') then return false, 'vehicles module is not running' end
+    local c = inFront(src, 6)
+    if not c then return false, 'in game only' end
+    local id = exports.wasteland_vehicles:SpawnWreck(c)
+    return id ~= nil, id and 'A wreck appears in front of you' or 'could not spawn it'
+end
+
+ACTIONS.vehicleWorking = function(src, p)
+    if not started('wasteland_vehicles') then return false, 'vehicles module is not running' end
+    local c = inFront(src, 6)
+    if not c then return false, 'in game only' end
+    local id = exports.wasteland_vehicles:SpawnWorking(c)
+    return id ~= nil, id and 'A working car appears in front of you' or 'could not spawn it'
+end
+
+ACTIONS.vehicleFix = function(src, p)
+    if not started('wasteland_vehicles') then return false, 'vehicles module is not running' end
+    if not p.netId then return false, 'sit in a vehicle or stand next to one' end
+    local ok, err = exports.wasteland_vehicles:FixVehicle(p.netId)
+    return ok, ok and 'Vehicle fixed and refuelled' or err
+end
+
+ACTIONS.refillPumps = function()
+    if not started('wasteland_vehicles') then return false, 'vehicles module is not running' end
+    return true, string.format('Refilled %d gas pumps', exports.wasteland_vehicles:RefillPumps())
+end
+
+ACTIONS.tpWaypoint = function(src)
+    if src == 0 then return false, 'in game only' end
+    TriggerClientEvent('wasteland:admin:client:tpWaypoint', src)
+    return true, 'Teleporting to your waypoint'
+end
+
+-- Debug overlays: the client draws them; the server sends what it needs.
+local OVERLAYS = { zombies = true, vehicles = true, camps = true, loot = true }
+ACTIONS.overlay = function(src, p)
+    if src == 0 then return false, 'in game only' end
+    if not OVERLAYS[p.overlay or ''] then return false, 'unknown overlay' end
+    local data = nil
+    if p.enabled then
+        if p.overlay == 'vehicles' and started('wasteland_vehicles') then data = { spawnPoints = exports.wasteland_vehicles:GetSpawnPoints() }
+        elseif p.overlay == 'camps' and started('wasteland_camps') then data = { camps = exports.wasteland_camps:GetCamps() }
+        elseif p.overlay == 'loot' and started('wasteland_loot') then data = { containers = exports.wasteland_loot:GetContainerModels() } end
+    end
+    TriggerClientEvent('wasteland:admin:client:overlay', src, p.overlay, p.enabled == true, data)
+    return true, (p.enabled and 'Showing ' or 'Hiding ') .. p.overlay
+end
+
+-- Player tools -------------------------------------------------------------------
+
+ACTIONS.spectate = function(src, p)
+    if src == 0 then return false, 'in game only' end
+    if p.enabled and p.target == src then return false, 'you cannot spectate yourself' end
+    local c = p.enabled and coordsOf(p.target) or nil
+    if p.enabled and not c then return false, 'their position is unknown' end
+    TriggerClientEvent('wasteland:admin:client:spectate', src, p.enabled == true, p.target, c)
+    return true, p.enabled and ('Spectating player ' .. p.target) or 'Stopped spectating'
+end
+
+ACTIONS.giveCash = function(src, p)
+    if not started('wasteland_inventory') then return false, 'inventory module is not running' end
+    local ok, err = exports.wasteland_inventory:AddCash(p.target, p.count or 0)
+    return ok, ok and string.format('Gave $%d to player %d', p.count, p.target) or err
+end
+
+ACTIONS.takeCash = function(src, p)
+    if not started('wasteland_inventory') then return false, 'inventory module is not running' end
+    local ok, err = exports.wasteland_inventory:RemoveCash(p.target, p.count or 0)
+    return ok, ok and string.format('Took $%d from player %d', p.count, p.target) or (err == 'not enough items' and 'they do not have that much' or err)
+end
+
+ACTIONS.dropQuest = function(src, p)
+    if not started('wasteland_quests') then return false, 'quests module is not running' end
+    local ok = exports.wasteland_quests:DropQuest(p.target, p.quest)
+    return ok, ok and 'Job dropped' or 'they do not have that job'
+end
+
+ACTIONS.resetCooldowns = function(src, p)
+    if not started('wasteland_quests') then return false, 'quests module is not running' end
+    return true, string.format('Reset %d job cooldowns', exports.wasteland_quests:ResetCooldowns(p.target))
+end
+
+ACTIONS.teachRecipe = function(src, p)
+    if not started('wasteland_crafting') then return false, 'crafting module is not running' end
+    local ok = exports.wasteland_crafting:TeachRecipe(p.target, p.recipe)
+    return ok, ok and ('Taught ' .. p.recipe) or 'unknown recipe'
+end
+
+ACTIONS.forgetRecipe = function(src, p)
+    if not started('wasteland_crafting') then return false, 'crafting module is not running' end
+    local ok = exports.wasteland_crafting:ForgetRecipe(p.target, p.recipe)
+    return ok, ok and ('Forgot ' .. p.recipe) or 'unknown recipe'
+end
+
+-- A stuck player goes to the nearest camp.
+ACTIONS.sendToCamp = function(src, p)
+    if not started('wasteland_camps') then return false, 'camps module is not running' end
+    local c = coordsOf(p.target)
+    local best, bestD
+    for _, camp in ipairs(exports.wasteland_camps:GetCamps()) do
+        local d = c and ((camp.coords.x - c.x) ^ 2 + (camp.coords.y - c.y) ^ 2) or 0
+        if not best or d < bestD then best, bestD = camp, d end
+    end
+    if not best then return false, 'there are no camps' end
+    TriggerClientEvent('wasteland:admin:client:teleport', p.target, best.coords)
+    return true, string.format('Sent player %d to %s', p.target, best.label)
+end
+
 -- Actions on a player need that player online; these do not.
 local NO_TARGET = { banLicense = true, unban = true, announce = true, setTime = true, freezeTime = true,
-    setWeather = true, weatherDynamic = true, noclip = true, invisible = true }
+    setWeather = true, weatherDynamic = true, noclip = true, invisible = true, zombieSpawn = true, zombieClear = true,
+    vehicleWreck = true, vehicleWorking = true, vehicleFix = true, refillPumps = true, tpWaypoint = true, overlay = true }
 -- Read-only actions are not written to the action log.
-local QUIET = { teleportTo = true, inventory = true }
+local QUIET = { teleportTo = true, inventory = true, overlay = true, tpWaypoint = true }
 
 --- Run an admin action. Returns ok, message.
 local function act(src, action, p)
@@ -311,7 +457,8 @@ local function act(src, action, p)
     if ok and not QUIET[action] then
         local target = p.target and string.format('player %d (%s)', p.target, tostring(GetPlayerName(tostring(p.target)))) or nil
         local details = {}
-        for _, k in ipairs({ 'reason', 'minutes', 'stat', 'value', 'item', 'count', 'text', 'hour', 'minute', 'weather', 'enabled', 'banId', 'license' }) do
+        for _, k in ipairs({ 'reason', 'minutes', 'stat', 'value', 'item', 'count', 'text', 'hour', 'minute', 'weather', 'enabled', 'banId',
+            'license', 'quest', 'recipe', 'netId' }) do
             if p[k] ~= nil then details[#details + 1] = k .. '=' .. tostring(p[k]) end
         end
         audit(src, action, target, table.concat(details, ' '))
@@ -386,6 +533,10 @@ local PAYLOAD = { type = 'table', fields = {
     banId = { type = 'integer', min = 1 },
     license = { type = 'string', maxLength = 64 },
     name = { type = 'string', maxLength = 64 },
+    netId = { type = 'integer', min = 1 },
+    overlay = { type = 'string', pattern = '^[a-z]+$', maxLength = 16 },
+    quest = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },
+    recipe = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },
 } }
 
 local ACTION_NAMES = {}

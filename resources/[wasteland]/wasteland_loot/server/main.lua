@@ -14,6 +14,7 @@ local M
 local modelType = {}   -- model hash -> container type
 local state = {}       -- stash name -> { filledAt }
 local searching = {}   -- source -> { name, type, startedAt, coords, label }
+local searches = 0     -- finished searches since start (admin live view)
 
 local function inv() return exports.wasteland_inventory end
 local function now() return GetGameTimer() end
@@ -86,6 +87,7 @@ local function finish(src)
         empty = isEmpty(s.id)
     end
     if empty then notice(src, 'You found nothing.'); return end
+    searches = searches + 1
     inv():OpenStash(src, s.name, stashOpts(c, s.coords, true))
     TriggerEvent('wasteland:loot:searched', src, s.type, s.name)
 end
@@ -222,6 +224,20 @@ M.netEvent('wasteland:loot:server:cancel', { rateLimit = RATE }, function(src) s
 -------------------------------------------------------------------------------
 -- Exports (loot api 0.1)
 -------------------------------------------------------------------------------
+
+--- GetLootStats() -> { containers (filled since start), searches (since start) }
+exports('GetLootStats', function()
+    local n = 0
+    for _ in pairs(state) do n = n + 1 end
+    return { containers = n, searches = searches }
+end)
+
+--- GetContainerModels() -> { [typeName] = { label, models } }   (admin overlay)
+exports('GetContainerModels', function()
+    local out = {}
+    for name, c in pairs(M and M.config.containers or {}) do out[name] = { label = c.label, models = c.models } end
+    return out
+end)
 
 --- RollTable(name) -> list of { name, count } | nil   (other modules: rewards, quests)
 exports('RollTable', function(name)

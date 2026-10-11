@@ -140,7 +140,11 @@ Decisions (owner, 2026-10-11): wrecks to find and repair; no ownership, but a lo
 - [~] Installed on the owner's server; runtime tests R19.1-R19.12 pending
 
 ## Milestone 10: admin and SDK
-- [ ] Diagnostics and admin tools · [ ] debug visualisation · [ ] example extension · [ ] SDK docs complete
+Decisions (owner, 2026-10-11): all four admin tool sets (world tools, live server view, debug overlays, player tools); SDK = docs + a full example module.
+- [x] 10A: live view, world tools, debug overlays, player tools (spectate, cash, jobs, recipes, send to camp)
+- [x] Tests: every new action, panel data, the action log
+- [~] Installed on the owner's server; runtime tests R20.1-R20.12 pending
+- [ ] 10B: SDK docs complete · [ ] example extension
 
 ## Milestone 11: txAdmin recipe
 - [ ] Recipe (verify against current txAdmin docs) · [ ] clean-install test

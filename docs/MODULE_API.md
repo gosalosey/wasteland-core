@@ -367,6 +367,8 @@ The panel opens with F10 or `/admin`. Every action goes through one guarded even
 
 Actions: teleport to and bring a player, heal, revive, freeze, kick, ban (by player or by license, with a duration or permanent), lift a ban, set survival stats, give items, open a player's inventory (pockets and bag, in the admin's own inventory screen), clear an inventory, announcements, time and weather, noclip and invisibility for the admin.
 
+World tools (10A): `zombieSpawn{count}`, `zombieClear`, `vehicleWreck`, `vehicleWorking`, `vehicleFix{netId}` (the client fills in the vehicle), `refillPumps`, `tpWaypoint`. Debug overlays: `overlay{overlay = zombies|vehicles|camps|loot, enabled}` sends `wasteland:admin:client:overlay(name, on, data)` and the admin's client draws them. Player tools: `spectate{target, enabled}`, `giveCash`/`takeCash{target, count}`, `dropQuest{target, quest}`, `resetCooldowns{target}`, `teachRecipe`/`forgetRecipe{target, recipe}`, `sendToCamp{target}`. The panel data carries `live = { players, uptimeMinutes, zombies = { total, alive }, vehicles = { total, out, pumpsUsed }, loot = { containers, searches } }` and, per player with a character, `cash`, `quests` and `recipes`. Modules that are not running are skipped (their actions answer "... module is not running").
+
 Bans are stored in `wl_bans`, cached in memory and checked when a player connects (players `RegisterAdmissionCheck`).
 
 Exports: `IsAdmin(source)`, `IsBanned(license)`.
@@ -403,7 +405,7 @@ Hits: the owning client reports `wasteland:zombies:server:hit(netId, victim)`; t
 
 Server events: `wasteland:zombies:died(netId, kind, cause)`, `wasteland:zombies:hit(victim, netId, { damage, infection, bleeding })`.
 
-Exports: `GetZombieCount() -> total, alive`, `SpawnZombie(coords, kind?) -> netId | nil`, `ClearZombies() -> removed`.
+Exports: `GetZombieCount() -> total, alive`, `SpawnZombie(coords, kind?) -> netId | nil`, `ClearZombies() -> removed`, `SpawnNear(source, n)` (asks that client for spots 15-35 m away). Client export: `GetZombieMode(ped) -> mode | nil`.
 
 Admin command: `/zombies count | clear | spawn <n>` (ACE `wasteland.admin`).
 
@@ -428,7 +430,7 @@ Options: a list of `{ label, icon?, name?, distance? (2.5), canInteract?(entity,
 
 A world container is identified by its type and its position rounded to a metre; it is an inventory stash `loot_<type>_<x>_<y>_<z>` shared by everyone. The client asks to search (`wasteland:loot:server:start(model, coords)` or `...:body(netId)`); the server checks the model, the distance and whether anything is left, times the search, fills the stash when it is new or empty and due for a refill, and opens it (`OpenStash` with `open`). Bodies use the stash `loot_body_<uid>`, deleted when the zombie is removed.
 
-Exports: `RollTable(name) -> list of { name, count } | nil`. Server event: `wasteland:loot:searched(source, type, stashName)`.
+Exports: `RollTable(name) -> list of { name, count } | nil`, `GetLootStats() -> { containers, searches }`, `GetContainerModels() -> { [type] = { label, models } }`. Server event: `wasteland:loot:searched(source, type, stashName)`.
 
 ## Camps (`wasteland_camps`, camps api 0.1)
 
@@ -446,7 +448,7 @@ Zombies use `IsInSafeZone`: no spawning inside, removal inside, no chasing a pla
 
 Net events: `wasteland:crafting:server:open`, `...:craft(recipe)`, `...:finish`, `...:cancel`. The server checks the recipe is known and the materials are carried, times the craft, then removes every ingredient and adds the result (all given back on failure).
 
-Exports: `KnowsRecipe(source, recipe) -> boolean`, `TeachRecipe(source, recipe) -> ok`. Server events: `wasteland:crafting:learned(source, recipes)`, `wasteland:crafting:crafted(source, recipe)`. Client event `wasteland:crafting:client:open` opens the screen (the inventory's Crafting button uses it).
+Exports: `KnowsRecipe(source, recipe) -> boolean`, `TeachRecipe(source, recipe) -> ok`, `ForgetRecipe(source, recipe) -> ok`, `GetRecipeSummary(source) -> list of { name, label, known, blueprint }`. Server events: `wasteland:crafting:learned(source, recipes)`, `wasteland:crafting:crafted(source, recipe)`. Client event `wasteland:crafting:client:open` opens the screen (the inventory's Crafting button uses it).
 
 ## Quests (`wasteland_quests`, quests api 0.1)
 
@@ -456,7 +458,7 @@ Progress comes from `wasteland:zombies:died` (killer), `wasteland:loot:searched`
 
 Net events: `wasteland:quests:server:board|accept|abandon|handIn(campId, questId?)`, `...:givers`, `...:tracker`; the player must stand at one of that camp's traders. Hand-in gives the reward first (refused if it does not fit), then takes the items, then pays the cash.
 
-Exports: `GetActiveQuests(source) -> ids`, `AddProgress(source, { type, ... }) -> ok` (custom events from other modules). Server event: `wasteland:quests:completed(source, questId)`.
+Exports: `GetActiveQuests(source) -> ids`, `AddProgress(source, { type, ... }) -> ok` (custom events from other modules), `GetQuestSummary(source) -> { active = { { id, label, ready, objectives } }, cooldowns = { { id, label, minutes } } }`, `DropQuest(source, id) -> ok`, `ResetCooldowns(source) -> count`. Server event: `wasteland:quests:completed(source, questId)`.
 
 ## Vehicles (`wasteland_vehicles`, vehicles api 0.1)
 
@@ -466,4 +468,4 @@ Actions (`wasteland:vehicles:server:act(netId, action)`, then `...:finish`): bat
 
 Gas pumps (`pump` in vehicles.lua) have limited, shared fuel keyed by their position (rounded to a metre); a pump is full again `refillMinutes` after fuel was first taken from it. `...:pumpInfo(coords)` answers `wasteland:vehicles:client:pump(key, { litres, max, minutes })` (players within 10 m; the client shows it above the pump). `...:pumpRefuel(netId, pumpCoords)` fills a vehicle parked within `vehicleDistance`; `...:fillCan(pumpCoords)` fills a jerry can; both take only what the pump has.
 
-Exports: `GetVehicleCount()`, `SpawnWreck(coords, model?) -> id`, `GetVehicleState(id)`, `GetPumpFuel(coords) -> litres`. Server events: `wasteland:vehicles:action(source, action, id)`, `wasteland:noise(coords, radius)` (lock picking). New inventory export: `FindItems(source, name) -> list of { uid, count, metadata, inventoryId }`.
+Exports: `GetVehicleCount()`, `SpawnWreck(coords, model?) -> id`, `SpawnWorking(coords, model?) -> id`, `GetVehicleState(id)`, `GetVehicleStats() -> { total, out, pumpsUsed }`, `FixVehicle(netId) -> ok, err`, `RefillPumps() -> count`, `GetSpawnPoints()`, `GetPumpFuel(coords) -> litres`. Server events: `wasteland:vehicles:action(source, action, id)`, `wasteland:noise(coords, radius)` (lock picking). New inventory export: `FindItems(source, name) -> list of { uid, count, metadata, inventoryId }`.

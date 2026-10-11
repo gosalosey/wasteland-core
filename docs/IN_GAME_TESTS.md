@@ -352,3 +352,22 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R19.13 | Get in a vehicle | Bottom middle: speed (mph), fuel gauge (litres), engine and body %, lock; a red line saying why it will not run, if it will not |
 | R19.14 | Park a car next to a gas pump, Left Alt on the pump, "Refuel vehicle" | A bar ("Refuelling at the pump (30 L, pump has 80 L)"); the tank fills; "the pump has 50 L left" |
 | R19.15 | Stand next to a pump, take some fuel, then keep taking until it is empty | Above the pump: "Fuel: 80 / 80 L", "Full"; then e.g. "Fuel: 35 / 80 L", "Full again in 1 h 59 min"; when empty: "This pump is dry. It is full again in 1 h 50 min." Two hours after the first fuel was taken it is full |
+
+## R20: admin tools (Milestone 10A)
+
+Open the panel with F10 (you need the `wasteland.admin` ACE).
+
+| # | Do | Expect |
+|---|---|---|
+| R20.1 | Open the "Live" tab and leave it open | Cards for players, zombies alive, vehicles, pumps, containers searched and uptime; the numbers change every 5 seconds |
+| R20.2 | Server & world: set zombies to 5, "Spawn around me" | Up to 5 zombies appear 15-35 m away. "Clear all zombies" (click twice) removes them |
+| R20.3 | "Spawn a wreck", then "Spawn a working car" | A wreck, then a car you can drive, 6 m in front of you |
+| R20.4 | Sit in a broken car, "Fix the car I am in / next to" | All parts, full tank, no damage |
+| R20.5 | Empty a gas pump, then "Refill all gas pumps" (click twice) | The pump shows full again |
+| R20.6 | Put a waypoint on the map, "Teleport to my map waypoint" | You land on the ground there |
+| R20.7 | Switch each debug overlay on | Zombie AI: a label over every zombie (walker/runner and what it is doing). Vehicles: info over each car, markers at wreck spawn points. Camp borders: a circle on the ground. Loot: a marker over searchable props near you. "off" removes it |
+| R20.8 | Players: pick another player, "Spectate", then "Stop spectating" | You watch them (you are hidden); stopping brings you back where you were |
+| R20.9 | Give $100 cash, then take $50 | Their cash goes up 100, then down 50; taking more than they have says so |
+| R20.10 | Jobs: with a job taken, "Drop"; with a job on cooldown, "Reset cooldowns" | The job is gone from their tracker; they can take the job again |
+| R20.11 | Recipes: "Teach" a blueprint recipe, then "Forget" | It shows in / disappears from their crafting screen (K) |
+| R20.12 | "Send to nearest camp" (click twice) | They are teleported into the closest camp |

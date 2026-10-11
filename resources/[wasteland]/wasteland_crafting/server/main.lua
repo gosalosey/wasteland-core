@@ -244,3 +244,24 @@ exports('TeachRecipe', function(src, name)
     players():SetCharacterData(cid, DATA_KEY, { known = known })
     return true
 end)
+
+--- GetRecipeSummary(source) -> list of { name, label, known, blueprint }   (admin panel)
+exports('GetRecipeSummary', function(src)
+    local known = knownOf(characterOf(tonumber(src)))
+    local out = {}
+    for name, r in pairs(M and M.config.recipes or {}) do
+        out[#out + 1] = { name = name, label = r.label, known = Recipes.knows(known, name, r), blueprint = r.blueprint ~= nil }
+    end
+    table.sort(out, function(a, b) return a.label < b.label end)
+    return out
+end)
+
+--- ForgetRecipe(source, recipe) -> ok   (admin; recipes without a blueprint cannot be forgotten)
+exports('ForgetRecipe', function(src, name)
+    local cid = characterOf(tonumber(src))
+    if not cid or not (M and M.config.recipes[name]) then return false end
+    local known = knownOf(cid)
+    known[name] = nil
+    players():SetCharacterData(cid, DATA_KEY, { known = known })
+    return true
+end)

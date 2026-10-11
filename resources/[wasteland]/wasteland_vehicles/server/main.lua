@@ -688,3 +688,45 @@ exports('GetVehicleState', function(id)
         parts = { battery = v.parts.battery, engine = v.parts.engine, wheels = v.parts.wheels },
         locked = v.locked, hasLock = v.lockCode ~= nil, spawned = v.handle ~= nil, netId = v.handle and NetworkGetNetworkIdFromEntity(v.handle) or nil }
 end)
+
+--- GetVehicleStats() -> { total, out, pumpsUsed }
+exports('GetVehicleStats', function()
+    local out, used = 0, 0
+    for _, v in pairs(vehicles) do if v.handle then out = out + 1 end end
+    for _, p in pairs(pumps) do if p.refillAt then used = used + 1 end end
+    return { total = count(), out = out, pumpsUsed = used }
+end)
+
+--- FixVehicle(netId) -> ok, err   (admin: every part, full fuel, no damage)
+exports('FixVehicle', function(netId)
+    local h = NetworkGetEntityFromNetworkId(tonumber(netId) or 0)
+    local v = h and byHandle[h] and vehicles[byHandle[h]]
+    if not v then return false, 'that is not a world vehicle' end
+    v.parts = { battery = true, engine = true, wheels = 4 }
+    v.fuel, v.engine, v.body = M.config.tankLitres, 1000.0, 1000.0
+    publish(v, true)
+    save(v)
+    return true
+end)
+
+--- SpawnWorking(coords, model?) -> id   (admin: a car that drives)
+exports('SpawnWorking', function(coords, model)
+    if not (M and M.active) or type(coords) ~= 'table' then return nil end
+    local v = createWreck({ x = coords.x, y = coords.y, z = coords.z, heading = coords.heading or 0.0 })
+    if model then v.model = model end
+    v.parts = { battery = true, engine = true, wheels = 4 }
+    v.fuel, v.engine, v.body = M.config.tankLitres, 1000.0, 1000.0
+    save(v)
+    return v.id
+end)
+
+--- RefillPumps() -> number of pumps that were not full
+exports('RefillPumps', function()
+    local n = 0
+    for _, p in pairs(pumps) do if p.refillAt then n = n + 1 end end
+    pumps = {}
+    return n
+end)
+
+--- GetSpawnPoints() -> list of { x, y, z, heading }   (admin overlay)
+exports('GetSpawnPoints', function() return M and M.config.spawnPoints or {} end)

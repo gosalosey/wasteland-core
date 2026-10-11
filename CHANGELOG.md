@@ -1,5 +1,14 @@
 # Changelog
 
+## Milestone 10A: admin tools
+* New "Live" tab: players online, zombies alive, vehicles (in the world / out right now), gas pumps refilling, containers searched, uptime, module health and the latest warnings and errors; refreshes every 5 seconds while open.
+* Server & world tab, world tools: spawn 1-20 zombies around you, clear all zombies, spawn a wreck or a working car in front of you, fix the car you sit in (or the nearest within 8 m), refill every gas pump, teleport to your map waypoint.
+* Debug overlays (only for the admin who turns them on): zombie AI (kind and what it is doing), vehicles and wreck spawn points, camp borders, loot containers around you.
+* Player tools: spectate, give and take cash, the player's jobs (drop one, reset cooldowns), recipes (teach or forget a blueprint recipe), send to the nearest camp.
+* New exports: zombies `SpawnNear`, `GetZombieMode` (client); vehicles `GetVehicleStats`, `FixVehicle`, `SpawnWorking`, `RefillPumps`, `GetSpawnPoints`; loot `GetLootStats`, `GetContainerModels`; quests `GetQuestSummary`, `DropQuest`, `ResetCooldowns`; crafting `GetRecipeSummary`, `ForgetRecipe`.
+* Tests: 587.
+
+
 ## Loading screen (owner request)
 * wasteland_loadscreen 0.1.0: WASTELAND title and tagline, what the server offers (the dead, survival, scavenging, crafting, weapons, camps, vehicles, jobs), rotating survival tips, a typed-out survivor's log, outbreak counters, and an animated scene (ruined skyline, moon, fog, falling ash, zombies shambling along the bottom). The loading bar follows FiveM's real progress. One self-contained page: nothing to download, works offline.
 

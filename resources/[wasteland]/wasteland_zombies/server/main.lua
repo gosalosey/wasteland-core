@@ -448,3 +448,13 @@ exports('ClearZombies', function()
     for _, z in pairs(zombies) do remove(z); n = n + 1 end
     return n
 end)
+
+--- SpawnNear(source, n) -> ok   (admin: up to n zombies 15-35 m around a player)
+exports('SpawnNear', function(src, n)
+    src = tonumber(src)
+    if not (M and M.active) or not src then return false end
+    n = math.max(1, math.min(20, math.tointeger(tonumber(n)) or 5))
+    pending[src] = { n = n, ring = { spawnMin = 15, spawnMax = 35 } }
+    TriggerClientEvent('wasteland:zombies:client:findSpawns', src, n, 15, 35)
+    return true
+end)
