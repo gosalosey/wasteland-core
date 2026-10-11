@@ -553,7 +553,10 @@
         const def = st.defs.items[stack.name];
         const worn = fromId === st.snap.equip;
         const items = [];
-        if (def.usable && def.repairs) items.push(['Use (choose what to repair)…', () => openRepairPicker(stack, fromId, e.clientX, e.clientY)]);
+        // Opened after this click has finished: the same click would otherwise
+        // reach the "click outside closes the menu" handler and close the list.
+        if (def.usable && def.repairs) items.push(['Use (choose what to repair)…',
+            () => setTimeout(() => { if (st) openRepairPicker(stack, fromId, e.clientX, e.clientY); }, 0)]);
         else if (def.usable) items.push(['Use', () => st.api.post('use', { uid: stack.uid, from: fromId })]);
         // Damaged: offer every carried item that repairs this category.
         const cond = condition(def, stack);
