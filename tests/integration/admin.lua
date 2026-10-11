@@ -304,6 +304,18 @@ describe('admin world tools, live view, overlays and player tools', function()
         expect(act(server, admin, 'overlay', { overlay = 'loot', enabled = false }).ok).toBe(true)
     end)
 
+    it('makes a prop model lootable and removes it again', function()
+        server:clientEvent(admin, 'wasteland:admin:server:open'); server:advance(100)
+        local d = last(events(server, admin, 'wasteland:admin:client:data')).args[1]
+        expect(#d.loot.containers > 3).toBe(true)
+        local r = act(server, admin, 'lootAdd', { model = -99999, container = 'wreck' })
+        expect(r.ok).toBe(true)
+        expect(server:export('wasteland_loot', 'GetLootAdminData').known['-99999'].type).toBe('wreck')
+        expect(act(server, admin, 'lootAdd', { model = -99999, container = 'nope' }).ok).toBe(false)
+        expect(act(server, admin, 'lootRemove', { model = -99999 }).ok).toBe(true)
+        expect(server:export('wasteland_loot', 'GetLootAdminData').known['-99999'] == nil).toBe(true)
+    end)
+
     it('logs the changes but not the read-only tools, and raised nothing', function()
         local actions = {}
         for _, row in ipairs(server.db.backend.data.wl_admin_log) do actions[row.action] = true end

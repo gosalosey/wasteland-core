@@ -208,3 +208,56 @@ describe('big props: wrecked vehicles', function()
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe('props made lootable in the admin panel', function()
+    local server = world()
+    local id = player(server, 'admin', { x = 200.0, y = 200.0, z = 30.0 })
+    local function L(fn, ...) return server:export('wasteland_loot', fn, ...) end
+    local CONE = -1234567890            -- some prop model (signed, as the game reports it)
+    local CONE_U = CONE + 4294967296    -- the same hash read unsigned
+
+    it('lists what a prop can become and which models are containers already', function()
+        local d = L('GetLootAdminData')
+        local names = {}
+        for _, c in ipairs(d.containers) do names[#names + 1] = c.name end
+        expect(table.concat(names, ',')).toBe('dumpster,bin,wreck')
+        local u = server.resources.wasteland_loot.env.GetHashKey('prop_dumpster_01a') & 0xffffffff
+        local dump = u >= 0x80000000 and u - 0x100000000 or u
+        expect(d.known[tostring(dump)].type).toBe('dumpster')
+        expect(d.known[tostring(dump)].added).toBe(false)
+    end)
+
+    it('adds a model to a container type; clients get it; it can be searched', function()
+        local ok, err = L('AddContainerModel', CONE_U, 'dumpster')
+        expect(ok).toBe(true)
+        local c = last(events(server, -1, 'wasteland:loot:client:config')).args[1]
+        local found = false
+        for _, m in ipairs(c.containers.dumpster.models) do if m == CONE then found = true end end
+        expect(found).toBe(true)
+        expect(L('GetLootAdminData').known[tostring(CONE)].added).toBe(true)
+        server:clientEvent(id, 'wasteland:loot:server:start', CONE, { x = 201.0, y = 200.0, z = 30.0 })
+        server:advance(200)
+        expect(last(events(server, id, 'wasteland:loot:client:search')).args[1].label).toBe('Searching dumpster')
+    end)
+
+    it('refuses unknown types, bodies and models loot.lua already uses', function()
+        expect(select(2, L('AddContainerModel', 5, 'nope'))).toBe('unknown loot container type')
+        expect(select(2, L('AddContainerModel', 5, 'body'))).toBe('unknown loot container type')
+        local bin = server.resources.wasteland_loot.env.GetHashKey('prop_bin_01a')
+        expect(select(2, L('AddContainerModel', bin, 'wreck'))).toContain('already a trash can')
+    end)
+
+    it('is kept after a restart, can be changed and removed', function()
+        server:restart('wasteland_loot'); server:advance(500)
+        expect(L('GetLootAdminData').known[tostring(CONE)].type).toBe('dumpster')
+        expect(L('AddContainerModel', CONE, 'wreck')).toBe(true)
+        expect(L('GetLootAdminData').known[tostring(CONE)].type).toBe('wreck')
+        expect(L('RemoveContainerModel', CONE)).toBe(true)
+        expect(L('GetLootAdminData').known[tostring(CONE)] == nil).toBe(true)
+        expect(select(2, L('RemoveContainerModel', CONE))).toBe('that prop was not added in the admin panel')
+        server:restart('wasteland_loot'); server:advance(500)
+        expect(L('GetLootAdminData').known[tostring(CONE)] == nil).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+

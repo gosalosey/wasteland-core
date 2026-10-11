@@ -1,5 +1,12 @@
 # Changelog
 
+## Admin: make any prop lootable (owner request)
+* Admin panel, Coords tab, "Make it lootable": look at a prop, pick a loot container type (Dumpster / Trash can / Fridge / Vending machine / Tool chest / Crate / Mailbox / Wrecked vehicle, each with its loot table) and press "Add to loot". Every prop of that model on the map can then be searched by everyone, right away (no restart). "Change" and "Remove" for props added this way; a list of all of them. Props loot.lua already lists show "Already searchable".
+* Kept in wasteland_loot's server KVP (survives restarts; loot.lua is not changed). Loot exports: `GetLootAdminData()`, `AddContainerModel(hash, type)`, `RemoveContainerModel(hash)`. Admin actions `lootAdd`, `lootRemove` (in the action log).
+* Model hashes are handled signed and unsigned (target matching, loot lookup).
+* Tests: 621.
+
+
 ## Loot in wrecked vehicles (owner request)
 * New loot container "Wrecked vehicle": the rusted car, van, truck and bus wreck props on the map (prop_rub_carwreck_*, prop_rub_buswreck_*, prop_rub_trukwreck_*, ...). Left Alt on one: "Search wrecked vehicle" (6 s), shared, refills after 60 min. Loot table `wreck`: mostly scrap metal; rags, duct tape, wheels, jerry cans, engine parts, batteries, siphon hoses, lockpicks, a little cash and ammo.
 * Containers can set `reach` (metres from the prop's middle; wrecks: 7) because big props are searched from their side. Stashes take the same `reach` option (inventory OpenStash).

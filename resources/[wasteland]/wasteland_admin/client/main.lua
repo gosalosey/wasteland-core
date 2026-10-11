@@ -79,7 +79,10 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
             local kind = GetEntityType(entity)
             if kind >= 1 and kind <= 3 then
                 local ok, model = pcall(GetEntityModel, entity)
-                if ok and model then looking = { hash = model, kind = ({ 'ped', 'vehicle', 'object' })[kind] } end
+                if ok and math.tointeger(model) then
+                    local u = math.tointeger(model) & 0xffffffff -- signed, like GetHashKey
+                    looking = { hash = u >= 0x80000000 and u - 0x100000000 or u, kind = ({ 'ped', 'vehicle', 'object' })[kind] }
+                end
             end
         end
         exports.wasteland_ui:Update(PANEL, { coords = { x = c.x, y = c.y, z = c.z, h = GetEntityHeading(ped), looking = looking } })
@@ -230,7 +233,8 @@ Citizen.CreateThread(function()
             if overlays.loot and type(overlays.loot) == 'table' then
                 for typeName, info in pairs(overlays.loot.containers or {}) do
                     for _, model in ipairs(info.models or {}) do
-                        local obj = GetClosestObjectOfType(me.x, me.y, me.z, 30.0, GetHashKey(model), false, false, false)
+                        local hash = type(model) == 'number' and model or GetHashKey(model)
+                        local obj = GetClosestObjectOfType(me.x, me.y, me.z, 30.0, hash, false, false, false)
                         if obj ~= 0 then
                             local c = GetEntityCoords(obj)
                             label3d(c.x, c.y, c.z + 1.2, string.format('%s (%s)', info.label, typeName), 230, 200, 120)

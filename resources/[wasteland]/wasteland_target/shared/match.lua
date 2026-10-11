@@ -75,7 +75,12 @@ function Match.models(list, hash)
     if type(list) ~= 'table' then list = { list } end
     for _, m in ipairs(list) do
         if type(m) == 'string' then out[hash(m)] = true
-        elseif type(m) == 'number' then out[math.tointeger(m) or m] = true end
+        elseif type(m) == 'number' and math.tointeger(m) then
+            -- A hash may be read signed or unsigned: match both forms.
+            local u = math.tointeger(m) & 0xffffffff
+            out[u] = true
+            out[u >= 0x80000000 and u - 0x100000000 or u] = true
+        end
     end
     return out
 end

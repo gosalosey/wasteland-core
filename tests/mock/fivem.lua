@@ -537,6 +537,12 @@ function Mock:buildEnv(r)
         local rr = mock.resources[res]
         return rr and rr.state or 'missing'
     end
+    -- Resource KVP (kept per resource across restarts of the mock resource).
+    mock.kvp = mock.kvp or {}
+    mock.kvp[name] = mock.kvp[name] or {}
+    env.SetResourceKvp = function(key, value) mock.kvp[name][key] = tostring(value) end
+    env.GetResourceKvpString = function(key) return mock.kvp[name][key] end
+    env.DeleteResourceKvp = function(key) mock.kvp[name][key] = nil end
     env.GetResourceMetadata = function(res, key, idx)
         local rr = mock.resources[res]
         if not rr then return nil end

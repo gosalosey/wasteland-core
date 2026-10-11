@@ -129,7 +129,10 @@ local function panelData()
         live.zombies = { total = total, alive = alive }
     end
     if started('wasteland_vehicles') then live.vehicles = exports.wasteland_vehicles:GetVehicleStats() end
-    if started('wasteland_loot') then live.loot = exports.wasteland_loot:GetLootStats() end
+    if started('wasteland_loot') then
+        live.loot = exports.wasteland_loot:GetLootStats()
+        data.loot = exports.wasteland_loot:GetLootAdminData()
+    end
     data.live = live
     if started('wasteland_world') then
         local h, m, f = exports.wasteland_world:GetTime()
@@ -376,6 +379,21 @@ ACTIONS.overlay = function(src, p)
     return true, (p.enabled and 'Showing ' or 'Hiding ') .. p.overlay
 end
 
+-- Loot props: make the prop the admin looks at searchable (or not).
+ACTIONS.lootAdd = function(src, p)
+    if not started('wasteland_loot') then return false, 'loot module is not running' end
+    if not p.model or not p.container then return false, 'look at a prop and pick what it should be' end
+    local ok, err = exports.wasteland_loot:AddContainerModel(p.model, p.container)
+    return ok, ok and string.format('Every prop of this model (%d) can now be searched as "%s"', p.model, p.container) or err
+end
+
+ACTIONS.lootRemove = function(src, p)
+    if not started('wasteland_loot') then return false, 'loot module is not running' end
+    if not p.model then return false, 'no model' end
+    local ok, err = exports.wasteland_loot:RemoveContainerModel(p.model)
+    return ok, ok and string.format('Props of model %d can no longer be searched', p.model) or err
+end
+
 -- Player tools -------------------------------------------------------------------
 
 ACTIONS.spectate = function(src, p)
@@ -439,7 +457,8 @@ end
 -- Actions on a player need that player online; these do not.
 local NO_TARGET = { banLicense = true, unban = true, announce = true, setTime = true, freezeTime = true,
     setWeather = true, weatherDynamic = true, noclip = true, invisible = true, zombieSpawn = true, zombieClear = true,
-    vehicleWreck = true, vehicleWorking = true, vehicleFix = true, refillPumps = true, tpWaypoint = true, overlay = true }
+    vehicleWreck = true, vehicleWorking = true, vehicleFix = true, refillPumps = true, tpWaypoint = true, overlay = true,
+    lootAdd = true, lootRemove = true }
 -- Read-only actions are not written to the action log.
 local QUIET = { teleportTo = true, inventory = true, overlay = true, tpWaypoint = true }
 
@@ -458,7 +477,7 @@ local function act(src, action, p)
         local target = p.target and string.format('player %d (%s)', p.target, tostring(GetPlayerName(tostring(p.target)))) or nil
         local details = {}
         for _, k in ipairs({ 'reason', 'minutes', 'stat', 'value', 'item', 'count', 'text', 'hour', 'minute', 'weather', 'enabled', 'banId',
-            'license', 'quest', 'recipe', 'netId' }) do
+            'license', 'quest', 'recipe', 'netId', 'model', 'container' }) do
             if p[k] ~= nil then details[#details + 1] = k .. '=' .. tostring(p[k]) end
         end
         audit(src, action, target, table.concat(details, ' '))
@@ -534,6 +553,8 @@ local PAYLOAD = { type = 'table', fields = {
     license = { type = 'string', maxLength = 64 },
     name = { type = 'string', maxLength = 64 },
     netId = { type = 'integer', min = 1 },
+    model = { type = 'integer', min = -2147483648, max = 4294967295 },
+    container = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },
     overlay = { type = 'string', pattern = '^[a-z]+$', maxLength = 16 },
     quest = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },
     recipe = { type = 'string', pattern = '^[%a][%w_]*$', maxLength = 48 },

@@ -434,3 +434,13 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R26.2 | Try from the side of a long wreck (bus, van) | Works anywhere along its side |
 | R26.3 | A wreck shows no "Search" option | Admin panel (F10), Coords tab, look at it: send me the "Looking at" model number so I can add it |
 | R26.4 | Admin panel, Server & world, overlay "Loot containers" | Markers over the wrecks that can be searched |
+
+## R27: make props lootable from the admin panel
+
+| # | Do | Expect |
+|---|---|---|
+| R27.1 | F10, Coords tab; stand so the camera faces a prop that cannot be searched (a barrel, a box) | "Looking at: object model ..."; under "Make it lootable" a dropdown and "Add to loot" |
+| R27.2 | Pick "Crate (crate loot)", Add to loot; close the panel; Left Alt on the prop | "Search crate"; it opens with crate loot. Other copies of the same prop elsewhere too |
+| R27.3 | Restart the server | Still searchable; listed under "Props added here" |
+| R27.4 | Look at it again: "Change" to another type / "Remove" (click twice) | The search changes / is gone for everyone |
+| R27.5 | Look at a dumpster | "Already searchable: Dumpster (trash loot) (set in loot.lua)" |

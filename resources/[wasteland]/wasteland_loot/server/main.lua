@@ -15,6 +15,8 @@ local modelType = {}   -- model hash -> container type
 local state = {}       -- stash name -> { filledAt }
 local searching = {}   -- source -> { name, type, startedAt, coords, label }
 local searches = 0     -- finished searches since start (admin live view)
+local extra = {}       -- signed model hash -> container type (added by admins, kept in KVP)
+local EXTRA_KVP = 'extraModels'
 
 local function inv() return exports.wasteland_inventory end
 local function now() return GetGameTimer() end
@@ -140,11 +142,58 @@ local TABLE = { type = 'table', fields = {
     } } },
 } }
 
+-------------------------------------------------------------------------------
+-- Props added in the admin panel: model hash -> container type. Kept in this
+-- resource's KVP (survives restarts), on top of the models in loot.lua.
+-------------------------------------------------------------------------------
+
+-- GTA model hashes are signed 32-bit numbers (as GetEntityModel returns them).
+local function signed(h)
+    h = math.tointeger(h)
+    if not h then return nil end
+    h = h & 0xffffffff
+    if h >= 0x80000000 then h = h - 0x100000000 end
+    return h
+end
+
+local function loadExtra()
+    extra = {}
+    local ok, raw = pcall(GetResourceKvpString, EXTRA_KVP)
+    if not ok or type(raw) ~= 'string' then return end
+    local okJ, list = pcall(json.decode, raw)
+    if not okJ or type(list) ~= 'table' then return end
+    for _, e in ipairs(list) do
+        local h = signed(e.hash)
+        if h and M.config.containers[e.type] and e.type ~= 'body' then extra[h] = e.type
+        elseif h then M.log:warn('admin-added loot prop %s: container type "%s" no longer exists (ignored)', tostring(h), tostring(e.type)) end
+    end
+end
+
+local function saveExtra()
+    local list = {}
+    for h, t in pairs(extra) do list[#list + 1] = { hash = h, type = t } end
+    table.sort(list, function(a, b) return a.hash < b.hash end)
+    SetResourceKvp(EXTRA_KVP, json.encode(list))
+end
+
+-- Model lists per container type: loot.lua names plus admin-added hashes.
+local function modelsOf(name, c)
+    local out = {}
+    for _, m in ipairs(c.models or {}) do out[#out + 1] = m end
+    for h, t in pairs(extra) do if t == name then out[#out + 1] = h end end
+    return out
+end
+
+local function rebuildIndex()
+    modelType = Rules.modelIndex(M.config.containers, function(m) return signed(GetHashKey(m)) end)
+    for h, t in pairs(extra) do modelType[h] = t end
+end
+
 -- What the client needs: container types with models, labels and animations.
 local function clientConfig()
     local out = {}
     for name, c in pairs(M.config.containers) do
-        out[name] = { label = c.label, models = c.models, anim = c.anim, searchSeconds = c.searchSeconds }
+        out[name] = { label = c.label, models = modelsOf(name, c), anim = c.anim, searchSeconds = c.searchSeconds }
     end
     return { containers = out, reach = M.config.reach }
 end
@@ -180,7 +229,8 @@ M = Wasteland.DefineModule({
                 end
             end
         end
-        modelType = Rules.modelIndex(M.config.containers, GetHashKey)
+        loadExtra()
+        rebuildIndex()
         state, searching = {}, {}
         TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
         return true
@@ -204,7 +254,7 @@ end)
 -- that the model is a container and that the player is next to it).
 M.netEvent('wasteland:loot:server:start', { args = { { type = 'integer', required = true }, COORDS }, rateLimit = RATE },
     function(src, model, coords)
-        local typeName = modelType[model] or modelType[model & 0xffffffff] or modelType[model - 4294967296]
+        local typeName = modelType[signed(model)]
         if not typeName then
             M.log:warn('player %d tried to search model %d, which is not a container', src, model)
             return
@@ -240,11 +290,54 @@ exports('GetLootStats', function()
     return { containers = n, searches = searches }
 end)
 
---- GetContainerModels() -> { [typeName] = { label, models } }   (admin overlay)
+--- GetContainerModels() -> { [typeName] = { label, models } }   (admin overlay; models: names and hashes)
 exports('GetContainerModels', function()
     local out = {}
-    for name, c in pairs(M and M.config.containers or {}) do out[name] = { label = c.label, models = c.models } end
+    for name, c in pairs(M and M.config.containers or {}) do out[name] = { label = c.label, models = modelsOf(name, c) } end
     return out
+end)
+
+--- GetLootAdminData() -> { containers = { { name, label, table } }, known = { [signedHash] = { type, added } } }
+--- (admin panel: what a prop can become, and which props already are containers)
+exports('GetLootAdminData', function()
+    if not (M and M.active) then return nil end
+    local list, known = {}, {}
+    for name, c in pairs(M.config.containers) do
+        if name ~= 'body' then list[#list + 1] = { name = name, label = c.label, table = c.table } end
+        for _, m in ipairs(c.models or {}) do known[tostring(signed(GetHashKey(m)))] = { type = name, added = false } end
+    end
+    for h, t in pairs(extra) do known[tostring(h)] = { type = t, added = true } end
+    table.sort(list, function(a, b) return a.label < b.label end)
+    return { containers = list, known = known }
+end)
+
+--- AddContainerModel(modelHash, containerType) -> ok, err   (admin: make a prop searchable)
+exports('AddContainerModel', function(model, typeName)
+    if not (M and M.active) then return false, 'loot module is not running' end
+    local h = signed(model)
+    if not h then return false, 'bad model' end
+    if typeName == 'body' or not M.config.containers[typeName] then return false, 'unknown loot container type' end
+    local current = modelType[h]
+    if current and not extra[h] then return false, 'that prop is already a ' .. M.config.containers[current].label:lower() .. ' (loot.lua)' end
+    extra[h] = typeName
+    saveExtra()
+    rebuildIndex()
+    TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
+    M.log:info('model %d added as loot container "%s"', h, typeName)
+    return true
+end)
+
+--- RemoveContainerModel(modelHash) -> ok, err   (only props added with AddContainerModel)
+exports('RemoveContainerModel', function(model)
+    if not (M and M.active) then return false, 'loot module is not running' end
+    local h = signed(model)
+    if not h or not extra[h] then return false, 'that prop was not added in the admin panel' end
+    extra[h] = nil
+    saveExtra()
+    rebuildIndex()
+    TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
+    M.log:info('model %d is no longer a loot container', h)
+    return true
 end)
 
 --- RollTable(name) -> list of { name, count } | nil   (other modules: rewards, quests)

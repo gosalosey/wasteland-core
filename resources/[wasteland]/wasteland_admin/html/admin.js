@@ -434,8 +434,38 @@
         }
     }
 
+    function containerLabel(name) {
+        const c = (st.data.loot ? st.data.loot.containers : []).find((x) => x.name === name);
+        return c ? c.label + ' (' + c.table + ' loot)' : name;
+    }
+
+    // The "Make it lootable" controls for the prop in view; rebuilt only when
+    // the model in view changes (so the dropdown keeps its choice).
+    function fillLootBox() {
+        if (!st.lootBox) return;
+        const l = st.coords && st.coords.looking;
+        const key = l && l.kind === 'object' ? String(l.hash) : '';
+        if (st.lootBox.dataset.key === key && st.lootBox.childNodes.length) return;
+        st.lootBox.dataset.key = key;
+        st.lootBox.innerHTML = '';
+        if (!key) { st.lootBox.appendChild(h('div', { class: 'wl-hint', text: 'Look at a prop (not a vehicle or person).' })); return; }
+        const known = st.data.loot.known[key];
+        if (known && !known.added) {
+            st.lootBox.appendChild(h('div', { class: 'wl-hint', text: 'Already searchable: ' + containerLabel(known.type) + ' (set in loot.lua).' }));
+            return;
+        }
+        const pick = select(st.data.loot.containers.map((c) => ({ label: c.label + ' (' + c.table + ' loot)', value: c.name })),
+            known ? known.type : (st.lootChoice || st.data.loot.containers[0].name));
+        pick.addEventListener('change', () => { st.lootChoice = pick.value; });
+        st.lootBox.appendChild(h('div', { class: 'wla-coordrow' },
+            h('span', { class: 'wla-label', text: known ? 'Now' : 'Loot as' }), pick,
+            UI.button(known ? 'Change' : 'Add to loot', () => act('lootAdd', { model: Number(key), container: pick.value }), 'primary'),
+            known ? confirmButton('Remove', () => act('lootRemove', { model: Number(key) })) : null));
+    }
+
     function showCoords() {
         if (!st.coordsEls || !st.coords) return;
+        fillLootBox();
         st.coordsEls.forEach((e) => { e.el.textContent = e.kind === 'looking' ? lookingText(st.coords.looking) : coordText(st.coords, e.kind); });
     }
 
@@ -456,6 +486,20 @@
             line('vector3', 'vector3'), line('vector4', 'vector4'), line('Heading', 'heading'),
             section('Looking at (prop or vehicle in front of the camera)'),
             h('div', { class: 'wla-coordrow' }, look, UI.button('Copy', () => copyText(lookingText((st.coords || c).looking)), 'primary'))];
+        if (st.data.loot) {
+            // Make the prop in view a loot container (every copy of it on the map).
+            st.lootBox = h('div', { class: 'wla-lootbox' });
+            parts.push(section('Make it lootable'), st.lootBox,
+                h('div', { class: 'wl-hint', text: 'Every prop of that model on the map becomes searchable, with the loot of the type you pick. Kept after restarts.' }));
+            fillLootBox();
+            const added = Object.keys(st.data.loot.known).filter((k) => st.data.loot.known[k].added);
+            if (added.length) {
+                parts.push(section('Props added here'));
+                added.forEach((k) => parts.push(h('div', { class: 'wla-coordrow' },
+                    h('code', { class: 'wla-coord', text: 'model ' + k + ' → ' + containerLabel(st.data.loot.known[k].type) }),
+                    confirmButton('Remove', () => act('lootRemove', { model: Number(k) })))));
+            }
+        }
         if ((st.copied || []).length) {
             parts.push(section('Copied'));
             st.copied.forEach((t) => parts.push(h('div', { class: 'wla-coordrow' }, h('code', { class: 'wla-coord', text: t }),
