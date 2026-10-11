@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** 7A (camps, safe zones, traders) complete in automated tests; installed; runtime verification pending (R16.x). Next: 7B crafting.
+**Current milestone:** 7 (camps 7A, crafting 7B) complete in automated tests; installed; runtime verification pending (R16.x, R17.x). Next: Milestone 8 quests.
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -116,7 +116,12 @@ Decisions (owner, 2026-10-11): safe zones keep zombies out, with map blips and e
 Not chosen: barter, reputation, no-weapons zones, faster healing in camps.
 
 ### 7B: crafting
-- [ ] Recipes and stations
+Decisions (owner, 2026-10-11): craft anywhere; recipes learned from blueprints found as loot; short progress bar; medical items, repair kits and melee weapons.
+- [x] Recipes (crafting.lua), blueprints (use to learn, stored per character), starter recipes (rags, bandages)
+- [x] Timed crafts with cancel; atomic exchange (materials back if the result does not fit)
+- [x] Tests: rules, learning, crafting, abuse (unknown recipe, early finish), persistence
+- [~] Installed on the owner's server; runtime tests R17.1-R17.7 pending
+Splints not added: there are no broken bones yet (a fracture system would come first).
 
 ## Milestone 8: quests
 - [ ] Definitions, objective handler registry, chains, rewards, persistence, HUD tracking · [ ] duplicate-claim tests

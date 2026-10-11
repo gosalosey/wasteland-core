@@ -133,6 +133,18 @@ return {
         ammo_762 = { label = '7.62 rounds', image = 'ammo762mmbulletball', category = 'ammo', width = 1, height = 1, weight = 0.016, stack = 250, color = '#5a6a3a' },
         ammo_308 = { label = '.308 rounds', image = 'ammo762mmbullethp', category = 'ammo', width = 1, height = 1, weight = 0.025, stack = 100, color = '#4a5a3a' },
 
+        -- Blueprints: use one to learn a crafting recipe (crafting.lua).
+        blueprint_repair_kit = { label = 'Blueprint: repair kit', image = '1-blank-blurprint', category = 'misc', width = 1, height = 1,
+            weight = 0.05, description = 'Use to learn how to make weapon repair kits.' },
+        blueprint_knife = { label = 'Blueprint: knife', image = 'bpknife', category = 'misc', width = 1, height = 1, weight = 0.05,
+            description = 'Use to learn how to make a knife.' },
+        blueprint_hatchet = { label = 'Blueprint: hatchet', image = 'bphatchet', category = 'misc', width = 1, height = 1, weight = 0.05,
+            description = 'Use to learn how to make a hatchet.' },
+        blueprint_machete = { label = 'Blueprint: machete', image = 'bpmachete', category = 'misc', width = 1, height = 1, weight = 0.05,
+            description = 'Use to learn how to make a machete.' },
+        blueprint_crowbar = { label = 'Blueprint: crowbar', image = '2-blank-blurprint', category = 'misc', width = 1, height = 1,
+            weight = 0.05, description = 'Use to learn how to make a crowbar.' },
+
         weapon_repair_kit = { label = 'Weapon repair kit', image = 'repairkit2', category = 'tool', width = 2, height = 1, weight = 0.8,
             description = 'Repairs the weapon in your hands.' },
 

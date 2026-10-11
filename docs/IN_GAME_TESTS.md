@@ -300,3 +300,17 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R16.7 | Buy out an item, wait 10 minutes | "Sold out", later some back in stock |
 | R16.8 | Lead zombies to a camp | They stop following at the edge; any that walk in disappear; none appear inside |
 | R16.9 | Walk away from the trader with the screen open | The screen closes |
+
+## Crafting (7B)
+
+**Setup:** `server.cfg` has `ensure wasteland_crafting` after `ensure wasteland_camps` (done on the owner's server). Restart the server.
+
+| # | Step | Expected result |
+|---|---|---|
+| R17.1 | Press K (or the "Crafting (K)" button in the inventory) | The crafting screen: Rags and Bandage, "5 more recipes to learn" |
+| R17.2 | With a top in your inventory, craft Rags | You crouch and work; a bar fills in 3 s; "Made 3 x Clean rag." |
+| R17.3 | Craft a Bandage from 2 rags | 2 rags gone, 1 bandage more |
+| R17.4 | Start a craft and walk away (or press X) | "Crafting cancelled."; nothing used up |
+| R17.5 | Give yourself `blueprint_machete` (admin panel), use it from the inventory | "You learned how to make: Machete. Press K to craft." The blueprint is gone; the Machete recipe is in the list |
+| R17.6 | With 4 scrap metal, 2 duct tape and 1 rag, craft the Machete | A machete with a full durability bar |
+| R17.7 | Reconnect | You still know the machete recipe |

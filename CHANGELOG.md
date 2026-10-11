@@ -1,5 +1,18 @@
 # Changelog
 
+## Milestone 7B: crafting
+
+### wasteland_crafting 0.1.0 (new)
+* Craft anywhere: key K (or /craft, or the "Crafting (K)" button in the inventory). The screen lists every recipe you know, what it needs (red when you lack it) and how many recipes are left to learn.
+* Crafting takes a few seconds with an animation and a progress bar; moving, getting hurt, dying or X cancels. The server takes the materials and gives the result in one go (everything back if the result does not fit).
+* Known from the start: rags (tear a top) and bandages (from rags). Learned from blueprints found while looting (rare): weapon repair kit, knife, hatchet, machete, crowbar. Use a blueprint in the inventory to learn its recipe for good (stored with the character).
+* Exports `KnowsRecipe`, `TeachRecipe`; events `wasteland:crafting:learned`, `wasteland:crafting:crafted`.
+
+### Other
+* Inventory: 5 blueprint items (pictures from the pack); blueprints added to the trash, tools, crate and zombie loot tables; Crafting button in the inventory screen.
+* Tests: 514 (new: recipe rules, learning, crafting, materials, timing, no room, persistence, screen).
+
+
 ## Milestone 7A: camps, safe zones, traders
 
 ### wasteland_camps 0.1.0 (new)

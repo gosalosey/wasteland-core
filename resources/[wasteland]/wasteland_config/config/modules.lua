@@ -37,6 +37,9 @@ return {
         -- Camps: safe zones and traders (Milestone 7A).
         camps      = true,
 
+        -- Crafting (Milestone 7B).
+        crafting   = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.

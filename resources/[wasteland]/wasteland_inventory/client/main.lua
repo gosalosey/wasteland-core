@@ -181,6 +181,12 @@ local OPS = {
 AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     if screen ~= SCREEN then return end
     if action == 'close' then closeScreen(); return end
+    if action == 'crafting' then
+        -- The Crafting button: hand over to wasteland_crafting (if running).
+        closeScreen()
+        if GetResourceState('wasteland_crafting') == 'started' then TriggerEvent('wasteland:crafting:client:open') end
+        return
+    end
     local build = OPS[action]
     if not build or type(payload) ~= 'table' then return end
     local args = table.pack(build(payload))

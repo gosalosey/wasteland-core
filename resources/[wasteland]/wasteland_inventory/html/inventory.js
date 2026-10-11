@@ -451,7 +451,8 @@
                 h('div', { class: 'wli-layout' },
                     h('div', { class: 'wli-header' },
                         h('h1', { class: 'wl-title', text: 'Inventory' }),
-                        h('span', { class: 'wl-hint', text: 'Drag to move · Double-click to take / put back · R rotates while dragging · Right-click for actions · TAB or Esc closes' })),
+                        h('span', { class: 'wl-hint wli-header__hint', text: 'Drag to move · Double-click to take / put back · R rotates while dragging · Right-click for actions · TAB or Esc closes' }),
+                        UI.button('Crafting (K)', () => st.api.post('crafting', {}))),
                     h('div', { class: 'wli-columns' }, st.left, st.middle, st.right),
                     st.message));
             el.appendChild(st.root);
@@ -486,6 +487,7 @@
         '.wli-root { position: absolute; inset: 0; }',
         '.wli-layout { position: absolute; inset: 4vh 3vw; display: flex; flex-direction: column; gap: 10px; }',
         '.wli-header { display: flex; align-items: baseline; gap: 18px; }',
+        '.wli-header__hint { flex: 1; }',
         '.wli-columns { flex: 1; display: flex; gap: 22px; align-items: flex-start; overflow: auto; }',
         '.wli-col { display: flex; flex-direction: column; gap: 16px; }',
         '.wli-col--main { flex: 0 0 auto; }',

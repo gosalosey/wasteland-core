@@ -439,3 +439,11 @@ Traders are local peds on each client (created within 80 m) with a "Trade" targe
 Exports (server): `IsInSafeZone(coords) -> boolean`, `GetCampAt(coords) -> { id, label } | nil`, `GetCamps()`. Client export: `IsInSafeZone(coords?)`. Server event: `wasteland:camps:traded(source, 'buy'|'sell', item, count, cash, campId)`.
 
 Zombies use `IsInSafeZone`: no spawning inside, removal inside, no chasing a player inside, no hits on a player inside.
+
+## Crafting (`wasteland_crafting`, crafting api 0.1)
+
+`crafting.lua`: `recipes` (name → `label`, `result = { name, count }`, `ingredients = { { name, count } }`, `seconds`, `blueprint?`). A recipe with a `blueprint` is learned by using that item (registered as usable by this module; it is used up); others are known from the start. Known recipes are character data `crafting = { known = { [recipe] = true } }`.
+
+Net events: `wasteland:crafting:server:open`, `...:craft(recipe)`, `...:finish`, `...:cancel`. The server checks the recipe is known and the materials are carried, times the craft, then removes every ingredient and adds the result (all given back on failure).
+
+Exports: `KnowsRecipe(source, recipe) -> boolean`, `TeachRecipe(source, recipe) -> ok`. Server events: `wasteland:crafting:learned(source, recipes)`, `wasteland:crafting:crafted(source, recipe)`. Client event `wasteland:crafting:client:open` opens the screen (the inventory's Crafting button uses it).

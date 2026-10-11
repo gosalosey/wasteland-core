@@ -11,6 +11,7 @@ return {
     'unit/target_match.lua',
     'unit/loot_rules.lua',
     'unit/camp_zones.lua',
+    'unit/crafting_recipes.lua',
     'integration/boot.lua',
     'integration/registry.lua',
     'integration/lifecycle.lua',
@@ -27,6 +28,7 @@ return {
     'integration/zombies.lua',
     'integration/loot.lua',
     'integration/camps.lua',
+    'integration/crafting.lua',
     'db/mariadb.lua',
     'js/node.lua',
 }

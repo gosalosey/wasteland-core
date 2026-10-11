@@ -56,6 +56,7 @@ return {
             { name = 'ammo_9mm', min = 2, max = 6, weight = 3 },
             { name = 'weapon_knife', min = 1, max = 1, weight = 2 },
             { name = 'weapon_bat', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_knife', min = 1, max = 1, weight = 1 },
         } },
         food = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
@@ -77,6 +78,9 @@ return {
             { name = 'crowbar', min = 1, max = 1, weight = 6 },
             { name = 'weapon_hatchet', min = 1, max = 1, weight = 4 },
             { name = 'weapon_machete', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_repair_kit', min = 1, max = 1, weight = 3 },
+            { name = 'blueprint_hatchet', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_crowbar', min = 1, max = 1, weight = 2 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
             { name = 'scrap_metal', min = 1, max = 3, weight = 30 },
@@ -87,6 +91,8 @@ return {
             { name = 'ammo_12g', min = 2, max = 6, weight = 6 },
             { name = 'backpack_small', min = 1, max = 1, weight = 3 },
             { name = 'weapon_pistol', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_knife', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_machete', min = 1, max = 1, weight = 2 },
         } },
         mail = { emptyChance = 0.7, rolls = { 1, 1 }, items = {
             { name = 'cash', min = 5, max = 60, weight = 70 },
@@ -107,6 +113,8 @@ return {
             { name = 'clothing_shoes', min = 1, max = 1, weight = 4 },
             { name = 'antibiotics', min = 1, max = 1, weight = 2 },
             { name = 'weapon_pistol', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_repair_kit', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_machete', min = 1, max = 1, weight = 1 },
         } },
     },
 }
