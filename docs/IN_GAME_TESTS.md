@@ -464,3 +464,10 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R29.3 | Do it again on the same prop | The window shows the current category with Change / Remove |
 | R29.4 | Open the inventory (TAB) when healthy | Health panel: body outline, bars, "You are in good shape." |
 | R29.5 | Get hit by zombies until bleeding / infected, get hungry | Blood drops / green tint on the body; "Bleeding ... Stop it with: Bandage, Rag." and the others, updating every second |
+
+## R30: wrecks on clear ground
+
+| # | Do | Expect |
+|---|---|---|
+| R30.1 | Restart, drive/walk to the wreck spawn points | Wrecks stand on open ground, not inside props, walls, fences or other cars; the server console may say "moved x m to a clear spot" |
+| R30.2 | Leave and come back | They stay where they were placed (checked once) |

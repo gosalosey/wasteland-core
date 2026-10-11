@@ -25,6 +25,12 @@ return {
 
     seconds = { battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, removeLock = 6, siphon = 10, fillCan = 8 },
 
+    -- Before a wreck first appears, the nearest player's game checks its spot
+    -- for props, walls, other vehicles and steep ground and moves it to the
+    -- nearest clear spot within `radius` metres (a new wreck with no room
+    -- goes to another spawn point). Checked once per vehicle.
+    spotCheck = { enabled = true, radius = 12, clearance = 3.2 },
+
     -- Picking a lock needs a lockpick and a minigame: a pick turns around
     -- the lock; press E (or Space / click) while it is in the bright zone
     -- to set a pin. Set every pin to open it; one miss and the try fails.

@@ -8,6 +8,7 @@ local CFG = {
     ['vehicles.lua'] = [[return {
         maxVehicles = 2, respawnMinutes = 1, spawnDistance = 250, despawnDistance = 350, despawnAfterSeconds = 4, saveSeconds = 4,
         seconds = { battery = 1, engine = 1, wheel = 1, refuel = 1, siphon = 1, repair = 1, fitLock = 1, toggleLock = 1, pickLock = 1, removeLock = 1, fillCan = 1 },
+        spotCheck = { enabled = false },
         lockpick = { pins = 4, minSecondsPerPin = 0.35, breakChance = 1, noise = 60 },
         wreck = { batteryMissing = 1, engineMissing = 0, wheelsMissingChance = 1, wheelsMissingMax = 1,
             fuel = { 2, 2 }, engine = { 500, 500 }, body = { 600, 600 } },
@@ -449,3 +450,49 @@ describe('siphoning fuel', function()
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe('clear spots for wrecks', function()
+    local CFG2 = {}
+    for k, v in pairs(CFG) do CFG2[k] = v end
+    CFG2['vehicles.lua'] = CFG['vehicles.lua']:gsub('spotCheck = { enabled = false }', 'spotCheck = { enabled = true, radius = 12 }')
+    local server = newServer({ config = CFG2 })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_vehicles' })
+    local id = player(server, 'scout', { x = 1001.0, y = 1.0, z = 30.0 })
+    local function asked() return events(server, id, 'wasteland:vehicles:client:checkSpot') end
+
+    it('asks the nearest player before the wreck first appears', function()
+        server:advance(2500)
+        expect(#server:entityList('wlVeh')).toBe(0)
+        expect(#asked()).toBe(1)
+        local a = last(asked()).args
+        expect(a[2].x).toBe(1000.0)
+    end)
+
+    it('moves it to the clear spot the client found (not too far), then spawns and remembers', function()
+        local a = last(asked()).args
+        server:clientEvent(id, 'wasteland:vehicles:server:spot', a[1], { x = 1030.0, y = 0.0, z = 30.0 })
+        server:advance(100)
+        expect(#server:lines('suggested a spot too far')).toBe(1)
+        expect(#server:entityList('wlVeh')).toBe(0)
+        server:advance(9000) -- unanswered: asked again or spawned in place after the wait
+        local again = last(asked()).args
+        server:clientEvent(id, 'wasteland:vehicles:server:spot', again[1], { x = 1005.0, y = 2.0, z = 30.5, heading = 90.0 })
+        server:advance(2500)
+        local e = veh(server)
+        expect(e ~= nil).toBe(true)
+        expect(e.coords.x).toBe(1005.0)
+        local row = server.db.backend.data.wl_vehicles[again[1]]
+        expect(row.x).toBe(1005.0); expect(row.spot_checked).toBe(1)
+    end)
+
+    it('a vehicle nobody can check still appears after a short wait', function()
+        local before = #server:entityList('wlVeh')
+        server.players[id].coords = { x = 5001.0, y = 1.0, z = 30.0 }
+        server:advance(2500)
+        expect(#server:entityList('wlVeh')).toBe(before) -- waiting for the answer
+        server:advance(10000)
+        expect(#server:entityList('wlVeh') >= before).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+

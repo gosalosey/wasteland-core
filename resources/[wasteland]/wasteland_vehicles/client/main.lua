@@ -258,6 +258,91 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
 end)
 
 -------------------------------------------------------------------------------
+-- Clear spots (asked by the server before a vehicle first appears here)
+-------------------------------------------------------------------------------
+
+local function groundAt(x, y, z)
+    local found, g = GetGroundZFor_3dCoord(x + 0.0, y + 0.0, z + 3.0, false)
+    if found and math.abs(g - z) < 6.0 then return g end
+    return nil
+end
+
+local function rayHits(a, b)
+    -- world (1) and objects (16)
+    local probe = StartExpensiveSynchronousShapeTestLosProbe(a.x, a.y, a.z, b.x, b.y, b.z, 17, PlayerPedId(), 7)
+    local _, hit = GetShapeTestResult(probe)
+    return hit == 1
+end
+
+-- Is a car-sized spot (5 x 2.4 m) at x, y, z (ground) facing heading free?
+local function spotClear(x, y, z, heading, clearance)
+    local p = vector3(x, y, z)
+    for _, obj in ipairs(GetGamePool('CObject')) do
+        if not IsEntityAttached(obj) then
+            local c = GetEntityCoords(obj)
+            if #(vector2(c.x, c.y) - vector2(x, y)) < clearance and math.abs(c.z - z) < 3.0 then return false end
+        end
+    end
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        local c = GetEntityCoords(veh)
+        if #(vector2(c.x, c.y) - vector2(x, y)) < 4.5 and math.abs(c.z - z) < 3.0 then return false end
+    end
+    local h = math.rad(heading)
+    local fwd, right = vector3(-math.sin(h), math.cos(h), 0.0), vector3(math.cos(h), math.sin(h), 0.0)
+    for _, up in ipairs({ 0.6, 1.3 }) do
+        local base = p + vector3(0.0, 0.0, up)
+        if rayHits(base - fwd * 2.6, base + fwd * 2.6) or rayHits(base - right * 1.3, base + right * 1.3)
+            or rayHits(base - fwd * 2.6 - right * 1.2, base + fwd * 2.6 + right * 1.2)
+            or rayHits(base - fwd * 2.6 + right * 1.2, base + fwd * 2.6 - right * 1.2) then
+            return false
+        end
+    end
+    -- Not on steep ground: the corners within 1 m of the middle's height.
+    for _, c in ipairs({ p + fwd * 2.3 + right * 1.0, p + fwd * 2.3 - right * 1.0, p - fwd * 2.3 + right * 1.0, p - fwd * 2.3 - right * 1.0 }) do
+        local g = groundAt(c.x, c.y, z)
+        if not g or math.abs(g - z) > 1.0 then return false end
+    end
+    return true
+end
+
+RegisterNetEvent('wasteland:vehicles:client:checkSpot', function(id, c, opts)
+    if type(c) ~= 'table' or type(opts) ~= 'table' then return end
+    Citizen.CreateThread(function()
+        -- Load the collision there first (the spot may be up to ~250 m away).
+        local untilT = GetGameTimer() + 1500
+        while GetGameTimer() < untilT do
+            RequestCollisionAtCoord(c.x + 0.0, c.y + 0.0, c.z + 0.0)
+            Citizen.Wait(0)
+        end
+        local clearance, radius = tonumber(opts.clearance) or 3.2, tonumber(opts.radius) or 12
+        local heading = tonumber(c.heading) or 0.0
+        local g = groundAt(c.x, c.y, c.z)
+        if g and spotClear(c.x, c.y, g, heading, clearance) then
+            TriggerServerEvent('wasteland:vehicles:server:spot', id, { ok = true })
+            return
+        end
+        -- Rings around the spot, nearest first.
+        local step = 2.5
+        local r = step
+        while r <= radius do
+            local n = math.max(8, math.floor(2 * math.pi * r / step))
+            for i = 0, n - 1 do
+                local a = (i / n) * 2 * math.pi
+                local x, y = c.x + math.cos(a) * r, c.y + math.sin(a) * r
+                local gz = groundAt(x, y, c.z)
+                if gz and spotClear(x, y, gz, heading, clearance) then
+                    TriggerServerEvent('wasteland:vehicles:server:spot', id, { x = x, y = y, z = gz, heading = heading })
+                    return
+                end
+            end
+            r = r + step
+            Citizen.Wait(0)
+        end
+        TriggerServerEvent('wasteland:vehicles:server:spot', id, { blocked = true })
+    end)
+end)
+
+-------------------------------------------------------------------------------
 -- Owner: apply state. Driver: parts, fuel.
 -------------------------------------------------------------------------------
 

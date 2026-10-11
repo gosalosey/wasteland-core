@@ -1,5 +1,11 @@
 # Changelog
 
+## Wrecks spawn on clear ground (owner request)
+* Before a vehicle first appears, the nearest player's game checks its spot: no prop within 3.2 m, no other vehicle within 4.5 m, nothing solid across a car-sized box (walls, poles, fences, props), no steep ground. If blocked it is moved to the nearest clear spot within 12 m; a new wreck with no room at all goes to another spawn point. Checked once per vehicle (new column `wl_vehicles.spot_checked`, migration 3); vehicles players parked are only ever nudged, never sent elsewhere. If no player answers within 8 s, it appears where it is.
+* vehicles.lua: `spotCheck = { enabled, radius, clearance }`. Vehicles admins spawn are placed as they are.
+* Tests: 633.
+
+
 ## Admin loot target, health panel in the inventory (owner request)
 * Admins: Left Alt on any prop, "Admin: loot container…": a small window to make that prop (every copy of its model) a loot container of a chosen category, with an optional prop name; Change / Remove for props added before. Only admins see the option (the client asks the server once a minute); the server still checks every request.
 * Inventory: a Health panel (right column, under anything being looted) with a body outline (colour by health, green tint when infected, blood drops when bleeding, blue/orange edge when cold/hot, a plate when wearing armor), bars for health, food, water and armor, body temperature, and a list of what is wrong with how to fix it (the items that help come from survival.lua consumables).

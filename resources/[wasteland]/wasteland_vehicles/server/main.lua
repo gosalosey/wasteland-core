@@ -70,7 +70,7 @@ end
 -------------------------------------------------------------------------------
 
 local function params(v)
-    return { v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body, Rules.encodeParts(v.parts), v.lockCode, v.lockOwner, v.locked and 1 or 0, os.time(), v.id }
+    return { v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body, Rules.encodeParts(v.parts), v.lockCode, v.lockOwner, v.locked and 1 or 0, v.spotChecked and 1 or 0, os.time(), v.id }
 end
 
 -- Database writes run in their own thread (they wait for the database;
@@ -89,7 +89,7 @@ end
 
 local function insert(v)
     write(WDB.insert, SQL.insert, { v.id, v.model, v.x, v.y, v.z, v.heading, v.fuel, v.engine, v.body,
-        Rules.encodeParts(v.parts), v.lockCode, v.lockOwner, v.locked and 1 or 0, os.time() }, 'storing vehicle ' .. v.id)
+        Rules.encodeParts(v.parts), v.lockCode, v.lockOwner, v.locked and 1 or 0, v.spotChecked and 1 or 0, os.time() }, 'storing vehicle ' .. v.id)
 end
 
 -------------------------------------------------------------------------------
@@ -165,10 +165,37 @@ local function createWreck(point)
     local w = Rules.wreck(M.config.wreck, math.random, math.random)
     local v = { id = newId(), model = M.config.models[math.random(1, #M.config.models)],
         x = point.x, y = point.y, z = point.z, heading = point.heading or 0.0,
-        fuel = w.fuel, engine = w.engine, body = w.body, parts = w.parts, locked = false }
+        fuel = w.fuel, engine = w.engine, body = w.body, parts = w.parts, locked = false, fresh = true }
     vehicles[v.id] = v
     insert(v)
     return v
+end
+
+-------------------------------------------------------------------------------
+-- Clear spots: before a vehicle first appears, the nearest player's game
+-- checks its spot for props, walls, other vehicles and steep ground (the
+-- server cannot see the map) and answers with the nearest clear spot.
+-------------------------------------------------------------------------------
+
+local function nearestPlayer(p)
+    local best, bestD
+    for _, s in ipairs(GetPlayers()) do
+        local src = tonumber(s)
+        local c = src and playerCoords(src)
+        if c then
+            local d = dist(c, p)
+            if not bestD or d < bestD then best, bestD = src, d end
+        end
+    end
+    return best
+end
+
+local function requestSpot(v)
+    local src = nearestPlayer(v)
+    if not src then return end
+    v.checking, v.checkBy = now(), src
+    TriggerClientEvent('wasteland:vehicles:client:checkSpot', src, v.id,
+        { x = v.x, y = v.y, z = v.z, heading = v.heading }, { radius = M.config.spotCheck.radius, clearance = M.config.spotCheck.clearance })
 end
 
 -- A free spawn point: no vehicle within 15 m, no player within 200 m.
@@ -211,7 +238,13 @@ local function tick(players, t)
                 end
             end
         elseif nearest(players, v) <= cfg.spawnDistance then
-            spawn(v)
+            if v.spotChecked or not cfg.spotCheck.enabled or (v.checking and t - v.checking > 8000) then
+                -- checked, or nobody answered: spawn where it is
+                v.checking = nil
+                spawn(v)
+            elseif not v.checking then
+                requestSpot(v)
+            end
         end
     end
 end
@@ -498,6 +531,11 @@ M = Wasteland.DefineModule({
                 litresPerSecond = { type = 'number', default = 4, min = 0.1, max = 1000 },
                 vehicleDistance = { type = 'number', default = 8, min = 2, max = 30, description = 'How close the vehicle must be to the pump (m)' },
             } },
+            spotCheck = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = true, description = 'Check a spot is clear before a vehicle first appears' },
+                radius = { type = 'number', default = 12, min = 0, max = 50, description = 'How far (m) a wreck may be moved to a clear spot' },
+                clearance = { type = 'number', default = 3.2, min = 1, max = 10, description = 'No prop within this distance (m) of the middle' },
+            } },
             lockpick = { type = 'table', fields = {
                 pins = { type = 'integer', default = 4, min = 1, max = 10, description = 'Pins to set in the minigame' },
                 zoneDegrees = { type = 'number', default = 32, min = 5, max = 180, description = 'Width of the sweet spot' },
@@ -543,6 +581,7 @@ M = Wasteland.DefineModule({
             for _, r in ipairs(rows) do
                 vehicles[r.id] = { id = r.id, model = r.model, x = r.x, y = r.y, z = r.z, heading = r.heading, fuel = r.fuel,
                     engine = r.engine, body = r.body, parts = Rules.decodeParts(r.parts), lockCode = r.lock_code, lockOwner = r.lock_owner,
+                    spotChecked = r.spot_checked == 1 or r.spot_checked == true,
                     locked = r.locked == 1 or r.locked == true }
             end
             -- Fill the world up to the limit on first start.
@@ -664,6 +703,43 @@ M.netEvent('wasteland:vehicles:server:applied', {
         publish(v, false) -- later owners must not apply the old damage again
     end
 end)
+-- A client's answer about a spot: { ok = true } (clear), { x, y, z, heading }
+-- (the nearest clear spot), or { blocked = true } (nothing clear nearby).
+M.netEvent('wasteland:vehicles:server:spot', {
+    args = { { type = 'string', required = true, pattern = '^%x+$', maxLength = 16 }, { type = 'table', required = true, fields = {
+        ok = { type = 'boolean' }, blocked = { type = 'boolean' },
+        x = { type = 'number' }, y = { type = 'number' }, z = { type = 'number' }, heading = { type = 'number' },
+    } } },
+    rateLimit = { burst = 10, perSecond = 2 },
+}, function(src, id, r)
+    local v = vehicles[id]
+    if not v or v.handle or v.checkBy ~= src or not v.checking then return end
+    v.checking, v.checkBy = nil, nil
+    if r.ok then
+        v.spotChecked = true
+    elseif r.x and r.y and r.z then
+        if dist(v, { x = r.x, y = r.y, z = r.z }) > M.config.spotCheck.radius + 2 then
+            M.log:warn('player %d suggested a spot too far from vehicle %s', src, id)
+            return
+        end
+        M.log:info('vehicle %s moved %.1f m to a clear spot', id, dist(v, { x = r.x, y = r.y, z = r.z }))
+        v.x, v.y, v.z = r.x, r.y, r.z
+        if r.heading then v.heading = r.heading end
+        v.spotChecked = true
+    elseif r.blocked then
+        local p = v.fresh and freePoint(playersCoords())
+        if p then
+            -- A new wreck with no room: it goes to another spawn point (checked there).
+            M.log:info('vehicle %s has no clear spot here; moved to another spawn point', id)
+            v.x, v.y, v.z, v.heading = p.x, p.y, p.z, p.heading or 0.0
+        else
+            M.log:warn('vehicle %s: no clear spot found near %.0f, %.0f; it stays', id, v.x, v.y)
+            v.spotChecked = true
+        end
+    end
+    save(v)
+end)
+
 M.netEvent('wasteland:vehicles:server:cancel', { rateLimit = RATE }, function(src) acting[src] = nil end)
 
 -- The lockpick minigame is over: did every pin set?
@@ -749,7 +825,9 @@ exports('GetVehicleCount', function() return count() end)
 exports('SpawnWreck', function(coords, model)
     if not (M and M.active) or type(coords) ~= 'table' then return nil end
     local v = createWreck({ x = coords.x, y = coords.y, z = coords.z, heading = coords.heading or 0.0 })
-    if model then v.model = model; save(v) end
+    v.spotChecked, v.fresh = true, false -- placed on purpose
+    if model then v.model = model end
+    save(v)
     return v.id
 end)
 
@@ -786,6 +864,7 @@ end)
 exports('SpawnWorking', function(coords, model)
     if not (M and M.active) or type(coords) ~= 'table' then return nil end
     local v = createWreck({ x = coords.x, y = coords.y, z = coords.z, heading = coords.heading or 0.0 })
+    v.spotChecked, v.fresh = true, false -- placed on purpose
     if model then v.model = model end
     v.parts = { battery = true, engine = true, wheels = 4 }
     v.fuel, v.engine, v.body = M.config.tankLitres, 1000.0, 1000.0

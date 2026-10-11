@@ -31,14 +31,20 @@ CREATE TABLE IF NOT EXISTS wl_vehicles (
         -- The character that fitted the lock (only they can take it off).
         up = [[ALTER TABLE wl_vehicles ADD COLUMN lock_owner INT UNSIGNED NULL AFTER lock_code]],
     },
+    {
+        version = 3,
+        name = 'spot_checked',
+        -- 1 once a client checked the spot is clear of props and walls.
+        up = [[ALTER TABLE wl_vehicles ADD COLUMN spot_checked TINYINT(1) NOT NULL DEFAULT 0 AFTER locked]],
+    },
 }
 
 WLV.SQL = {
-    selectAll = 'SELECT id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, lock_owner, locked FROM wl_vehicles',
-    insert = 'INSERT INTO wl_vehicles (id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, lock_owner, locked, updated_unix) '
-        .. 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    selectAll = 'SELECT id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, lock_owner, locked, spot_checked FROM wl_vehicles',
+    insert = 'INSERT INTO wl_vehicles (id, model, x, y, z, heading, fuel, engine, body, parts, lock_code, lock_owner, locked, spot_checked, updated_unix) '
+        .. 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     update = 'UPDATE wl_vehicles SET x = ?, y = ?, z = ?, heading = ?, fuel = ?, engine = ?, body = ?, parts = ?, '
-        .. 'lock_code = ?, lock_owner = ?, locked = ?, updated_unix = ? WHERE id = ?',
+        .. 'lock_code = ?, lock_owner = ?, locked = ?, spot_checked = ?, updated_unix = ? WHERE id = ?',
     delete = 'DELETE FROM wl_vehicles WHERE id = ?',
 }
 

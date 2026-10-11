@@ -330,7 +330,7 @@ describe('real MariaDB: vehicles', function()
     local SQLV = env.WLV.SQL
     local server = newServer({ dbBackend = backend, config = {
         ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 60000, slowQueryWarningMs = 60000 }',
-        ['vehicles.lua'] = [[return { maxVehicles = 2, respawnMinutes = 1000, saveSeconds = 4, despawnAfterSeconds = 4,
+        ['vehicles.lua'] = [[return { spotCheck = { enabled = false }, maxVehicles = 2, respawnMinutes = 1000, saveSeconds = 4, despawnAfterSeconds = 4,
             models = { 'rebel' }, spawnPoints = { { x = 1000.0, y = 0.0, z = 30.0 }, { x = 5000.0, y = 0.0, z = 30.0 } } }]],
     } })
     server.db.latencyMs = 0
