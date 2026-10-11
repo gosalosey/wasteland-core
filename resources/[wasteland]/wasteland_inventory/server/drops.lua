@@ -33,7 +33,7 @@ function Drops.inRange(src, inv)
     if not inv.coords then return true end
     local p = Drops.playerCoords(src)
     if not p then return false, 'your position is unknown to the server (OneSync is required)' end
-    if distance(p, inv.coords) > WLI.cfg.reachDistance then return false, 'you are too far away' end
+    if distance(p, inv.coords) > (inv.reach or WLI.cfg.reachDistance) then return false, 'you are too far away' end
     return true
 end
 
@@ -241,12 +241,13 @@ function Drops.deleteStash(name)
 end
 
 --- Open a stash for a player (modules decide when; thread only, it may load).
---- opts = { label, width, height, maxWeight, coords }
+--- opts = { label, width, height, maxWeight, coords, reach? (m, big props; default reachDistance) }
 function Drops.openStash(src, name, opts)
     local inv, err = Drops.ensureStash(name, opts)
     if not inv then return false, err end
     -- Stashes that move (vehicle trunks) get their current position.
     if opts and opts.coords then inv.coords = opts.coords end
+    if opts and tonumber(opts.reach) then inv.reach = math.max(1, math.min(20, tonumber(opts.reach))) end
     local id = inv.id
     local ok, why = Drops.inRange(src, inv)
     if not ok then return false, why end

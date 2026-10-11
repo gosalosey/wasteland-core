@@ -33,8 +33,14 @@ local function dist(a, b)
     return math.sqrt(dx * dx + dy * dy + dz * dz)
 end
 
+-- Big props (wrecks) are searched from further from their middle.
+local function reachFor(typeName)
+    local c = M.config.containers[typeName]
+    return (c and c.reach) or M.config.reach
+end
+
 local function stashOpts(c, coords, open)
-    return { label = c.label, width = c.grid[1], height = c.grid[2], maxWeight = 200, coords = coords, open = open }
+    return { label = c.label, width = c.grid[1], height = c.grid[2], maxWeight = 200, coords = coords, open = open, reach = c.reach }
 end
 
 local function isEmpty(id)
@@ -75,7 +81,7 @@ local function finish(src)
         return
     end
     local p = playerCoords(src)
-    if not p or dist(p, s.coords) > M.config.reach + 1.0 then notice(src, 'You moved away.'); return end
+    if not p or dist(p, s.coords) > reachFor(s.type) + 1.0 then notice(src, 'You moved away.'); return end
     if not inv():GetInventory(s.id) then notice(src, 'That is gone.'); return end
     local empty = isEmpty(s.id)
     if Rules.needsFill(state[s.name], empty, now(), c.refillMinutes) then
@@ -120,6 +126,8 @@ local CONTAINER = { type = 'table', fields = {
     grid = { type = 'array', default = { 4, 4 }, minItems = 2, maxItems = 2, items = { type = 'integer', min = 1, max = 12 } },
     anim = { type = 'enum', values = { 'bin', 'search', 'kneel' }, default = 'search' },
     models = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' } },
+    reach = { type = 'number', min = 1, max = 20,
+        description = 'How close (m) to the middle of the prop a player must be (big props like car wrecks); default: reach' },
 } }
 local TABLE = { type = 'table', fields = {
     emptyChance = { type = 'number', default = 0.5, min = 0, max = 1 },
@@ -202,7 +210,7 @@ M.netEvent('wasteland:loot:server:start', { args = { { type = 'integer', require
             return
         end
         local p = playerCoords(src)
-        if not p or dist(p, coords) > M.config.reach then notice(src, 'You are too far away.'); return end
+        if not p or dist(p, coords) > reachFor(typeName) then notice(src, 'You are too far away.'); return end
         Citizen.CreateThread(function() begin(src, Rules.key(typeName, coords), typeName, coords) end)
     end)
 

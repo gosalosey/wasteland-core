@@ -205,7 +205,7 @@ end)
 
 --- OpenStash(source, name, opts) -> true (started) | false, err   (opts.open = true: show the screen)
 --- opts: label, width, height, maxWeight, coords (players must be within
---- reachDistance when coords are given). Loads in the background; errors
+--- reachDistance when coords are given, or opts.reach metres for big props). Loads in the background; errors
 --- are shown to the player.
 exports('OpenStash', function(src, name, opts)
     if inactive() then return false, 'inventory module is not running' end

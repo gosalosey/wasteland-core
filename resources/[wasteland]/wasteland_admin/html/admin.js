@@ -65,8 +65,14 @@
         return 'X ' + f(c.x) + '   Y ' + f(c.y) + '   Z ' + f(c.z) + '   Heading ' + f(c.h);
     }
 
+    // The model the camera faces: hash as GTA reports it (signed) and as hex.
+    function lookingText(l) {
+        if (!l || typeof l.hash !== 'number') return 'Nothing (look at a prop or vehicle within 25 m)';
+        return l.kind + ' model ' + l.hash + ' (0x' + (l.hash >>> 0).toString(16).toUpperCase().padStart(8, '0') + ')';
+    }
+
     if (typeof module === 'object' && module.exports) {
-        module.exports = { filterPlayers: filterPlayers, filterItems: filterItems, groupItems: groupItems, banStatus: banStatus,
+        module.exports = { lookingText: lookingText, filterPlayers: filterPlayers, filterItems: filterItems, groupItems: groupItems, banStatus: banStatus,
             formatTime: formatTime, coordText: coordText, DURATIONS: DURATIONS };
         return;
     }
@@ -430,7 +436,7 @@
 
     function showCoords() {
         if (!st.coordsEls || !st.coords) return;
-        st.coordsEls.forEach((e) => { e.el.textContent = coordText(st.coords, e.kind); });
+        st.coordsEls.forEach((e) => { e.el.textContent = e.kind === 'looking' ? lookingText(st.coords.looking) : coordText(st.coords, e.kind); });
     }
 
     function coordsTab() {
@@ -444,8 +450,12 @@
         };
         const big = h('div', { class: 'wla-coordbig', text: coordText(c, 'xyz') });
         st.coordsEls.push({ el: big, kind: 'xyz' });
+        const look = h('code', { class: 'wla-coord', text: lookingText(c.looking) });
+        st.coordsEls.push({ el: look, kind: 'looking' });
         const parts = [h('div', { class: 'wl-hint', text: 'Where you are standing now (updates live while this tab is open).' }), big,
-            line('vector3', 'vector3'), line('vector4', 'vector4'), line('Heading', 'heading')];
+            line('vector3', 'vector3'), line('vector4', 'vector4'), line('Heading', 'heading'),
+            section('Looking at (prop or vehicle in front of the camera)'),
+            h('div', { class: 'wla-coordrow' }, look, UI.button('Copy', () => copyText(lookingText((st.coords || c).looking)), 'primary'))];
         if ((st.copied || []).length) {
             parts.push(section('Copied'));
             st.copied.forEach((t) => parts.push(h('div', { class: 'wla-coordrow' }, h('code', { class: 'wla-coord', text: t }),

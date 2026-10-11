@@ -425,3 +425,12 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R25.5 | Keep taking hits until it breaks | "Your armor plate broke. Repair it with an armor repair kit."; now you take damage |
 | R25.6 | Right-click the plate, "Repair with Armor repair kit" | "You repair your armor plate (0% -> 40%)."; protected again |
 | R25.7 | Take the plate off | The shield icon goes; you take damage normally |
+
+## R26: wrecked vehicles
+
+| # | Do | Expect |
+|---|---|---|
+| R26.1 | Go to rusted car wrecks (e.g. around Sandy Shores / Grand Senora), Left Alt on one | "Search wrecked vehicle"; a 6 s search; it opens (or "You found nothing.") |
+| R26.2 | Try from the side of a long wreck (bus, van) | Works anywhere along its side |
+| R26.3 | A wreck shows no "Search" option | Admin panel (F10), Coords tab, look at it: send me the "Looking at" model number so I can add it |
+| R26.4 | Admin panel, Server & world, overlay "Loot containers" | Markers over the wrecks that can be searched |

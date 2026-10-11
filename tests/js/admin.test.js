@@ -58,3 +58,9 @@ test('coordinates as text for scripts', () => {
     assert.strictEqual(admin.coordText(c, 'heading'), '271.24');
     assert.strictEqual(admin.coordText(c, 'xyz'), 'X 123.46   Y -45.60   Z 30.00   Heading 271.24');
 });
+
+test('the model the camera faces, as text', () => {
+    assert.strictEqual(admin.lookingText(null), 'Nothing (look at a prop or vehicle within 25 m)');
+    assert.strictEqual(admin.lookingText({ hash: -1, kind: 'object' }), 'object model -1 (0xFFFFFFFF)');
+    assert.strictEqual(admin.lookingText({ hash: 255, kind: 'vehicle' }), 'vehicle model 255 (0x000000FF)');
+});

@@ -1,5 +1,12 @@
 # Changelog
 
+## Loot in wrecked vehicles (owner request)
+* New loot container "Wrecked vehicle": the rusted car, van, truck and bus wreck props on the map (prop_rub_carwreck_*, prop_rub_buswreck_*, prop_rub_trukwreck_*, ...). Left Alt on one: "Search wrecked vehicle" (6 s), shared, refills after 60 min. Loot table `wreck`: mostly scrap metal; rags, duct tape, wheels, jerry cans, engine parts, batteries, siphon hoses, lockpicks, a little cash and ammo.
+* Containers can set `reach` (metres from the prop's middle; wrecks: 7) because big props are searched from their side. Stashes take the same `reach` option (inventory OpenStash).
+* Admin panel, Coords tab: "Looking at" shows the model hash of the prop or vehicle in front of the camera (to find props that should be lootable).
+* Tests: 615.
+
+
 ## Armor plates (owner request)
 * New Armor slot in the inventory (Worn) and new items: Armor plate, Armor repair kit, Blueprint: armor plate.
 * While a worn plate holds, all incoming damage is stopped: zombie hits (and they cannot cause bleeding; infection still can) and gunshots/blows from players (the client keeps GTA armour full and reports what the game took). The plate loses 0.25 durability per point of damage it stops (`survival.lua` armor.wearPerDamage): a new plate stops about 400 damage. At 0 it breaks ("Your armor plate broke...") and stops nothing until repaired. Falls and other damage the game does not put on armour still hurt.

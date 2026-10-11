@@ -9,6 +9,7 @@ local CFG = {
             dumpster = { label = 'Dumpster', table = 'sure', searchSeconds = 2, refillMinutes = 1, grid = { 4, 4 }, models = { 'prop_dumpster_01a' } },
             bin = { label = 'Trash can', table = 'none', searchSeconds = 1, refillMinutes = 1, models = { 'prop_bin_01a' } },
             body = { label = 'Body', table = 'sure', searchSeconds = 1, refillMinutes = 9999 },
+            wreck = { label = 'Wrecked vehicle', table = 'sure', searchSeconds = 1, refillMinutes = 1, reach = 7, models = { 'prop_rub_carwreck_3' } },
         },
         tables = {
             sure = { emptyChance = 0, rolls = { 1, 1 }, items = { { name = 'bandage', min = 3, max = 3, weight = 1 } } },
@@ -185,5 +186,25 @@ describe('searching zombie bodies', function()
         for _, r in pairs(server.db.backend.data.wl_items) do if r.inventory_id == name then rows = rows + 1 end end
         expect(rows).toBe(0)
         expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+
+describe('big props: wrecked vehicles', function()
+    local server = world()
+    local id = player(server, 'scav', { x = 100.0, y = 100.0, z = 30.0 })
+    local WRECK = server.resources.wasteland_loot.env.GetHashKey('prop_rub_carwreck_3')
+
+    it('can be searched from the side (reach 7 m from the middle), not from further', function()
+        server:clientEvent(id, 'wasteland:loot:server:start', WRECK, { x = 108.0, y = 100.0, z = 30.0 })
+        server:advance(200)
+        expect(last(events(server, id, 'wasteland:loot:client:notice')).args[1]).toBe('You are too far away.')
+        server:clientEvent(id, 'wasteland:loot:server:start', WRECK, { x = 105.5, y = 100.0, z = 30.0 })
+        server:advance(200)
+        expect(last(events(server, id, 'wasteland:loot:client:search')).args[1].label).toBe('Searching wrecked vehicle')
+        server:advance(1100)
+        server:clientEvent(id, 'wasteland:loot:server:finish')
+        server:advance(300)
+        expect(#events(server, id, 'wasteland:inventory:client:open')).toBe(1)
+        expect(#server:lines('raised:')).toBe(0)
     end)
 end)

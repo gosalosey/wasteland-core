@@ -66,7 +66,23 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
         -- Your own position, straight from the game (nothing to ask the server).
         local ped = PlayerPedId()
         local c = GetEntityCoords(ped)
-        exports.wasteland_ui:Update(PANEL, { coords = { x = c.x, y = c.y, z = c.z, h = GetEntityHeading(ped) } })
+        -- The prop or vehicle the camera faces (within 25 m): its model hash,
+        -- to check loot props and such.
+        local looking = nil
+        local cam, rot = GetGameplayCamCoord(), GetGameplayCamRot(2)
+        local rx, rz = math.rad(rot.x), math.rad(rot.z)
+        local dir = vector3(-math.sin(rz) * math.abs(math.cos(rx)), math.cos(rz) * math.abs(math.cos(rx)), math.sin(rx))
+        local probe = StartExpensiveSynchronousShapeTestLosProbe(cam.x, cam.y, cam.z, cam.x + dir.x * 25.0, cam.y + dir.y * 25.0,
+            cam.z + dir.z * 25.0, 18, ped, 7)
+        local _, hit, _, _, entity = GetShapeTestResult(probe)
+        if hit == 1 and entity and entity ~= 0 then
+            local kind = GetEntityType(entity)
+            if kind >= 1 and kind <= 3 then
+                local ok, model = pcall(GetEntityModel, entity)
+                if ok and model then looking = { hash = model, kind = ({ 'ped', 'vehicle', 'object' })[kind] } end
+            end
+        end
+        exports.wasteland_ui:Update(PANEL, { coords = { x = c.x, y = c.y, z = c.z, h = GetEntityHeading(ped), looking = looking } })
     elseif action == 'list' and type(payload) == 'table' then
         TriggerServerEvent('wasteland:admin:server:list', tostring(payload.which))
     elseif action == 'act' and type(payload) == 'table' and type(payload.action) == 'string' then

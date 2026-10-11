@@ -28,6 +28,18 @@ return {
         crate = { label = 'Crate', table = 'crate', searchSeconds = 4, refillMinutes = 50, grid = { 5, 4 }, anim = 'search',
             models = { 'prop_box_wood01a', 'prop_box_wood02a', 'prop_box_wood04a', 'prop_box_wood05a', 'prop_box_wood07a',
                 'prop_box_wood08a' } },
+        -- Rusted car, van, truck and bus wrecks on the map. reach: they are
+        -- big, so a player may stand up to 7 m from their middle.
+        wreck = { label = 'Wrecked vehicle', table = 'wreck', searchSeconds = 6, refillMinutes = 60, grid = { 6, 5 }, anim = 'search',
+            reach = 7,
+            models = { 'prop_rub_carwreck_2', 'prop_rub_carwreck_3', 'prop_rub_carwreck_5', 'prop_rub_carwreck_7', 'prop_rub_carwreck_8',
+                'prop_rub_carwreck_9', 'prop_rub_carwreck_10', 'prop_rub_carwreck_11', 'prop_rub_carwreck_12', 'prop_rub_carwreck_13',
+                'prop_rub_carwreck_14', 'prop_rub_carwreck_15', 'prop_rub_carwreck_16', 'prop_rub_carwreck_17',
+                'prop_rub_buswreck_01', 'prop_rub_buswreck_03', 'prop_rub_buswreck_06',
+                'prop_rub_trukwreck_1', 'prop_rub_trukwreck_2', 'prop_rub_frklft',
+                'prop_wrecked_buzzard', 'prop_rub_wreckage_3', 'prop_rub_wreckage_4', 'prop_rub_wreckage_5', 'prop_rub_wreckage_6',
+                'prop_rub_wreckage_7', 'prop_rub_wreckage_8', 'prop_rub_wreckage_9',
+                'prop_car_wreck_01', 'prop_car_wreck_02', 'prop_car_wreck_03', 'prop_wreckedcart' } },
         mailbox = { label = 'Mailbox', table = 'mail', searchSeconds = 3, refillMinutes = 90, grid = { 3, 3 }, anim = 'search',
             models = { 'prop_postbox_01a', 'prop_letterbox_01', 'prop_letterbox_02', 'prop_letterbox_03', 'prop_letterbox_04' } },
 
@@ -110,6 +122,23 @@ return {
             { name = 'car_wheel', min = 1, max = 1, weight = 3 },
             { name = 'jerry_can', min = 1, max = 1, weight = 3 },
             { name = 'siphon_hose', min = 1, max = 1, weight = 2 },
+        } },
+        -- Wrecked vehicles: scrap and car parts, sometimes something left behind.
+        wreck = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
+            { name = 'scrap_metal', min = 1, max = 4, weight = 35 },
+            { name = 'rag', min = 1, max = 2, weight = 10 },
+            { name = 'duct_tape', min = 1, max = 1, weight = 8 },
+            { name = 'car_wheel', min = 1, max = 1, weight = 6 },
+            { name = 'jerry_can', min = 1, max = 1, weight = 4 },
+            { name = 'engine_parts', min = 1, max = 1, weight = 3 },
+            { name = 'car_battery', min = 1, max = 1, weight = 2 },
+            { name = 'siphon_hose', min = 1, max = 1, weight = 3 },
+            { name = 'lockpick', min = 1, max = 1, weight = 3 },
+            { name = 'vehicle_repair_kit', min = 1, max = 1, weight = 1 },
+            { name = 'cash', min = 2, max = 25, weight = 6 },
+            { name = 'ammo_9mm', min = 2, max = 8, weight = 3 },
+            { name = 'soda_can', min = 1, max = 1, weight = 3 },
+            { name = 'flashlight', min = 1, max = 1, weight = 2 },
         } },
         mail = { emptyChance = 0.7, rolls = { 1, 1 }, items = {
             { name = 'cash', min = 5, max = 60, weight = 70 },
