@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wasteland</title>
+<style>
+    :root {
+        --green: #7fc75a;
+        --green-dim: rgba(127, 199, 90, 0.55);
+        --text: #e6e6dc;
+        --dim: #9fa894;
+        --bg: #070907;
+        --danger: #e0533f;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+        font-family: 'Segoe UI', 'Trebuchet MS', Arial, sans-serif; user-select: none; }
+    canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+    /* film grain, scanlines and vignette over the scene */
+    .grain { position: fixed; inset: -50%; pointer-events: none; opacity: 0.07;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+        animation: grain 0.6s steps(6) infinite; }
+    @keyframes grain { 0% { transform: translate(0, 0); } 33% { transform: translate(-3%, 2%); } 66% { transform: translate(2%, -3%); } 100% { transform: translate(0, 0); } }
+    .scan { position: fixed; inset: 0; pointer-events: none; opacity: 0.12;
+        background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.5) 0 1px, transparent 1px 3px); }
+    .vignette { position: fixed; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0,0,0,0.75) 100%); }
+
+    .ui { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; padding: 5vh 6vw 4vh; gap: 2vh; }
+
+    /* title */
+    .brand { text-align: center; }
+    .title { margin: 0; font-size: clamp(54px, 9vw, 132px); letter-spacing: 0.22em; font-weight: 800; line-height: 1;
+        color: #dfe9d4; text-shadow: 0 0 18px rgba(127,199,90,0.35), 0 0 2px #000, 0 6px 18px #000;
+        animation: flicker 7s infinite; padding-left: 0.22em; }
+    .title .w { color: var(--green); }
+    @keyframes flicker { 0%, 100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.55; } 94% { opacity: 1; } 96% { opacity: 0.7; } 97% { opacity: 1; } }
+    .tagline { margin-top: 1.2vh; font-size: clamp(13px, 1.25vw, 18px); letter-spacing: 0.42em; text-transform: uppercase; color: var(--dim); }
+    .tagline b { color: var(--danger); font-weight: 600; }
+
+    /* middle */
+    .middle { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 4vw; align-items: center; max-width: 1400px;
+        width: 100%; margin: 0 auto; }
+    .panel { background: linear-gradient(180deg, rgba(10,14,9,0.88), rgba(10,14,9,0.78)); border: 1px solid rgba(127,199,90,0.18);
+        border-left: 3px solid var(--green); border-radius: 6px; padding: 2.2vh 1.6vw; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        backdrop-filter: blur(2px); }
+    .panel h2 { margin: 0 0 1.4vh; font-size: 13px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--green); font-weight: 600; }
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1.3vh 1.6vw; }
+    .feature { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+    .feature svg { width: 30px; height: 30px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+        filter: drop-shadow(0 0 4px rgba(127,199,90,0.45)); }
+    .feature .name { font-size: clamp(14px, 1.05vw, 17px); font-weight: 600; color: #eef3e6; }
+    .feature .desc { font-size: clamp(11px, 0.85vw, 13.5px); color: var(--dim); line-height: 1.35; margin-top: 2px; }
+
+    .right { display: flex; flex-direction: column; gap: 2.2vh; }
+    .tip { min-height: 9vh; }
+    .tip .text { font-size: clamp(15px, 1.2vw, 20px); line-height: 1.45; color: #f0f0e4; transition: opacity 0.6s; }
+    .log .text { font-family: 'Courier New', Consolas, monospace; font-size: clamp(12px, 0.95vw, 15px); line-height: 1.55; color: #c9d6bd;
+        white-space: pre-wrap; min-height: 13vh; }
+    .log .text::after { content: '▌'; color: var(--green); animation: blink 1s steps(1) infinite; margin-left: 2px; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .stats { display: flex; gap: 2vw; flex-wrap: wrap; }
+    .stat { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); }
+    .stat b { display: block; font-size: clamp(18px, 1.6vw, 26px); letter-spacing: 0.04em; color: var(--danger); font-variant-numeric: tabular-nums; }
+
+    /* bottom: loading */
+    .bottom { max-width: 1400px; width: 100%; margin: 0 auto; }
+    .status { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--dim); margin-bottom: 8px; }
+    .status .pct { color: var(--green); font-variant-numeric: tabular-nums; }
+    .track { height: 6px; background: rgba(10,14,9,0.8); border: 1px solid rgba(127,199,90,0.3); border-radius: 3px; overflow: hidden; }
+    .fill { height: 100%; width: 0%; background: linear-gradient(90deg, #4f8a35, var(--green)); box-shadow: 0 0 10px rgba(127,199,90,0.7);
+        transition: width 0.4s ease; }
+    .foot { margin-top: 10px; text-align: center; font-size: 11px; letter-spacing: 0.25em; color: rgba(159,168,148,0.6); text-transform: uppercase; }
+
+    @media (max-width: 900px) {
+        .middle { grid-template-columns: 1fr; }
+        .features { grid-template-columns: 1fr; }
+        .log { display: none; }
+    }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="grain"></div>
+<div class="scan"></div>
+<div class="vignette"></div>
+
+<div class="ui">
+    <div class="brand">
+        <h1 class="title"><span class="w">W</span>ASTELAND</h1>
+        <div class="tagline">The dead walk. <b>Stay quiet.</b> Stay alive.</div>
+    </div>
+
+    <div class="middle">
+        <div class="panel">
+            <h2>What waits for you</h2>
+            <div class="features" id="features"></div>
+        </div>
+        <div class="right">
+            <div class="panel tip">
+                <h2>Survival tip</h2>
+                <div class="text" id="tip"></div>
+            </div>
+            <div class="panel log">
+                <h2 id="logTitle">Survivor's log</h2>
+                <div class="text" id="log"></div>
+            </div>
+            <div class="stats">
+                <div class="stat">Days since the outbreak<b id="days">0</b></div>
+                <div class="stat">Estimated infected<b id="infected">0</b></div>
+                <div class="stat">Radio signals<b id="signals">0</b></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <div class="status"><span id="statusText">Waking up</span><span class="pct" id="pct">0%</span></div>
+        <div class="track"><div class="fill" id="fill"></div></div>
+        <div class="foot">Wasteland Core · Do not get bitten</div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    // ---------------------------------------------------------------- content
+
+    const ICONS = {
+        zombie: '<path d="M12 3a5 5 0 0 1 5 5v2a5 5 0 0 1-10 0V8a5 5 0 0 1 5-5z"/><path d="M9.5 8.5h.01M14.5 8.5h.01"/><path d="M10 12.5l1 -1 1 1 1 -1 1 1"/><path d="M6 21c0-3 2.7-5 6-5s6 2 6 5"/>',
+        heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M8 12h2l1-2 2 4 1-2h2"/>',
+        search: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>',
+        hammer: '<path d="M14 6l4 4"/><path d="M5 19l9-9"/><path d="M12 4l5-1 4 4-1 5-3-3"/>',
+        tent: '<path d="M3 20L12 4l9 16z"/><path d="M12 20v-6l3 6"/><path d="M2 20h20"/>',
+        car: '<path d="M5 16l1.5-5a2 2 0 0 1 2-1.5h7a2 2 0 0 1 2 1.5L19 16"/><rect x="3" y="16" width="18" height="3" rx="1"/><circle cx="7" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/>',
+        map: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+        gun: '<path d="M3 9h15l2 2v2H11l-1 5H7l1-5H3z"/><path d="M14 13v2"/>',
+    };
+
+    const FEATURES = [
+        ['zombie', 'The dead', 'Walkers shamble, runners hunt. They hear gunshots from far away and see you in daylight.'],
+        ['heart', 'Survival', 'Hunger, thirst, bleeding, infection and cold. Ignore them and you will not last the night.'],
+        ['search', 'Scavenging', 'Search dumpsters, fridges, crates and the dead. Most of it is junk. Some of it saves you.'],
+        ['hammer', 'Crafting', 'Tear shirts into rags, rags into bandages. Find blueprints to make blades and tools.'],
+        ['gun', 'Weapons', 'Every bullet counts and every weapon wears out. Repair them before they fail you.'],
+        ['tent', 'Camps', 'Safe zones with traders and a medic. The dead do not come inside. People might.'],
+        ['car', 'Vehicles', 'Find a wreck, fit a battery, wheels and fuel. Lock it, or someone will drive away in it.'],
+        ['map', 'Jobs', 'The camps need scrap, food and someone brave enough to clear the hospital.'],
+    ];
+
+    const TIPS = [
+        'Crouch to sneak. Walking is heard at nine metres, sprinting at twenty-five.',
+        'A gunshot carries for hundreds of metres. Use a blade if you can.',
+        'Bleeding will not stop on its own. Carry bandages, or tear up a shirt.',
+        'Infection grows slowly, then all at once. Antibiotics are worth their price.',
+        'Cold kills too. Wear something warm at night and stay out of the rain.',
+        'Put your best weapon on the hotbar: hotbar items stay with you when you die.',
+        'Everything else ends up in a body bag where you fell. Go back for it - carefully.',
+        'Containers refill slowly and everyone shares them. Get there first.',
+        'Zombies never enter the camps. Rest there, trade there, heal there.',
+        'A wreck needs engine parts, a battery, four wheels and fuel before it will move.',
+        'Lock your car and keep the key. Lockpicks are cheap, and so are thieves.',
+        'Gas pumps run dry. They are full again two hours after someone first used them.',
+        'At night there are more of them, and more of them run.',
+        'Hold Left Alt to look around and interact. It is how you search, trade and repair.',
+        'Learn every blueprint you find. A recipe, once learned, is yours for good.',
+        'Do not fire near a camp unless you want company at the gate.',
+    ];
+
+    const LOGS = [
+        ['Day 3', "Radio still plays the same message. Stay inside. Await instructions.\nNobody is coming with instructions."],
+        ['Day 11', 'Found a car near the motel. No battery, two wheels.\nSpent the night in it anyway. Better than the roof.'],
+        ['Day 17', "They don't run in the day. Mostly.\nThe one by the gas station did."],
+        ['Day 24', 'Traded six cans of beans for a box of 9mm.\nThe medic at Sandy says the bite is "probably fine".'],
+        ['Day 31', 'Shot one at the pharmacy. Three more came.\nThen twelve. Never firing in town again.'],
+        ['Day 40', 'Cold tonight. Burned a chair. Wrote this by the light of it.\nIf you find this, the crowbar is under the floor.'],
+        ['Day 52', 'Someone picked the lock on my truck while I slept in the camp.\nSafe from the dead. Not from the living.'],
+        ['Day 66', 'Heard a plane over the airfield. Went to look.\nNo plane. Just them, waiting.'],
+        ['Day 79', 'Pillbox Hospital: do not go alone.\nDo not go at night. Do not go.'],
+    ];
+
+    const STATUS = ['Waking up', 'Checking the perimeter', 'Counting bullets', 'Boarding the windows', 'Listening for footsteps',
+        'Filling the water bottles', 'Sharpening the machete', 'Reading the radio', 'Waiting for the fog to lift', 'Loading the world'];
+
+    // ---------------------------------------------------------------- features
+
+    const box = document.getElementById('features');
+    FEATURES.forEach((f, i) => {
+        const el = document.createElement('div');
+        el.className = 'feature';
+        el.innerHTML = '<svg viewBox="0 0 24 24">' + ICONS[f[0]] + '</svg><div><div class="name"></div><div class="desc"></div></div>';
+        el.querySelector('.name').textContent = f[1];
+        el.querySelector('.desc').textContent = f[2];
+        box.appendChild(el);
+    });
+
+    // ---------------------------------------------------------------- tips and logs
+
+    const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const tips = shuffle(TIPS);
+    let tipIndex = 0;
+    const tipEl = document.getElementById('tip');
+    function nextTip() {
+        tipEl.style.opacity = 0;
+        setTimeout(() => { tipEl.textContent = tips[tipIndex++ % tips.length]; tipEl.style.opacity = 1; }, 600);
+    }
+    tipEl.textContent = tips[tipIndex++];
+    setInterval(nextTip, 7000);
+
+    const logs = shuffle(LOGS);
+    let logIndex = 0;
+    const logEl = document.getElementById('log');
+    const logTitle = document.getElementById('logTitle');
+    function typeLog() {
+        const entry = logs[logIndex++ % logs.length];
+        logTitle.textContent = "Survivor's log - " + entry[0];
+        logEl.textContent = '';
+        let i = 0;
+        const timer = setInterval(() => {
+            logEl.textContent = entry[1].slice(0, ++i);
+            if (i >= entry[1].length) { clearInterval(timer); setTimeout(typeLog, 6000); }
+        }, 32);
+    }
+    typeLog();
+
+    // ---------------------------------------------------------------- counters
+
+    const days = 87 + Math.floor(Math.random() * 40);
+    const countUp = (id, target, ms) => {
+        const el = document.getElementById(id);
+        const start = performance.now();
+        (function step(t) {
+            const k = Math.min(1, (t - start) / ms);
+            el.textContent = Math.floor(target * (1 - Math.pow(1 - k, 3))).toLocaleString('en-US');
+            if (k < 1) requestAnimationFrame(step);
+        })(start);
+    };
+    countUp('days', days, 2200);
+    countUp('infected', 3800000 + Math.floor(Math.random() * 900000), 3000);
+    countUp('signals', Math.floor(Math.random() * 4), 1500);
+    // The infected count creeps up while you wait.
+    setInterval(() => {
+        const el = document.getElementById('infected');
+        const n = parseInt(el.textContent.replace(/,/g, ''), 10) || 0;
+        el.textContent = (n + Math.floor(Math.random() * 40)).toLocaleString('en-US');
+    }, 1200);
+
+    // ---------------------------------------------------------------- loading progress (FiveM)
+
+    const fill = document.getElementById('fill');
+    const pct = document.getElementById('pct');
+    const statusText = document.getElementById('statusText');
+    let progress = 0;
+    function setProgress(f) {
+        progress = Math.max(progress, Math.min(1, f));
+        fill.style.width = (progress * 100).toFixed(1) + '%';
+        pct.textContent = Math.floor(progress * 100) + '%';
+        statusText.textContent = STATUS[Math.min(STATUS.length - 1, Math.floor(progress * STATUS.length))];
+    }
+    window.addEventListener('message', (e) => {
+        const d = e.data || {};
+        if (d.eventName === 'loadProgress' && typeof d.loadFraction === 'number') setProgress(d.loadFraction);
+    });
+    // Without FiveM events (preview) creep slowly, never quite finishing.
+    setInterval(() => { if (progress < 0.92) setProgress(progress + 0.004); }, 400);
+    setProgress(0);
+
+    // ---------------------------------------------------------------- scene
+
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, skyline = [], ash = [], fog = [], walkers = [];
+    const rnd = (a, b) => a + Math.random() * (b - a);
+
+    function build() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+        // ruined skyline: buildings with broken tops
+        skyline = [];
+        let x = -20;
+        while (x < W + 40) {
+            const w = rnd(30, 110);
+            const h = rnd(H * 0.12, H * 0.5);
+            const broken = Math.random() < 0.45;
+            skyline.push({ x, w, h, broken, cut: rnd(0.2, 0.6), lit: Math.random() < 0.15 ? rnd(0.2, 0.8) : 0 });
+            x += w + rnd(-8, 14);
+        }
+        ash = Array.from({ length: Math.round(W / 9) }, () => ({ x: rnd(0, W), y: rnd(0, H), r: rnd(0.6, 2.2), s: rnd(0.2, 0.9), d: rnd(-0.3, 0.3), a: rnd(0.2, 0.7) }));
+        fog = Array.from({ length: 7 }, (_, i) => ({ x: rnd(0, W), y: H * rnd(0.55, 0.9), r: rnd(W * 0.25, W * 0.5), s: rnd(0.05, 0.18) * (i % 2 ? 1 : -1), a: rnd(0.05, 0.12) }));
+        walkers = Array.from({ length: 6 }, () => newWalker(true));
+    }
+
+    function newWalker(anywhere) {
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        const scale = rnd(0.55, 1.1);
+        return { x: anywhere ? rnd(0, W) : (dir > 0 ? -60 : W + 60), dir, scale, speed: rnd(0.15, 0.45) * scale, phase: rnd(0, 6.28),
+            lean: rnd(0.1, 0.3), arm: Math.random() < 0.6 };
+    }
+
+    function drawSky(t) {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#0b100c');
+        g.addColorStop(0.55, '#1a2418');
+        g.addColorStop(0.78, '#2a3022');
+        g.addColorStop(1, '#0a0c09');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+        // sickly moon behind the haze
+        const mx = W * 0.9, my = H * 0.1, mr = Math.min(W, H) * 0.05;
+        const mg = ctx.createRadialGradient(mx, my, mr * 0.2, mx, my, mr * 4);
+        mg.addColorStop(0, 'rgba(210,230,170,0.35)');
+        mg.addColorStop(0.25, 'rgba(160,190,120,0.12)');
+        mg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = mg;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(214,226,180,0.55)';
+        ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+        // distant fires: a glow that breathes
+        const fg = ctx.createRadialGradient(W * 0.2, H * 0.72, 0, W * 0.2, H * 0.72, W * 0.25);
+        fg.addColorStop(0, 'rgba(180,70,30,' + (0.16 + 0.05 * Math.sin(t / 700)) + ')');
+        fg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = fg;
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawSkyline() {
+        const base = H * 0.93;
+        ctx.fillStyle = '#070a07';
+        skyline.forEach((b) => {
+            ctx.beginPath();
+            ctx.moveTo(b.x, base);
+            ctx.lineTo(b.x, base - b.h);
+            if (b.broken) {
+                ctx.lineTo(b.x + b.w * b.cut, base - b.h * 0.86);
+                ctx.lineTo(b.x + b.w * (b.cut + 0.15), base - b.h * 0.97);
+                ctx.lineTo(b.x + b.w, base - b.h * 0.7);
+            } else {
+                ctx.lineTo(b.x + b.w, base - b.h);
+            }
+            ctx.lineTo(b.x + b.w, base);
+            ctx.closePath();
+            ctx.fill();
+            if (b.lit) {
+                ctx.fillStyle = 'rgba(210,170,90,' + (0.25 + 0.2 * Math.random() * (Math.random() < 0.02 ? 1 : 0.1)) + ')';
+                ctx.fillRect(b.x + b.w * 0.3, base - b.h * b.lit, 4, 5);
+                ctx.fillStyle = '#070a07';
+            }
+        });
+        ctx.fillRect(0, base, W, H - base);
+        const gf = ctx.createLinearGradient(0, base - H * 0.12, 0, base + 4);
+        gf.addColorStop(0, 'rgba(120,140,110,0)');
+        gf.addColorStop(1, 'rgba(120,140,110,0.22)');
+        ctx.fillStyle = gf;
+        ctx.fillRect(0, base - H * 0.12, W, H * 0.12 + 4);
+        ctx.fillStyle = '#070a07';
+    }
+
+    // a shambling figure: head, hunched body, dragging legs, arm reaching out
+    function drawWalker(w, t) {
+        const base = H * 0.93 + 2;
+        const s = 26 * w.scale * (H / 900);
+        const step = Math.sin(t / 380 * w.speed * 6 + w.phase);
+        ctx.save();
+        ctx.translate(w.x, base);
+        ctx.scale(w.dir, 1);
+        ctx.strokeStyle = 'rgba(5,7,5,0.95)';
+        ctx.fillStyle = 'rgba(5,7,5,0.95)';
+        // a faint rim of fog light so they stand out against the dark
+        ctx.shadowColor = 'rgba(170,200,150,0.55)';
+        ctx.shadowBlur = 7;
+        ctx.lineCap = 'round';
+        ctx.lineWidth = s * 0.16;
+        const hip = { x: 0, y: -s * 1.0 };
+        const shoulder = { x: s * w.lean, y: -s * 1.7 };
+        // legs
+        ctx.beginPath(); ctx.moveTo(hip.x, hip.y); ctx.lineTo(hip.x + step * s * 0.25, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hip.x, hip.y); ctx.lineTo(hip.x - step * s * 0.18, -s * 0.02); ctx.stroke();
+        // body
+        ctx.lineWidth = s * 0.26;
+        ctx.beginPath(); ctx.moveTo(hip.x, hip.y); ctx.lineTo(shoulder.x, shoulder.y); ctx.stroke();
+        // arms: one reaching, one hanging
+        ctx.lineWidth = s * 0.12;
+        ctx.beginPath(); ctx.moveTo(shoulder.x, shoulder.y + s * 0.08);
+        if (w.arm) ctx.lineTo(shoulder.x + s * 0.7, shoulder.y + s * 0.05 + step * s * 0.05);
+        else ctx.lineTo(shoulder.x + s * 0.15, shoulder.y + s * 0.65);
+        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(shoulder.x, shoulder.y + s * 0.08); ctx.lineTo(shoulder.x - s * 0.05, shoulder.y + s * 0.62 - step * s * 0.04); ctx.stroke();
+        // head, tilted
+        ctx.beginPath(); ctx.arc(shoulder.x + s * 0.14, shoulder.y - s * 0.2, s * 0.17, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        w.x += w.speed * w.dir;
+        if ((w.dir > 0 && w.x > W + 80) || (w.dir < 0 && w.x < -80)) Object.assign(w, newWalker(false));
+    }
+
+    function drawFog() {
+        fog.forEach((f) => {
+            const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+            g.addColorStop(0, 'rgba(150,170,140,' + f.a + ')');
+            g.addColorStop(1, 'rgba(150,170,140,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+            f.x += f.s;
+            if (f.x - f.r > W) f.x = -f.r;
+            if (f.x + f.r < 0) f.x = W + f.r;
+        });
+    }
+
+    function drawAsh() {
+        ash.forEach((p) => {
+            ctx.fillStyle = 'rgba(200,205,190,' + p.a + ')';
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+            p.y += p.s; p.x += p.d + Math.sin(p.y / 60) * 0.2;
+            if (p.y > H + 5) { p.y = -5; p.x = rnd(0, W); }
+        });
+    }
+
+    function frame(t) {
+        drawSky(t);
+        drawFog();
+        drawSkyline();
+        walkers.forEach((w) => drawWalker(w, t));
+        drawFog();
+        drawAsh();
+        requestAnimationFrame(frame);
+    }
+
+    window.addEventListener('resize', build);
+    build();
+    requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

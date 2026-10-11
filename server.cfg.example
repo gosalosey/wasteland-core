@@ -11,6 +11,7 @@ set mysql_connection_string "mysql://wasteland:PASSWORD@127.0.0.1/wasteland?char
 ensure oxmysql
 
 # --- framework (order matters) ---
+ensure wasteland_loadscreen
 ensure wasteland_config
 ensure wasteland_core
 ensure wasteland_database

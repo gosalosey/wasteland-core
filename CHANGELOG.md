@@ -1,5 +1,9 @@
 # Changelog
 
+## Loading screen (owner request)
+* wasteland_loadscreen 0.1.0: WASTELAND title and tagline, what the server offers (the dead, survival, scavenging, crafting, weapons, camps, vehicles, jobs), rotating survival tips, a typed-out survivor's log, outbreak counters, and an animated scene (ruined skyline, moon, fog, falling ash, zombies shambling along the bottom). The loading bar follows FiveM's real progress. One self-contained page: nothing to download, works offline.
+
+
 ## Gas pumps: level shown, full again after 2 hours (owner request)
 * Standing next to a gas pump shows above it: "Fuel: 35 / 80 L" and "Full again in 1 h 24 min" (or "Full").
 * Refill rule changed: a pump is full again 2 hours (real time) after fuel was first taken from it; taking more meanwhile does not restart the clock (`pump.refillMinutes = 120`; the 20 L every 15 minutes rule is gone).
