@@ -314,3 +314,19 @@ Tell me how they feel: too many, too few, too slow, too fast, too weak, too stro
 | R17.5 | Give yourself `blueprint_machete` (admin panel), use it from the inventory | "You learned how to make: Machete. Press K to craft." The blueprint is gone; the Machete recipe is in the list |
 | R17.6 | With 4 scrap metal, 2 duct tape and 1 rag, craft the Machete | A machete with a full durability bar |
 | R17.7 | Reconnect | You still know the machete recipe |
+
+## Quests (8)
+
+**Setup:** `server.cfg` has `ensure wasteland_quests` after `ensure wasteland_crafting` (done on the owner's server). Restart the server.
+
+| # | Step | Expected result |
+|---|---|---|
+| R18.1 | Hold Left Alt on a camp trader | "Trade" and "Jobs" |
+| R18.2 | Jobs | The board: jobs with what to do, reward, status; "0 of 3 jobs taken" |
+| R18.3 | Accept "Scrap run" | A tracker on the right: "Scrap run - Bring Scrap metal 0/6"; picking up scrap updates it |
+| R18.4 | Accept "Thin the herd", kill zombies | "Kill zombies 1/10, 2/10, ..."; kills by another player do not count for you |
+| R18.5 | Accept a "Check the ..." job | A yellow marker on the map with a route; arriving shows "(done)" |
+| R18.6 | Hand in a finished job at a trader of that camp | Items taken, reward given, the job shows "Done", "Again in N min" |
+| R18.7 | Try to take a 4th job | "You can only have 3 jobs at once." |
+| R18.8 | Reconnect with a job half done | The tracker shows the same progress |
+| R18.9 | Accept "Field dressings", craft 3 bandages (K), hand in 3 bandages | It counts the crafts, then takes the bandages |

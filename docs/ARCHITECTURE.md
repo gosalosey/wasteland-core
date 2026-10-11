@@ -59,7 +59,7 @@ survival  loot     world       crafting     vehicles      quests
 | wasteland_loot | `loot` | core, players, inventory | zombies (target on the client) | 6 ✅ |
 | wasteland_world | `world` | core | none | 7 (clock, weather, empty world ✅ early; zones, camps, traders in M7) |
 | wasteland_crafting | `crafting` | core, inventory | world | 7 (see note) |
-| wasteland_quests | `quests` | core, database, inventory, ui | zombies, loot, vehicles, world | 8 |
+| wasteland_quests | `quests` | core, players, inventory | camps, zombies, loot, crafting | 8 ✅ |
 | wasteland_vehicles | `vehicles` | core, database, inventory, ui | crafting, quests | 9 |
 | wasteland_admin | `admin` | core, database, players, ui | inventory, survival, world | 10 (panel ✅ early; debug tools in M10) |
 | recipe/ (not a resource) | n/a | n/a | n/a | 11 |

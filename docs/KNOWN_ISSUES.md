@@ -50,3 +50,5 @@
 | K-46 | Loot | Search animations (`amb@prop_human_bum_bin@base`, `mini@repair`, `amb@medic@standing@kneel@base`) are verified in-game only; a missing one only skips the animation. | Verify at runtime |
 | K-47 | Camps | Camp centres and trader positions/headings are picked from known map spots but not checked in-game; a trader may stand in a wall or face the wrong way. Edit `camps.lua` coords. | Verify at runtime (R16.3) |
 | K-48 | Camps | Trader stock is kept in memory (full again after a restart). | By design for now |
+| K-49 | Quests | Kill credit comes from the client running the zombie (who killed it, checked to be a player near the body). A modified client could credit kills to the wrong nearby player. | By design for now |
+| K-50 | Quests | The places of the camp-specific jobs (airfield, sawmill, Pillbox) are picked from the map, not checked in-game. | Verify at runtime (R18.5) |

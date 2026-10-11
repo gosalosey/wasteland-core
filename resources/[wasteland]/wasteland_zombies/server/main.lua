@@ -161,10 +161,11 @@ local function dropLoot(z)
     if not ok then M.log:warn('zombie loot failed: %s', tostring(id)) end
 end
 
-local function markDead(z, cause)
+-- killer: server id of the player who killed it (0 = unknown).
+local function markDead(z, cause, killer)
     if z.dead then return end
     z.dead, z.deadAt = true, now()
-    TriggerEvent('wasteland:zombies:died', z.netId, z.kind, cause)
+    TriggerEvent('wasteland:zombies:died', z.netId, z.kind, cause, killer or 0, coordsOf(z.handle))
     dropLoot(z)
 end
 
@@ -400,15 +401,20 @@ M.netEvent('wasteland:zombies:server:hit', {
 }, function(src, netId, victim) hit(src, netId, victim) end)
 
 M.netEvent('wasteland:zombies:server:died', {
-    args = { { type = 'integer', required = true, min = 1 } },
+    args = { { type = 'integer', required = true, min = 1 }, { type = 'integer', min = 0, max = 65535 } },
     rateLimit = { burst = 10, perSecond = 5 },
-}, function(src, netId)
+}, function(src, netId, killer)
     local z = zombieByNet(netId)
     if not z or z.dead then return end
     -- Only the client running it, and only when it really is hurt.
     if NetworkGetEntityOwner(z.handle) ~= src then return end
     if GetEntityHealth(z.handle) >= (z.hp or 200) then return end
-    markDead(z, 'reported')
+    -- The killer must be a player near the body (quests count kills).
+    if killer and killer > 0 then
+        local ped = GetPlayerPed(killer)
+        if not ped or ped == 0 or not DoesEntityExist(ped) or Rules.dist3d(coordsOf(ped), coordsOf(z.handle)) > 250 then killer = 0 end
+    end
+    markDead(z, 'reported', killer)
 end)
 
 -------------------------------------------------------------------------------

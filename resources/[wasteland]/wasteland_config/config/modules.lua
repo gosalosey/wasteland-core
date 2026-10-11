@@ -40,10 +40,12 @@ return {
         -- Crafting (Milestone 7B).
         crafting   = true,
 
+        -- Quests (Milestone 8).
+        quests     = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.
-        -- quests    = true,   -- Milestone 8
         -- vehicles  = true,   -- Milestone 9
     },
 

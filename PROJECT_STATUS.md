@@ -1,6 +1,6 @@
 # Project status and development checklist
 
-**Current milestone:** 7 (camps 7A, crafting 7B) complete in automated tests; installed; runtime verification pending (R16.x, R17.x). Next: Milestone 8 quests.
+**Current milestone:** 8 (quests) complete in automated tests; installed; runtime verification pending (R18.x). Next: Milestone 9 persistent vehicles.
 **Next milestone:** 5, zombies (and weapons).
 **Last updated:** 2026-10-10
 
@@ -124,7 +124,12 @@ Decisions (owner, 2026-10-11): craft anywhere; recipes learned from blueprints f
 Splints not added: there are no broken bones yet (a fracture system would come first).
 
 ## Milestone 8: quests
-- [ ] Definitions, objective handler registry, chains, rewards, persistence, HUD tracking · [ ] duplicate-claim tests
+Decisions (owner, 2026-10-11): camp traders give jobs; bring, kill, visit/search, craft; repeatable with cooldowns; tracker on screen + map markers.
+- [x] Definitions (quests.lua), objectives bring/kill/visit/search/craft, rewards, cooldowns, per-character persistence
+- [x] Board at traders, tracker on screen, map markers with route
+- [x] Tests: rules, every objective, hand-in (rewards first, then items), duplicate claims (cooldown, one active copy), limits, persistence
+- [~] Installed on the owner's server; runtime tests R18.1-R18.9 pending
+Not done: quest chains (one-time story lines) - not chosen.
 
 ## Milestone 9: persistent vehicles
 - [ ] Registry and schema · [ ] discovery/spawning · [ ] components and parts · [ ] repair · [ ] fuel · [ ] entity lifecycle · [ ] restart tests

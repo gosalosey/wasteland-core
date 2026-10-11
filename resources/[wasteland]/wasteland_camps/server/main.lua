@@ -272,9 +272,13 @@ exports('GetCampAt', function(coords)
     return c and { id = c.id, label = c.label } or nil
 end)
 
---- GetCamps() -> list of { id, label, coords, radius, safe }
+--- GetCamps() -> list of { id, label, coords, radius, safe, traders = { { shop, coords } } }
 exports('GetCamps', function()
     local out = {}
-    for _, c in ipairs(camps) do out[#out + 1] = { id = c.id, label = c.label, coords = c.coords, radius = c.radius, safe = c.safe } end
+    for _, c in ipairs(camps) do
+        local traders = {}
+        for i, t in ipairs(c.traders) do traders[i] = { shop = t.shop, coords = t.coords } end
+        out[#out + 1] = { id = c.id, label = c.label, coords = c.coords, radius = c.radius, safe = c.safe, traders = traders }
+    end
     return out
 end)

@@ -447,3 +447,13 @@ Zombies use `IsInSafeZone`: no spawning inside, removal inside, no chasing a pla
 Net events: `wasteland:crafting:server:open`, `...:craft(recipe)`, `...:finish`, `...:cancel`. The server checks the recipe is known and the materials are carried, times the craft, then removes every ingredient and adds the result (all given back on failure).
 
 Exports: `KnowsRecipe(source, recipe) -> boolean`, `TeachRecipe(source, recipe) -> ok`. Server events: `wasteland:crafting:learned(source, recipes)`, `wasteland:crafting:crafted(source, recipe)`. Client event `wasteland:crafting:client:open` opens the screen (the inventory's Crafting button uses it).
+
+## Quests (`wasteland_quests`, quests api 0.1)
+
+`quests.lua`: `maxActive`, `quests` (id → `label`, `description`, `camps?`, `cooldownMinutes`, `objectives`, `rewards = { cash, items }`). Objective types: `bring { item, count }`, `kill { count, near?, label? }`, `visit { coords, radius, label }`, `search { container?, count, near?, label? }`, `craft { recipe, count }`.
+
+Progress comes from `wasteland:zombies:died` (killer), `wasteland:loot:searched`, `wasteland:crafting:crafted`, the server's own position checks (visit, every 2 s) and the live inventory (bring). State is character data `quests = { active = { [id] = { progress } }, done = { [id] = unixTime } }`.
+
+Net events: `wasteland:quests:server:board|accept|abandon|handIn(campId, questId?)`, `...:givers`, `...:tracker`; the player must stand at one of that camp's traders. Hand-in gives the reward first (refused if it does not fit), then takes the items, then pays the cash.
+
+Exports: `GetActiveQuests(source) -> ids`, `AddProgress(source, { type, ... }) -> ok` (custom events from other modules). Server event: `wasteland:quests:completed(source, questId)`.

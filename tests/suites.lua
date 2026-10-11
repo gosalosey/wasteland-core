@@ -12,6 +12,7 @@ return {
     'unit/loot_rules.lua',
     'unit/camp_zones.lua',
     'unit/crafting_recipes.lua',
+    'unit/quest_rules.lua',
     'integration/boot.lua',
     'integration/registry.lua',
     'integration/lifecycle.lua',
@@ -29,6 +30,8 @@ return {
     'integration/loot.lua',
     'integration/camps.lua',
     'integration/crafting.lua',
+    'integration/quests.lua',
+    'integration/shipped_configs.lua',
     'db/mariadb.lua',
     'js/node.lua',
 }

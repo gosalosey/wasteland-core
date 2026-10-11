@@ -194,7 +194,14 @@ Citizen.CreateThread(function()
                         if IsPedDeadOrDying(ped, true) then
                             if not b.reported and NetworkGetEntityIsNetworked(ped) and NetworkHasControlOfEntity(ped) then
                                 b.reported = true
-                                TriggerServerEvent('wasteland:zombies:server:died', NetworkGetNetworkIdFromEntity(ped))
+                                -- Who killed it (a player), for quests.
+                                local source = GetPedSourceOfDeath(ped)
+                                local killer = 0
+                                if source and source ~= 0 and IsEntityAPed(source) and IsPedAPlayer(source) then
+                                    local pl = NetworkGetPlayerIndexFromPed(source)
+                                    if pl ~= -1 then killer = GetPlayerServerId(pl) end
+                                end
+                                TriggerServerEvent('wasteland:zombies:server:died', NetworkGetNetworkIdFromEntity(ped), killer)
                             end
                         elseif NetworkHasControlOfEntity(ped) then
                             if not b.configured then

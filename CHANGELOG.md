@@ -1,5 +1,21 @@
 # Changelog
 
+## Milestone 8: quests
+
+### wasteland_quests 0.1.0 (new)
+* Jobs from camp traders: hold Left Alt on a trader, "Jobs". The board shows the camp's jobs: what to do, the reward, and New / In progress / Ready to hand in / Done (again in N min).
+* Objectives: bring items (counted live, taken at hand-in), kill zombies (anywhere or near a place; only your own kills), go to a place (checked by the server), search loot containers of a type, craft something.
+* Up to 3 jobs at once; repeatable after a cooldown. Hand-in at a camp that offers the job: the reward must fit first, then the items are taken; cash and items as rewards.
+* Tracker on the right of the screen with each job's progress; job places are marked on the map with a route to the first one.
+* 8 jobs: Scrap run, Food drive, Thin the herd, Field dressings, Crate scavenger (every camp); Check the airfield (Sandy Shores), Check the sawmill (Paleto Bay), Clear Pillbox Hospital (Legion Square).
+* Exports `GetActiveQuests`, `AddProgress`; event `wasteland:quests:completed`.
+
+### Other
+* Zombies: the client reports who killed a zombie (checked: a player near the body); `wasteland:zombies:died` now also passes the killer and the position.
+* Camps: `GetCamps` includes the traders' positions.
+* Tests: 535 (new: quest rules, every objective type, hand-in, rewards, cooldowns, limits, persistence, board; a test that boots every module with the shipped config files).
+
+
 ## Milestone 7B: crafting
 
 ### wasteland_crafting 0.1.0 (new)
