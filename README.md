@@ -29,6 +29,10 @@ PROJECT_STATUS.md       milestone checklist and how to resume work
 5. Join and use `/character create First Last`, then `/character select 1`.
 6. Follow `docs/IN_GAME_TESTS.md` to verify it.
 
+## Install
+
+One click with txAdmin: use the recipe URL `https://raw.githubusercontent.com/gosalosey/wasteland-core/main/txadmin/recipe.yaml`. Full steps, a manual install and updating: [docs/INSTALL.md](docs/INSTALL.md).
+
 ## Run the automated tests
 
 `tools\run_tests.bat` on Windows, or `./tools/run_tests.sh` elsewhere. Both need Lua 5.4. A real-database suite runs too when `tests/db.env` is configured. See `docs/TESTING.md`.

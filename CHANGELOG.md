@@ -1,5 +1,12 @@
 # Changelog
 
+## Milestone 11: txAdmin recipe
+* The repository is on GitHub: https://github.com/gosalosey/wasteland-core (credits for the item pictures in the README).
+* txAdmin recipe (txadmin/recipe.yaml): installs FiveM's base resources, oxmysql (latest release), Wasteland Core, a ready server.cfg (build 3570, OneSync, start order, admins, server icon) and creates the database. Recipe URL: https://raw.githubusercontent.com/gosalosey/wasteland-core/main/txadmin/recipe.yaml
+* Clean-install test: the published recipe was run into an empty folder and an FXServer started from it: all modules running, the database tables created.
+* docs/INSTALL.md.
+
+
 ## World events (owner request)
 * New resource wasteland_events (module "events", config events.lua; added to server.cfg). Every 35 minutes (with players online) an event starts at one of 10 points (never in a camp): a message for everyone and a red marker.
   * Helicopter crash: a burning crashed helicopter, 16 zombies and 4 bandits with pistols; the wreckage holds military loot.

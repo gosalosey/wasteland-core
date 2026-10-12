@@ -148,7 +148,10 @@ Decisions (owner, 2026-10-11): all four admin tool sets (world tools, live serve
 - [~] Supply drops installed on the owner's server; runtime tests R33.1-R33.6 pending
 
 ## Milestone 11: txAdmin recipe
-- [ ] Recipe (verify against current txAdmin docs) · [ ] clean-install test
+- [x] Repository on GitHub (github.com/gosalosey/wasteland-core, public; item pictures credited to MK-Items)
+- [x] Recipe txadmin/recipe.yaml + txadmin/server.cfg, checked against the current txAdmin recipe docs (engine 3)
+- [x] Clean-install test: the published recipe run into an empty folder (downloads from GitHub), FXServer started from it: every module running, tables created
+- [x] docs/INSTALL.md (recipe, manual install, admins, updating)
 
 ## Milestone 12: integration and release
 - [ ] Full integration, load tests, final docs, release notes, clean-install report
