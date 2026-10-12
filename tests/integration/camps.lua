@@ -202,3 +202,34 @@ describe('new characters: protected, then choose a camp to start at', function()
     end)
 end)
 
+
+describe('returning characters: last known position or a safe camp', function()
+    local server = world()
+    local id = player(server, 'regular')
+    server:clientEvent(id, 'wasteland:camps:server:chooseSpawn', 'base'); server:advance(9000)
+    -- they walk off and log out far from the camp
+    server.players[id].coords = { x = 500.0, y = 600.0, z = 31.0 }
+    server:clientEvent(id, 'wasteland:players:server:placed'); server:advance(12000)
+    server:dropPlayer(id); server:advance(1500)
+    local back = server:connectAndJoin({ name = 'P-regular', license = 'regular' })
+    server:advance(200)
+    server.players[back].coords = { x = -2000.0, y = -2000.0, z = 10.0 } -- spawnmanager put them somewhere
+    server:command(back, 'character select 1'); server:advance(2500)
+
+    it('is asked where to wake up: last known position first, then the camps', function()
+        local ev = last(events(server, back, 'wasteland:camps:client:chooseSpawn'))
+        expect(ev ~= nil).toBe(true)
+        local list, returning = ev.args[1], ev.args[2]
+        expect(returning).toBe(true)
+        expect(list[1].id).toBe('last'); expect(list[2].id).toBe('base')
+        expect(server.resources.wasteland_camps.env.Player(back).state.wlProtected).toBe(true)
+    end)
+
+    it('"last" puts them back where they logged out', function()
+        server:clientEvent(back, 'wasteland:camps:server:chooseSpawn', 'last'); server:advance(100)
+        local at = last(events(server, back, 'wasteland:camps:client:spawnAt')).args
+        expect(at[1].x).toBe(500.0); expect(at[1].y).toBe(600.0)
+        expect(at[2] == nil).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

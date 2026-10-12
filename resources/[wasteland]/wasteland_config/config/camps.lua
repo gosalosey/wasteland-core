@@ -15,6 +15,10 @@
 return {
     restockMinutes = 10,
 
+    -- Returning characters choose where they wake up: their last known
+    -- position or one of the safe camps (new characters always pick a camp).
+    chooseSpawnOnLogin = true,
+
     shops = {
         general = {
             label = 'General trader',

@@ -1,6 +1,7 @@
 // wasteland_camps :: html/spawn.js
-// A new character picks where to start: one of the safe camps.
-// Data: { camps = [{ id, label, traders }] }   Posts: choose { id }
+// Where to start: a new character picks one of the safe camps; a returning
+// one can also go back to where they left ("last").
+// Data: { camps = [{ id, label, traders?, last? }], returning }   Posts: choose { id }
 
 (function () {
     'use strict';
@@ -22,13 +23,14 @@
                     api.post('choose', { id: c.id });
                 } },
                     h('span', { class: 'wsc-name', text: c.label }),
-                    h('span', { class: 'wsc-info', text: 'Safe zone · ' + c.traders + (c.traders === 1 ? ' trader' : ' traders') }));
+                    h('span', { class: 'wsc-info', text: c.last ? 'Where you logged out' : 'Safe zone · ' + c.traders + (c.traders === 1 ? ' trader' : ' traders') }));
                 list.appendChild(b);
             });
             el.appendChild(h('div', { class: 'wsc-root' },
                 h('div', { class: 'wl-panel wsc-panel' },
-                    h('h1', { class: 'wl-title', text: 'Where do you start?' }),
-                    h('div', { class: 'wl-hint', text: 'Pick a camp. Camps are safe zones: no zombies, and traders who buy and sell. You cannot be hurt until you arrive.' }),
+                    h('h1', { class: 'wl-title', text: data.returning ? 'Where do you wake up?' : 'Where do you start?' }),
+                    h('div', { class: 'wl-hint', text: (data.returning ? 'Go back to where you left, or to a camp. ' : 'Pick a camp. ') +
+                        'Camps are safe zones: no zombies, and traders who buy and sell. You cannot be hurt until you arrive.' }),
                     list)));
             el.appendChild(h('style', { text: CSS }));
         },

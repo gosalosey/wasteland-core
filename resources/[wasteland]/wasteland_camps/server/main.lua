@@ -179,6 +179,8 @@ M = Wasteland.DefineModule({
         optional = true,
         schema = { type = 'table', fields = {
             restockMinutes = { type = 'integer', default = 10, min = 1, max = 1440 },
+            chooseSpawnOnLogin = { type = 'boolean', default = true,
+                description = 'Returning characters choose: last known position or a safe camp' },
             tradeDistance = { type = 'number', default = 4.0, min = 1, max = 20 },
             shops = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = { type = 'table', fields = {
                 label = { type = 'string', required = true, minLength = 1, maxLength = 40 },
@@ -267,6 +269,42 @@ AddEventHandler('wasteland:appearance:saved', function(src, characterId, appeara
     TriggerClientEvent('wasteland:camps:client:chooseSpawn', src, list)
 end)
 
+-- A returning character (not new, not a resource restart) chooses between
+-- where they logged out and the safe camps.
+AddEventHandler('wasteland:players:characterLoaded', function(src, character, restored)
+    if restored or not (M and M.active) or not M.config.chooseSpawnOnLogin then return end
+    if type(character) ~= 'table' then return end
+    local hasLook = false
+    if GetResourceState('wasteland_appearance') == 'started' then
+        local ok, a = pcall(function() return exports.wasteland_appearance:GetAppearance(character.id) end)
+        hasLook = ok and a ~= nil
+    end
+    if not hasLook then return end -- a new character: they choose after the creator
+    local ok, last = pcall(function() return exports.wasteland_players:GetSavedPosition(src) end)
+    last = ok and last or nil
+    local list = {}
+    if last then list[#list + 1] = { id = 'last', label = 'Last known position', last = true } end
+    for _, c in ipairs(M.config.camps) do
+        if c.safe then list[#list + 1] = { id = c.id, label = c.label, traders = #c.traders } end
+    end
+    if #list <= 1 then return end
+    choosing[src] = { last = last, characterId = character.id }
+    protect(src, true)
+    -- after the players module has placed the ped (and survival knows if they are dead)
+    Citizen.SetTimeout(1500, function()
+        if not choosing[src] or choosing[src].characterId ~= character.id then return end
+        if GetResourceState('wasteland_survival') == 'started' then
+            local okDead, dead = pcall(function() return exports.wasteland_survival:IsDead(src) end)
+            if okDead and dead then choosing[src] = nil; protect(src, false); return end
+        end
+        TriggerClientEvent('wasteland:camps:client:chooseSpawn', src, list, true)
+    end)
+end)
+
+AddEventHandler('wasteland:players:characterUnloaded', function(src)
+    if choosing[src] then choosing[src] = nil end
+end)
+
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
     if src then choosing[src] = nil end
@@ -276,7 +314,16 @@ M.netEvent('wasteland:camps:server:chooseSpawn', {
     args = { { type = 'string', required = true, pattern = '^[%a][%w_]*$', maxLength = 48 } },
     rateLimit = { burst = 3, perSecond = 1 },
 }, function(src, campId)
-    if not choosing[src] then return end
+    local open = choosing[src]
+    if not open then return end
+    if campId == 'last' and type(open) == 'table' and open.last then
+        choosing[src] = nil
+        M.log:info('player %d goes back to where they left', src)
+        TriggerClientEvent('wasteland:camps:client:spawnAt', src, open.last, nil)
+        Citizen.SetTimeout(8000, function() if not choosing[src] then protect(src, false) end end)
+        TriggerEvent('wasteland:camps:spawnChosen', src, 'last')
+        return
+    end
     local camp
     for _, c in ipairs(M.config.camps) do if c.id == campId and c.safe then camp = c end end
     if not camp then return end

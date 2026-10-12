@@ -269,6 +269,16 @@ exports('GetSession', function(src)
 end)
 
 --- GetCharacter(source) -> { id, slot, firstName, lastName, source } | nil
+--- GetSavedPosition(source) -> { x, y, z, heading } | nil   (where the character
+--- was saved; right after loading this is the last logout position)
+exports('GetSavedPosition', function(src)
+    if inactive() then return nil end
+    local s = WLP.sessions[tonumber(src) or -1]
+    local p = s and s.character and s.character.position
+    if type(p) ~= 'table' or type(p.x) ~= 'number' then return nil end
+    return { x = p.x, y = p.y, z = p.z, heading = p.heading or 0.0 }
+end)
+
 exports('GetCharacter', function(src)
     if inactive() then return nil end
     local s = WLP.sessions[tonumber(src) or -1]

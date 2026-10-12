@@ -36,8 +36,17 @@ end
 
 -- Hold the player and ask for the character list until we get it. A
 -- character that is being restored after a resource restart is left alone.
+-- spawnmanager (base server) must never spawn us at a random map spawn
+-- point: not while choosing a character, not after.
+local function noAutoSpawn()
+    if GetResourceState('spawnmanager') == 'started' then pcall(function() exports.spawnmanager:setAutoSpawn(false) end) end
+end
+noAutoSpawn()
+AddEventHandler('onClientResourceStart', function(res) if res == 'spawnmanager' then noAutoSpawn() end end)
+
 Citizen.CreateThread(function()
     while not NetworkIsPlayerActive(PlayerId()) do Citizen.Wait(100) end
+    noAutoSpawn()
     if LocalPlayer.state.wlCharacterId then return end -- restore in progress
     local lastRequest = 0
     while not loaded do

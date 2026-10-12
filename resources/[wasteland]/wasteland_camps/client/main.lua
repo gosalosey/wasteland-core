@@ -189,12 +189,13 @@ end)
 
 local SPAWN = 'spawnChoice'
 
-RegisterNetEvent('wasteland:camps:client:chooseSpawn', function(list)
+RegisterNetEvent('wasteland:camps:client:chooseSpawn', function(list, returning)
     if type(list) ~= 'table' or GetResourceState('wasteland_ui') ~= 'started' then return end
     local ped = PlayerPedId()
     FreezeEntityPosition(ped, true)
     SetEntityInvincible(ped, true)
-    exports.wasteland_ui:Open(SPAWN, { script = 'html/spawn.js', data = { camps = list } })
+    DoScreenFadeOut(300)
+    exports.wasteland_ui:Open(SPAWN, { script = 'html/spawn.js', data = { camps = list, returning = returning == true } })
 end)
 
 AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
@@ -222,9 +223,11 @@ RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label)
         FreezeEntityPosition(ped, false)
         SetEntityInvincible(ped, false)
         DoScreenFadeIn(600)
-        BeginTextCommandThefeedPost('STRING')
-        AddTextComponentSubstringPlayerName('Welcome to ' .. tostring(label) .. '. Good luck out there.')
-        EndTextCommandThefeedPostTicker(false, false)
+        if label then
+            BeginTextCommandThefeedPost('STRING')
+            AddTextComponentSubstringPlayerName('Welcome to ' .. tostring(label) .. '. Good luck out there.')
+            EndTextCommandThefeedPostTicker(false, false)
+        end
     end)
 end)
 

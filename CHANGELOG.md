@@ -1,5 +1,11 @@
 # Changelog
 
+## Choose where you wake up (owner report: random spawn after waiting at character select)
+* Returning characters now choose on login: their last known position, or one of the safe camps. The screen stays dark and they stay protected until they arrive. The choice puts them exactly there, whatever happened while they waited at the character screen.
+* New characters still pick a camp after the creator. Not after a resource restart, and not while dead (the respawn screen handles that).
+* spawnmanager's auto-spawn is now switched off as soon as the client starts, not only after a character is loaded. That was what moved players who waited at the character screen.
+* camps.lua: `chooseSpawnOnLogin = true`. Players export `GetSavedPosition(source)`.
+
 ## Pockets grow with clothing; bigger backpacks
 * Pockets start at 3x3. A worn top adds 2x2, pants 2x2 and an armor plate 2x2: 5x5, then 7x7, then 9x9. The most is 10x10.
 * The pockets hold 55 kg. This is set in `inventory.lua` → `pockets` (`bonus` per worn slot, `maxWidth` and `maxHeight`).
