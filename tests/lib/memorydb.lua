@@ -59,11 +59,13 @@ function MemoryDB.new(resourcesDir)
     local wli = loadSqlFile(resourcesDir .. '/wasteland_inventory/server/sql.lua', 'WLI')
     local wla = loadSqlFile(resourcesDir .. '/wasteland_admin/server/sql.lua', 'WLA_ADMIN')
     local wlv = loadSqlFile(resourcesDir .. '/wasteland_vehicles/server/sql.lua', 'WLV')
+    local wlg = loadSqlFile(resourcesDir .. '/wasteland_groups/server/sql.lua', 'WLG')
     self:installDatabase(wld.SQL)
     self:installPlayers(wlp.SQL)
     self:installInventory(wli.SQL)
     self:installAdmin(wla.SQL)
     self:installVehicles(wlv.SQL)
+    self:installGroups(wlg.SQL)
     return self
 end
 
@@ -291,6 +293,40 @@ function MemoryDB:installVehicles(SQL)
     self:on(SQL.delete, function(db, p)
         if not db.data.wl_vehicles[p[1]] then return header(0) end
         db.data.wl_vehicles[p[1]] = nil
+        return header(1)
+    end)
+end
+
+function MemoryDB:installGroups(SQL)
+    self.data.wl_groups, self.data.wl_group_members = self.data.wl_groups or {}, self.data.wl_group_members or {}
+    local nextId = 0
+    local function rows(t) local out = {} for _, r in pairs(t) do out[#out + 1] = deepCopy(r) end return out end
+    self:on(SQL.selectGroups, function(db) return rows(db.data.wl_groups) end)
+    self:on(SQL.selectMembers, function(db) return rows(db.data.wl_group_members) end)
+    self:on(SQL.insertGroup, function(db, p)
+        for _, g in pairs(db.data.wl_groups) do
+            if g.name:lower() == p[1]:lower() then error("Duplicate entry '" .. p[1] .. "' for key 'uq_wl_groups_name'", 0) end
+        end
+        nextId = nextId + 1
+        db.data.wl_groups[nextId] = { id = nextId, name = p[1], leader_id = p[2], created_unix = p[3] }
+        local h = header(1)
+        h.insertId = nextId
+        return h
+    end)
+    self:on(SQL.deleteGroup, function(db, p) db.data.wl_groups[p[1]] = nil; return header(1) end)
+    self:on(SQL.deleteMembers, function(db, p)
+        for k, m in pairs(db.data.wl_group_members) do if m.group_id == p[1] then db.data.wl_group_members[k] = nil end end
+        return header(1)
+    end)
+    self:on(SQL.insertMember, function(db, p)
+        db.data.wl_group_members[p[1]] = { character_id = p[1], group_id = p[2], name = p[3], joined_unix = p[4] }
+        return header(1)
+    end)
+    self:on(SQL.deleteMember, function(db, p) db.data.wl_group_members[p[1]] = nil; return header(1) end)
+    self:on(SQL.setLeader, function(db, p) if db.data.wl_groups[p[2]] then db.data.wl_groups[p[2]].leader_id = p[1] end; return header(1) end)
+    self:on(SQL.rename, function(db, p) if db.data.wl_groups[p[2]] then db.data.wl_groups[p[2]].name = p[1] end; return header(1) end)
+    self:on(SQL.memberName, function(db, p)
+        if db.data.wl_group_members[p[2]] then db.data.wl_group_members[p[2]].name = p[1] end
         return header(1)
     end)
 end

@@ -542,3 +542,17 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R37.1 | Make a new character near zombies; stay in the creator a while | Zombies do not come for you; you take no damage |
 | R37.2 | Finish the creator | "Where do you start?" with the camps; pick one; the screen fades and you are there; "Welcome to ..." |
 | R37.3 | Open the inventory | $50 cash, water, beans, bandages |
+
+## R38: groups
+Needs two players (or a second client).
+
+| # | Do | Expect |
+|---|---|---|
+| R38.1 | Press F6 (or /group), type a name, Create | "Group ... created"; you are listed as LEADER |
+| R38.2 | Invite player B by id, or with the "Near you" button | B gets a notice; B opens /group and sees the invitation; Join |
+| R38.3 | Open the map on both | Each sees the other: yellow for the leader, blue for a member, named "Name (Group)" |
+| R38.4 | B dies (or goes down) | B's marker turns red for A |
+| R38.5 | Leader: Make leader on B (click twice) | B is now LEADER |
+| R38.6 | New leader renames the group | The new name shows for both, also on the markers |
+| R38.7 | Restart the server, both log back in | The group is still there with both members |
+| R38.8 | Leader: Remove a member, then Disband (click twice) | The member is told; after disband both have no group and the markers go |

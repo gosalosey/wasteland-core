@@ -39,3 +39,11 @@ test('tailor: arrows wrap; only changed pieces are paid for', () => {
     ];
     assert.deepStrictEqual(tailor.changes(pieces), [{ slot: 'legs', look: { legs: [3, 1] } }]);
 });
+
+const group = require(path.join(R, 'wasteland_groups', 'html', 'group.js'));
+
+test('group members line', () => {
+    const g = { members: [{ online: true }, { online: false }, { online: true }] };
+    assert.strictEqual(group.summary(g, 8), '3 of 8 members, 2 online');
+});
+

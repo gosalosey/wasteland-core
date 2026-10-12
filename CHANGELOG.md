@@ -1,5 +1,13 @@
 # Changelog
 
+## Groups (new module wasteland_groups)
+* /group or F6: make a named group (3-24 characters, unique), invite players by id or from a "near you" list, accept or decline invites (they expire after 2 minutes).
+* Members see each other on the map: blue for members, yellow for the leader, red when down. Updated every 2 seconds.
+* The leader can remove members, make someone else leader, rename the group, and disband it. Members can leave; a leader must hand over first (if they are the only member, leaving disbands the group).
+* Groups are saved in the database (wl_groups, wl_group_members) and last across restarts until the leader disbands them.
+* Config: groups.lua (maxMembers 8, name length, invite time, marker update rate, command). Exports for other modules: GetGroupOf(characterId), SameGroup(a, b).
+* Tests: 726.
+
 ## Updater: works wherever it is saved (owner report)
 * update_wasteland.bat finds update_wasteland.ps1 or update.ps1 next to it (and says where to get it if neither is there).
 * The updater finds the server folder itself when it is not in it: it looks in its own folder, its parent folders and their sub-folders (e.g. txData\MyServer.base) and asks which one if there are several.

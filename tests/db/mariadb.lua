@@ -411,3 +411,59 @@ describe('real MariaDB: supply drops (SDK example)', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('real MariaDB: groups', function()
+    local env = { WLG = {} }
+    assert(loadfile(RESOURCES .. '/wasteland_groups/server/sql.lua', 't', env))()
+    local SQLG = env.WLG.SQL
+    local server = newServer({ dbBackend = backend, config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 60000, slowQueryWarningMs = 60000 }',
+    } })
+    server.db.latencyMs = 0
+    boot(server, { 'wasteland_players', 'wasteland_groups' })
+
+    it('stores a group and its members, renames, new leader, leaving, disbanding', function()
+        expect(states(server).groups).toBe('running')
+        local function join(license, first)
+            local id = server:connectAndJoin({ name = first, license = license })
+            server:advance(200)
+            server.players[id].coords = { x = 0.0, y = 0.0, z = 30.0 }
+            server:command(id, 'character create ' .. first .. ' Db'); server:advance(500)
+            server:command(id, 'character select 1'); server:advance(800)
+            return id
+        end
+        local a, b = join('dbga', 'Ava'), join('dbgb', 'Ben')
+        local function act(id, what, ...) server:clientEvent(id, 'wasteland:groups:server:' .. what, ...); server:advance(1500) end
+        act(a, 'create', 'Db Crew')
+        local g = backend:rows("SELECT id, leader_id FROM wl_groups WHERE name = 'Db Crew'")[1]
+        expect(g ~= nil).toBe(true)
+        act(a, 'invite', b)
+        act(b, 'respond', g.id, true)
+        expect(#backend:rows('SELECT character_id FROM wl_group_members WHERE group_id = ?', { g.id })).toBe(2)
+        act(a, 'rename', 'Db Crew Two')
+        local bId = server:export('wasteland_players', 'GetCharacterId', b)
+        act(a, 'promote', bId)
+        expect(backend:rows('SELECT leader_id FROM wl_groups WHERE id = ?', { g.id })[1].leader_id).toBe(bId)
+        act(a, 'leave')
+        local aId = server:export('wasteland_players', 'GetCharacterId', a)
+        expect(#backend:rows('SELECT character_id FROM wl_group_members WHERE character_id = ?', { aId })).toBe(0)
+        server:clientEvent(b, 'wasteland:groups:server:invite', a); server:advance(1500)
+        act(a, 'respond', g.id, true)
+        server:clientEvent(b, 'wasteland:groups:server:kick', aId); server:advance(1500)
+        act(b, 'disband')
+        expect(#backend:rows('SELECT id FROM wl_groups WHERE id = ?', { g.id })).toBe(0)
+    end)
+
+    it('ran every group statement against the real database', function()
+        local ran = {}
+        for _, l in ipairs(backend.log) do ran[l.sql] = true end
+        local missing = {}
+        for key, sql in pairs(SQLG) do
+            if not ran[(sql:gsub('%s+', ' '))] then missing[#missing + 1] = key end
+        end
+        table.sort(missing)
+        expect(missing).toEqual({ 'memberName' })   -- only when a member's name changed
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+

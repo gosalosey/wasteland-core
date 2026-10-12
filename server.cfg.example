@@ -36,6 +36,7 @@ ensure wasteland_emotes
 ensure wasteland_tailor
 ensure wasteland_supplydrops
 ensure wasteland_events
+ensure wasteland_groups
 ensure wasteland_template      # SDK example module; optional
 
 # --- permissions ---
