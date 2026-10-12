@@ -1,5 +1,12 @@
 # Changelog
 
+## Base building switched off (owner decision)
+* The props did not look good enough. `bases = false` in modules.lua, and `ensure wasteland_bases` is removed from the server.cfg templates.
+* The code stays in `wasteland_bases`, along with the unit tests for its grid math.
+* The building materials are out of loot, crafting and the trader: wood planks, nails, metal sheets and the base flag.
+* The item definitions stay, so items players already have remain valid.
+* The survival and crafting hooks stay; they are general: warmth sources, respawn points, crafting stations.
+
 ## Base building (new module wasteland_bases)
 * **Claim:** craft a Base flag (4 wood planks, 2 rags, 2 scrap metal) and use it from the inventory. A preview shows where it goes (E / Q turn, left click place). You claim a 30 m circle.
   * Not within 150 m of a camp's edge or another base.

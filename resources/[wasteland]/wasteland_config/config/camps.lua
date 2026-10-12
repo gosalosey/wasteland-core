@@ -38,8 +38,6 @@ return {
                 { name = 'crisps', buy = 8, sell = 2, stock = 10, restock = 3 },
                 { name = 'mre_beef', buy = 70, sell = 18, stock = 2, restock = 1 },
                 { name = 'duct_tape', buy = 30, sell = 8, stock = 5, restock = 1 },
-                { name = 'wood_planks', buy = 20, sell = 5, stock = 20, restock = 4 },
-                { name = 'nails', buy = 1, stock = 200, restock = 40 },
                 { name = 'flashlight', buy = 80, sell = 20, stock = 2, restock = 1 },
                 { name = 'backpack_small', buy = 400, sell = 100, stock = 2, restock = 1 },
                 { name = 'clothing_top', buy = 40, sell = 10, stock = 4, restock = 1 },

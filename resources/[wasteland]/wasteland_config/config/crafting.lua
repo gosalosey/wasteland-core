@@ -22,13 +22,6 @@ return {
             blueprint = 'blueprint_armor_plate' },
         sewing_kit = { label = 'Sewing kit', result = { name = 'sewing_kit', count = 1 },
             ingredients = { { name = 'rag', count = 2 }, { name = 'scrap_metal', count = 1 } }, seconds = 4 },
-        -- Base building (wasteland_bases)
-        base_flag = { label = 'Base flag', result = { name = 'base_flag', count = 1 },
-            ingredients = { { name = 'wood_planks', count = 4 }, { name = 'rag', count = 2 }, { name = 'scrap_metal', count = 2 } }, seconds = 8 },
-        nails = { label = 'Nails', result = { name = 'nails', count = 20 },
-            ingredients = { { name = 'scrap_metal', count = 1 } }, seconds = 4 },
-        metal_sheet = { label = 'Metal sheet', result = { name = 'metal_sheet', count = 1 },
-            ingredients = { { name = 'scrap_metal', count = 4 }, { name = 'duct_tape', count = 1 } }, seconds = 8, station = 'workbench' },
         lockpick = { label = 'Lockpicks', result = { name = 'lockpick', count = 2 },
             ingredients = { { name = 'scrap_metal', count = 1 } }, seconds = 4 },
 

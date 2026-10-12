@@ -58,8 +58,9 @@ return {
         -- Player groups: names, invites, members on the map.
         groups     = true,
 
-        -- Base building: claim with a base flag, walls, doors, storage, upkeep.
-        bases      = true,
+        -- Base building: switched off for now (the props need a better look).
+        -- The code stays in wasteland_bases; set true and ensure it to try it.
+        bases      = false,
 
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as

@@ -42,7 +42,6 @@ return {
     'integration/supplydrops.lua',
     'integration/events.lua',
     'integration/groups.lua',
-    'integration/bases.lua',
     'integration/shipped_configs.lua',
     'db/mariadb.lua',
     'js/node.lua',
