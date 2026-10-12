@@ -286,3 +286,37 @@ describe('custom zombie kinds and models', function()
     end)
 end)
 
+describe('sync check (/zombies sync)', function()
+    local server = world()
+    local a = player(server, 'syncA', { x = 0.0, y = 0.0, z = 30.0 })
+    local b = player(server, 'syncB', { x = 10.0, y = 0.0, z = 30.0 })
+    local z1 = server:export('wasteland_zombies', 'SpawnZombie', { x = 20.0, y = 0.0, z = 30.0 }, 'walker')
+    local z2 = server:export('wasteland_zombies', 'SpawnZombie', { x = 30.0, y = 0.0, z = 30.0 }, 'walker')
+    server:advance(100)
+    local function seqOf(id) return last(events(server, id, 'wasteland:zombies:client:syncCheck')).args[1] end
+
+    it('asks every player and says OK when everyone sees every zombie near them', function()
+        server:command(0, 'zombies sync'); server:advance(100)
+        local seq = seqOf(a)
+        expect(seqOf(b)).toBe(seq)
+        server:clientEvent(a, 'wasteland:zombies:server:syncReport', seq, { z1, z2 })
+        server:clientEvent(b, 'wasteland:zombies:server:syncReport', seq, { z2, z1 })
+        server:advance(3100)
+        expect(#server:lines('Sync check: OK - every player sees every zombie near them.')).toBe(1)
+    end)
+
+    it('names a player who is missing zombies, one who shows one the server lacks, and one who never answers', function()
+        local c = player(server, 'syncC', { x = 5.0, y = 5.0, z = 30.0 })
+        server:command(0, 'zombies sync'); server:advance(100)
+        local seq = seqOf(a)
+        server:clientEvent(a, 'wasteland:zombies:server:syncReport', seq, { z1 })          -- missing z2
+        server:clientEvent(b, 'wasteland:zombies:server:syncReport', seq, { z1, z2, 99999 }) -- a ghost
+        server:advance(3100)
+        expect(#server:lines('sees 1 of the 2 zombies near them, MISSING 1')).toBe(1)
+        expect(#server:lines('sees 2 of the 2 zombies near them, 1 the server does not have')).toBe(1)
+        expect(#server:lines('#' .. c .. ' P-syncC: no answer')).toBe(1)
+        expect(#server:lines('Sync check: 3 player(s) out of sync')).toBe(1)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+

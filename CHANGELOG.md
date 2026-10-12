@@ -1,5 +1,12 @@
 # Changelog
 
+## Zombie sync: same zombies for everyone, and a check (owner request)
+* Audit: zombies and vehicles are networked entities created by the server (OneSync sends them to every player near them); ground bags, supply crates, traders, tailors and loot containers are drawn by every player's game from what the server sends to everyone. Nothing deletes zombies on one player's side.
+* Fixed: a zombie's blood and stagger were only applied by the game that runs it, so other players could see a clean zombie walking normally. Every game now applies them to every zombie it shows.
+* New: /zombies sync (admins, or the server console). Every player's game lists the zombies it shows within 150 m and the server compares that with the zombies it has there: "sees 4 of the 4 zombies near them", or MISSING / shown but not on the server / no answer. Output in F8 (or the console).
+* Tests: 687.
+
+
 ## Zombies: more aggressive, custom kinds and models (owner request)
 * More aggressive: they see 70 m by day / 40 m at night (was 35 / 18), hear running 45 m, walking 18 m, crouching 6 m, keep chasing 25 s without seeing you (was 10), hit every 1.1 s (was 1.5), walkers a little faster, more runners (25 % by day, 45 % at night). New: a zombie that spots a player brings the others within 25 m (`detection.alertRadius`).
 * Any number of zombie kinds (zombies.lua `kinds`; walker required): each with its chance, speed, damage, infection, bleeding, `shamble` and its own `models`. A commented "brute" example is in the config.

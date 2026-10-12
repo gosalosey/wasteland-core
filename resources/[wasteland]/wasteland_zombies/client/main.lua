@@ -86,6 +86,13 @@ local function configure(ped, kind)
     DisablePedPainAudio(ped, true)
     SetAmbientVoiceName(ped, 'kerry') -- a voice with no ambient lines
     SetPedKeepTask(ped, true)
+    TaskWanderStandard(ped, 10.0, 10)
+end
+
+-- How a zombie looks: blood and the stagger. Not shared over the network,
+-- so every game applies it to every zombie it shows (not only the game that
+-- runs the zombie), and all players see the same zombie.
+local function dressUp(ped, kind)
     ApplyPedDamagePack(ped, 'BigHitByVehicle', 0.0, 9.0)
     ApplyPedDamagePack(ped, 'SCR_Dumpster', 0.0, 9.0)
     local k = cfg and cfg.kinds and cfg.kinds[kind]
@@ -93,10 +100,22 @@ local function configure(ped, kind)
         RequestAnimSet(WALK_CLIPSET)
         local deadline = GetGameTimer() + 1000
         while not HasAnimSetLoaded(WALK_CLIPSET) and GetGameTimer() < deadline do Citizen.Wait(0) end
-        if HasAnimSetLoaded(WALK_CLIPSET) then SetPedMovementClipset(ped, WALK_CLIPSET, 1.0) end
+        if HasAnimSetLoaded(WALK_CLIPSET) and DoesEntityExist(ped) then SetPedMovementClipset(ped, WALK_CLIPSET, 1.0) end
     end
-    TaskWanderStandard(ped, 10.0, 10)
 end
+
+-- Sync check (/zombies sync): which zombies does this game show near us?
+RegisterNetEvent('wasteland:zombies:client:syncCheck', function(seq, radius)
+    local me = GetEntityCoords(PlayerPedId())
+    local list = {}
+    for _, ped in ipairs(GetGamePool('CPed')) do
+        if not IsPedAPlayer(ped) and NetworkGetEntityIsNetworked(ped) and #(GetEntityCoords(ped) - me) <= (tonumber(radius) or 150.0) then
+            local info = zombieInfo(ped)
+            if info then list[#list + 1] = NetworkGetNetworkIdFromEntity(ped) end
+        end
+    end
+    TriggerServerEvent('wasteland:zombies:server:syncReport', seq, list)
+end)
 
 -- Players inside a safe zone (camp) are left alone.
 local function safe(target)
@@ -211,6 +230,7 @@ Citizen.CreateThread(function()
                         seen[ped] = true
                         local b = brains[ped]
                         if not b then b = { mode = 'idle' }; brains[ped] = b end
+                        if not b.dressed then b.dressed = true; dressUp(ped, info.kind) end
                         if IsPedDeadOrDying(ped, true) then
                             if not b.reported and NetworkGetEntityIsNetworked(ped) and NetworkHasControlOfEntity(ped) then
                                 b.reported = true

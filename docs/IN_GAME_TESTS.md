@@ -514,3 +514,10 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R34.2 | Break line of sight and hide | They keep looking for about 25 s |
 | R34.3 | (Optional) put a ped model in wasteland_zombiemodels/stream, add it to zombies.lua `models`, restart | Some zombies use it; with a wrong name the console says it is not in the game and no invisible zombies appear |
 
+## R35: zombie sync (needs two players)
+
+| # | Do | Expect |
+|---|---|---|
+| R35.1 | Two players stand near each other with zombies around; one types /zombies sync and opens F8 | Each player: "sees N of the N zombies near them"; "Sync check: OK" |
+| R35.2 | Both look at the same zombie | Both see it bloody and staggering, in the same place |
+| R35.3 | One player drives 500 m away and comes back; /zombies sync again | OK again |

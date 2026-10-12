@@ -281,6 +281,66 @@ end)
 -- Admin command: /zombies count | clear | spawn <n>
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- Sync check (/zombies sync): every player's game lists the zombies it shows
+-- within SYNC_RADIUS; the server compares that with the zombies it has
+-- there. Everyone should see every zombie near them.
+-------------------------------------------------------------------------------
+
+local SYNC_RADIUS = 150.0
+local syncChecks, syncSeq = {}, 0
+
+local function playerPos(src)
+    local ped = GetPlayerPed(tostring(src))
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return nil end
+    return coordsOf(ped)
+end
+
+local function startSyncCheck(reply)
+    syncSeq = syncSeq + 1
+    local seq = syncSeq
+    local check = { expected = {}, replies = {}, names = {}, known = {} }
+    for _, z in pairs(zombies) do
+        if DoesEntityExist(z.handle) then check.known[z.netId] = true end
+    end
+    local asked = 0
+    for _, s in ipairs(GetPlayers()) do
+        local p = tonumber(s)
+        local c = p and playerPos(p)
+        if c then
+            local list = {}
+            for _, z in pairs(zombies) do
+                if DoesEntityExist(z.handle) and Rules.dist3d(coordsOf(z.handle), c) <= SYNC_RADIUS then list[#list + 1] = z.netId end
+            end
+            check.expected[p], check.names[p] = list, GetPlayerName(s) or ('player ' .. p)
+            asked = asked + 1
+            TriggerClientEvent('wasteland:zombies:client:syncCheck', p, seq, SYNC_RADIUS)
+        end
+    end
+    syncChecks[seq] = check
+    reply(string.format('Sync check: asking %d player(s) which zombies they see within %d m...', asked, SYNC_RADIUS))
+    Citizen.SetTimeout(3000, function()
+        syncChecks[seq] = nil
+        local bad = 0
+        for p, expected in pairs(check.expected) do
+            local seen = check.replies[p]
+            if not seen then
+                bad = bad + 1
+                reply(string.format('  #%d %s: no answer (still loading, or the zombie script is not running in their game)', p, check.names[p]))
+            else
+                local missing, ghosts = Rules.compareSync(expected, seen, check.known)
+                if #missing > 0 or #ghosts > 0 then bad = bad + 1 end
+                reply(string.format('  #%d %s: sees %d of the %d zombies near them%s%s', p, check.names[p], #expected - #missing, #expected,
+                    #missing > 0 and string.format(', MISSING %d', #missing) or '',
+                    #ghosts > 0 and string.format(', %d the server does not have', #ghosts) or ''))
+            end
+        end
+        reply(bad == 0 and 'Sync check: OK - every player sees every zombie near them.'
+            or string.format('Sync check: %d player(s) out of sync (a zombie that just appeared can take a moment; run it again).', bad))
+        M.log:info('zombie sync check: %d player(s) out of sync', bad)
+    end)
+end
+
 local function adminCommand(src, args)
     local reply = function(msg)
         if src == 0 then print(msg) else TriggerClientEvent('wasteland:core:client:consoleOutput', src, { msg }) end
@@ -294,13 +354,15 @@ local function adminCommand(src, args)
         local n = 0
         for _, z in pairs(zombies) do remove(z); n = n + 1 end
         reply(string.format('Removed %d zombies.', n))
+    elseif what == 'sync' then
+        startSyncCheck(reply)
     elseif what == 'spawn' and src ~= 0 then
         local n = math.max(1, math.min(20, math.tointeger(tonumber(args[2] or '5')) or 5))
         pending[src] = { n = n, ring = { spawnMin = 15, spawnMax = 35 } }
         TriggerClientEvent('wasteland:zombies:client:findSpawns', src, n, 15, 35)
         reply(string.format('Spawning up to %d zombies 15-35 m around you.', n))
     else
-        reply(string.format('%d zombies (%d alive). Usage: %s count | clear | spawn <n>', count(false), count(true), M.config.adminCommand))
+        reply(string.format('%d zombies (%d alive). Usage: %s count | clear | spawn <n> | sync', count(false), count(true), M.config.adminCommand))
     end
 end
 
@@ -401,6 +463,16 @@ end
 
 -- A client lists the zombie models its game does not have (custom models
 -- not streamed, a typo): they are not used until the module restarts.
+-- A player's answer to a sync check: the zombies their game shows.
+M.netEvent('wasteland:zombies:server:syncReport', {
+    args = { { type = 'integer', required = true, min = 1 },
+        { type = 'array', required = true, maxItems = 500, items = { type = 'integer' } } },
+    rateLimit = { burst = 3, perSecond = 1 },
+}, function(src, seq, list)
+    local check = syncChecks[seq]
+    if check and check.expected[src] then check.replies[src] = list end
+end)
+
 M.netEvent('wasteland:zombies:server:missingModels', {
     args = { { type = 'array', required = true, maxItems = 100, items = { type = 'string', pattern = '^[%w_]+$', maxLength = 64 } } },
     rateLimit = { burst = 2, perSecond = 0.1 },

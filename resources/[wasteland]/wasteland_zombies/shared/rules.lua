@@ -54,6 +54,17 @@ function Rules.pickKind(kinds, night, roll)
     return 'walker'
 end
 
+--- Sync check: which zombies the server has near a player that the
+--- player's game does not show (missing), and which the game shows that the
+--- server does not have (ghosts). expected, seen: lists of network ids.
+function Rules.compareSync(expected, seen, known)
+    local seenSet, missing, ghosts = {}, {}, {}
+    for _, id in ipairs(seen) do seenSet[id] = true end
+    for _, id in ipairs(expected) do if not seenSet[id] then missing[#missing + 1] = id end end
+    for _, id in ipairs(seen) do if not known[id] then ghosts[#ghosts + 1] = id end end
+    return missing, ghosts
+end
+
 --- The models a new zombie of `kind` may use: the kind's own list, else the
 --- general list; without the ones no player's game has (missing).
 function Rules.modelPool(kind, general, missing)
