@@ -77,11 +77,20 @@ local function sendStats(src, cid)
     })
 end
 
+-- Other modules add warmth (a campfire) and respawn points (a sleeping bag):
+-- name -> function. See RegisterWarmthSource / RegisterRespawnPoint.
+local warmthSources, respawnPoints = {}, {}
+
 local function warmthOf(src)
-    if GetResourceState('wasteland_inventory') ~= 'started' then return 0 end
-    local ok, worn = pcall(function() return exports.wasteland_inventory:GetWornItems(src) end)
-    if not ok or type(worn) ~= 'table' then return 0 end
     local total = 0
+    for name, fn in pairs(warmthSources) do
+        local ok, w = pcall(fn, src)
+        if ok and type(w) == 'number' and w > 0 then total = total + math.min(w, 50) end
+        if not ok then warmthSources[name] = nil end
+    end
+    if GetResourceState('wasteland_inventory') ~= 'started' then return total end
+    local ok, worn = pcall(function() return exports.wasteland_inventory:GetWornItems(src) end)
+    if not ok or type(worn) ~= 'table' then return total end
     for _, w in ipairs(worn) do
         total = total + Model.clothingWarmth(w.warmth, w.metadata and w.metadata.durability, w.durability)
     end
@@ -357,6 +366,14 @@ local function respawn(src, cid)
     end
     local points = M.config.respawn.points
     local p = points[math.random(1, #points)]
+    for name, fn in pairs(respawnPoints) do
+        local ok, point = pcall(fn, src, cid)
+        if not ok then respawnPoints[name] = nil
+        elseif type(point) == 'table' and type(point.x) == 'number' and type(point.y) == 'number' and type(point.z) == 'number' then
+            p = { x = point.x, y = point.y, z = point.z, heading = tonumber(point.heading) or 0.0 }
+            break
+        end
+    end
     local fresh = Model.fresh(M.config)
     fresh.hunger, fresh.thirst = M.config.respawn.stats.hunger, M.config.respawn.stats.thirst
     states[cid], damageCarry[cid], deathAt[cid] = fresh, 0, nil
@@ -625,6 +642,21 @@ exports('Revive', function(src)
     save(cid, true)
     TriggerClientEvent('wasteland:survival:client:revive', tonumber(src))
     sendStats(tonumber(src), cid)
+    return true
+end)
+
+--- RegisterWarmthSource(name, fn(source) -> degrees)   (e.g. near a campfire; added to clothing warmth)
+exports('RegisterWarmthSource', function(name, fn)
+    if type(name) ~= 'string' then return false end
+    warmthSources[name] = fn
+    return true
+end)
+
+--- RegisterRespawnPoint(name, fn(source, characterId) -> { x, y, z, heading } | nil)
+--- (e.g. a sleeping bag). The first point given is used; otherwise a random respawn point.
+exports('RegisterRespawnPoint', function(name, fn)
+    if type(name) ~= 'string' then return false end
+    respawnPoints[name] = fn
     return true
 end)
 

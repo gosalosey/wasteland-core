@@ -556,3 +556,23 @@ Needs two players (or a second client).
 | R38.6 | New leader renames the group | The new name shows for both, also on the markers |
 | R38.7 | Restart the server, both log back in | The group is still there with both members |
 | R38.8 | Leader: Remove a member, then Disband (click twice) | The member is told; after disband both have no group and the markers go |
+
+## R39: base building
+First run: give yourself materials with the admin panel. You need base_flag, wood_planks, nails, metal_sheet, scrap_metal, duct_tape and rag.
+
+| # | Do | Expect |
+|---|---|---|
+| R39.1 | `/baseadmin preview` in an open field | Every piece in a row with its name above. Note any that look wrong, float, sink or are missing (F8 shows "model ... is not in the game") |
+| R39.2 | Walk into each wall in the preview | You cannot pass through any wall. Doors: the opening is passable |
+| R39.3 | Use the Base flag (inventory) away from camps | A see-through flag follows where you look; E / Q turn it; left click places it; "Base claimed"; a green circle and "Your base" on the map |
+| R39.4 | F7: build a Scrap wall, place several in a row | The walls snap edge to edge with no gaps; E turns them to the other direction |
+| R39.5 | Build a Metal wall on a scrap wall | It replaces it in place |
+| R39.6 | Build a Scrap door, Left Alt on it, "Open / close" | The door swings open and closed; you can walk through when open; a player outside your group gets no option |
+| R39.7 | Storage crate: Left Alt, Open; put items in; leave and come back | The items are still there; Demolish says "Empty it first" |
+| R39.8 | Workbench: Left Alt, Craft; make a Metal sheet | It works at the bench; away from it the recipe says "at a Workbench (not here)" |
+| R39.9 | Stand at the campfire at night | The body temperature rises (inventory health panel) |
+| R39.10 | Build a sleeping bag, die, respawn | You respawn at the sleeping bag |
+| R39.11 | A second player joins your group (/group) | They see the base on the map and can build and open doors |
+| R39.12 | Walk 200 m away and back | The base disappears far away and comes back when near |
+| R39.13 | Restart the server | Everything is still there |
+

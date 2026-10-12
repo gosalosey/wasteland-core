@@ -47,3 +47,12 @@ test('group members line', () => {
     assert.strictEqual(group.summary(g, 8), '3 of 8 members, 2 online');
 });
 
+const base = require(path.join(R, 'wasteland_bases', 'html', 'base.js'));
+
+test('base upkeep line', () => {
+    assert.strictEqual(base.upkeepText({ item: 'Scrap metal', perDay: 2, stock: 5, paidHours: 30, coveredDays: 2, decaying: false }),
+        'Paid for 1 d 6 h. Upkeep: 2 x Scrap metal a day; the box holds 5 (2 more days).');
+    assert.strictEqual(base.upkeepText({ item: 'Scrap metal', perDay: 2, stock: 0, paidHours: 0, decaying: true, removeHours: 40 }),
+        'Upkeep unpaid! Put 2 x Scrap metal in the upkeep box or the base falls apart in 40 h.');
+});
+

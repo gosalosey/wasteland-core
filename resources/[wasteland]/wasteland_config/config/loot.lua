@@ -76,6 +76,8 @@ return {
             { name = 'jerry_can', min = 1, max = 1, weight = 2 },
             { name = 'lockpick', min = 1, max = 1, weight = 2 },
             { name = 'siphon_hose', min = 1, max = 1, weight = 2 },
+            { name = 'wood_planks', min = 1, max = 2, weight = 10 },
+            { name = 'nails', min = 5, max = 15, weight = 6 },
         } },
         food = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
@@ -127,6 +129,9 @@ return {
             { name = 'lockpick', min = 1, max = 2, weight = 4 },
             { name = 'armor_repair_kit', min = 1, max = 1, weight = 3 },
             { name = 'vehicle_lock', min = 1, max = 1, weight = 2 },
+            { name = 'wood_planks', min = 2, max = 4, weight = 20 },
+            { name = 'nails', min = 10, max = 30, weight = 15 },
+            { name = 'metal_sheet', min = 1, max = 1, weight = 4 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
             { name = 'sewing_kit', min = 1, max = 1, weight = 3 },
@@ -137,6 +142,9 @@ return {
             { name = 'duct_tape', min = 1, max = 1, weight = 15 },
             { name = 'rag', min = 1, max = 2, weight = 15 },
             { name = 'canned_beans', min = 1, max = 2, weight = 10 },
+            { name = 'wood_planks', min = 2, max = 4, weight = 12 },
+            { name = 'nails', min = 10, max = 30, weight = 8 },
+            { name = 'metal_sheet', min = 1, max = 1, weight = 3 },
             { name = 'mre_beef', min = 1, max = 2, weight = 4 },
             { name = 'mre_chicken', min = 1, max = 2, weight = 4 },
             { name = 'canned_stew', min = 1, max = 2, weight = 5 },

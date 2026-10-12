@@ -31,6 +31,18 @@ local function label(item)
     return d and d.label or item
 end
 
+-- Stations (e.g. a base's workbench): name -> { label, check(source) -> bool },
+-- added by other modules with RegisterStation.
+local stations = {}
+
+local function stationInfo(src, name)
+    if not name then return nil end
+    local st = stations[name]
+    if not st then return { label = name, here = false } end
+    local ok, here = pcall(st.check, src)
+    return { label = st.label, here = ok and here == true }
+end
+
 --- What the crafting screen shows: every known recipe with what you have,
 --- and how many recipes are still to be found.
 local function screenData(src)
@@ -50,7 +62,8 @@ local function screenData(src)
                     have = inv():GetItemCount(src, ing.name) or 0 }
             end
             list[#list + 1] = { name = name, label = r.label, seconds = r.seconds, image = images[r.result.name],
-                result = { name = r.result.name, label = label(r.result.name), count = r.result.count }, ingredients = ingredients }
+                result = { name = r.result.name, label = label(r.result.name), count = r.result.count }, ingredients = ingredients,
+                station = stationInfo(src, r.station) }
         else
             hidden = hidden + 1
         end
@@ -120,6 +133,8 @@ local function start(src, name, count)
         M.log:warn('player %d tried to craft "%s" without the blueprint', src, name)
         return
     end
+    local station = stationInfo(src, r.station)
+    if station and not station.here then send(src, 'You need to be at a ' .. station.label .. '.', false); return end
     local missing = Recipes.missing(r, countFor(src))
     if #missing > 0 then
         send(src, string.format('You need %d x %s (you have %d).', missing[1].need, label(missing[1].name), missing[1].have), false)
@@ -211,6 +226,7 @@ M = Wasteland.DefineModule({
                 ingredients = { type = 'array', required = true, minItems = 1, items = STACK },
                 seconds = { type = 'number', default = 4, min = 0.5, max = 120 },
                 blueprint = { type = 'string', pattern = '^[%w_]+$' },
+                station = { type = 'string', pattern = '^[%w_]+$', description = 'Made only at this station (bases: workbench)' },
             } } },
         } },
     },
@@ -264,6 +280,13 @@ exports('TeachRecipe', function(src, name)
     local known = knownOf(cid)
     known[name] = true
     players():SetCharacterData(cid, DATA_KEY, { known = known })
+    return true
+end)
+
+--- RegisterStation(name, label, check(source) -> boolean)   (recipes with station = name need it)
+exports('RegisterStation', function(name, lbl, check)
+    if type(name) ~= 'string' then return false end
+    stations[name] = { label = tostring(lbl or name), check = check }
     return true
 end)
 

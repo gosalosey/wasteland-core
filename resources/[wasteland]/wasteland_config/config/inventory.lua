@@ -134,6 +134,14 @@ return {
             description = 'Warms you inside, dries you out.' },
         scrap_metal = { label = 'Scrap metal', image = 'metalscrap', category = 'material', width = 2, height = 1, weight = 1.0, stack = 100 },
         duct_tape = { label = 'Duct tape', category = 'material', width = 1, height = 1, weight = 0.2 },
+        wood_planks = { label = 'Wood planks', image = 'woodplank', category = 'material', width = 2, height = 1, weight = 1.0, stack = 50,
+            description = 'For building. Found in trash, sheds and crates.' },
+        nails = { label = 'Nails', category = 'material', width = 1, height = 1, weight = 0.01, stack = 200,
+            description = 'For building. Make more from scrap metal.' },
+        metal_sheet = { label = 'Metal sheet', image = 'zinc-sheet', category = 'material', width = 2, height = 2, weight = 3.0, stack = 10,
+            description = 'For metal walls and doors. Made at a workbench.' },
+        base_flag = { label = 'Base flag', image = 'flag_green', category = 'tool', width = 1, height = 3, weight = 2.5,
+            description = 'Use it to claim a spot for your base. Then /base (F7) to build.' },
         flashlight = { label = 'Flashlight', image = 'weapon_flashlight', category = 'tool', width = 1, height = 2, weight = 0.4, durability = 100 },
 
         -- Weapons (what each one does is in weapons.lua). Durability is

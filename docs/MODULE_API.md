@@ -483,3 +483,19 @@ Table `wl_supply_drops` (id, label, x, y, z, created_unix, opened_by, opened_uni
 Net events: `wasteland:supplydrops:server:sync`, `...:open(id)`. Client events: `...:client:drop(info, announce)`, `...:client:remove(id)`, `...:client:notice(text)`.
 
 Exports: `GetActiveDrops() -> { { id, coords, label, secondsLeft } }`, `SpawnDrop(coords?) -> true`. Server events: `wasteland:supplydrops:dropped(id, coords, label)`, `wasteland:supplydrops:opened(source, id)`.
+
+## Bases (`wasteland_bases`, bases api 0.1)
+
+A base is a flag (claim of `claimRadius`) owned by a character; the owner's group shares it. Pieces are set in `bases.lua` → `pieces`:
+* `slot = 'edge'`: walls, doors and gates, one per grid edge. A higher `tier` of the same `family` upgrades in place.
+* `slot = 'free'`: anything else.
+
+Pieces can have `stash`, `station`, `warmth`, `respawn` or `produces`. The server snaps and checks every placement (shared/rules.lua); clients spawn local props near a base, plus hidden solid panels for edge pieces.
+
+Exports: `GetBaseAt(coords) -> { id, owner } | nil`, `GetBaseOf(characterId) -> { id, owner, x, y, z, pieces } | nil`.
+Server events: `wasteland:bases:claimed(baseId, characterId)`, `built(baseId, pieceId, kind, characterId)`, `removed(baseId, why)`.
+
+New exports used by bases:
+* Survival: `RegisterWarmthSource(name, fn(source) -> degrees)` and `RegisterRespawnPoint(name, fn(source, characterId) -> point | nil)`.
+* Crafting: `RegisterStation(name, label, fn(source) -> boolean)`, and the recipe field `station`.
+

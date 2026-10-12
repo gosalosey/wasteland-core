@@ -58,6 +58,9 @@ return {
         -- Player groups: names, invites, members on the map.
         groups     = true,
 
+        -- Base building: claim with a base flag, walls, doors, storage, upkeep.
+        bases      = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.

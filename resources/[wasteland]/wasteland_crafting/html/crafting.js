@@ -1,19 +1,20 @@
 // wasteland_crafting :: html/crafting.js
 // Crafting screen: every recipe you know, what it needs and what you have.
 // Data: { recipes = [{ name, label, seconds, image, result = { label, count },
-//         ingredients = [{ name, label, image, need, have }] }], unknown, message, ok }
+//         ingredients = [{ name, label, image, need, have }], station? = { label, here } }], unknown, message, ok }
 
 (function () {
     'use strict';
 
     // Pure helper (unit-tested with Node): can it be made now?
     function canCraft(recipe) {
-        return !!recipe && (recipe.ingredients || []).every((i) => i.have >= i.need);
+        if (!recipe || (recipe.station && !recipe.station.here)) return false;
+        return (recipe.ingredients || []).every((i) => i.have >= i.need);
     }
 
     // How many can be made with what is carried (at most 50 in one go).
     function maxCraft(recipe) {
-        if (!recipe || !(recipe.ingredients || []).length) return 0;
+        if (!recipe || !(recipe.ingredients || []).length || (recipe.station && !recipe.station.here)) return 0;
         let n = 50;
         recipe.ingredients.forEach((i) => { n = Math.min(n, Math.floor(i.have / Math.max(1, i.need))); });
         return Math.max(0, n);
@@ -63,7 +64,7 @@
                 img(r.image, 'wcr-img'),
                 h('div', { class: 'wcr-what' },
                     h('div', { class: 'wcr-name', text: r.label + (r.result.count > 1 ? ' (x' + r.result.count + ')' : '') }),
-                    h('div', { class: 'wl-hint', text: r.seconds + ' s' })),
+                    h('div', { class: 'wl-hint', text: r.seconds + ' s' + (r.station ? ' · at a ' + r.station.label + (r.station.here ? '' : ' (not here)') : '') })),
                 needs, h('div', { class: 'wcr-do' }, amount, btn)));
         });
         if (!(d.recipes || []).length) list.appendChild(h('div', { class: 'wl-hint', text: 'You know no recipes yet.' }));

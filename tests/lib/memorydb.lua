@@ -60,12 +60,14 @@ function MemoryDB.new(resourcesDir)
     local wla = loadSqlFile(resourcesDir .. '/wasteland_admin/server/sql.lua', 'WLA_ADMIN')
     local wlv = loadSqlFile(resourcesDir .. '/wasteland_vehicles/server/sql.lua', 'WLV')
     local wlg = loadSqlFile(resourcesDir .. '/wasteland_groups/server/sql.lua', 'WLG')
+    local wlb = loadSqlFile(resourcesDir .. '/wasteland_bases/server/sql.lua', 'WLB')
     self:installDatabase(wld.SQL)
     self:installPlayers(wlp.SQL)
     self:installInventory(wli.SQL)
     self:installAdmin(wla.SQL)
     self:installVehicles(wlv.SQL)
     self:installGroups(wlg.SQL)
+    self:installBases(wlb.SQL)
     return self
 end
 
@@ -293,6 +295,46 @@ function MemoryDB:installVehicles(SQL)
     self:on(SQL.delete, function(db, p)
         if not db.data.wl_vehicles[p[1]] then return header(0) end
         db.data.wl_vehicles[p[1]] = nil
+        return header(1)
+    end)
+end
+
+function MemoryDB:installBases(SQL)
+    self.data.wl_bases, self.data.wl_base_pieces = self.data.wl_bases or {}, self.data.wl_base_pieces or {}
+    local nextBase, nextPiece = 0, 0
+    local function rows(t) local out = {} for _, r in pairs(t) do out[#out + 1] = deepCopy(r) end return out end
+    self:on(SQL.selectBases, function(db) return rows(db.data.wl_bases) end)
+    self:on(SQL.selectPieces, function(db) return rows(db.data.wl_base_pieces) end)
+    self:on(SQL.insertBase, function(db, p)
+        nextBase = nextBase + 1
+        db.data.wl_bases[nextBase] = { id = nextBase, owner_id = p[1], x = p[2], y = p[3], z = p[4], heading = p[5], paid_until = p[6], created_unix = p[7] }
+        local h = header(1)
+        h.insertId = nextBase
+        return h
+    end)
+    self:on(SQL.deleteBase, function(db, p) db.data.wl_bases[p[1]] = nil; return header(1) end)
+    self:on(SQL.paidUntil, function(db, p) if db.data.wl_bases[p[2]] then db.data.wl_bases[p[2]].paid_until = p[1] end; return header(1) end)
+    self:on(SQL.insertPiece, function(db, p)
+        if p[7] ~= nil then
+            for _, r in pairs(db.data.wl_base_pieces) do
+                if r.base_id == p[1] and r.slot_key == p[7] then error("Duplicate entry for key 'uq_wl_base_pieces_slot'", 0) end
+            end
+        end
+        nextPiece = nextPiece + 1
+        db.data.wl_base_pieces[nextPiece] = { id = nextPiece, base_id = p[1], kind = p[2], x = p[3], y = p[4], z = p[5], heading = p[6],
+            slot_key = p[7], builder_id = p[8], created_unix = p[9] }
+        local h = header(1)
+        h.insertId = nextPiece
+        return h
+    end)
+    self:on(SQL.deletePiece, function(db, p) db.data.wl_base_pieces[p[1]] = nil; return header(1) end)
+    self:on(SQL.deletePieces, function(db, p)
+        for k, r in pairs(db.data.wl_base_pieces) do if r.base_id == p[1] then db.data.wl_base_pieces[k] = nil end end
+        return header(1)
+    end)
+    self:on(SQL.upgradePiece, function(db, p)
+        local r = db.data.wl_base_pieces[p[3]]
+        if r then r.kind, r.heading = p[1], p[2] end
         return header(1)
     end)
 end

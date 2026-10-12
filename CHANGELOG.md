@@ -1,5 +1,38 @@
 # Changelog
 
+## Base building (new module wasteland_bases)
+* **Claim:** craft a Base flag (4 wood planks, 2 rags, 2 scrap metal) and use it from the inventory. A preview shows where it goes (E / Q turn, left click place). You claim a 30 m circle.
+  * Not within 150 m of a camp's edge or another base.
+  * One base per group, or per player who is not in a group. Everyone in the owner's group builds and uses it.
+* **Build:** /base or F7 opens the base screen: the pieces, what they cost and what you have. Pick one and place it.
+  * The preview stays on so you can keep placing; right click stops.
+  * Walls, doors and gates snap to a 3 m grid laid out from the flag.
+  * The other pieces go anywhere in the claim.
+* **Pieces:**
+  * Scrap, metal and fortified walls. Build a better wall over an old one to upgrade it in place.
+  * Scrap and metal doors, and a gate wide enough for vehicles. They open and close for the group only.
+  * Storage crate and metal locker (shared storage).
+  * Workbench: crafting recipes can need a station; metal sheets are made at a workbench.
+  * Campfire: warms you within 6 m.
+  * Sleeping bag: your group respawns there after dying, with a 5 minute cooldown.
+  * Rain collector: makes a bottle of water every 30 minutes, up to 4.
+* **Interacting:** hold Left Alt on a piece to open, use or demolish it. Demolishing asks twice and gives back half the materials. Storage must be empty first.
+* **Upkeep:** keep scrap metal in the flag's upkeep box.
+  * The cost is 1 a day plus 1 per started 10 pieces. A new base is paid for 3 days.
+  * Unpaid, the base lasts 72 more hours, then it is removed with everything in it (the owner is warned).
+* **How walls are made:** each wall is built from game props for the scavenged look, plus hidden solid panels that fill it exactly, so it blocks players whatever the props look like.
+  * Admins: `/baseadmin preview` shows every piece in a row, named, so the props can be tuned in bases.lua.
+  * `/baseadmin remove` removes the nearest base.
+* **New items:**
+  * Wood planks: trash, sheds, crates, the trader.
+  * Nails: craft 20 from 1 scrap metal, or buy them.
+  * Metal sheet: workbench.
+  * Base flag.
+* **Other modules:**
+  * Survival: `RegisterWarmthSource(name, fn)` and `RegisterRespawnPoint(name, fn)`.
+  * Crafting: recipes take `station`, plus `RegisterStation(name, label, fn)`.
+* Tables `wl_bases` and `wl_base_pieces`. Config: `bases.lua`.
+
 ## More food and drink
 * 18 new items, each with its own picture:
   * Food: canned tuna, canned salmon, chicken soup, country stew, MREs (beef and chicken), chips, peanut butter, bread, apple, banana, orange.
