@@ -46,6 +46,15 @@ function WLP.identifierOf(src)
     local kind = WLP.cfg and WLP.cfg.identifier or 'license'
     local id = GetPlayerIdentifierByType(tostring(src), kind)
     if id == nil or id == '' then return nil end
+    -- Testing only (duplicateSession = 'test_second_account'): a second game
+    -- on the same Rockstar account plays as a separate account ("...:test2"),
+    -- so one person can test with two players.
+    if WLP.cfg and WLP.cfg.duplicateSession == 'test_second_account' then
+        local first = WLP.byLicense and WLP.byLicense[id]
+        if first and first.source and first.source ~= tonumber(src) and WLP.isOnline(first.source) then
+            return id .. ':test2'
+        end
+    end
     return id
 end
 

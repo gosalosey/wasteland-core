@@ -86,7 +86,7 @@ local M = Wasteland.DefineModule({
                     description = 'Identifier that defines an account.' },
                 maxCharacters = { type = 'integer', default = 3, min = 1, max = 10,
                     description = 'Character slots per account.' },
-                duplicateSession = { type = 'enum', values = { 'kick_old', 'reject_new' }, default = 'kick_old',
+                duplicateSession = { type = 'enum', values = { 'kick_old', 'reject_new', 'test_second_account' }, default = 'kick_old',
                     description = 'What happens when an account connects while already connected.' },
                 sessionReleaseTimeoutSeconds = { type = 'integer', default = 20, min = 1, max = 120,
                     description = 'How long a connection waits for the previous session of the same account to finish saving.' },

@@ -1,5 +1,10 @@
 # Changelog
 
+## Testing with two games on one PC
+* players.lua `duplicateSession = 'test_second_account'` (testing only): a second FiveM game on the same Rockstar account (started with -cl2) joins as a separate account ("...:test2") with its own characters, instead of kicking the first. Switched on in the owner's live config while the server is private; the shipped default stays 'kick_old'.
+* Tests: 688.
+
+
 ## Zombie sync: same zombies for everyone, and a check (owner request)
 * Audit: zombies and vehicles are networked entities created by the server (OneSync sends them to every player near them); ground bags, supply crates, traders, tailors and loot containers are drawn by every player's game from what the server sends to everyone. Nothing deletes zombies on one player's side.
 * Fixed: a zombie's blood and stagger were only applied by the game that runs it, so other players could see a clean zombie walking normally. Every game now applies them to every zombie it shows.

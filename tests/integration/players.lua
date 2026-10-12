@@ -514,3 +514,27 @@ describe('positions only after the client placed the character', function()
     end)
 end)
 
+describe('testing with two games on one Rockstar account', function()
+    local server = newServer({ config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 1000, healthCheckSeconds = 2 }',
+        ['players.lua'] = "return { restoreDelayMs = 200, duplicateSession = 'test_second_account' }",
+    } })
+    boot(server, { 'wasteland_players' })
+
+    it('the second game joins as a separate account; the first stays online', function()
+        local a = server:connectAndJoin({ name = 'Jay', license = 'license:same' })
+        server:advance(300)
+        local b = server:connectAndJoin({ name = 'Jay', license = 'license:same' })
+        server:advance(300)
+        expect(a ~= nil and b ~= nil).toBe(true)
+        expect(server.players[a] ~= nil and not server.players[a].dropped).toBe(true)
+        local licenses = {}
+        for _, row in pairs(server.db.backend.data.wl_accounts) do licenses[#licenses + 1] = row.license end
+        table.sort(licenses)
+        expect(table.concat(licenses, ',')).toBe('license:license:same,license:license:same:test2')
+        server:command(b, 'character create Second Player'); server:advance(300)
+        server:command(b, 'character select 1'); server:advance(500)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+

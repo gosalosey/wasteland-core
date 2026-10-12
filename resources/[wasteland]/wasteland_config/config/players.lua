@@ -11,6 +11,9 @@ return {
     -- When an account connects while it is already connected:
     --   'kick_old'   drop the old session, save it, then let the new one in
     --   'reject_new' refuse the new connection
+    --   'test_second_account'  TESTING ONLY: the second game (FiveM started
+    --                with -cl2) plays as a separate account with its own
+    --                characters. Never use this on a public server.
     duplicateSession = 'kick_old',
 
     -- How long (seconds) a connection waits for the previous session of the
