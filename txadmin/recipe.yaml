@@ -1,7 +1,7 @@
 $engine: 3
 $onesync: on
 name: Wasteland Core
-version: 1.0.2
+version: 1.0.3
 author: gosalosey
 description: |
   Zombie survival framework for FiveM: zombies, looting, crafting, survival,
@@ -53,6 +53,13 @@ tasks:
   - action: move_path
     src: ./tmp/wasteland/wasteland-core-main/txadmin/wasteland_core.png
     dest: ./wasteland_core.png
+  # The updater: stop the server, double-click update_wasteland.bat, start it.
+  - action: move_path
+    src: ./tmp/wasteland/wasteland-core-main/tools/update.ps1
+    dest: ./update_wasteland.ps1
+  - action: move_path
+    src: ./tmp/wasteland/wasteland-core-main/tools/update_wasteland.bat
+    dest: ./update_wasteland.bat
 
   # 4. The database (Wasteland creates its tables itself on the first start)
   - action: connect_database

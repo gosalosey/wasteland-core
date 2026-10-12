@@ -1,5 +1,11 @@
 # Changelog
 
+## Updater for other servers
+* tools/update.ps1 (+ update_wasteland.bat): stop the server, double-click, start it. Shows what is new since the installed version (VERSION.txt), backs up the database (mysqldump / mariadb-dump, from the server.cfg connection string) and the old resources, installs the newest version from GitHub keeping the server's settings and zombie models (differing settings files get a .lua.new next to them), adds new settings files, offers to add missing ensure lines to server.cfg, updates itself.
+* The txAdmin recipe (1.0.3) puts the updater into the server folder.
+* Tested on an outdated server folder: settings kept, new settings file added, missing ensure lines added, database and files backed up, custom zombie models kept.
+
+
 ## New players: protected, $50, choose where to start (owner request)
 * Protection: while choosing or making a character and until a new character has arrived at their camp, a player is protected (player state `wlProtected`): no damage from the server (survival Damage refuses), zombies do not notice or hit them, bandits ignore them. (Before, a zombie could kill you in the character creator.)
 * New characters start with $50 cash (inventory.lua startingItems).

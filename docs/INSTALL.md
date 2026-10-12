@@ -49,4 +49,14 @@ add_principal identifier.fivem:12345678 group.admin
 
 ## Updating
 
-Back up the database first ([DATABASE.md](DATABASE.md)), then replace `resources/[wasteland]` with the new version, keeping your own `wasteland_config/config/` files. Database changes are applied automatically on the next start.
+**With the updater (recommended).** Servers installed with the recipe have `update_wasteland.bat` in the server folder. On older installs, download [`tools/update.ps1`](../tools/update.ps1) and save it as `update_wasteland.ps1` in the server folder (the folder with `server.cfg`), and [`tools/update_wasteland.bat`](../tools/update_wasteland.bat) next to it.
+
+1. Stop the server (txAdmin: **Stop**).
+2. Double-click `update_wasteland.bat`. It shows what is new, then:
+   * backs up the database and the current `resources/[wasteland]` (into `backups/` in the server folder),
+   * installs the new version but keeps your settings (`wasteland_config/config`) and your zombie models; where the new version's settings file differs from yours, it is saved next to it as `<name>.lua.new` so you can compare,
+   * adds settings files that are new,
+   * offers to add `ensure` lines that `server.cfg` is missing.
+3. Start the server. Every Wasteland module should show `running` in the console.
+
+**By hand.** Back up the database first ([DATABASE.md](DATABASE.md)), then replace `resources/[wasteland]` with the new version, keeping your own `wasteland_config/config/` files. Database changes are applied automatically on the next start.
