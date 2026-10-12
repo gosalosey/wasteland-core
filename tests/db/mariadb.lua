@@ -216,7 +216,7 @@ describe('real MariaDB: inventory', function()
     it('runs the inventory migrations and stores starting items and worn clothes', function()
         expect(states(server).inventory).toBe('running')
         local items = backend:rows('SELECT name, count, pos_x, slot, metadata FROM wl_items WHERE inventory_id = ?', { pockets })
-        expect(#items).toBe(3)
+        expect(#items).toBe(4) -- with the $50 starting cash
         local worn = backend:rows("SELECT name, slot, metadata FROM wl_items WHERE inventory_id LIKE 'equip:%'")
         expect(#worn).toBe(3)
         expect(worn[1].metadata).toContain('mp_f_freemode_01')

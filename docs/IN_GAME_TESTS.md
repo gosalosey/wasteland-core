@@ -534,3 +534,11 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R36.6 | Kill them all | Everyone: "The bandits at the crash ... are dead"; the marker turns green; "Search: Helicopter wreckage" opens good loot |
 | R36.7 | /event convoy here, /event hideout here, /event horde here | Each looks right; tell me any prop that is missing |
 | R36.8 | /event end | Everything is gone |
+
+## R37: new players
+
+| # | Do | Expect |
+|---|---|---|
+| R37.1 | Make a new character near zombies; stay in the creator a while | Zombies do not come for you; you take no damage |
+| R37.2 | Finish the creator | "Where do you start?" with the camps; pick one; the screen fades and you are there; "Welcome to ..." |
+| R37.3 | Open the inventory | $50 cash, water, beans, bandages |

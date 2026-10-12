@@ -182,3 +182,49 @@ AddEventHandler('onResourceStop', function(res)
     for key in pairs(peds) do removeTrader(key) end
     closeScreen()
 end)
+
+-------------------------------------------------------------------------------
+-- New characters: where do you start?
+-------------------------------------------------------------------------------
+
+local SPAWN = 'spawnChoice'
+
+RegisterNetEvent('wasteland:camps:client:chooseSpawn', function(list)
+    if type(list) ~= 'table' or GetResourceState('wasteland_ui') ~= 'started' then return end
+    local ped = PlayerPedId()
+    FreezeEntityPosition(ped, true)
+    SetEntityInvincible(ped, true)
+    exports.wasteland_ui:Open(SPAWN, { script = 'html/spawn.js', data = { camps = list } })
+end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen ~= SPAWN then return end
+    if action == 'choose' and type(payload) == 'table' and type(payload.id) == 'string' then
+        TriggerServerEvent('wasteland:camps:server:chooseSpawn', payload.id)
+    end
+end)
+
+RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label)
+    if type(at) ~= 'table' then return end
+    Citizen.CreateThread(function()
+        local ped = PlayerPedId()
+        DoScreenFadeOut(400)
+        while not IsScreenFadedOut() do Citizen.Wait(0) end
+        if GetResourceState('wasteland_ui') == 'started' and exports.wasteland_ui:IsOpen(SPAWN) then exports.wasteland_ui:Close(SPAWN) end
+        local x, y, z = at.x + 0.0, at.y + 0.0, at.z + 0.0
+        RequestCollisionAtCoord(x, y, z)
+        SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
+        SetEntityHeading(ped, (at.heading or 0.0) + 0.0)
+        local deadline = GetGameTimer() + 5000
+        while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < deadline do Citizen.Wait(0) end
+        local found, ground = GetGroundZFor_3dCoord(x, y, z + 5.0, false)
+        if found then SetEntityCoordsNoOffset(ped, x, y, ground + 0.1, false, false, false) end
+        FreezeEntityPosition(ped, false)
+        SetEntityInvincible(ped, false)
+        DoScreenFadeIn(600)
+        BeginTextCommandThefeedPost('STRING')
+        AddTextComponentSubstringPlayerName('Welcome to ' .. tostring(label) .. '. Good luck out there.')
+        EndTextCommandThefeedPostTicker(false, false)
+    end)
+end)
+

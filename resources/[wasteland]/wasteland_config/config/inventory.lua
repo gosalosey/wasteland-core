@@ -32,6 +32,7 @@ return {
 
     -- What a brand-new character starts with (item names from `items`).
     startingItems = {
+        { name = 'cash', count = 50 },
         { name = 'water_bottle', count = 1 },
         { name = 'canned_beans', count = 2 },
         { name = 'bandage', count = 2 },

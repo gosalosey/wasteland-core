@@ -53,6 +53,8 @@ local function player(server, license)
     server:command(id, 'character select 1'); server:advance(500)
     server:clientEvent(id, 'wasteland:appearance:server:save', defaults('mp_m_freemode_01'))
     server:advance(500)
+    -- Start from $0 (new characters get $50) so the reward sums stay simple.
+    server:export('wasteland_inventory', 'RemoveCash', id, 50); server:advance(100)
     return id
 end
 

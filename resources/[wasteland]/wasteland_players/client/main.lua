@@ -26,6 +26,7 @@ local function setHeld(held)
     SetEntityVisible(ped, not held, false)
     SetEntityCollision(ped, not held, not held)
     SetEntityInvincible(ped, held)
+    LocalPlayer.state:set('wlProtected', held, true)
     DisplayRadar(not held)
 end
 

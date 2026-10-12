@@ -67,6 +67,7 @@ describe('traders', function()
     end)
 
     it('opening shows prices, stock, what you carry and your cash', function()
+        I(server, 'RemoveCash', id, 50) -- the starting cash, so the numbers below are simple
         I(server, 'AddCash', id, 100)
         server:advance(100)
         server:clientEvent(id, 'wasteland:camps:server:open', 'base', 1)
@@ -164,3 +165,40 @@ describe('safe zones and zombies', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('new characters: protected, then choose a camp to start at', function()
+    local server = world()
+    local id = player(server, 'newbie')
+    local function state() return server.resources.wasteland_camps.env.Player(id).state end
+
+    it('after the creator, the player is asked where to start and is protected', function()
+        local ask = last(events(server, id, 'wasteland:camps:client:chooseSpawn')).args[1]
+        expect(#ask >= 1).toBe(true)
+        expect(ask[1].id).toBe('base')
+        expect(state().wlProtected).toBe(true)
+    end)
+
+    it('protected players take no damage', function()
+        local before = #events(server, id, 'wasteland:survival:client:damage')
+        local ok = server:export('wasteland_survival', 'Damage', id, 30)
+        expect(ok).toBe(false)
+        expect(#events(server, id, 'wasteland:survival:client:damage')).toBe(before)
+    end)
+
+    it('picking a camp sends them there; protection ends a few seconds later', function()
+        server:clientEvent(id, 'wasteland:camps:server:chooseSpawn', 'nope'); server:advance(100)
+        expect(#events(server, id, 'wasteland:camps:client:spawnAt')).toBe(0)
+        server:clientEvent(id, 'wasteland:camps:server:chooseSpawn', 'base'); server:advance(100)
+        local at = last(events(server, id, 'wasteland:camps:client:spawnAt')).args
+        expect(at[2]).toBe('Test Camp')
+        expect(state().wlProtected).toBe(true)
+        server:advance(8200)
+        expect(state().wlProtected).toBe(false)
+        -- only once
+        server:clientEvent(id, 'wasteland:camps:server:chooseSpawn', 'base'); server:advance(1100)
+        expect(#events(server, id, 'wasteland:camps:client:spawnAt')).toBe(1)
+        expect(server:export('wasteland_survival', 'Damage', id, 5)).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+

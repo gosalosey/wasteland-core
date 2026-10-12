@@ -1,5 +1,12 @@
 # Changelog
 
+## New players: protected, $50, choose where to start (owner request)
+* Protection: while choosing or making a character and until a new character has arrived at their camp, a player is protected (player state `wlProtected`): no damage from the server (survival Damage refuses), zombies do not notice or hit them, bandits ignore them. (Before, a zombie could kill you in the character creator.)
+* New characters start with $50 cash (inventory.lua startingItems).
+* Choose where to start: after making a new character, a "Where do you start?" screen lists the safe camps (traders shown); the character is taken there, protected for a few more seconds. camps.lua: optional `spawn = { x, y, z, heading }` per camp (default: its centre). Server event wasteland:camps:spawnChosen(source, campId).
+* Tests: 707.
+
+
 ## Milestone 11: txAdmin recipe
 * The repository is on GitHub: https://github.com/gosalosey/wasteland-core (credits for the item pictures in the README).
 * txAdmin recipe (txadmin/recipe.yaml): installs FiveM's base resources, oxmysql (latest release), Wasteland Core, a ready server.cfg (build 3570, OneSync, start order, admins, server icon) and creates the database. Recipe URL: https://raw.githubusercontent.com/gosalosey/wasteland-core/main/txadmin/recipe.yaml

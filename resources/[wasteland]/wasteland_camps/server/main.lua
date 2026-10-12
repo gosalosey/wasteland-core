@@ -196,6 +196,11 @@ M = Wasteland.DefineModule({
                 coords = XYZ,
                 radius = { type = 'number', required = true, min = 5, max = 1000 },
                 safe = { type = 'boolean', default = true },
+                -- Where a new character who picks this camp appears (default: the centre).
+                spawn = { type = 'table', nullable = true, fields = {
+                    x = { type = 'number', required = true }, y = { type = 'number', required = true },
+                    z = { type = 'number', required = true }, heading = { type = 'number', default = 0 },
+                } },
                 blip = { type = 'table', fields = { sprite = { type = 'integer', default = 40 }, color = { type = 'integer', default = 2 } } },
                 traders = { type = 'array', default = {}, items = { type = 'table', fields = {
                     shop = { type = 'string', required = true },
@@ -238,6 +243,51 @@ local CAMP_ARGS = { { type = 'string', required = true, pattern = '^[%a][%w_]*$'
 local TRADE_ARGS = { CAMP_ARGS[1], CAMP_ARGS[2], { type = 'string', required = true, pattern = '^[%w_]+$', maxLength = 48 },
     { type = 'integer', required = true, min = 1, max = 10000 } }
 local RATE = { burst = 8, perSecond = 4 }
+
+-------------------------------------------------------------------------------
+-- New characters pick the camp they start at. They stay protected (no
+-- damage, zombies and bandits ignore them) until they have arrived.
+-------------------------------------------------------------------------------
+
+local choosing = {}  -- source -> true while the choice is open
+
+local function protect(src, on)
+    if GetPlayerName(tostring(src)) then Player(src).state:set('wlProtected', on == true, true) end
+end
+
+AddEventHandler('wasteland:appearance:saved', function(src, characterId, appearance, reason)
+    if reason ~= 'new' or not (M and M.active) then return end
+    local list = {}
+    for _, c in ipairs(M.config.camps) do
+        if c.safe then list[#list + 1] = { id = c.id, label = c.label, traders = #c.traders } end
+    end
+    if #list == 0 then protect(src, false); return end
+    choosing[src] = true
+    protect(src, true)
+    TriggerClientEvent('wasteland:camps:client:chooseSpawn', src, list)
+end)
+
+AddEventHandler('playerDropped', function()
+    local src = tonumber(source)
+    if src then choosing[src] = nil end
+end)
+
+M.netEvent('wasteland:camps:server:chooseSpawn', {
+    args = { { type = 'string', required = true, pattern = '^[%a][%w_]*$', maxLength = 48 } },
+    rateLimit = { burst = 3, perSecond = 1 },
+}, function(src, campId)
+    if not choosing[src] then return end
+    local camp
+    for _, c in ipairs(M.config.camps) do if c.id == campId and c.safe then camp = c end end
+    if not camp then return end
+    choosing[src] = nil
+    local at = camp.spawn or { x = camp.coords.x, y = camp.coords.y, z = camp.coords.z, heading = 0.0 }
+    M.log:info('player %d starts at %s', src, camp.label)
+    TriggerClientEvent('wasteland:camps:client:spawnAt', src, at, camp.label)
+    -- Protected a little longer, until they have arrived and the ground loaded.
+    Citizen.SetTimeout(8000, function() if not choosing[src] then protect(src, false) end end)
+    TriggerEvent('wasteland:camps:spawnChosen', src, camp.id)
+end)
 
 M.netEvent('wasteland:camps:server:config', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
     TriggerClientEvent('wasteland:camps:client:config', src, clientConfig())

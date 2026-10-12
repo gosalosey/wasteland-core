@@ -131,7 +131,8 @@ local function sense(ped, night)
     local best, bestDist = nil, math.huge
     for _, pl in ipairs(GetActivePlayers()) do
         local target = GetPlayerPed(pl)
-        if target ~= 0 and not IsEntityDead(target) and not safe(target) then
+        local ps = Player(GetPlayerServerId(pl)).state
+        if target ~= 0 and not IsEntityDead(target) and not safe(target) and not (ps and ps.wlProtected) then
             local dist = #(GetEntityCoords(target) - zc)
             if dist < bestDist then
                 local sight = night and d.sightNight or d.sightDay

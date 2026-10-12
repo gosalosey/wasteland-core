@@ -96,8 +96,9 @@ describe('inventory startup and new characters', function()
         expect(s.pockets).toBe('player:1')
         local pockets = inv(s, 'player:1')
         expect(pockets.width).toBe(6)
-        expect(#pockets.items).toBe(3)
-        expect(#rows(server, 'player:1')).toBe(3)
+        expect(#pockets.items).toBe(4) -- with the $50 starting cash
+        expect(#rows(server, 'player:1')).toBe(4)
+        expect(rowCount(server, 'cash')).toBe(50)
         expect(rowCount(server, 'canned_beans')).toBe(2)
     end)
 
@@ -472,6 +473,8 @@ Wasteland.DefineModule({ name = 'medic', version = '1.0.0', core = '^1.1.0', dep
 
     it('cash is an item: one weightless stack, GetCash / AddCash / RemoveCash', function()
         local I = function(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+        expect(I('GetCash', a)).toBe(50) -- every new character starts with $50
+        expect(I('RemoveCash', a, 50)).toBe(true)
         expect(I('GetCash', a)).toBe(0)
         expect(I('AddCash', a, 250000)).toBe(true)
         expect(I('AddCash', a, 1500)).toBe(true)

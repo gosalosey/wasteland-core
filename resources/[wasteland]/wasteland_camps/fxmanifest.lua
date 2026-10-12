@@ -28,4 +28,5 @@ client_scripts {
 
 files {
     'html/trader.js',
+    'html/spawn.js',
 }

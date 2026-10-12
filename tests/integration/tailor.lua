@@ -25,6 +25,7 @@ describe('tailor', function()
     server:command(id, 'character select 1'); server:advance(500)
     server:clientEvent(id, 'wasteland:appearance:server:save', defaults('mp_m_freemode_01'))
     server:advance(500)
+    server:export('wasteland_inventory', 'RemoveCash', id, 50); server:advance(100) -- start from $0
     local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
     local function worn(slot) for _, w in ipairs(I('GetWornItems', id)) do if w.slot == slot then return w end end end
     local function buy(changes) server:clientEvent(id, 'wasteland:tailor:server:buy', 1, 'mp_m_freemode_01', changes); server:advance(1100) end

@@ -176,8 +176,12 @@ local function stopCreator()
         RenderScriptCams(false, true, 400, true, false)
         DestroyCam(editing.cam, false)
     end
+    local wasNew = editing.reason == 'new'
     editing = nil
     exports.wasteland_ui:Close(SCREEN)
+    -- A new character next picks where to start (camps), still protected;
+    -- without the camps module there is no such choice.
+    if not wasNew or GetResourceState('wasteland_camps') ~= 'started' then LocalPlayer.state:set('wlProtected', false, true) end
     local ped = PlayerPedId()
     FreezeEntityPosition(ped, false)
     SetEntityInvincible(ped, false)
@@ -213,7 +217,10 @@ local function startCreator(info, token)
     waitForPlacement()
     if openToken ~= token then return end
     local start = info.current or current or WLA.defaults('mp_m_freemode_01')
-    editing = { appearance = start, cancellable = info.cancellable == true }
+    editing = { appearance = start, cancellable = info.cancellable == true, reason = info.reason }
+    -- Nothing can hurt you while you make your character (zombies, bandits,
+    -- server damage all check this player state).
+    LocalPlayer.state:set('wlProtected', true, true)
     apply(start)
     local ped = PlayerPedId()
     ClearPedTasksImmediately(ped)

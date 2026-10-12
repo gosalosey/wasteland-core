@@ -633,6 +633,8 @@ exports('Damage', function(src, amount)
     local s = stateOf(src)
     amount = math.floor(tonumber(amount) or 0)
     if not s or s.dead or amount <= 0 then return false end
+    local ps = Player(tonumber(src)) and Player(tonumber(src)).state
+    if ps and ps.wlProtected then return false end -- making a character / choosing where to start
     if wearPlate(tonumber(src), amount) then return true, true end -- the armor plate took it
     TriggerClientEvent('wasteland:survival:client:damage', tonumber(src), math.min(amount, 400))
     return true, false
