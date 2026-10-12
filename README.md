@@ -42,3 +42,20 @@ PROJECT_STATUS.md       milestone checklist and how to resume work
 * `docs/CONVENTIONS.md`: naming, versioning, error handling
 * `docs/TESTING.md` and `docs/IN_GAME_TESTS.md`
 * `docs/KNOWN_ISSUES.md`
+
+## Credits
+
+**Item pictures** (`resources/[wasteland]/wasteland_images`) come from **MK-Items** by [McKleans-Scripts](https://mckleans-scripts.tebex.io/), a free community pack of FiveM item images, converted to WebP. All credit for those pictures goes to their authors, including, as credited by MK-Items:
+
+* Jim and the [JixelPatterns](https://discord.gg/JixelPatterns) community
+* MrFurox from [Project Boosted](https://discord.gg/TrvAhGvDs3)
+* [NatasWillDoIt](https://github.com/NatasWillDoIt)
+* the [Project Sloth](https://github.com/Project-Sloth) community
+* [googleoblivion](https://github.com/googleoblivion) and [oosayeroo](https://github.com/oosayeroo)
+* and everyone who contributed images to MK-Items
+
+The pictures `cap`, `jeans`, `sunglasses` and `siphon_hose` were made for Wasteland Core (`tools/images`).
+
+If you are an author of one of these pictures and want it credited differently or removed, please open an issue.
+
+**Other software** used by Wasteland Core and not included here: [FiveM / FXServer](https://fivem.net) and [oxmysql](https://github.com/overextended/oxmysql) (database driver).
