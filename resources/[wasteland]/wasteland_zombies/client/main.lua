@@ -68,16 +68,29 @@ local function zombieInfo(ped)
     return state.wlZombie, state.wlInvestigate
 end
 
-local function configure(ped, kind)
+-- Zombies and players are enemies (5 = hate). Without this the game treats
+-- a zombie as a neutral bystander: no melee lock-on, and walking or swinging
+-- into one gives the "bump" (feels like an invisible block). Set on every
+-- game, not only the one running the zombie.
+local function zombieRelations(ped)
     if not zombieGroup then
         local _, group = AddRelationshipGroup('WL_ZOMBIE')
         zombieGroup = group
+        local player = GetHashKey('PLAYER')
         SetRelationshipBetweenGroups(0, zombieGroup, zombieGroup)
+        SetRelationshipBetweenGroups(5, zombieGroup, player)
+        SetRelationshipBetweenGroups(5, player, zombieGroup)
     end
-    SetPedRelationshipGroupHash(ped, zombieGroup)
+    if ped and GetPedRelationshipGroupHash(ped) ~= zombieGroup then SetPedRelationshipGroupHash(ped, zombieGroup) end
+end
+
+local function configure(ped, kind)
+    zombieRelations(ped)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedFleeAttributes(ped, 0, false)
     SetPedCombatAttributes(ped, 46, true)
+    SetPedCombatAbility(ped, 0)          -- no blocking or dodging the player's melee
+    SetPedCombatMovement(ped, 0)
     SetPedCanEvasiveDive(ped, false)
     SetPedConfigFlag(ped, 281, true)   -- no writhing on the ground
     SetPedConfigFlag(ped, 100, false)  -- no drunk stagger interruptions
@@ -93,6 +106,7 @@ end
 -- so every game applies it to every zombie it shows (not only the game that
 -- runs the zombie), and all players see the same zombie.
 local function dressUp(ped, kind)
+    zombieRelations(ped)
     ApplyPedDamagePack(ped, 'BigHitByVehicle', 0.0, 9.0)
     ApplyPedDamagePack(ped, 'SCR_Dumpster', 0.0, 9.0)
     local k = cfg and cfg.kinds and cfg.kinds[kind]

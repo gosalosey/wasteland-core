@@ -1,5 +1,10 @@
 # Changelog
 
+## Fix: an "invisible block" when hitting zombies in melee (owner report)
+* Zombies were in a relationship group the game treats as neutral toward players. That means no melee lock-on or hit assist, and running or swinging into one plays the bystander "bump", which felt like an invisible wall.
+* Zombies and players are now enemies (as bandits already were), set on every player's game. Zombies also no longer block or dodge melee (combat ability 0).
+* Not confirmed in-game yet.
+
 ## Fix: inventory grid lines did not match the items (owner report)
 * The grid lines were always drawn 50 px apart, while the cells now shrink to fit big grids, so they drifted away from the items. The lines now use the same size as the cells, and the border no longer eats into the last row and column.
 * The health panel no longer gets pushed off the right edge: the grids leave room for it and it takes the space that is left.
