@@ -1,5 +1,13 @@
 # Changelog
 
+## More food and drink
+* 18 new items, each with its own picture:
+  * Food: canned tuna, canned salmon, chicken soup, country stew, MREs (beef and chicken), chips, peanut butter, bread, apple, banana, orange.
+  * Drinks: Sprunk, coffee, milk, grape juice, beer, whiskey.
+* They differ in what they do. Soup, stew, coffee and whiskey warm you up. Fruit gives a bit of water as well as food. Salty food (chips, tuna, peanut butter) makes you thirstier. MREs are a full meal. Whiskey warms you but dries you out.
+* Found in fridges, vending machines, trash and crates. Most of them are also sold by the general trader.
+* Change the effects in survival.lua (consumables), the items in inventory.lua, where they drop in loot.lua and prices in camps.lua.
+
 ## Groups (new module wasteland_groups)
 * /group or F6: make a named group (3-24 characters, unique), invite players by id or from a "near you" list, accept or decline invites (they expire after 2 minutes).
 * Members see each other on the map: blue for members, yellow for the leader, red when down. Updated every 2 seconds.
