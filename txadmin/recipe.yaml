@@ -1,7 +1,7 @@
 $engine: 3
 $onesync: on
 name: Wasteland Core
-version: 1.0.1
+version: 1.0.2
 author: gosalosey
 description: |
   Zombie survival framework for FiveM: zombies, looting, crafting, survival,
@@ -33,20 +33,25 @@ tasks:
     src: ./tmp/oxmysql/oxmysql
     dest: ./resources/[standalone]/oxmysql
 
-  # 3. Wasteland Core (about 30 MB with the item pictures: give it time)
-  - action: download_github
-    src: https://github.com/gosalosey/wasteland-core
-    ref: main
+  # 3. Wasteland Core: the main branch as one zip file (about 22 MB). A
+  #    plain file download: faster and more reliable for a repository this
+  #    size than download_github (which goes through the GitHub API).
+  - action: download_file
+    url: https://codeload.github.com/gosalosey/wasteland-core/zip/refs/heads/main
+    path: ./tmp/wasteland.zip
+    timeoutSeconds: 1200
+  - action: unzip
+    src: ./tmp/wasteland.zip
     dest: ./tmp/wasteland
     timeoutSeconds: 1200
   - action: move_path
-    src: ./tmp/wasteland/resources/[wasteland]
+    src: ./tmp/wasteland/wasteland-core-main/resources/[wasteland]
     dest: ./resources/[wasteland]
   - action: move_path
-    src: ./tmp/wasteland/txadmin/server.cfg
+    src: ./tmp/wasteland/wasteland-core-main/txadmin/server.cfg
     dest: ./server.cfg
   - action: move_path
-    src: ./tmp/wasteland/txadmin/wasteland_core.png
+    src: ./tmp/wasteland/wasteland-core-main/txadmin/wasteland_core.png
     dest: ./wasteland_core.png
 
   # 4. The database (Wasteland creates its tables itself on the first start)
