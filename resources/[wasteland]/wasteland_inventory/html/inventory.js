@@ -227,11 +227,13 @@
     }
 
     // Pure helper (unit-tested): cell size in pixels so the grids fit the
-    // screen. rows: tallest grid; cols: grid widths side by side.
-    function cellSize(viewW, viewH, rows, cols) {
+    // screen. rows: tallest grid; cols: grid widths side by side (pockets,
+    // bag and what is being looted). Without loot the health panel still
+    // needs its own column (about 330 px) next to the worn items (about 330).
+    function cellSize(viewW, viewH, rows, cols, looting) {
         const byH = Math.floor((viewH - 230) / Math.max(1, rows));
-        const byW = Math.floor((viewW - 560) / Math.max(1, cols));
-        return Math.max(26, Math.min(50, byH, byW));
+        const byW = Math.floor((viewW - (looting ? 560 : 900)) / Math.max(1, cols));
+        return Math.max(24, Math.min(50, byH, byW));
     }
 
     if (typeof module === 'object' && module.exports) {
@@ -308,8 +310,10 @@
 
     function gridPanel(inv, title) {
         const grid = h('div', { class: 'wli-grid' });
-        grid.style.width = (inv.width * CELL) + 'px';
-        grid.style.height = (inv.height * CELL) + 'px';
+        // + 2: the 1 px border sits outside the cells (box-sizing is border-box)
+        grid.style.width = (inv.width * CELL + 2) + 'px';
+        grid.style.height = (inv.height * CELL + 2) + 'px';
+        grid.style.backgroundSize = CELL + 'px ' + CELL + 'px'; // the lines follow the cell size
         grid.dataset.inv = inv.id;
         inv.items.forEach((s) => { if (s.x !== undefined && s.x !== null) grid.appendChild(tile(s, inv)); });
         const heavy = inv.weight > inv.maxWeight * 0.9;
@@ -445,8 +449,8 @@
         const others = (st.snap.secondary || []).map(invById).filter(Boolean);
         const shown = [pockets, bag].concat(others).filter(Boolean);
         const rows = Math.max.apply(null, shown.map((i) => i.height).concat([1]));
-        const cols = (pockets ? pockets.width : 0) + (bag ? bag.width : 0) + Math.max(6, ...others.map((i) => i.width));
-        CELL = cellSize(window.innerWidth, window.innerHeight, rows, cols);
+        const cols = (pockets ? pockets.width : 0) + (bag ? bag.width : 0) + Math.max(0, ...others.map((i) => i.width));
+        CELL = cellSize(window.innerWidth, window.innerHeight, rows, cols, others.length > 0);
         if (pockets) st.middle.appendChild(gridPanel(pockets, 'Pockets'));
         if (bag) st.middle.appendChild(gridPanel(bag));
         // Health under what is being looted (that comes first).
@@ -496,8 +500,8 @@
             if (el.dataset && el.dataset.inv) {
                 const rect = el.getBoundingClientRect();
                 const inv = invById(el.dataset.inv);
-                const cellX = Math.floor((clientX - rect.left) / CELL);
-                const cellY = Math.floor((clientY - rect.top) / CELL);
+                const cellX = Math.floor((clientX - rect.left - 1) / CELL);
+                const cellY = Math.floor((clientY - rect.top - 1) / CELL);
                 return { kind: 'grid', inv: inv, el: el, cellX: cellX, cellY: cellY,
                     x: cellX - drag.grabX, y: cellY - drag.grabY };
             }
@@ -679,7 +683,7 @@
             st.vitalsEl = h('div', { class: 'wli-section wli-health' });
             st.left = h('div', { class: 'wli-col' });
             st.middle = h('div', { class: 'wli-col wli-col--main' });
-            st.right = h('div', { class: 'wli-col' });
+            st.right = h('div', { class: 'wli-col wli-col--side' });
             st.message = h('div', { class: 'wl-message' });
             st.root = h('div', { class: 'wli-root' },
                 h('div', { class: 'wl-backdrop' }),
@@ -726,7 +730,8 @@
         '.wli-layout { position: absolute; inset: 4vh 3vw; display: flex; flex-direction: column; gap: 10px; }',
         '.wli-header { display: flex; align-items: baseline; gap: 18px; }',
         '.wli-header__hint { flex: 1; }',
-        '.wli-columns { flex: 1; display: flex; gap: 22px; align-items: flex-start; overflow: auto; }',
+        '.wli-columns { flex: 1; display: flex; gap: 22px; align-items: flex-start; overflow-x: hidden; overflow-y: auto; }',
+        '.wli-col--side { flex: 1 1 0; min-width: 300px; max-width: 460px; }',
         '.wli-col { display: flex; flex-direction: column; gap: 16px; }',
         '.wli-col--main { flex: 0 0 auto; flex-direction: row; align-items: flex-start; }',
         '.wli-section { background: var(--wl-bg); border: 1px solid var(--wl-border); border-radius: var(--wl-radius); padding: 10px 12px 12px; }',

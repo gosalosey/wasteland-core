@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: inventory grid lines did not match the items (owner report)
+* The grid lines were always drawn 50 px apart, while the cells now shrink to fit big grids, so they drifted away from the items. The lines now use the same size as the cells, and the border no longer eats into the last row and column.
+* The health panel no longer gets pushed off the right edge: the grids leave room for it and it takes the space that is left.
+
 ## Choose where you wake up (owner report: random spawn after waiting at character select)
 * Returning characters now choose on login: their last known position, or one of the safe camps. The screen stays dark and they stay protected until they arrive. The choice puts them exactly there, whatever happened while they waited at the character screen.
 * New characters still pick a camp after the creator. Not after a resource restart, and not while dead (the respawn screen handles that).
