@@ -1,7 +1,7 @@
 $engine: 3
 $onesync: on
 name: Wasteland Core
-version: 1.0.0
+version: 1.0.1
 author: gosalosey
 description: |
   Zombie survival framework for FiveM: zombies, looting, crafting, survival,
@@ -15,6 +15,7 @@ tasks:
     ref: master
     subpath: resources
     dest: ./resources
+    timeoutSeconds: 600
 
   # The old chat resource is replaced by FiveM's built-in chat.
   - action: remove_path
@@ -24,6 +25,7 @@ tasks:
   - action: download_file
     url: https://github.com/overextended/oxmysql/releases/latest/download/oxmysql.zip
     path: ./tmp/oxmysql.zip
+    timeoutSeconds: 600
   - action: unzip
     src: ./tmp/oxmysql.zip
     dest: ./tmp/oxmysql
@@ -31,11 +33,12 @@ tasks:
     src: ./tmp/oxmysql/oxmysql
     dest: ./resources/[standalone]/oxmysql
 
-  # 3. Wasteland Core
+  # 3. Wasteland Core (about 30 MB with the item pictures: give it time)
   - action: download_github
     src: https://github.com/gosalosey/wasteland-core
     ref: main
     dest: ./tmp/wasteland
+    timeoutSeconds: 1200
   - action: move_path
     src: ./tmp/wasteland/resources/[wasteland]
     dest: ./resources/[wasteland]
