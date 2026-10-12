@@ -52,6 +52,9 @@ return {
         -- Supply drops (also the SDK example module, docs/SDK_GUIDE.md).
         supplydrops = true,
 
+        -- World events: helicopter crashes, convoys, bandit hideouts, hordes.
+        events     = true,
+
         -- Planned modules (added in later milestones). Listing a module here
         -- before its resource exists makes the status report show it as
         -- "missing", so they stay commented out until they are delivered.

@@ -521,3 +521,16 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 | R35.1 | Two players stand near each other with zombies around; one types /zombies sync and opens F8 | Each player: "sees N of the N zombies near them"; "Sync check: OK" |
 | R35.2 | Both look at the same zombie | Both see it bloody and staggering, in the same place |
 | R35.3 | One player drives 500 m away and comes back; /zombies sync again | OK again |
+
+## R36: world events
+
+| # | Do | Expect |
+|---|---|---|
+| R36.1 | /event helicrash here | "A helicopter went down near an admin..."; a red area and a helicopter marker 25 m away |
+| R36.2 | Look there | A crashed helicopter (fire), a crate; tell me if anything floats or sinks |
+| R36.3 | Stay within 150 m | 4 bandits with pistols attack you; zombies come |
+| R36.4 | Left Alt on the wreck before they are dead | "Too dangerous: N bandits and M zombies are still here." |
+| R36.5 | Kill a bandit | A "Bandit" bag where he fell (ammo, cash) |
+| R36.6 | Kill them all | Everyone: "The bandits at the crash ... are dead"; the marker turns green; "Search: Helicopter wreckage" opens good loot |
+| R36.7 | /event convoy here, /event hideout here, /event horde here | Each looks right; tell me any prop that is missing |
+| R36.8 | /event end | Everything is gone |

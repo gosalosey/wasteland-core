@@ -1,5 +1,19 @@
 # Changelog
 
+## World events (owner request)
+* New resource wasteland_events (module "events", config events.lua; added to server.cfg). Every 35 minutes (with players online) an event starts at one of 10 points (never in a camp): a message for everyone and a red marker.
+  * Helicopter crash: a burning crashed helicopter, 16 zombies and 4 bandits with pistols; the wreckage holds military loot.
+  * Ambushed convoy: wrecked trucks and crates, 6 bandits with pistols and micro SMGs, 8 zombies; convoy cargo.
+  * Bandit hideout: tents, a campfire, 7 bandits with pistols and sawed-offs; their stash.
+  * Horde: 32 zombies at a wrecked car; a survivor cache.
+* The danger appears when a player comes within 150 m. Bandits shoot players, take cover, stay near their spot and leave zombies alone; each drops a small bag (pistol ammo, cash, sometimes medicine). The loot stays locked ("Too dangerous: 2 bandits and 5 zombies are still here.") until every bandit and event zombie is dead; then everyone is told, the marker turns green and the loot (shared) opens. The event ends 15 minutes later.
+* New loot tables: helicrash, military, bandit_stash, survivor_cache.
+* Admins: /event (list), /event <type>, /event <type> here, /event end.
+* Exports GetEvents, StartEvent, EndEvent; server events wasteland:events:started / cleared / looted / banditKilled.
+* camps.lua: the owner's move of the Legion Square camp to Pillbox Hospital taken into the repository.
+* Tests: 704.
+
+
 ## Testing with two games on one PC
 * players.lua `duplicateSession = 'test_second_account'` (testing only): a second FiveM game on the same Rockstar account (started with -cl2) joins as a separate account ("...:test2") with its own characters, instead of kicking the first. Switched on in the owner's live config while the server is private; the shipped default stays 'kick_old'.
 * Tests: 688.

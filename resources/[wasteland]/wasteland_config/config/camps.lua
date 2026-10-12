@@ -94,11 +94,11 @@ return {
             },
         },
         {
-            id = 'legion', label = 'Legion Square Camp', coords = { x = 195.0, y = -934.0, z = 30.7 }, radius = 60,
+            id = 'legion', label = 'Legion Square Camp', coords = { x = 307.21, y = -590.56, z = 43.29 }, radius = 60,
             blip = { sprite = 40, color = 2 },
             traders = {
-                { shop = 'general', model = 's_m_m_trucker_01', coords = { x = 190.4, y = -931.2, z = 30.69, heading = 240.0 } },
-                { shop = 'medic', model = 's_m_m_paramedic_01', coords = { x = 199.0, y = -937.6, z = 30.69, heading = 60.0 } },
+                { shop = 'general', model = 's_m_m_trucker_01', coords = { x = 300.84, y = -588.77, z = 43.29, heading = 333.31 } },
+                { shop = 'medic', model = 's_m_m_paramedic_01', coords = { x = 304.87, y = -585.89, z = 43.29, heading = 108.23 } },
             },
         },
     },
