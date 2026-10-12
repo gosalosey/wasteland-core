@@ -1,0 +1,54 @@
+$engine: 3
+$onesync: on
+name: Wasteland Core
+version: 1.0.0
+author: gosalosey
+description: |
+  Zombie survival framework for FiveM: zombies, looting, crafting, survival,
+  vehicles to repair, camps and traders, jobs, world events. No QBCore/ESX.
+  Needs MySQL or MariaDB. Game build 3570.
+
+tasks:
+  # 1. FiveM's base resources (mapmanager, spawnmanager, ...)
+  - action: download_github
+    src: https://github.com/citizenfx/cfx-server-data
+    ref: master
+    subpath: resources
+    dest: ./resources
+
+  # The old chat resource is replaced by FiveM's built-in chat.
+  - action: remove_path
+    path: ./resources/[gameplay]/chat
+
+  # 2. oxmysql (the database driver), latest release
+  - action: download_file
+    url: https://github.com/overextended/oxmysql/releases/latest/download/oxmysql.zip
+    path: ./tmp/oxmysql.zip
+  - action: unzip
+    src: ./tmp/oxmysql.zip
+    dest: ./tmp/oxmysql
+  - action: move_path
+    src: ./tmp/oxmysql/oxmysql
+    dest: ./resources/[standalone]/oxmysql
+
+  # 3. Wasteland Core
+  - action: download_github
+    src: https://github.com/gosalosey/wasteland-core
+    ref: main
+    dest: ./tmp/wasteland
+  - action: move_path
+    src: ./tmp/wasteland/resources/[wasteland]
+    dest: ./resources/[wasteland]
+  - action: move_path
+    src: ./tmp/wasteland/txadmin/server.cfg
+    dest: ./server.cfg
+  - action: move_path
+    src: ./tmp/wasteland/txadmin/wasteland_core.png
+    dest: ./wasteland_core.png
+
+  # 4. The database (Wasteland creates its tables itself on the first start)
+  - action: connect_database
+
+  # 5. Clean up
+  - action: remove_path
+    path: ./tmp
