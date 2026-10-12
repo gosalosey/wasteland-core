@@ -18,6 +18,11 @@ return {
         weapon_bat = { hash = 'WEAPON_BAT', noise = 10 },
         weapon_hatchet = { hash = 'WEAPON_HATCHET', noise = 8 },
         weapon_machete = { hash = 'WEAPON_MACHETE', noise = 6 },
+        weapon_hammer = { hash = 'WEAPON_HAMMER', noise = 8 },
+        weapon_wrench = { hash = 'WEAPON_WRENCH', noise = 9 },
+        weapon_battleaxe = { hash = 'WEAPON_BATTLEAXE', noise = 9 },
+        weapon_knuckle = { hash = 'WEAPON_KNUCKLE', noise = 4 },
+        weapon_switchblade = { hash = 'WEAPON_SWITCHBLADE', noise = 4 },
 
         weapon_pistol = { hash = 'WEAPON_PISTOL', ammo = 'ammo_9mm', noise = 120 },
         weapon_revolver = { hash = 'WEAPON_REVOLVER', ammo = 'ammo_44', noise = 150 },

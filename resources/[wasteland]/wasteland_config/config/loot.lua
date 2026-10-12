@@ -76,6 +76,8 @@ return {
             { name = 'jerry_can', min = 1, max = 1, weight = 2 },
             { name = 'lockpick', min = 1, max = 1, weight = 2 },
             { name = 'siphon_hose', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_knuckle', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_switchblade', min = 1, max = 1, weight = 1 },
         } },
         food = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
@@ -127,6 +129,12 @@ return {
             { name = 'lockpick', min = 1, max = 2, weight = 4 },
             { name = 'armor_repair_kit', min = 1, max = 1, weight = 3 },
             { name = 'vehicle_lock', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_bat', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_hammer', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_wrench', min = 1, max = 1, weight = 2 },
+            { name = 'weapon_hammer', min = 1, max = 1, weight = 3 },
+            { name = 'weapon_wrench', min = 1, max = 1, weight = 3 },
+            { name = 'gun_parts', min = 1, max = 2, weight = 3 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
             { name = 'sewing_kit', min = 1, max = 1, weight = 3 },
@@ -149,6 +157,12 @@ return {
             { name = 'car_wheel', min = 1, max = 1, weight = 3 },
             { name = 'jerry_can', min = 1, max = 1, weight = 3 },
             { name = 'siphon_hose', min = 1, max = 1, weight = 2 },
+            { name = 'gun_parts', min = 1, max = 2, weight = 4 },
+            { name = 'gunpowder', min = 1, max = 3, weight = 4 },
+            { name = 'blueprint_pistol', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_dbshotgun', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_ammo_pistol', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_battleaxe', min = 1, max = 1, weight = 1 },
         } },
         -- Wrecked vehicles: scrap and car parts, sometimes something left behind.
         wreck = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
@@ -166,6 +180,7 @@ return {
             { name = 'ammo_9mm', min = 2, max = 8, weight = 3 },
             { name = 'soda_can', min = 1, max = 1, weight = 3 },
             { name = 'flashlight', min = 1, max = 1, weight = 2 },
+            { name = 'gun_parts', min = 1, max = 1, weight = 2 },
         } },
         -- World events (events.lua): the reward for clearing them.
         helicrash = { emptyChance = 0, rolls = { 2, 3 }, items = {
@@ -180,6 +195,11 @@ return {
             { name = 'backpack_large', min = 1, max = 1, weight = 3 },
             { name = 'blueprint_armor_plate', min = 1, max = 1, weight = 2 },
             { name = 'cash', min = 100, max = 400, weight = 6 },
+            { name = 'blueprint_carbine', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_smg', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_ammo_rifle', min = 1, max = 1, weight = 2 },
+            { name = 'gun_parts', min = 2, max = 4, weight = 6 },
+            { name = 'gunpowder', min = 2, max = 5, weight = 5 },
         } },
         military = { emptyChance = 0, rolls = { 2, 3 }, items = {
             { name = 'weapon_assaultrifle', min = 1, max = 1, weight = 3 },
@@ -192,6 +212,12 @@ return {
             { name = 'vehicle_repair_kit', min = 1, max = 1, weight = 4 },
             { name = 'canned_beans', min = 2, max = 4, weight = 6 },
             { name = 'water_bottle', min = 2, max = 4, weight = 6 },
+            { name = 'blueprint_assaultrifle', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_pumpshotgun', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_ammo_shotgun', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_ammo_rifle', min = 1, max = 1, weight = 2 },
+            { name = 'gun_parts', min = 2, max = 4, weight = 6 },
+            { name = 'gunpowder', min = 2, max = 5, weight = 6 },
         } },
         bandit_stash = { emptyChance = 0, rolls = { 2, 4 }, items = {
             { name = 'cash', min = 50, max = 250, weight = 12 },
@@ -205,6 +231,13 @@ return {
             { name = 'blueprint_machete', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_crowbar', min = 1, max = 1, weight = 2 },
             { name = 'vehicle_lock', min = 1, max = 1, weight = 3 },
+            { name = 'blueprint_revolver', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_microsmg', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_ammo_pistol', min = 1, max = 1, weight = 2 },
+            { name = 'gun_parts', min = 1, max = 3, weight = 4 },
+            { name = 'gunpowder', min = 1, max = 3, weight = 4 },
+            { name = 'weapon_knuckle', min = 1, max = 1, weight = 2 },
+            { name = 'weapon_switchblade', min = 1, max = 1, weight = 2 },
         } },
         survivor_cache = { emptyChance = 0, rolls = { 2, 3 }, items = {
             { name = 'canned_beans', min = 2, max = 5, weight = 10 },
@@ -216,6 +249,9 @@ return {
             { name = 'sewing_kit', min = 1, max = 2, weight = 4 },
             { name = 'backpack_small', min = 1, max = 1, weight = 3 },
             { name = 'weapon_machete', min = 1, max = 1, weight = 2 },
+            { name = 'blueprint_huntingrifle', min = 1, max = 1, weight = 1 },
+            { name = 'blueprint_bat', min = 1, max = 1, weight = 2 },
+            { name = 'gunpowder', min = 1, max = 2, weight = 3 },
         } },
         mail = { emptyChance = 0.7, rolls = { 1, 1 }, items = {
             { name = 'cash', min = 5, max = 60, weight = 70 },

@@ -1,5 +1,19 @@
 # Changelog
 
+## Crafting: rags from any clothing, weapon and ammo blueprints
+* Tear up pants (3 rags), shoes (2) or a hat (1), as well as tops. These are known from the start.
+* New melee weapons: hammer, pipe wrench, battle axe, brass knuckles and switchblade. Each has its own blueprint, and so does the baseball bat.
+* Gun blueprints: pistol, heavy revolver, sawed-off shotgun, pump shotgun, micro SMG, SMG, hunting rifle, carbine and assault rifle.
+* Ammo blueprints:
+  * Pistol ammo (9mm and .44).
+  * Shotgun shells.
+  * Rifle ammo (5.56, 7.62 and .308).
+* New materials:
+  * Gun parts: crates, tool sheds, wrecks, crash sites, military and bandit loot.
+  * Gunpowder: crates, crash sites, military and bandit loot, survivor caches.
+* The best blueprints are the rarest: rifles at crash sites and military events, the SMG at crash sites.
+* Change any of it in crafting.lua, loot.lua and inventory.lua.
+
 ## Base building switched off (owner decision)
 * The props did not look good enough. `bases = false` in modules.lua, and `ensure wasteland_bases` is removed from the server.cfg templates.
 * The code stays in `wasteland_bases`, along with the unit tests for its grid math.
