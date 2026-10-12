@@ -49,7 +49,7 @@ add_principal identifier.fivem:12345678 group.admin
 
 ## Updating
 
-**With the updater (recommended).** Servers installed with the recipe have `update_wasteland.bat` in the server folder. On older installs, download [`tools/update.ps1`](../tools/update.ps1) and save it as `update_wasteland.ps1` in the server folder (the folder with `server.cfg`), and [`tools/update_wasteland.bat`](../tools/update_wasteland.bat) next to it.
+**With the updater (recommended).** Servers installed with the recipe have `update_wasteland.bat` in the server folder. On older installs, download [`tools/update.ps1`](../tools/update.ps1) (save it as `update_wasteland.ps1`) and [`tools/update_wasteland.bat`](../tools/update_wasteland.bat), both into the same folder: best the server folder (with `server.cfg`); anywhere near it works too (e.g. `txData	ools`), the updater finds the server and asks if there are several.
 
 1. Stop the server (txAdmin: **Stop**).
 2. Double-click `update_wasteland.bat`. It shows what is new, then:

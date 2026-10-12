@@ -2,8 +2,8 @@
 # Updates a Wasteland Core server to the newest version on GitHub.
 #
 #   1. Stop the server (txAdmin: Stop).
-#   2. Double-click update_wasteland.bat in the server folder
-#      (or: powershell -ExecutionPolicy Bypass -File update_wasteland.ps1).
+#   2. Double-click update_wasteland.bat (best in the server folder, next to
+#      server.cfg; elsewhere it looks for the server nearby and asks).
 #   3. Start the server.
 #
 # What it does:
@@ -44,8 +44,39 @@ function Ask($question) {
 }
 
 # --- the server folder ------------------------------------------------------
-if ($ServerPath -eq '') { $ServerPath = $PSScriptRoot }
-$ServerPath = (Resolve-Path $ServerPath).Path
+# A server folder has server.cfg and resources\[wasteland]. Without
+# -ServerPath: this script's folder, else nearby folders (its parents and
+# their sub-folders, e.g. txData\MyServer.base); asks if there are several.
+function IsServer($dir) {
+    return (Test-Path -LiteralPath (Join-Path $dir 'server.cfg')) -and (Test-Path -LiteralPath (Join-Path $dir 'resources\[wasteland]'))
+}
+if ($ServerPath -eq '') {
+    if (IsServer $PSScriptRoot) {
+        $ServerPath = $PSScriptRoot
+    } else {
+        $found = @()
+        $dir = $PSScriptRoot
+        for ($up = 0; $up -lt 3 -and $dir; $up++) {
+            if ((IsServer $dir) -and ($found -notcontains $dir)) { $found += $dir }
+            Get-ChildItem -LiteralPath $dir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                if ((IsServer $_.FullName) -and ($found -notcontains $_.FullName)) { $found += $_.FullName }
+            }
+            $dir = Split-Path -Parent $dir
+        }
+        if ($found.Count -eq 0) { throw "No Wasteland server folder found near $PSScriptRoot. Put this script in the folder with server.cfg, or pass -ServerPath." }
+        if ($found.Count -eq 1) {
+            $ServerPath = $found[0]
+        } else {
+            Write-Host 'Wasteland servers found:'
+            for ($i = 0; $i -lt $found.Count; $i++) { Write-Host ("  {0}. {1}" -f ($i + 1), $found[$i]) }
+            $pick = if ($Yes) { '1' } else { Read-Host 'Which one? (number)' }
+            $n = 0
+            if (-not [int]::TryParse($pick, [ref]$n) -or $n -lt 1 -or $n -gt $found.Count) { throw 'No server chosen.' }
+            $ServerPath = $found[$n - 1]
+        }
+    }
+}
+$ServerPath = (Resolve-Path -LiteralPath $ServerPath).Path
 $cfgPath = Join-Path $ServerPath 'server.cfg'
 $wlPath = Join-Path $ServerPath 'resources\[wasteland]'
 if (-not (Test-Path -LiteralPath $cfgPath)) { throw "No server.cfg in $ServerPath. Put this script in the server folder, or pass -ServerPath." }
