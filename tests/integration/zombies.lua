@@ -320,3 +320,27 @@ describe('sync check (/zombies sync)', function()
     end)
 end)
 
+describe('zombie hits need the swing to reach', function()
+    local server = world()
+    local id = player(server, 'reach', { x = 0.0, y = 0.0, z = 30.0 })
+    local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 2.5, y = 0.0, z = 30.0 }, 'walker')
+    server:advance(100)
+    local z = server.entities[netId - 5000]
+    z.owner = id
+
+    it('a report from a zombie 2.9 m away is refused (reach 1.7 m + 1 m for movement)', function()
+        z.coords = { x = 2.9, y = 0.0, z = 30.0 }
+        local before = #events(server, id, 'wasteland:survival:client:damage')
+        server:clientEvent(id, 'wasteland:zombies:server:hit', netId, id); server:advance(100)
+        expect(#events(server, id, 'wasteland:survival:client:damage')).toBe(before)
+    end)
+
+    it('one within reach hits', function()
+        z.coords = { x = 1.2, y = 0.0, z = 30.0 }
+        local before = #events(server, id, 'wasteland:survival:client:damage')
+        server:advance(1600)
+        server:clientEvent(id, 'wasteland:zombies:server:hit', netId, id); server:advance(100)
+        expect(#events(server, id, 'wasteland:survival:client:damage')).toBe(before + 1)
+    end)
+end)
+

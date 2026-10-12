@@ -149,6 +149,20 @@ local function sense(ped, night)
     return best, bestDist
 end
 
+-- Does a swing that lands now hit `target`? Within reach, in front of the
+-- zombie (about 60 degrees either side), a clear line, not in a vehicle.
+local function landed(ped, target)
+    if not target or not DoesEntityExist(target) or IsEntityDead(target) or IsPedInAnyVehicle(target, false) then return false end
+    local zc, pc = GetEntityCoords(ped), GetEntityCoords(target)
+    local reach = cfg.attack.hitReach or 1.7
+    if #(pc - zc) > reach then return false end
+    local fwd = GetEntityForwardVector(ped)
+    local to = pc - zc
+    local len = math.sqrt(to.x * to.x + to.y * to.y)
+    if len > 0.3 and (fwd.x * to.x + fwd.y * to.y) / len < 0.5 then return false end
+    return HasEntityClearLosToEntity(ped, target, 17)
+end
+
 local function playAttack(ped)
     RequestAnimDict(ATTACK_DICT)
     if HasAnimDictLoaded(ATTACK_DICT) then
@@ -188,15 +202,25 @@ local function think(ped, b, kind, investigate, night)
 
     if b.mode == 'chase' and b.target then
         dist = dist or #(GetEntityCoords(b.target) - GetEntityCoords(ped))
-        if dist <= cfg.attack.range then
-            if t >= (b.nextAttack or 0) then
-                b.nextAttack = t + cfg.attack.cooldownMs
-                TaskTurnPedToFaceEntity(ped, b.target, 300)
-                playAttack(ped)
-                local player = NetworkGetPlayerIndexFromPed(b.target)
+        if b.swing and t >= b.swing.at then
+            -- The swing lands now: it hits only if the player is still within
+            -- reach, in front of the zombie, with nothing in between.
+            local target = b.swing.target
+            b.swing = nil
+            if landed(ped, target) then
+                local player = NetworkGetPlayerIndexFromPed(target)
                 if player ~= -1 then
                     TriggerServerEvent('wasteland:zombies:server:hit', NetworkGetNetworkIdFromEntity(ped), GetPlayerServerId(player))
                 end
+            end
+        end
+        if dist <= cfg.attack.range then
+            if t >= (b.nextAttack or 0) and not b.swing then
+                -- Start a swing; whether it hits is decided when it lands.
+                b.nextAttack = t + cfg.attack.cooldownMs
+                TaskTurnPedToFaceEntity(ped, b.target, 300)
+                playAttack(ped)
+                b.swing = { target = b.target, at = t + (cfg.attack.windupMs or 450) }
             end
         elseif t >= (b.nextTask or 0) then
             b.nextTask = t + 1000

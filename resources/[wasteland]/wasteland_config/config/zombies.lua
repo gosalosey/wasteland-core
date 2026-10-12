@@ -50,9 +50,10 @@ return {
         alertRadius = 25,          -- a zombie that spots a player brings the others this close (0 = off)
     },
 
-    -- range: how far a zombie reaches (metres). It stops a little short of
-    -- that and swings, so you get hit before it is in your face.
-    attack = { range = 2.6, cooldownMs = 1100 },
+    -- A zombie this close (range) starts a swing; windupMs later the swing
+    -- lands and hits only if you are still within hitReach, in front of it,
+    -- with nothing in between. Step back in time and it misses.
+    attack = { range = 2.2, hitReach = 1.7, windupMs = 450, cooldownMs = 1100 },
 
     -- Gunshots (and other weapon noise, weapons.lua `noise`): zombies within
     -- the noise radius walk to it.

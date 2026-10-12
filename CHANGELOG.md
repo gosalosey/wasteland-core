@@ -1,5 +1,11 @@
 # Changelog
 
+## Fix: zombies only hurt you when the swing lands (owner report)
+* Before, damage was sent the moment a zombie within 2.6 m started its attack animation, so being near one hurt even when it never touched you.
+* Now a zombie within 2.2 m starts a swing; 0.45 s later it lands and hits only if you are still within 1.7 m, in front of it (about 60 degrees either side), with nothing in between and not in a vehicle. Step back or sideways in time and it misses. The server refuses hit reports from further than reach + 1 m. zombies.lua `attack = { range, hitReach, windupMs, cooldownMs }`.
+* Tests: 709.
+
+
 ## Updater for other servers
 * tools/update.ps1 (+ update_wasteland.bat): stop the server, double-click, start it. Shows what is new since the installed version (VERSION.txt), backs up the database (mysqldump / mariadb-dump, from the server.cfg connection string) and the old resources, installs the newest version from GitHub keeping the server's settings and zombie models (differing settings files get a .lua.new next to them), adds new settings files, offers to add missing ensure lines to server.cfg, updates itself.
 * The txAdmin recipe (1.0.3) puts the updater into the server folder.

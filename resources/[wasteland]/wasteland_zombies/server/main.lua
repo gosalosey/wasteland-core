@@ -243,7 +243,9 @@ local function hit(src, netId, victim)
     if z.lastHit and t - z.lastHit < M.config.attack.cooldownMs then return end
     local ped = GetPlayerPed(victim)
     if not ped or ped == 0 or not DoesEntityExist(ped) or survival('IsDead', victim) then return end
-    if Rules.dist3d(coordsOf(z.handle), coordsOf(ped)) > M.config.attack.range + 1.0 then return end
+    -- The game reports a hit only when the swing landed within reach; allow
+    -- for movement while the message travels, nothing more.
+    if Rules.dist3d(coordsOf(z.handle), coordsOf(ped)) > M.config.attack.hitReach + 1.0 then return end
     if inSafeZone(coordsOf(ped)) then return end
     z.lastHit = t
     local r = Rules.hit(M.config.kinds[z.kind], {
@@ -415,7 +417,12 @@ M = Wasteland.DefineModule({
                 hearWalk = NUM(9, 0, 200), hearCrouch = NUM(3, 0, 200), loseSeconds = INT(10, 1, 120),
                 alertRadius = NUM(0, 0, 100), -- a zombie that spots a player brings the others this close
             } },
-            attack = { type = 'table', fields = { range = NUM(2.6, 0.5, 5), cooldownMs = INT(1500, 200, 10000) } },
+            attack = { type = 'table', fields = {
+                range = NUM(2.2, 0.5, 5),            -- a zombie this close starts a swing
+                hitReach = NUM(1.7, 0.5, 4),         -- the swing hits only if the player is still this close
+                windupMs = INT(450, 0, 3000),        -- from the start of the swing to when it lands
+                cooldownMs = INT(1500, 200, 10000),
+            } },
             noise = { type = 'table', fields = { investigateSeconds = INT(40, 1, 600) } },
             loot = { type = 'table', fields = {
                 chance = NUM(0.25, 0, 1), lifetimeMinutes = INT(15, 1, 1440),
