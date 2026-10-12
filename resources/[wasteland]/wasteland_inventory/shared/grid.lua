@@ -84,6 +84,53 @@ function Grid.canMerge(a, b, defs)
     return Grid.deepEqual(a.metadata or {}, b.metadata or {})
 end
 
+--- Pocket size from what is worn: base + the bonus of every worn slot,
+--- at most max. pockets = { width, height, maxWidth, maxHeight, bonus = { [slot] = { width, height } } };
+--- worn: map of stacks with .slot. -> width, height
+function Grid.pocketSize(pockets, worn, ignoreUid)
+    local w, h = pockets.width, pockets.height
+    for uid, s in pairs(worn or {}) do
+        local b = s.slot and pockets.bonus and pockets.bonus[s.slot]
+        if b and (s.uid or uid) ~= ignoreUid then w, h = w + (b.width or 0), h + (b.height or 0) end
+    end
+    return math.min(w, pockets.maxWidth or w), math.min(h, pockets.maxHeight or h)
+end
+
+--- Fit every stack of `inv` into a width x height grid: stacks already
+--- inside stay put, the others get the first free spot (biggest first).
+--- fixed: optional { [uid] = stack } placed first and never moved.
+--- Returns moves = { [uid] = { x, y, rotated } }, overflow = { uid... }.
+function Grid.repack(inv, defs, width, height, fixed)
+    local test = { width = width, height = height, items = {} }
+    local moves, overflow, rest = {}, {}, {}
+    for uid, s in pairs(fixed or {}) do test.items[uid] = s end
+    for uid, s in pairs(inv.items) do
+        if not (fixed and fixed[uid]) and s.x ~= nil then
+            local d = defs[s.name] or { width = 1, height = 1 }
+            local w, h = Grid.footprint(d, s.rotated)
+            local inside = s.x + w <= width and s.y + h <= height
+            if inside and Grid.fits(test, defs, d, s.x, s.y, s.rotated) then test.items[uid] = s
+            else rest[#rest + 1] = s end
+        end
+    end
+    table.sort(rest, function(a, b)
+        local da, db = defs[a.name] or { width = 1, height = 1 }, defs[b.name] or { width = 1, height = 1 }
+        if da.width * da.height ~= db.width * db.height then return da.width * da.height > db.width * db.height end
+        return a.uid < b.uid
+    end)
+    for _, s in ipairs(rest) do
+        local d = defs[s.name] or { width = 1, height = 1 }
+        local x, y, rotated = Grid.findSpot(test, defs, d)
+        if x then
+            moves[s.uid] = { x = x, y = y, rotated = rotated }
+            test.items[s.uid] = { uid = s.uid, name = s.name, x = x, y = y, rotated = rotated }
+        else
+            overflow[#overflow + 1] = s.uid
+        end
+    end
+    return moves, overflow
+end
+
 function Grid.count(inv)
     local n = 0
     for _ in pairs(inv.items) do n = n + 1 end

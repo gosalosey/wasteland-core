@@ -56,3 +56,12 @@ test('base upkeep line', () => {
         'Upkeep unpaid! Put 2 x Scrap metal in the upkeep box or the base falls apart in 40 h.');
 });
 
+
+const invUi = require(path.join(R, 'wasteland_inventory', 'html', 'inventory.js'));
+
+test('inventory cells shrink to fit big grids on the screen', () => {
+    assert.strictEqual(invUi.cellSize(1920, 1080, 6, 16), 50);
+    assert.strictEqual(invUi.cellSize(1920, 1080, 15, 10 + 15 + 10), baseCell(1920, 1080, 15, 35));
+    assert.ok(invUi.cellSize(1280, 720, 15, 35) >= 26);
+    function baseCell(w, h, rows, cols) { return Math.max(26, Math.min(50, Math.floor((h - 230) / rows), Math.floor((w - 560) / cols))); }
+});

@@ -226,8 +226,16 @@
         return label.split(/\s+/).map((w) => w[0]).join('').toUpperCase().slice(0, 4);
     }
 
+    // Pure helper (unit-tested): cell size in pixels so the grids fit the
+    // screen. rows: tallest grid; cols: grid widths side by side.
+    function cellSize(viewW, viewH, rows, cols) {
+        const byH = Math.floor((viewH - 230) / Math.max(1, rows));
+        const byW = Math.floor((viewW - 560) / Math.max(1, cols));
+        return Math.max(26, Math.min(50, byH, byW));
+    }
+
     if (typeof module === 'object' && module.exports) {
-        module.exports = { footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
+        module.exports = { cellSize: cellSize, footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
             formatKg: formatKg, shortLabel: shortLabel, condition: condition, conditions: conditions, toF: toF, feels: feels, repairChoices: repairChoices };
         return;
     }
@@ -238,7 +246,7 @@
 
     const UI = window.WastelandUI;
     const h = UI.h;
-    const CELL = 50;
+    let CELL = 50; // set in render() to fit the screen
     const CATEGORY_COLORS = {
         food: '#6d7f3a', drink: '#3d6f8a', medical: '#8a3d3d', material: '#6b5f50', tool: '#7a6a3a',
         clothing: '#5a4d6e', armor: '#4a5866', container: '#4e5f45', weapon: '#5d5d5d', ammo: '#7d6b2e', misc: '#555048',
@@ -433,8 +441,14 @@
         st.left.appendChild(equipmentPanel());
         st.left.appendChild(hotbarPanel());
         const pockets = invById(st.snap.pockets);
+        const bag = st.snap.backpack ? invById(st.snap.backpack) : null;
+        const others = (st.snap.secondary || []).map(invById).filter(Boolean);
+        const shown = [pockets, bag].concat(others).filter(Boolean);
+        const rows = Math.max.apply(null, shown.map((i) => i.height).concat([1]));
+        const cols = (pockets ? pockets.width : 0) + (bag ? bag.width : 0) + Math.max(6, ...others.map((i) => i.width));
+        CELL = cellSize(window.innerWidth, window.innerHeight, rows, cols);
         if (pockets) st.middle.appendChild(gridPanel(pockets, 'Pockets'));
-        if (st.snap.backpack && invById(st.snap.backpack)) st.middle.appendChild(gridPanel(invById(st.snap.backpack)));
+        if (bag) st.middle.appendChild(gridPanel(bag));
         // Health under what is being looted (that comes first).
         (st.snap.secondary || []).forEach((id) => { const inv = invById(id); if (inv) st.right.appendChild(gridPanel(inv)); });
         st.right.appendChild(st.vitalsEl);
@@ -468,8 +482,8 @@
         el.classList.add('is-dragging');
         st.drag = {
             stack: stack, from: fromId, rotated: !!stack.rotated, el: el, ghost: ghost,
-            grabX: Math.min(Math.floor((e.clientX - rect.left) / CELL), 9),
-            grabY: Math.min(Math.floor((e.clientY - rect.top) / CELL), 9),
+            grabX: Math.min(Math.floor((e.clientX - rect.left) / CELL), 19),
+            grabY: Math.min(Math.floor((e.clientY - rect.top) / CELL), 19),
             offX: e.clientX - rect.left, offY: e.clientY - rect.top,
         };
         moveGhost(e);
@@ -714,7 +728,7 @@
         '.wli-header__hint { flex: 1; }',
         '.wli-columns { flex: 1; display: flex; gap: 22px; align-items: flex-start; overflow: auto; }',
         '.wli-col { display: flex; flex-direction: column; gap: 16px; }',
-        '.wli-col--main { flex: 0 0 auto; }',
+        '.wli-col--main { flex: 0 0 auto; flex-direction: row; align-items: flex-start; }',
         '.wli-section { background: var(--wl-bg); border: 1px solid var(--wl-border); border-radius: var(--wl-radius); padding: 10px 12px 12px; }',
         '.wli-section__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }',
         '.wli-section__head .wl-section-title { margin: 0; }',

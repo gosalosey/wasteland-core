@@ -55,6 +55,8 @@ function Inv.loadCharacter(src, cid)
         Clothing.init(c, appearance)
         meta.clothingInitialized = true
     end
+    -- pocket size from what is worn (nothing is lost: they stay big enough)
+    Inv.fitPockets(c)
     if not meta.startingItemsGiven then
         for _, entry in ipairs(WLI.cfg.startingItems) do
             local ok, err = Inv.addItem(src, entry.name, entry.count)
@@ -137,9 +139,17 @@ WLI.M = Wasteland.DefineModule({
             type = 'table',
             fields = {
                 pockets = { type = 'table', fields = {
-                    width = { type = 'integer', default = 6, min = 1, max = 12 },
-                    height = { type = 'integer', default = 4, min = 1, max = 12 },
+                    width = { type = 'integer', default = 6, min = 1, max = 20 },
+                    height = { type = 'integer', default = 4, min = 1, max = 20 },
                     maxWeight = { type = 'number', default = 12, min = 0, max = 1000 },
+                    maxWidth = { type = 'integer', min = 1, max = 20, description = 'Largest the pockets can get with bonuses' },
+                    maxHeight = { type = 'integer', min = 1, max = 20 },
+                    bonus = { type = 'map', default = {}, keys = { type = 'enum', values = WLI.EQUIP_SLOTS },
+                        values = { type = 'table', fields = {
+                            width = { type = 'integer', default = 0, min = 0, max = 20 },
+                            height = { type = 'integer', default = 0, min = 0, max = 20 },
+                        } },
+                        description = 'Cells a worn item in this slot adds to the pockets' },
                 } },
                 dropGrid = { type = 'table', fields = {
                     width = { type = 'integer', default = 10, min = 4, max = 16 },

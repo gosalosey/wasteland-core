@@ -88,6 +88,22 @@ function _G.newServer(opts)
     for _, fx in ipairs(opts.fixtures or {}) do
         server:addResource(fx, ROOT .. '/tests/fixtures/' .. fx)
     end
+    -- Older tests were written for fixed 6 x 4 pockets and the old backpack
+    -- sizes; they keep them unless a test asks for the shipped ones
+    -- (pockets that grow with what is worn).
+    if not opts.shippedPockets and not (opts.config and opts.config['inventory.lua']) then
+        local f = assert(io.open(RESOURCES .. '/wasteland_config/config/inventory.lua', 'r'))
+        local text = f:read('a')
+        f:close()
+        local a = text:find('\n    pockets = {', 1, true)
+        local b = a and text:find('\n    },\n', a, true)
+        if a and b then
+            text = text:sub(1, a) .. '    pockets = { width = 6, height = 4, maxWeight = 35.0 },\n' .. text:sub(b + 8)
+            text = text:gsub('container = { width = 10, height = 10, maxWeight = 100 }', 'container = { width = 5, height = 4, maxWeight = 35 }')
+            text = text:gsub('container = { width = 15, height = 15, maxWeight = 175 }', 'container = { width = 7, height = 6, maxWeight = 60 }')
+            server:setFile('wasteland_config', 'config/inventory.lua', text)
+        end
+    end
     for file, contents in pairs(opts.config or {}) do
         server:setFile('wasteland_config', 'config/' .. file, contents)
     end

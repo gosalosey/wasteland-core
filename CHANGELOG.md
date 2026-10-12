@@ -1,5 +1,17 @@
 # Changelog
 
+## Pockets grow with clothing; bigger backpacks
+* Pockets start at 3x3. A worn top adds 2x2, pants 2x2 and an armor plate 2x2: 5x5, then 7x7, then 9x9. The most is 10x10.
+* The pockets hold 55 kg. This is set in `inventory.lua` → `pockets` (`bonus` per worn slot, `maxWidth` and `maxHeight`).
+* Taking something off is refused while the smaller pockets could not hold what is in them ("make room in them first"). Otherwise stacks outside the smaller grid move inside.
+* Nothing is ever lost:
+  * Old characters whose items do not fit keep pockets just big enough for them, until they make room.
+  * On death, the clothes go into the body bag, and kept hotbar items that no longer fit go in with them.
+* Backpacks:
+  * Small backpack: 10x10, 100 kg.
+  * Hiking backpack: 15x15, 175 kg.
+* The inventory screen shows the pockets and backpack side by side, and makes the cells smaller when big grids would not fit on the screen.
+
 ## Crafting: rags from any clothing, weapon and ammo blueprints
 * Tear up pants (3 rags), shoes (2) or a hat (1), as well as tops. These are known from the start.
 * New melee weapons: hammer, pipe wrench, battle axe, brass knuckles and switchblade. Each has its own blueprint, and so does the baseball bat.

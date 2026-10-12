@@ -56,6 +56,7 @@ function Clothing.init(c, appearance)
         end
     end
     Store.enqueue(statements, string.format('starting outfit for character %d', c.id))
+    Inv.fitPockets(c) -- the outfit makes the pockets bigger
     return n
 end
 

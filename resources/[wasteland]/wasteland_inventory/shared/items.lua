@@ -47,8 +47,8 @@ WLI.ITEM_SCHEMA = {
             type = 'table', nullable = true,
             description = 'Wearing this item adds a grid (backpacks)',
             fields = {
-                width = { type = 'integer', required = true, min = 1, max = 12 },
-                height = { type = 'integer', required = true, min = 1, max = 12 },
+                width = { type = 'integer', required = true, min = 1, max = 20 },
+                height = { type = 'integer', required = true, min = 1, max = 20 },
                 maxWeight = { type = 'number', required = true, min = 0, max = 1000 },
             },
         },

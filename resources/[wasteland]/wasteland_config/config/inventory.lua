@@ -2,8 +2,20 @@
 -- Grid inventories: every item takes up width x height cells and can be
 -- rotated. Pockets are small; a worn backpack adds its own grid.
 return {
-    -- The pockets every character has (cells and kilograms).
-    pockets = { width = 6, height = 4, maxWeight = 35.0 },
+    -- The pockets every character has (cells and kilograms). They grow with
+    -- what is worn: each worn slot in `bonus` adds its cells (a shirt and
+    -- pants and armor: 3x3 -> 5x5 -> 7x7 -> 9x9), up to maxWidth x maxHeight.
+    -- Taking something off is refused while the smaller pockets could not
+    -- hold what is in them.
+    pockets = {
+        width = 3, height = 3, maxWeight = 55.0,
+        maxWidth = 10, maxHeight = 10,
+        bonus = {
+            torso = { width = 2, height = 2 },   -- a shirt / top
+            legs = { width = 2, height = 2 },    -- pants
+            armor = { width = 2, height = 2 },   -- an armor plate
+        },
+    },
 
     -- Size of the grid for items lying on the ground.
     dropGrid = { width = 10, height = 10 },
@@ -261,9 +273,9 @@ return {
             description = 'Repairs the weapon in your hands.' },
 
         backpack_small = { label = 'Small backpack', image = 'bag', category = 'container', width = 3, height = 3, weight = 0.8,
-            equip = 'back', container = { width = 5, height = 4, maxWeight = 35 } },
+            equip = 'back', container = { width = 10, height = 10, maxWeight = 100 } },
         backpack_large = { label = 'Hiking backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 1.8,
-            equip = 'back', container = { width = 7, height = 6, maxWeight = 60 } },
+            equip = 'back', container = { width = 15, height = 15, maxWeight = 175 } },
 
         clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6, durability = 100 },
         clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4, durability = 100 },

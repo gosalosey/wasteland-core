@@ -166,6 +166,87 @@ local function weightCheck(to, addKg, ignoreUid)
 end
 
 -------------------------------------------------------------------------------
+-- Pockets grow with what is worn (inventory.lua pockets.bonus)
+-------------------------------------------------------------------------------
+
+-- The character an inventory id belongs to ('player:<id>' / 'equip:<id>').
+local function ownerOf(invId)
+    local cid = tonumber(tostring(invId):match('^%a+:(%d+)$'))
+    local c = cid and WLI.chars[cid]
+    if c and (invId == c.pockets or invId == c.equip) then return c end
+    return nil
+end
+
+local function givesPockets(slot)
+    local b = slot and WLI.cfg.pockets.bonus and WLI.cfg.pockets.bonus[slot]
+    return b ~= nil and ((b.width or 0) > 0 or (b.height or 0) > 0)
+end
+
+--- Would taking off worn stack `s` leave the pockets too small for what is in
+--- them? landing: { x, y, rotated } when it goes into the pockets itself.
+--- -> nil (fine) or an error message.
+local function shrinkProblem(c, s, landing)
+    if not givesPockets(s.slot) then return nil end
+    local pockets, equip = WLI.invs[c.pockets], WLI.invs[c.equip]
+    local w, h = Grid.pocketSize(WLI.cfg.pockets, equip.items, s.uid)
+    if w >= pockets.width and h >= pockets.height then return nil end
+    local fixed = nil
+    if landing then
+        local fw, fh = Grid.footprint(WLI.defs[s.name], landing.rotated == true)
+        if landing.x + fw > w or landing.y + fh > h then return 'there is no room there' end
+        fixed = { [s.uid] = { uid = s.uid, name = s.name, x = landing.x, y = landing.y, rotated = landing.rotated == true } }
+    end
+    local _, over = Grid.repack(pockets, WLI.defs, w, h, fixed)
+    if #over > 0 then
+        return string.format('your pockets get smaller without the %s: make room in them first', WLI.defs[s.name].label:lower())
+    end
+    return nil
+end
+
+--- Size the pockets to what is worn. Stacks outside the new size move
+--- inside. What cannot fit goes to overflow(stack) when given; otherwise the
+--- pockets stay just big enough to hold it (nothing is ever lost).
+--- With statements/changed the caller enqueues and syncs.
+function Inv.fitPockets(c, statements, changed, overflow)
+    local pockets, equip = WLI.invs[c.pockets], WLI.invs[c.equip]
+    if not pockets or not equip then return end
+    local w, h = Grid.pocketSize(WLI.cfg.pockets, equip.items)
+    local own = statements == nil
+    statements, changed = statements or {}, changed or {}
+    local moves, over = Grid.repack(pockets, WLI.defs, w, h)
+    if #over > 0 and overflow then
+        for _, uid in ipairs(over) do
+            local st = pockets.items[uid]
+            pockets.items[uid] = nil
+            overflow(st)
+        end
+    elseif #over > 0 then
+        -- keep everything where it is; grow just enough to cover it
+        moves = {}
+        for _, st in pairs(pockets.items) do
+            if st.x ~= nil then
+                local fw, fh = Grid.footprint(WLI.defs[st.name] or { width = 1, height = 1 }, st.rotated)
+                w, h = math.max(w, st.x + fw), math.max(h, st.y + fh)
+            end
+        end
+    end
+    local touched = next(moves) ~= nil or w ~= pockets.width or h ~= pockets.height
+    for uid, m in pairs(moves) do
+        local st = pockets.items[uid]
+        if st then
+            st.x, st.y, st.rotated = m.x, m.y, m.rotated
+            statements[#statements + 1] = Store.upsert(st, pockets.id)
+        end
+    end
+    pockets.width, pockets.height = w, h
+    if touched then changed[pockets.id] = true end
+    if own and touched then
+        if #statements > 0 then Store.enqueue(statements, string.format('pockets of character %d', c.id)) end
+        if c.source then WLI.Sync.changed(changed, c.source) end
+    end
+end
+
+-------------------------------------------------------------------------------
 -- Operations (validate -> mutate -> statements)
 -------------------------------------------------------------------------------
 
@@ -185,13 +266,21 @@ function Inv.move(src, uid, fromId, toId, x, y, rotated)
             local heavy = weightCheck(to, Inv.stackWeight(s))
             if heavy then return nil, heavy end
         end
+        local wearer = s.slot and ownerOf(from.id)
+        if wearer then
+            local landing = (to.id == wearer.pockets) and { x = x, y = y, rotated = rotated == true } or nil
+            local problem = shrinkProblem(wearer, s, landing)
+            if problem then return nil, problem end
+        end
         local wasWorn = s.slot
         from.items[uid] = nil
         s.x, s.y, s.rotated, s.slot = x, y, rotated == true, nil
         to.items[uid] = s
+        local statements, changed = { Store.upsert(s, to.id) }, changedSet(from.id, to.id)
+        if wearer then Inv.fitPockets(wearer, statements, changed) end
         return {
-            statements = { Store.upsert(s, to.id) },
-            changed = changedSet(from.id, to.id),
+            statements = statements,
+            changed = changed,
             after = wasWorn and function() WLI.Sync.clothing(src) end or nil,
         }
     end)
@@ -292,6 +381,7 @@ function Inv.equip(src, uid, fromId, slot)
         equip.items[uid] = s
         statements[#statements + 1] = Store.upsert(s, equip.id)
         if d.container then Inv.containerFor(s); changed['item:' .. uid] = true end
+        Inv.fitPockets(c, statements, changed)
         return { statements = statements, changed = changed, after = function() WLI.Sync.clothing(src) end }
     end)
 end
@@ -307,7 +397,15 @@ function Inv.unequip(src, slot, toId, x, y, rotated)
     if x == nil then
         local to = WLI.invs[toId]
         if not to then return false, 'that inventory is not available' end
-        x, y, rotated = Grid.findSpot(to, WLI.defs, WLI.defs[worn.name])
+        local area = to
+        if toId == c.pockets and givesPockets(worn.slot) then
+            local w, h = Grid.pocketSize(WLI.cfg.pockets, equip.items, worn.uid)
+            area = { width = math.min(w, to.width), height = math.min(h, to.height), items = to.items }
+        end
+        x, y, rotated = Grid.findSpot(area, WLI.defs, WLI.defs[worn.name])
+        if not x and area ~= to then
+            return false, string.format('your pockets get smaller without the %s: make room in them first', WLI.defs[worn.name].label:lower())
+        end
         if not x then return false, 'there is no room for it' end
     end
     return Inv.move(src, worn.uid, c.equip, toId, x, y, rotated)
@@ -324,6 +422,11 @@ function Inv.drop(src, uid, fromId, count)
             return nil, string.format('you can drop 1 to %d', s.count)
         end
         local wasWorn = from.kind == 'equip'
+        local wearer = wasWorn and ownerOf(from.id)
+        if wearer then
+            local problem = shrinkProblem(wearer, s, nil)
+            if problem then return nil, problem end
+        end
         local placed, err = WLI.Drops.place(src, s, count)
         if not placed then return nil, err end
         local statements = placed.statements
@@ -335,6 +438,7 @@ function Inv.drop(src, uid, fromId, count)
             s.count = s.count - count
             statements[#statements + 1] = Store.upsert(s, from.id)
         end
+        if wearer then Inv.fitPockets(wearer, statements, changed) end
         return {
             statements = statements, changed = changed,
             after = function()
@@ -569,6 +673,15 @@ function Inv.deathDrop(src, label)
             if not keep[uid] then toDrop[#toDrop + 1] = { inv = inv, stack = s } end
         end
     end
+    -- what stays worn decides the pocket size; kept stacks that no longer
+    -- fit go into the body bag too
+    local stillWorn = {}
+    for uid, s in pairs(equip.items) do if keep[uid] then stillWorn[uid] = s end end
+    local pw, ph = Grid.pocketSize(WLI.cfg.pockets, stillWorn)
+    local keptPockets = { items = {} }
+    for uid, s in pairs(pockets.items) do if keep[uid] then keptPockets.items[uid] = s end end
+    local pocketMoves, pocketOver = Grid.repack(keptPockets, WLI.defs, pw, ph)
+    for _, uid in ipairs(pocketOver) do toDrop[#toDrop + 1] = { inv = pockets, stack = pockets.items[uid] } end
     -- big items first so they find room
     table.sort(toDrop, function(a, b)
         local da, db = WLI.defs[a.stack.name], WLI.defs[b.stack.name]
@@ -603,6 +716,14 @@ function Inv.deathDrop(src, label)
             log():error('death of player %d: %s does not fit in a body bag; it stays with the character', src, s.name)
         end
     end
+    for uid, m in pairs(pocketMoves) do
+        local s = pockets.items[uid]
+        if s then
+            s.x, s.y, s.rotated = m.x, m.y, m.rotated
+            statements[#statements + 1] = Store.upsert(s, pockets.id)
+        end
+    end
+    Inv.fitPockets(c, statements, changed)
     WLI.views[src] = nil
     Store.enqueue(statements, string.format('death of character %d', c.id))
     WLI.Sync.changed(changed, src)
@@ -631,6 +752,7 @@ function Inv.clear(src)
             inv.items[uid] = nil
         end
     end
+    Inv.fitPockets(c, statements, changed)
     for i = 1, 5 do c.hotbar[i] = false end
     exports.wasteland_players:SetCharacterData(c.id, 'hotbar', c.hotbar)
     Store.enqueue(statements, string.format('clear inventory of character %d', c.id))
