@@ -1,5 +1,10 @@
 # Changelog
 
+## Fix: armor plates wore down every login or server restart (owner report)
+* While a plate is worn, the game keeps GTA's armour full and reports what it loses as hits on the plate. A new ped (logging in, a server restart, respawning, a new look) starts with 0 armour, and that was counted as a 100-point hit: about 25% of the plate each time.
+* Now only armour lost after it was full on the same ped counts, and not while the screen is faded out (teleports). The server also ignores armour reports for 15 s after a character loads.
+* Clothing: only zombie hits wear it, and not while a player is protected (creating a character, choosing where to wake up).
+
 ## Fix: "Last known position" put you on the roof; no more idle camera (owner reports)
 * After spawning, the ground was looked for from 5 m above the point, and inside a building the first thing found is the roof.
   * "Last known position" now puts you exactly where you were, after the building's interior has loaded.

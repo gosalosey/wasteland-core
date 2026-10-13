@@ -439,11 +439,15 @@ end)
 -- Armor plate: while it holds, GTA armour is kept full so the game puts
 -- gunshots and blows on the armour instead of health; what it took is
 -- reported and the server wears the plate down. No plate: no armour.
+-- Only armour lost after it was full on this same ped is a hit: a new ped
+-- (logging in, respawning, a new look) starts at 0 and that is not damage.
 Citizen.CreateThread(function()
-    local holding, pending, lastReport = true, 0, 0
+    local holding, pending, lastReport, lastPed = false, 0, 0, nil
     while true do
         local ped = PlayerPedId()
+        if ped ~= lastPed then lastPed, holding = ped, false end
         local working = plate ~= nil and plate.current > 0 and not (stats and stats.dead) and not IsEntityDead(ped)
+            and not IsScreenFadedOut()
         if working then
             local a = GetPedArmour(ped)
             if holding and a < 100 then pending = pending + (100 - a) end

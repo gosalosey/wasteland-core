@@ -329,9 +329,21 @@ describe('armor plates', function()
         expect(cond(plate())).toBe(94)
     end)
 
-    it('the GTA armour the client reports wears it too', function()
+    it('the GTA armour the client reports wears it too (not in the first seconds after loading)', function()
+        -- right after the character loaded, the game's armour is still being set up: not a hit
+        server:advance(15000)
         server:clientEvent(id, 'wasteland:survival:server:armorHit', 40.0); server:advance(100)
         expect(cond(plate())).toBe(84)
+    end)
+
+    it('an armour report right after logging in does not wear the plate', function()
+        server:dropPlayer(id); server:advance(1500)
+        id = server:connectAndJoin({ name = 'P-tank', license = 'tank' })
+        server:advance(200)
+        server:command(id, 'character select 1'); server:advance(1500)
+        local before = cond(plate())
+        server:clientEvent(id, 'wasteland:survival:server:armorHit', 100.0); server:advance(100)
+        expect(cond(plate())).toBe(before)
     end)
 
     it('a broken plate says so and stops nothing', function()

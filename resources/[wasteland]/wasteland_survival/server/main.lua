@@ -18,6 +18,7 @@ local online = {}       -- [characterId] = source
 local env = {}          -- [source] = { ambient, wet }
 local deathAt = {}      -- [characterId] = game time of death
 local damageCarry = {}  -- [characterId] = fractional damage not yet applied
+local loadedAt = {}     -- [source] = game time the character was loaded (armour reports wait a moment)
 local runToken = nil
 
 local commandRegistered = false
@@ -102,6 +103,7 @@ end
 -------------------------------------------------------------------------------
 
 local function load(src, cid)
+    loadedAt[src] = GetGameTimer()
     local stored = players():GetCharacterData(cid, DATA_KEY)
     local s = Model.fresh(M.config)
     if type(stored) == 'table' then
@@ -532,6 +534,8 @@ M = Wasteland.DefineModule({
 M.netEvent('wasteland:survival:server:armorHit', { args = { { type = 'number', required = true, min = 0, max = 400 } },
     rateLimit = { burst = 4, perSecond = 2 } }, function(src, amount)
     local cid = characterOf(src)
+    -- Right after loading, the game's armour is being set up: not a hit.
+    if loadedAt[src] and GetGameTimer() - loadedAt[src] < 15000 then return end
     if cid and states[cid] and not states[cid].dead and amount > 0 then wearPlate(src, amount) end
 end)
 
