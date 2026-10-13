@@ -233,3 +233,51 @@ describe('returning characters: last known position or a safe camp', function()
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe('traders buy anything you carry (buyAnything)', function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['camps.lua'] = CFG['camps.lua']:gsub('restockMinutes = 1,', [[restockMinutes = 1,
+        buyAnything = { enabled = true, default = 2, blueprints = 25, categories = { food = 4, weapon = 15 },
+            prices = { weapon_pumpshotgun = 100 }, except = { 'cash' } },]], 1)
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival',
+        'wasteland_zombies', 'wasteland_camps' })
+    local id = player(server, 'seller')
+
+    it('an item the trader does not list shows up to sell at its category price', function()
+        I(server, 'AddItem', id, 'canned_beans', 3)
+        I(server, 'AddItem', id, 'blueprint_knife', 1)
+        server:clientEvent(id, 'wasteland:camps:server:open', 'base', 1); server:advance(200)
+        local d = screen(server, id)
+        local beans, bp, cash
+        for _, it in ipairs(d.items) do
+            if it.name == 'canned_beans' then beans = it end
+            if it.name == 'blueprint_knife' then bp = it end
+            if it.name == 'cash' then cash = it end
+        end
+        expect(beans.sell).toBe(4); expect(beans.have).toBe(5) -- 2 starting cans + 3
+        expect(bp.sell).toBe(25)
+        expect(cash == nil).toBe(true)
+    end)
+
+    it('selling it pays cash', function()
+        local before = I(server, 'GetCash', id)
+        local d = trade(server, id, 'sell', 'canned_beans', 5)
+        expect(d.ok).toBe(true)
+        expect(I(server, 'GetCash', id)).toBe(before + 20)
+        expect(I(server, 'GetItemCount', id, 'canned_beans')).toBe(0)
+    end)
+
+    it('never pays more than half of what a trader sells it for', function()
+        I(server, 'AddItem', id, 'weapon_pumpshotgun', 1)
+        local d = trade(server, id, 'sell', 'weapon_pumpshotgun', 1)
+        expect(d.message).toBe('Sold 1 x Pump shotgun for $5.') -- the shop sells it for 10
+    end)
+
+    it('cash is never bought', function()
+        local d = trade(server, id, 'sell', 'cash', 5)
+        expect(d.message).toBe('This trader does not buy that.')
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

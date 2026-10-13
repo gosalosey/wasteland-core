@@ -35,6 +35,26 @@ local function entryOf(shop, name)
     return nil
 end
 
+-- Lowest price any trader sells each item for (caps what traders pay).
+local cheapest = {}
+local function findCheapest()
+    cheapest = {}
+    for _, shop in pairs(M.config.shops) do
+        for _, e in ipairs(shop.items) do
+            if e.buy and (not cheapest[e.name] or e.buy < cheapest[e.name]) then cheapest[e.name] = e.buy end
+        end
+    end
+end
+
+-- What this shop pays for `name`: its own sell price, else the buyAnything price.
+local function sellPrice(shop, name)
+    local e = entryOf(shop, name)
+    if e and e.sell then return e.sell, e end
+    if name == 'cash' then return nil end -- money is not an item to sell
+    local p = Zones.anyPrice(M.config.buyAnything, name, inv():GetItemDefinition(name), cheapest[name])
+    return p, e
+end
+
 local function initStock()
     stock = {}
     for _, c in ipairs(camps) do
@@ -60,13 +80,26 @@ local function screenData(src, camp, index)
     local s = stock[stockKey(camp.id, index)]
     local images, labels = {}, {}
     for _, it in ipairs(inv():GetItemList()) do images[it.name], labels[it.name] = it.image, it.label end
-    local items = {}
+    local items, listed = {}, {}
     for _, e in ipairs(shop.items) do
+        listed[e.name] = true
         items[#items + 1] = {
             name = e.name, label = labels[e.name] or e.name, image = images[e.name],
-            buy = e.buy, sell = e.sell, stock = e.stock and (s[e.name] or 0) or nil,
+            buy = e.buy, sell = (sellPrice(shop, e.name)), stock = e.stock and (s[e.name] or 0) or nil,
             have = inv():GetItemCount(src, e.name) or 0,
         }
+    end
+    -- Everything else the player carries that this trader buys.
+    if M.config.buyAnything.enabled then
+        for name in pairs(labels) do
+            if not listed[name] then
+                local have = inv():GetItemCount(src, name) or 0
+                local price = have > 0 and sellPrice(shop, name) or nil
+                if price then
+                    items[#items + 1] = { name = name, label = labels[name], image = images[name], sell = price, have = have }
+                end
+            end
+        end
     end
     return { camp = camp.id, trader = index, title = shop.label, place = camp.label, cash = inv():GetCash(src) or 0, items = items }
 end
@@ -112,8 +145,8 @@ local function sell(src, campId, index, name, count)
     local camp, t = atTrader(src, campId, index)
     if not camp then return end
     local shop = M.config.shops[t.shop]
-    local entry = entryOf(shop, name)
-    local pay, why = Zones.sellCheck(entry, count, inv():GetItemCount(src, name) or 0)
+    local price, entry = sellPrice(shop, name)
+    local pay, why = Zones.sellCheck(price and { sell = price } or nil, count, inv():GetItemCount(src, name) or 0)
     if not pay then send(src, camp, index, why, false); return end
     local ok, err = inv():RemoveItem(src, name, count)
     if not ok then send(src, camp, index, tostring(err), false); return end
@@ -123,7 +156,7 @@ local function sell(src, campId, index, name, count)
         send(src, camp, index, 'Make room for the cash first (' .. tostring(payErr) .. ').', false)
         return
     end
-    if entry.stock then
+    if entry and entry.stock then
         local s = stock[stockKey(campId, index)]
         s[name] = math.min(entry.stock, (s[name] or 0) + count)
     end
@@ -182,6 +215,14 @@ M = Wasteland.DefineModule({
             chooseSpawnOnLogin = { type = 'boolean', default = true,
                 description = 'Returning characters choose: last known position or a safe camp' },
             tradeDistance = { type = 'number', default = 4.0, min = 1, max = 20 },
+            buyAnything = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = false, description = 'Traders buy every item (not cash), not only the ones they list' },
+                default = { type = 'integer', default = 2, min = 1, max = 10000000 },
+                blueprints = { type = 'integer', default = 25, min = 1, max = 10000000 },
+                categories = { type = 'map', default = {}, keys = { type = 'string' }, values = { type = 'integer', min = 1, max = 10000000 } },
+                prices = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'integer', min = 1, max = 10000000 } },
+                except = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' } },
+            } },
             shops = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = { type = 'table', fields = {
                 label = { type = 'string', required = true, minLength = 1, maxLength = 40 },
                 items = { type = 'array', default = {}, items = { type = 'table', fields = {
@@ -232,6 +273,7 @@ M = Wasteland.DefineModule({
         end
         camps = M.config.camps
         initStock()
+        findCheapest()
         local token = {}
         runToken = token
         Citizen.CreateThread(function() loop(token) end)

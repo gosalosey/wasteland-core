@@ -19,6 +19,32 @@ return {
     -- position or one of the safe camps (new characters always pick a camp).
     chooseSpawnOnLogin = true,
 
+    -- Traders buy anything you carry (except cash), not only what is on
+    -- their list. A shop's own `sell` price wins; otherwise the price is
+    -- prices[item], or `blueprints` for blueprints, or the item's category.
+    -- Never more than half of what any trader sells the item for, so nobody
+    -- can buy cheap at one trader and sell dear at another.
+    buyAnything = {
+        enabled = true,
+        default = 2,
+        blueprints = 25,
+        categories = {
+            food = 4, drink = 3, medical = 6, material = 2, tool = 10, clothing = 4,
+            armor = 30, container = 40, weapon = 15, ammo = 1, misc = 3,
+        },
+        prices = {
+            -- guns are worth more than the weapon category's 15
+            weapon_pistol = 60, weapon_revolver = 80, weapon_dbshotgun = 70, weapon_pumpshotgun = 100,
+            weapon_microsmg = 120, weapon_smg = 150, weapon_huntingrifle = 150,
+            weapon_carbine = 200, weapon_assaultrifle = 220,
+            weapon_battleaxe = 25, weapon_machete = 20,
+            gun_parts = 8, gunpowder = 3, engine_parts = 25, car_battery = 30, car_wheel = 20,
+            jerry_can = 12, vehicle_repair_kit = 30, weapon_repair_kit = 25, armor_repair_kit = 20,
+            backpack_large = 80,
+        },
+        except = { 'cash' },
+    },
+
     shops = {
         general = {
             label = 'General trader',

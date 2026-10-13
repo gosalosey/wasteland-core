@@ -52,6 +52,23 @@ function Zones.sellCheck(entry, count, have)
     return entry.sell * count
 end
 
+--- What a trader pays for an item not on its list (buyAnything in camps.lua):
+--- prices[name], else blueprints for blueprint_*, else categories[category],
+--- else default; never more than half the lowest price any trader sells it
+--- for (no buying low and selling high). nil: not bought.
+--- def: item definition (category); cheapestBuy: lowest buy price or nil.
+function Zones.anyPrice(cfg, name, def, cheapestBuy)
+    if not cfg or not cfg.enabled or not def then return nil end
+    for _, n in ipairs(cfg.except or {}) do if n == name then return nil end end
+    local p = cfg.prices and cfg.prices[name]
+    if not p and name:sub(1, 10) == 'blueprint_' then p = cfg.blueprints end
+    if not p then p = cfg.categories and cfg.categories[def.category] end
+    p = p or cfg.default
+    if cheapestBuy then p = math.min(p, math.floor(cheapestBuy / 2)) end
+    if not p or p < 1 then return nil end
+    return math.floor(p)
+end
+
 --- Restock: every entry with a stock limit gains `restock` up to `stock`.
 function Zones.restock(entries, current)
     for _, e in ipairs(entries) do

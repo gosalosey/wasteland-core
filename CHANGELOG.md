@@ -1,5 +1,13 @@
 # Changelog
 
+## Traders buy anything you carry
+* Every trader buys every item except cash, not only what is on its list. The sell list shows whatever you carry.
+* Price:
+  * A shop's own `sell` price wins.
+  * Otherwise: the item's price in `buyAnything.prices` (guns 60 to 220, gun parts, car parts, kits...), `blueprints` (25) for blueprints, or the item's category (food 4, drink 3, medical 6, material 2, tool 10, clothing 4, armor 30, bags 40, melee weapons 15, ammo 1 a round, other 3).
+* What a trader pays is capped at half the lowest price any trader sells the item for, so nobody can buy at one trader and sell dearer at another.
+* camps.lua: `buyAnything = { enabled, default, blueprints, categories, prices, except }`.
+
 ## Voice chat (pma-voice) and group radio
 * Proximity voice with [pma-voice](https://github.com/AvarianKnight/pma-voice) v6.6.2: players near you hear you.
   * F11 cycles whisper, normal and shout.
