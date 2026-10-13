@@ -92,7 +92,27 @@ function Inv.containerFor(stack)
     local d = WLI.defs[stack.name]
     if not d or not d.container then return nil end
     local id = 'item:' .. stack.uid
-    return WLI.invs[id] or Inv.create(id, 'grid', {
+    local inv = WLI.invs[id]
+    if inv then
+        -- the bag's size in the settings changed while it was loaded: follow it
+        -- (only when everything in it still fits)
+        if inv.width ~= d.container.width or inv.height ~= d.container.height then
+            local moves, over = Grid.repack(inv, WLI.defs, d.container.width, d.container.height)
+            if #over == 0 then
+                local statements = {}
+                for uid, m in pairs(moves) do
+                    local s = inv.items[uid]
+                    s.x, s.y, s.rotated = m.x, m.y, m.rotated
+                    statements[#statements + 1] = Store.upsert(s, id)
+                end
+                if #statements > 0 then Store.enqueue(statements, 'fit bag ' .. id .. ' to its size') end
+                inv.width, inv.height = d.container.width, d.container.height
+            end
+        end
+        inv.maxWeight = d.container.maxWeight
+        return inv
+    end
+    return Inv.create(id, 'grid', {
         label = d.label, width = d.container.width, height = d.container.height, maxWeight = d.container.maxWeight,
     })
 end
