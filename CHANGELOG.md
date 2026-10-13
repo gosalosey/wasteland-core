@@ -1,5 +1,29 @@
 # Changelog
 
+## Hunting, campfires and cooking (new module wasteland_hunting)
+* **Animals:** deer, boars, rabbits and coyotes wander near every player.
+  * Three per player, 40 on the map at most.
+  * They spawn 90-200 m away, not on roads, in water or in camps.
+  * They are removed when nobody is within 350 m; a carcass lasts 10 minutes.
+* **Harvesting:** hold Left Alt on a dead animal and choose Harvest. It needs a blade: knife, switchblade, machete, hatchet or battle axe.
+  * It takes 6 seconds of kneeling; moving or X cancels.
+  * Yield: raw meat (deer 2-4, boar 2-3, coyote 1-2, rabbit 1, any other animal 1-2), and an animal pelt from deer, boars and coyotes (traders pay 15).
+  * Any animal can be harvested, also ones this module did not spawn.
+* **Campfire:**
+  * Craft it from 3 scrap metal, or buy it.
+  * Use it from the inventory: it is placed in front of you. Lighting it takes 1 match and 2 firewood.
+  * It burns 30 minutes and warms you within 5 m.
+  * Anyone can cook on it. The player who made it can put it out and pick it up again. When it burns out, it goes back to its owner.
+* **Cooking:** Left Alt on the fire and choose Cook. Pick how many raw meat (up to what you carry, with - / + / All).
+  * Each piece takes 5 seconds; the window shows "Cooking 2 of 5" and has a Stop button.
+  * Walking away stops it.
+* **Eating:**
+  * Cooked meat: food +45 and a little health.
+  * Raw meat: food +10, but infection +5.
+* **New items:** raw meat, cooked meat, animal pelt, matches, firewood, campfire.
+  * Matches and firewood are found in trash, tool sheds and crates, and sold by the general trader.
+* Config: hunting.lua.
+
 ## Trading between players (new module wasteland_trade)
 * Hold Left Alt on another player: **Trade**. They get a popup (Trade / No thanks); the request lasts 30 seconds.
 * One window with three lists side by side:

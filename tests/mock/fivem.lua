@@ -652,6 +652,13 @@ function Mock:buildEnv(r)
     env.SetVehicleDoorsLocked = function(ent, lock) local e = mock:entity(ent); if e then e.doorLock = lock end end
     env.GetPedInVehicleSeat = function(ent, seat) local e = mock:entity(ent); return e and seat == -1 and e.driver or 0 end
     env.DeleteEntity = function(ent) mock.entities[tonumber(ent) or -1] = nil end
+    env.GetEntityModel = function(ent) local e = mock:entity(ent); return e and e.model or 0 end
+    env.CreateObjectNoOffset = function(model, x, y, z)
+        local handle = env.CreatePed(0, model, x, y, z, 0.0, true, true)
+        mock.entities[handle].object = true
+        return handle
+    end
+    env.FreezeEntityPosition = function(ent, frozen) local e = mock:entity(ent); if e then e.frozen = frozen end end
     env.GetEntityHealth = function(ent)
         local e = mock:entity(ent)
         if e then return e.health end

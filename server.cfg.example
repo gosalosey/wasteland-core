@@ -46,6 +46,7 @@ ensure wasteland_supplydrops
 ensure wasteland_events
 ensure wasteland_groups
 ensure wasteland_trade
+ensure wasteland_hunting
 ensure wasteland_template      # SDK example module; optional
 
 # --- permissions ---

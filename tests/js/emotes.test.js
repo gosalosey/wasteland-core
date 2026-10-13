@@ -83,3 +83,12 @@ test('trade status line', () => {
     assert.strictEqual(trade.status(v(false, true)), 'Bert accepted. Check their offer and accept.');
 });
 
+
+const cook = require(path.join(R, 'wasteland_hunting', 'html', 'cook.js'));
+
+test('cooking amount stays between 1 and what you have', () => {
+    assert.strictEqual(cook.clampCount(5, 3, 50), 3);
+    assert.strictEqual(cook.clampCount(0, 3, 50), 1);
+    assert.strictEqual(cook.clampCount('abc', 3, 50), 1);
+    assert.strictEqual(cook.clampCount(80, 100, 50), 50);
+});

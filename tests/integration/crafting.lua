@@ -56,7 +56,7 @@ describe('crafting', function()
         local names = {}
         for _, r in ipairs(d.recipes) do names[#names + 1] = r.name end
         table.sort(names)
-        expect(table.concat(names, ',')).toBe('armor_repair_kit,bandage,lockpick,rag,rag_hat,rag_pants,rag_shoes,sewing_kit')
+        expect(table.concat(names, ',')).toBe('armor_repair_kit,bandage,campfire,lockpick,rag,rag_hat,rag_pants,rag_shoes,sewing_kit')
         expect(d.unknown).toBe(27)
     end)
 

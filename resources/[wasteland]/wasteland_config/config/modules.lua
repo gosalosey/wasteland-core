@@ -61,6 +61,9 @@ return {
         -- Trading between players (Left Alt on a player: Trade).
         trade      = true,
 
+        -- Hunting: animals, harvesting with a knife, campfires, cooking.
+        hunting    = true,
+
         -- Base building: switched off for now (the props need a better look).
         -- The code stays in wasteland_bases; set true and ensure it to try it.
         bases      = false,

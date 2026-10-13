@@ -587,3 +587,16 @@ Needs two players. Each needs a microphone, and voice chat turned on in the Five
 | R40.4 | One player leaves the group; hold Caps Lock | They no longer hear the group |
 | R40.5 | Hold Left Alt | The interaction (target) works as before; it is not the radio |
 
+## R41: hunting
+Give yourself: a weapon_knife, a weapon_huntingrifle with ammo_308, a campfire, matches and firewood (admin panel).
+
+| # | Do | Expect |
+|---|---|---|
+| R41.1 | Walk out of town and look around for a few minutes | Deer, boars, rabbits or coyotes wander 90-200 m away |
+| R41.2 | Shoot one; hold Left Alt on the body | "Harvest"; you kneel for 6 s; "You got N x Raw meat (and 1 x Animal pelt)"; the body disappears a moment later |
+| R41.3 | Try without a knife | "You need a knife (or another blade) to harvest it." |
+| R41.4 | Use the campfire from the inventory | A fire appears in front of you; 1 match and 2 firewood are gone; your body temperature rises near it |
+| R41.5 | Left Alt on the fire: Cook; set 3; Cook | "Cooking raw meat: 1 of 3" with a bar; after 15 s you have 3 cooked meat |
+| R41.6 | Eat the cooked meat | Food goes up |
+| R41.7 | Left Alt on the fire: Put out and pick up | The fire is gone; the campfire item is back |
+

@@ -28,6 +28,8 @@ return {
             blueprint = 'blueprint_armor_plate' },
         sewing_kit = { label = 'Sewing kit', result = { name = 'sewing_kit', count = 1 },
             ingredients = { { name = 'rag', count = 2 }, { name = 'scrap_metal', count = 1 } }, seconds = 4 },
+        campfire = { label = 'Campfire', result = { name = 'campfire', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 3 } }, seconds = 5 },
         lockpick = { label = 'Lockpicks', result = { name = 'lockpick', count = 2 },
             ingredients = { { name = 'scrap_metal', count = 1 } }, seconds = 4 },
 

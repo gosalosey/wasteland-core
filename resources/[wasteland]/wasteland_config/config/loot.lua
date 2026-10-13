@@ -78,6 +78,8 @@ return {
             { name = 'siphon_hose', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_knuckle', min = 1, max = 1, weight = 1 },
             { name = 'blueprint_switchblade', min = 1, max = 1, weight = 1 },
+            { name = 'matches', min = 1, max = 5, weight = 8 },
+            { name = 'firewood', min = 1, max = 2, weight = 5 },
         } },
         food = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
@@ -135,6 +137,8 @@ return {
             { name = 'weapon_hammer', min = 1, max = 1, weight = 3 },
             { name = 'weapon_wrench', min = 1, max = 1, weight = 3 },
             { name = 'gun_parts', min = 1, max = 2, weight = 3 },
+            { name = 'matches', min = 2, max = 8, weight = 8 },
+            { name = 'firewood', min = 1, max = 3, weight = 10 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
             { name = 'sewing_kit', min = 1, max = 1, weight = 3 },
@@ -163,6 +167,8 @@ return {
             { name = 'blueprint_dbshotgun', min = 1, max = 1, weight = 1 },
             { name = 'blueprint_ammo_pistol', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_battleaxe', min = 1, max = 1, weight = 1 },
+            { name = 'firewood', min = 1, max = 3, weight = 6 },
+            { name = 'matches', min = 2, max = 6, weight = 4 },
         } },
         -- Wrecked vehicles: scrap and car parts, sometimes something left behind.
         wreck = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
@@ -252,6 +258,8 @@ return {
             { name = 'blueprint_huntingrifle', min = 1, max = 1, weight = 1 },
             { name = 'blueprint_bat', min = 1, max = 1, weight = 2 },
             { name = 'gunpowder', min = 1, max = 2, weight = 3 },
+            { name = 'matches', min = 3, max = 10, weight = 5 },
+            { name = 'cooked_meat', min = 1, max = 2, weight = 4 },
         } },
         mail = { emptyChance = 0.7, rolls = { 1, 1 }, items = {
             { name = 'cash', min = 5, max = 60, weight = 70 },
