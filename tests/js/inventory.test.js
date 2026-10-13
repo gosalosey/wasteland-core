@@ -110,8 +110,12 @@ test('quickTarget: takes into pockets, tops up a stack first, falls back to the 
     assert.strictEqual(inv.quickTarget(loot.items[2], 'stash:loot_x', snap, defs).error, 'Too heavy to carry.');
     // from your pockets back into the open container
     assert.strictEqual(inv.quickTarget(pockets.items[1], 'player:1', snap, defs).payload.to, 'stash:loot_x');
-    // nothing open: nothing to do
-    assert.strictEqual(inv.quickTarget(pockets.items[1], 'player:1', Object.assign({}, snap, { secondary: [] }), defs), null);
+    // no loot open, backpack open: pockets <-> backpack
+    pockets.weight = 1; bag.weight = 1;
+    const toBag = inv.quickTarget(pockets.items[1], 'player:1', Object.assign({}, snap, { secondary: [] }), defs);
+    assert.strictEqual(toBag.payload.to, 'item:b');
+    // backpack closed (the screen leaves it out) and nothing open: nothing to do
+    assert.strictEqual(inv.quickTarget(pockets.items[1], 'player:1', Object.assign({}, snap, { secondary: [], backpack: null }), defs), null);
 });
 
 test('condition of items with durability', () => {

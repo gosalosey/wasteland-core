@@ -1,5 +1,10 @@
 # Changelog
 
+## Inventory: the backpack opens on demand
+* Opening the inventory shows the pockets only. To use the worn backpack, right-click it in the Back slot and choose Open backpack (or double-click it). Its grid then shows next to the pockets, with a Close button.
+* With the backpack open and nothing else open, double-click (or Shift+click) moves items between the pockets and the backpack. Dragging works as before.
+* Each time the inventory opens, the backpack starts closed. Items you buy, loot through Take all, or harvest still go into the backpack when the pockets are full.
+
 ## Fix: armor plates wore down every login or server restart (owner report)
 * While a plate is worn, the game keeps GTA's armour full and reports what it loses as hits on the plate. A new ped (logging in, a server restart, respawning, a new look) starts with 0 armour, and that was counted as a 100-point hit: about 25% of the plate each time.
 * Now only armour lost after it was full on the same ped counts, and not while the screen is faded out (teleports). The server also ignores armour reports for 15 s after a character loads.

@@ -94,7 +94,9 @@
         if (!def) return null;
         const mine = [snap.pockets, snap.backpack].filter(Boolean);
         const others = snap.secondary || [];
-        const targets = mine.indexOf(fromId) >= 0 ? others : mine;
+        let targets = mine.indexOf(fromId) >= 0 ? others : mine;
+        // Nothing else open: between the pockets and the (open) backpack.
+        if (!targets.length && mine.indexOf(fromId) >= 0) targets = mine.filter((id) => id !== fromId);
         if (!targets.length) return null;
         const byId = (id) => snap.inventories.find((i) => i.id === id);
         // Room for `n` more units by weight (the server checks again).
@@ -491,14 +493,22 @@
         st.left.appendChild(equipmentPanel());
         st.left.appendChild(hotbarPanel());
         const pockets = invById(st.snap.pockets);
-        const bag = st.snap.backpack ? invById(st.snap.backpack) : null;
+        if (!st.snap.backpack) st.bagOpen = false; // taken off
+        const bag = st.snap.backpack && st.bagOpen ? invById(st.snap.backpack) : null;
         const others = (st.snap.secondary || []).map(invById).filter(Boolean);
         const shown = [pockets, bag].concat(others).filter(Boolean);
         const rows = Math.max.apply(null, shown.map((i) => i.height).concat([1]));
         const cols = (pockets ? pockets.width : 0) + (bag ? bag.width : 0) + Math.max(0, ...others.map((i) => i.width));
         CELL = cellSize(window.innerWidth, window.innerHeight, rows, cols, others.length > 0);
         if (pockets) st.middle.appendChild(gridPanel(pockets, 'Pockets'));
-        if (bag) st.middle.appendChild(gridPanel(bag));
+        if (bag) {
+            const panel = gridPanel(bag);
+            const head = panel.querySelector('.wli-section__head');
+            if (head) head.appendChild(UI.button('Close', () => toggleBag(false)));
+            st.middle.appendChild(panel);
+        } else if (st.snap.backpack) {
+            st.middle.appendChild(h('div', { class: 'wl-hint wli-baghint', text: 'Right-click your backpack (Back slot) and choose Open backpack to use it.' }));
+        }
         // Health under what is being looted (that comes first).
         (st.snap.secondary || []).forEach((id) => { const inv = invById(id); if (inv) st.right.appendChild(gridPanel(inv)); });
         st.right.appendChild(st.vitalsEl);
@@ -602,9 +612,25 @@
 
     // Double-click / shift-click: move between your inventories and the
     // searched one. `explain`: say so when nothing is open.
+    // The snapshot as the screen shows it: the worn backpack only while it is open.
+    function shown() {
+        if (st.bagOpen || !st.snap.backpack) return st.snap;
+        return Object.assign({}, st.snap, { backpack: null });
+    }
+
+    function toggleBag(open) {
+        st.bagOpen = open;
+        render();
+    }
+
     function quickMove(stack, fromId, explain) {
-        if (fromId === st.snap.equip) return; // worn items: drag them off
-        const r = quickTarget(stack, fromId, st.snap, st.defs.items);
+        if (fromId === st.snap.equip) {
+            // double-click on the worn backpack opens / closes it; other worn items: drag them off
+            const d = st.defs.items[stack.name];
+            if (d && d.container) toggleBag(!st.bagOpen);
+            return;
+        }
+        const r = quickTarget(stack, fromId, shown(), st.defs.items);
         if (!r) { if (explain) setMessage('Nothing is open to move it to.', 'error'); return; }
         if (r.error) { setMessage(r.error, 'error'); return; }
         st.api.post(r.action, r.payload);
@@ -637,6 +663,7 @@
                 });
             });
         }
+        if (worn && def.container) items.push([st.bagOpen ? 'Close backpack' : 'Open backpack', () => toggleBag(!st.bagOpen)]);
         if (def.equip && !worn) items.push(['Wear', () => st.api.post('equip', { uid: stack.uid, from: fromId, slot: def.equip })]);
         if (worn) items.push(['Take off', () => st.api.post('unequip', { slot: stack.slot, to: st.snap.pockets })]);
         if (!worn && stack.count > 1) items.push(['Split…', () => openSplit(e, stack, fromId)]);
@@ -725,7 +752,7 @@
 
     UI.registerScreen('inventory', {
         mount: function (el, data, api) {
-            st = { api: api, defs: data.defs, snap: data.snapshot, drag: null, menu: null, preview: null, vitals: data.vitals || null };
+            st = { api: api, defs: data.defs, snap: data.snapshot, drag: null, menu: null, preview: null, vitals: data.vitals || null, bagOpen: false };
             st.vitalsEl = h('div', { class: 'wli-section wli-health' });
             st.left = h('div', { class: 'wli-col' });
             st.middle = h('div', { class: 'wli-col wli-col--main' });
@@ -780,6 +807,8 @@
         '.wli-col--side { flex: 1 1 0; min-width: 300px; max-width: 460px; }',
         '.wli-col { display: flex; flex-direction: column; gap: 16px; }',
         '.wli-col--main { flex: 0 0 auto; flex-direction: row; align-items: flex-start; }',
+        '.wli-baghint { max-width: 180px; align-self: flex-start; padding: 10px; border: 1px dashed var(--wl-border); border-radius: 6px; }',
+        '.wli-section__head .wl-btn { padding: 2px 10px; font-size: 12px; margin-left: 8px; }',
         '.wli-section { background: var(--wl-bg); border: 1px solid var(--wl-border); border-radius: var(--wl-radius); padding: 10px 12px 12px; }',
         '.wli-section__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }',
         '.wli-section__head .wl-section-title { margin: 0; }',
