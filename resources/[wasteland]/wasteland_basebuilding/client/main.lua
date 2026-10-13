@@ -13,6 +13,7 @@ local myBlips = {}
 local isPlacing, picking = false, false
 local warnedModels = {}
 local KEY_E, KEY_BACK = 38, 194
+local WALL_LIKE = { wall = true, doorway = true, windowframe = true, halfwall = true }
 
 local meleeWeapons = {}
 for _, w in ipairs({ 'WEAPON_UNARMED', 'WEAPON_HAMMER', 'WEAPON_CROWBAR', 'WEAPON_BAT', 'WEAPON_MACHETE', 'WEAPON_KNIFE',
@@ -137,12 +138,30 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
             CacheModelDims(anchorHash)
             local dims = GetModelDims(anchorHash)
             if mode == 'edge' then
-                local newHalf = P.wallFacesOutward and -newDims.min.y or newDims.max.y
-                local frontDist = dims.max.y + newHalf - overlap
-                local backDist = -dims.min.y + newHalf - overlap
-                local rightDist = dims.max.x + newHalf - overlap
-                local leftDist = -dims.min.x + newHalf - overlap
+                -- How far from the anchor's pivot the new piece's pivot goes,
+                -- for an anchor face `face` metres out. After turning into
+                -- place the new piece's local +Y points outward (or -Y when
+                -- turned round), so its near face is -min.y and its outer
+                -- face max.y (swapped when turned round).
                 local flip = P.wallFacesOutward and 0.0 or 180.0
+                local turned = not P.wallFacesOutward
+                if pieceKey == 'ramp' and opts.rampFlip then flip, turned = flip + 180.0, not turned end
+                local near = turned and newDims.max.y or -newDims.min.y
+                local outer = turned and -newDims.min.y or newDims.max.y
+                local inside = false
+                if WALL_LIKE[pieceKey] and P.wallsInset ~= false then
+                    -- walls stand ON the edge, their outer face flush with it: at a
+                    -- corner two walls overlap instead of leaving a gap
+                    inside = true
+                elseif pieceKey == 'ramp' and opts.rampLevel == 'top' then
+                    inside = true -- lying on the foundation, flush with its edge
+                end
+                local function out(face)
+                    if inside then return face - outer end
+                    return face + near - overlap
+                end
+                local frontDist, backDist = out(dims.max.y), out(-dims.min.y)
+                local rightDist, leftDist = out(dims.max.x), out(-dims.min.x)
                 local zOffset = 0.0
                 if pieceKey == 'ramp' then
                     if opts.rampLevel == 'top' then
@@ -150,7 +169,6 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
                     else
                         zOffset = dims.max.z - newDims.max.z -- its top level with the foundation's top
                     end
-                    if opts.rampFlip then flip = flip + 180.0 end
                 elseif pieceKey ~= 'foundation' and pieceKey ~= 'ceiling' then
                     zOffset = dims.max.z + (-newDims.min.z) - overlap
                 end

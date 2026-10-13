@@ -1,5 +1,14 @@
 # Changelog
 
+## Fix: gaps at wall corners; ramp distance when turned round (owner report)
+* Walls, doorways, window frames and half walls snapped to the outside of the foundation edge, so two walls on neighbouring edges left a gap the thickness of a wall at the corner.
+  * They now stand on the edge, their outer face flush with it; at a corner they overlap instead.
+  * basebuilding.lua `placement.wallsInset = true` (false: the old way).
+  * Pieces already built stay where they are.
+* Ramps:
+  * Turned round (R), the distance was measured from the wrong end of the ramp; fixed.
+  * "On top of the foundation" (Q) now lies on the foundation, flush with its edge, instead of hanging off the outside.
+
 ## Base building: ramp up/down, gap tuning that is kept (owner report)
 * Ramps snap four ways:
   * R turns them up or down.

@@ -59,6 +59,10 @@ return {
         -- (default snapOverlap). Tune in game with Ctrl+wheel while placing
         -- (remembered on that computer), then /bbsnap prints the values to copy here.
         overlap = {},
+        -- Walls, doorways, window frames and half walls stand on the foundation
+        -- edge (outer face flush with it), so two walls meet at a corner with
+        -- no gap. false: outside the edge, as before.
+        wallsInset = true,
     },
 
     categoryOrder = { 'structure', 'door', 'garage', 'stash', 'cupboard' },
