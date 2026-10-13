@@ -768,6 +768,17 @@ Citizen.CreateThread(function()
     end
 end)
 
+--- IsInBaseZone(coords) -> boolean   (near a tool cupboard: zombies keep out)
+exports('IsInBaseZone', function(coords)
+    local r = cfg and cfg.safeRadius
+    if not r or r <= 0 or not coords then return false end
+    local p = vector3(coords.x + 0.0, coords.y + 0.0, coords.z + 0.0)
+    for _, c in pairs(cupboardCache) do
+        if #(p - c.coords) <= r then return true end
+    end
+    return false
+end)
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for id in pairs(spawnedCupboards) do DespawnCupboard(id) end

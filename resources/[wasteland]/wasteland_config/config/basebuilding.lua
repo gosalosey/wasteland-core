@@ -28,7 +28,10 @@
 return {
     buildItem = 'building_plan',
 
-    cupboard = { piece = 'toolcupboard', radius = 40.0, minGap = 10.0 },
+    -- radius: the claim (building, access). safeRadius: zombies stay out of
+    -- this many metres around the cupboard (no spawning, chasing or hits; ones
+    -- that wander in are removed) - so you can build in peace. 0 = off.
+    cupboard = { piece = 'toolcupboard', radius = 40.0, minGap = 10.0, safeRadius = 12.0 },
 
     lockpick = {
         enabled = true,

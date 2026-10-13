@@ -133,9 +133,16 @@ end)
 
 -- Players inside a safe zone (camp) are left alone.
 local function safe(target)
-    if GetResourceState('wasteland_camps') ~= 'started' then return false end
-    local ok, yes = pcall(function() return exports.wasteland_camps:IsInSafeZone(GetEntityCoords(target)) end)
-    return ok and yes == true
+    local at = GetEntityCoords(target)
+    if GetResourceState('wasteland_camps') == 'started' then
+        local ok, yes = pcall(function() return exports.wasteland_camps:IsInSafeZone(at) end)
+        if ok and yes == true then return true end
+    end
+    if GetResourceState('wasteland_basebuilding') == 'started' then
+        local ok, yes = pcall(function() return exports.wasteland_basebuilding:IsInBaseZone(at) end)
+        if ok and yes == true then return true end
+    end
+    return false
 end
 
 -- Who can this zombie sense? Nearest living player it sees or hears.

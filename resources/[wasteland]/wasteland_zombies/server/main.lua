@@ -51,10 +51,17 @@ local function activePlayers()
 end
 
 -- Safe zones (camps): no zombies inside.
+-- Camps, and the small zone around every tool cupboard (base building).
 local function inSafeZone(coords)
-    if GetResourceState('wasteland_camps') ~= 'started' then return false end
-    local ok, safe = pcall(function() return exports.wasteland_camps:IsInSafeZone(coords) end)
-    return ok and safe == true
+    if GetResourceState('wasteland_camps') == 'started' then
+        local ok, safe = pcall(function() return exports.wasteland_camps:IsInSafeZone(coords) end)
+        if ok and safe == true then return true end
+    end
+    if GetResourceState('wasteland_basebuilding') == 'started' then
+        local ok, safe = pcall(function() return exports.wasteland_basebuilding:IsInBaseZone(coords) end)
+        if ok and safe == true then return true end
+    end
+    return false
 end
 
 local function coordsOf(handle)

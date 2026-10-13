@@ -137,7 +137,7 @@ local function clientConfig()
         pieces = pieces, upgrades = upgrades, snapRules = snapRules, placement = c.placement,
         categoryOrder = c.categoryOrder, categoryLabels = c.categoryLabels,
         interact = c.interact, targetDistance = c.targetDistance, streamRadius = c.streamRadius,
-        cupboardPiece = c.cupboard.piece, lockpick = c.lockpick.enabled,
+        cupboardPiece = c.cupboard.piece, lockpick = c.lockpick.enabled, safeRadius = c.cupboard.safeRadius,
         raid = { enabled = c.raid.enabled, explosionDamage = c.raid.explosionDamage, explosionRadius = c.raid.explosionRadius,
             melee = c.raid.melee.enabled, repairCost = c.raid.repair.cost },
     }
@@ -707,6 +707,8 @@ M = Wasteland.DefineModule({
                 piece = { type = 'string', default = 'toolcupboard' },
                 radius = { type = 'number', default = 40.0, min = 5, max = 200 },
                 minGap = { type = 'number', default = 10.0, min = 0, max = 200 },
+                safeRadius = { type = 'number', default = 12.0, min = 0, max = 100,
+                    description = 'Zombies stay out of this many metres around a tool cupboard (0 = off)' },
             } },
             lockpick = { type = 'table', fields = {
                 enabled = { type = 'boolean', default = true },
@@ -872,6 +874,19 @@ M.netEvent('wasteland:basebuilding:server:lockpickResult', { args = { { type = '
 M.netEvent('wasteland:basebuilding:server:explosion', { args = { ID, { type = 'integer', required = true, min = 0, max = 100 }, AT, { type = 'boolean', required = true } },
     rateLimit = { burst = 20, perSecond = 10 } }, function(src, id, kind, at, isCupboard) explosion(src, id, kind, at, isCupboard) end)
 M.netEvent('wasteland:basebuilding:server:melee', { args = { ID }, rateLimit = { burst = 6, perSecond = 3 } }, function(src, id) melee(src, id) end)
+
+--- IsInBaseZone(coords) -> boolean   (within cupboard.safeRadius of a tool
+--- cupboard: zombies do not spawn, chase or hit there; ones inside are removed)
+exports('IsInBaseZone', function(coords)
+    if not (M and M.active) or type(coords) ~= 'table' then return false end
+    local r = M.config.cupboard.safeRadius
+    if not r or r <= 0 then return false end
+    local p = { x = coords.x, y = coords.y, z = coords.z or 0 }
+    for _, c in pairs(cupboards) do
+        if Rules.dist(p, c.coords) <= r then return true end
+    end
+    return false
+end)
 
 --- GetCupboardAt(coords) -> { id, owner } | nil
 exports('GetCupboardAt', function(coords)

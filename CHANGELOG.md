@@ -1,5 +1,9 @@
 # Changelog
 
+## A small zombie-free zone around every tool cupboard
+* Within 12 m of a tool cupboard, zombies act as they do in camps: none spawn there, they stop chasing players inside, they cannot hit them, and ones that wander in are removed. You can build in peace.
+* basebuilding.lua `cupboard.safeRadius` (0 turns it off). Exports: `IsInBaseZone(coords)` on the server and on the client.
+
 ## Fix: the garage door swung sideways like a normal door (owner report)
 * Garage doors now roll up into their frame when opened (about a second) and back down when closed, and they stay up or down after a restart and for players who come near later.
 * How far they go up: the door's own height less 0.3 m, or the piece's `openLift` in basebuilding.lua.
