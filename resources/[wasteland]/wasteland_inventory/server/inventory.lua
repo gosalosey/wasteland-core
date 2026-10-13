@@ -934,6 +934,40 @@ function Inv.trade(a, offerA, b, offerB)
     return true
 end
 
+--- Auto-sort a grid the player can use (pockets, worn bag, an open stash,
+--- trunk or drop): part stacks merge, then everything is packed by category.
+function Inv.sort(src, invId)
+    return Inv.run(src, 'sort', function()
+        local inv, e = Inv.access(src, invId); if not inv then return nil, e end
+        if inv.kind ~= 'grid' then return nil, 'only a grid can be sorted' end
+        local plan = Grid.sortPlan(inv, WLI.defs)
+        if not plan then return nil, 'there is not enough room to sort it' end
+        local statements = {}
+        for _, uid in ipairs(plan.remove) do
+            inv.items[uid] = nil
+            statements[#statements + 1] = Store.delete(uid)
+        end
+        for uid, p in pairs(plan.place) do
+            local s = inv.items[uid]
+            if s and (s.x ~= p.x or s.y ~= p.y or (s.rotated == true) ~= (p.rotated == true) or s.count ~= p.count) then
+                s.x, s.y, s.rotated, s.count = p.x, p.y, p.rotated == true, p.count
+                statements[#statements + 1] = Store.upsert(s, inv.id)
+            end
+        end
+        -- hotbar slots of merged stacks follow the stack they went into
+        local c = Inv.characterOf(src)
+        if c and #plan.remove > 0 then
+            local moved = false
+            for i = 1, 5 do
+                local to = c.hotbar[i] and plan.into[c.hotbar[i]]
+                if to then c.hotbar[i] = to; moved = true end
+            end
+            if moved then exports.wasteland_players:SetCharacterData(c.id, 'hotbar', c.hotbar) end
+        end
+        return { statements = statements, changed = changedSet(inv.id) }
+    end)
+end
+
 --- A stack the player carries (pockets, worn, worn bag): stack, inventoryId | nil
 function Inv.findOwn(src, uid)
     local c = Inv.characterOf(src)

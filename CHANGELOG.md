@@ -1,5 +1,10 @@
 # Changelog
 
+## Inventory: Sort button
+* Every grid (pockets, the open backpack, storage, trunks, the ground) has a Sort button.
+* Part stacks of the same item merge (same condition and metadata only); then everything is packed from the top left, grouped by category (weapons, ammo, medical, food, drinks, tools, materials, clothing, armor, bags, other), biggest first.
+* Hotbar slots follow a stack that was merged into another. One saved step; if it would not all fit, nothing changes.
+
 ## A small zombie-free zone around every tool cupboard
 * Within 12 m of a tool cupboard, zombies act as they do in camps: none spawn there, they stop chasing players inside, they cannot hit them, and ones that wander in are removed. You can build in peace.
 * basebuilding.lua `cupboard.safeRadius` (0 turns it off). Exports: `IsInBaseZone(coords)` on the server and on the client.

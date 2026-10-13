@@ -131,6 +131,75 @@ function Grid.repack(inv, defs, width, height, fixed)
     return moves, overflow
 end
 
+-- Order of item categories when sorting (others after these, by name).
+Grid.SORT_ORDER = { 'weapon', 'ammo', 'medical', 'food', 'drink', 'tool', 'material', 'clothing', 'armor', 'container', 'misc' }
+
+--- Auto-sort: merge part stacks of the same item (same metadata), then pack
+--- everything from the top left, grouped by category, biggest first.
+--- -> plan = { place = { [uid] = { x, y, rotated, count } }, remove = { uid... }, into = { [removed uid] = kept uid } }
+---    or nil when it would not all fit (then nothing changes).
+function Grid.sortPlan(inv, defs)
+    local rank = {}
+    for i, c in ipairs(Grid.SORT_ORDER) do rank[c] = i end
+    -- 1. merge stackable stacks
+    local groups, order = {}, {}
+    for _, s in pairs(inv.items) do
+        if s.x ~= nil then
+            local d = defs[s.name] or { stack = 1 }
+            local key = nil
+            if (d.stack or 1) > 1 then
+                for _, g in ipairs(order) do
+                    if g.name == s.name and Grid.deepEqual(g.metadata or {}, s.metadata or {}) then key = g end
+                end
+            end
+            if key then
+                key.total = key.total + s.count
+                key.uids[#key.uids + 1] = s.uid
+            else
+                local g = { name = s.name, metadata = s.metadata, total = s.count, uids = { s.uid }, stack = d.stack or 1 }
+                order[#order + 1] = g
+                groups[#groups + 1] = g
+            end
+        end
+    end
+    local stacks, remove, into = {}, {}, {}
+    for _, g in ipairs(groups) do
+        table.sort(g.uids)
+        local left = g.total
+        for _, uid in ipairs(g.uids) do
+            if left > 0 then
+                local n = math.min(left, g.stack)
+                stacks[#stacks + 1] = { uid = uid, name = g.name, count = n }
+                left = left - n
+            else
+                remove[#remove + 1] = uid
+                into[uid] = g.uids[1]
+            end
+        end
+    end
+    -- 2. order: category, then bigger first, then name
+    table.sort(stacks, function(a, b)
+        local da, db = defs[a.name] or { width = 1, height = 1 }, defs[b.name] or { width = 1, height = 1 }
+        local ra, rb = rank[da.category] or 99, rank[db.category] or 99
+        if ra ~= rb then return ra < rb end
+        local aa, ab = (da.width or 1) * (da.height or 1), (db.width or 1) * (db.height or 1)
+        if aa ~= ab then return aa > ab end
+        if (da.label or a.name) ~= (db.label or b.name) then return (da.label or a.name) < (db.label or b.name) end
+        return a.uid < b.uid
+    end)
+    -- 3. pack
+    local test = { width = inv.width, height = inv.height, items = {} }
+    local place = {}
+    for _, st in ipairs(stacks) do
+        local d = defs[st.name] or { width = 1, height = 1 }
+        local x, y, rotated = Grid.findSpot(test, defs, d)
+        if not x then return nil end
+        test.items[st.uid] = { uid = st.uid, name = st.name, x = x, y = y, rotated = rotated }
+        place[st.uid] = { x = x, y = y, rotated = rotated, count = st.count }
+    end
+    return { place = place, remove = remove, into = into }
+end
+
 function Grid.count(inv)
     local n = 0
     for _ in pairs(inv.items) do n = n + 1 end

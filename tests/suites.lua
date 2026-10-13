@@ -10,6 +10,7 @@ return {
     'unit/hunting_rules.lua',
     'unit/update_check.lua',
     'unit/basebuilding_rules.lua',
+    'unit/inventory_sort.lua',
     'unit/schema.lua',
     'unit/logger.lua',
     'unit/config_loader.lua',

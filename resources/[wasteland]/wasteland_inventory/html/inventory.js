@@ -364,11 +364,14 @@
         grid.dataset.inv = inv.id;
         inv.items.forEach((s) => { if (s.x !== undefined && s.x !== null) grid.appendChild(tile(s, inv)); });
         const heavy = inv.weight > inv.maxWeight * 0.9;
+        const sortBtn = inv.items.length > 1 ? UI.button('Sort', () => st.api.post('sort', { inv: inv.id })) : null;
+        if (sortBtn) sortBtn.title = 'Merge stacks and pack everything neatly';
         return h('div', { class: 'wli-section' },
             h('div', { class: 'wli-section__head' },
                 h('span', { class: 'wl-section-title', text: title || inv.label }),
                 inv.maxWeight < 100000 ? h('span', { class: 'wli-weight' + (heavy ? ' is-heavy' : ''),
-                    text: formatKg(inv.weight) + ' / ' + formatKg(inv.maxWeight) + ' kg' }) : null),
+                    text: formatKg(inv.weight) + ' / ' + formatKg(inv.maxWeight) + ' kg' }) : null,
+                sortBtn),
             grid);
     }
 

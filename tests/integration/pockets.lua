@@ -109,6 +109,21 @@ describe('pockets grow with clothing', function()
         expect(find(id, 'clothing_top') == nil).toBe(true)
     end)
 
+    it('Sort merges part stacks and packs the pockets (the server action)', function()
+        I('AddItem', id, 'bandage', 3); server:advance(100)
+        -- split a bandage stack so there are two part stacks
+        local b
+        for _, i in ipairs(snap(id).inventories) do for _, s in ipairs(i.items) do if s.name == 'bandage' and i.id == 'player:1' then b = s end end end
+        op(id, 'split', b.uid, 'player:1', 1)
+        local before = 0
+        for _, s in ipairs(inv(id, 'player:1').items) do if s.name == 'bandage' then before = before + 1 end end
+        expect(before >= 2).toBe(true)
+        op(id, 'sort', 'player:1')
+        local stacks, total = 0, 0
+        for _, s in ipairs(inv(id, 'player:1').items) do if s.name == 'bandage' then stacks = stacks + 1; total = total + s.count end end
+        expect(stacks).toBe(1); expect(total >= 3).toBe(true)
+    end)
+
     it('a stash that is already loaded takes a new, bigger size (e.g. a trunk after a settings change)', function()
         server:createThread('wasteland_inventory', function()
             local small = I('EnsureStash', 'test_trunk', { width = 6, height = 5, maxWeight = 80 })

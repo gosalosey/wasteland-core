@@ -83,6 +83,8 @@ function Interface.registerNetEvents(M)
         function(src, uid, fromId, toId, x, y, rotated) answer(src, Inv.move(src, uid, fromId, toId, x, y, rotated)) end)
     M.netEvent('wasteland:inventory:server:merge', { args = { UID, INV_ID, UID, INV_ID, COUNT }, rateLimit = OPS_RATE },
         function(src, uid, fromId, targetUid, toId, count) answer(src, Inv.merge(src, uid, fromId, targetUid, toId, count)) end)
+    M.netEvent('wasteland:inventory:server:sort', { args = { INV_ID }, rateLimit = { burst = 3, perSecond = 1 } },
+        function(src, invId) answer(src, Inv.sort(src, invId)) end)
     M.netEvent('wasteland:inventory:server:split', { args = { UID, INV_ID, { type = 'integer', required = true, min = 1, max = 1000000 } }, rateLimit = OPS_RATE },
         function(src, uid, invId, count) answer(src, Inv.split(src, uid, invId, count)) end)
     M.netEvent('wasteland:inventory:server:equip', { args = { UID, INV_ID, SLOT }, rateLimit = OPS_RATE },
