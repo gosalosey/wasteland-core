@@ -47,6 +47,10 @@ ensure wasteland_events
 ensure wasteland_groups
 ensure wasteland_trade
 ensure wasteland_hunting
+# Base building needs the building props pack (not included: a licensed
+# asset pack). Install it, then uncomment:
+# ensure sinor-buildingProps-v2
+ensure wasteland_basebuilding
 ensure wasteland_template      # SDK example module; optional
 
 # --- permissions ---

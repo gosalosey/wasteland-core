@@ -468,3 +468,85 @@ describe('real MariaDB: groups', function()
 end)
 
 
+
+describe('real MariaDB: base building', function()
+    local env = { WLBB = {} }
+    assert(loadfile(RESOURCES .. '/wasteland_basebuilding/server/sql.lua', 't', env))()
+    local SQLBB = env.WLBB.SQL
+    local server = newServer({ dbBackend = backend, config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 60000, slowQueryWarningMs = 60000 }',
+        ['basebuilding.lua'] = (io.open(RESOURCES .. '/wasteland_config/config/basebuilding.lua'):read('a')
+            :gsub('tickMinutes = 5,', 'tickMinutes = 1,'):gsub('perPieceCostPerDay = { wood = 1, stone = 1, metal = 1 },',
+                'perPieceCostPerDay = { wood = 1440, stone = 1440, metal = 1440 },')),
+    } })
+    server.db.latencyMs = 0
+    boot(server, { 'wasteland_players', 'wasteland_inventory', 'wasteland_basebuilding' })
+
+    it('stores cupboards, access, pieces, doors, upgrades, health, raid notices', function()
+        expect(states(server).basebuilding).toBe('running')
+        local function join(license, first, x)
+            local id = server:connectAndJoin({ name = first, license = license })
+            server:advance(200)
+            server:command(id, 'character create ' .. first .. ' Db'); server:advance(500)
+            server:command(id, 'character select 1'); server:advance(800)
+            server.players[id].coords = { x = x, y = 900.0, z = 30.0 }
+            return id
+        end
+        local a, c = join('dbbba', 'Ada', 900.0), join('dbbbc', 'Cal', 901.0)
+        local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+        local function act(id, what, ...) server:clientEvent(id, 'wasteland:basebuilding:server:' .. what, ...); server:advance(1500) end
+        I('ClearInventory', a); I('ClearInventory', c); server:advance(500)
+        I('AddItem', a, 'wood_planks', 30); I('AddItem', a, 'scrap_metal', 6); I('AddItem', a, 'stone', 10); server:advance(500)
+        act(a, 'place', 'toolcupboard', 900.0, 901.0, 30.0, 0.0)
+        local cup = backend:rows('SELECT id FROM wl_bb_cupboards')[1]
+        expect(cup ~= nil).toBe(true)
+        act(a, 'place', 'foundation', 903.0, 900.0, 30.0, 0.0)
+        act(a, 'place', 'door', 902.0, 901.0, 30.0, 0.0)
+        local door = backend:rows("SELECT id FROM wl_bb_props WHERE piece = 'door'")[1]
+        local found = backend:rows("SELECT id FROM wl_bb_props WHERE piece = 'foundation'")[1]
+        act(a, 'door', door.id)
+        local open = backend:rows('SELECT is_open FROM wl_bb_props WHERE id = ?', { door.id })[1].is_open
+        expect(open == 1 or open == true).toBe(true) -- TINYINT(1) comes back as a boolean
+        act(a, 'upgrade', found.id)
+        expect(backend:rows('SELECT piece FROM wl_bb_props WHERE id = ?', { found.id })[1].piece).toBe('foundation_stone')
+        act(a, 'authorize', cup.id, c)
+        expect(#backend:rows('SELECT character_id FROM wl_bb_auth WHERE cupboard_id = ?', { cup.id })).toBe(1)
+        local cId = server:export('wasteland_players', 'GetCharacterId', c)
+        act(a, 'revoke', cup.id, cId)
+        -- the owner logs out; a raider picks the door: the notice waits in the database
+        server:dropPlayer(a); server:advance(1500)
+        I('AddItem', c, 'lockpick', 1); server:advance(300)
+        act(c, 'lockpick', door.id); server:advance(1500)
+        act(c, 'lockpickResult', true)
+        expect(#backend:rows('SELECT id FROM wl_bb_notices')).toBe(1)
+        act(c, 'melee', door.id)
+        expect(backend:rows('SELECT health FROM wl_bb_props WHERE id = ?', { door.id })[1].health < 600).toBe(true)
+        -- the owner comes back: the notice is delivered and removed
+        local a2 = server:connectAndJoin({ name = 'Ada', license = 'dbbba' })
+        server:advance(200)
+        server:command(a2, 'character select 1'); server:advance(7000)
+        expect(#backend:rows('SELECT id FROM wl_bb_notices')).toBe(0)
+        server.players[a2].coords = { x = 900.0, y = 900.0, z = 30.0 }
+        server:advance(130000) -- upkeep with no supplies: wood decays
+        server:restart('wasteland_basebuilding'); server:advance(3000)
+        expect(states(server).basebuilding).toBe('running')
+        server:clientEvent(a2, 'wasteland:basebuilding:server:remove', door.id); server:advance(1500)
+        server:clientEvent(a2, 'wasteland:basebuilding:server:removeCupboard', cup.id); server:advance(3000)
+        expect(#backend:rows('SELECT id FROM wl_bb_cupboards')).toBe(0)
+        expect(backend:rows('SELECT cupboard_id FROM wl_bb_props WHERE id = ?', { found.id })[1].cupboard_id == nil).toBe(true)
+    end)
+
+    it('ran every base building statement against the real database', function()
+        local ran = {}
+        for _, l in ipairs(backend.log) do ran[l.sql] = true end
+        local missing = {}
+        for key, sql in pairs(SQLBB) do
+            if not ran[(sql:gsub('%s+', ' '))] then missing[#missing + 1] = key end
+        end
+        table.sort(missing)
+        -- attachProp: only when a cupboard is placed over pieces left by an older one;
+        -- cupboardHealth: only when explosives hit a cupboard
+        expect(missing).toEqual({ 'attachProp', 'cupboardHealth' })
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

@@ -61,3 +61,14 @@ add_principal identifier.fivem:12345678 group.admin
 3. Start the server. Every Wasteland module should show `running` in the console.
 
 **By hand.** Back up the database first ([DATABASE.md](DATABASE.md)), then replace `resources/[wasteland]` with the new version, keeping your own `wasteland_config/config/` files. Database changes are applied automatically on the next start.
+
+## Base building props (optional)
+
+`wasteland_basebuilding` shows its pieces with the **sinor-buildingProps-v2** props pack. It is not part of Wasteland Core: it is a licensed Cfx asset pack (escrow), which works only on servers whose licence key belongs to the account that owns it. To use base building:
+
+1. Get the pack on your Cfx account (Keymaster) and download it.
+2. Put the `sinor-buildingProps-v2` folder in your server's `resources` folder (for example `resources/[standalone]/`).
+3. In `server.cfg`, `ensure sinor-buildingProps-v2` before `ensure wasteland_basebuilding` (the txAdmin server.cfg has the line ready, commented out).
+
+Without the pack the module still runs, but the pieces cannot be seen; the console says so when it starts.
+

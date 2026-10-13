@@ -101,3 +101,12 @@ test('cooking window: still cooking after the first pieces, until finished', () 
     assert.strictEqual(cook.cooking(null), false);
 });
 
+
+const bb = require(path.join(R, 'wasteland_basebuilding', 'html', 'build.js'));
+
+test('base upkeep line per material', () => {
+    assert.strictEqual(bb.upkeepLine({ daily: 0, pieces: 0 }), 'no pieces');
+    assert.strictEqual(bb.upkeepLine({ daily: 3, have: 0, hours: 0 }), 'OUT OF SUPPLY: these pieces are decaying');
+    assert.strictEqual(bb.upkeepLine({ daily: 3, have: 9, hours: 72 }), '3.0 days left');
+    assert.strictEqual(bb.upkeepLine({ daily: 24, have: 5, hours: 5 }), 'ONLY 5.0 hours left');
+});

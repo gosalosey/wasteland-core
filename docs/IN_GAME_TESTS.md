@@ -600,3 +600,21 @@ Give yourself: a weapon_knife, a weapon_huntingrifle with ammo_308, a campfire, 
 | R41.6 | Eat the cooked meat | Food goes up |
 | R41.7 | Left Alt on the fire: Put out and pick up | The fire is gone; the campfire item is back |
 
+## R42: base building
+The sinor-buildingProps-v2 pack must be running. Give yourself: building_plan, 60 wood_planks, 10 scrap_metal, 20 stone, 10 metal_sheet, 2 lockpick (admin panel).
+
+| # | Do | Expect |
+|---|---|---|
+| R42.1 | Use the Building plan | The build menu with categories (Structures, Doors, Garage, Storage, Tool Cupboard) and costs |
+| R42.2 | Try a Foundation first | "Place a Tool Cupboard first" |
+| R42.3 | Build a Tool Cupboard (E to place) | It stands there; "My Base" on the map |
+| R42.4 | Foundation, then walls around it | Walls snap to the foundation edges and next to each other; Tab turns snapping off; wheel turns; Shift+wheel height |
+| R42.5 | Doorway, then a door in it | The door snaps into the doorway; E opens and closes it (it swings) |
+| R42.6 | Storage box: Left Alt, Open storage | A storage grid opens |
+| R42.7 | Left Alt on a wall: Upgrade (stone, then metal) | The wall changes to stone, then metal |
+| R42.8 | Left Alt on the cupboard: Tool cupboard | Upkeep per material, access list; give a second player access by id |
+| R42.9 | Second player not in your group, no access: E on the door | "This door is locked"; Left Alt: Lockpick plays the minigame; success opens it and you get "Your base is being raided" |
+| R42.10 | Hit a wooden wall with a bat | Its health goes down (Left Alt: Check health); Repair brings it back |
+| R42.11 | Put wood planks in Supplies; wait | The planks go down slowly (1 a day per wood piece) |
+| R42.12 | Restart the server | Everything is still there |
+

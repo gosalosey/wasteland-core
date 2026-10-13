@@ -30,6 +30,11 @@ return {
             ingredients = { { name = 'rag', count = 2 }, { name = 'scrap_metal', count = 1 } }, seconds = 4 },
         campfire = { label = 'Campfire', result = { name = 'campfire', count = 1 },
             ingredients = { { name = 'scrap_metal', count = 3 } }, seconds = 5 },
+        -- Base building (wasteland_basebuilding)
+        building_plan = { label = 'Building plan', result = { name = 'building_plan', count = 1 },
+            ingredients = { { name = 'rag', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 4 },
+        metal_sheet = { label = 'Metal sheet', result = { name = 'metal_sheet', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 4 }, { name = 'duct_tape', count = 1 } }, seconds = 8 },
         lockpick = { label = 'Lockpicks', result = { name = 'lockpick', count = 2 },
             ingredients = { { name = 'scrap_metal', count = 1 } }, seconds = 4 },
 

@@ -80,6 +80,7 @@ return {
             { name = 'blueprint_switchblade', min = 1, max = 1, weight = 1 },
             { name = 'matches', min = 1, max = 5, weight = 8 },
             { name = 'firewood', min = 1, max = 2, weight = 5 },
+            { name = 'wood_planks', min = 1, max = 2, weight = 10 },
         } },
         food = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
@@ -139,6 +140,9 @@ return {
             { name = 'gun_parts', min = 1, max = 2, weight = 3 },
             { name = 'matches', min = 2, max = 8, weight = 8 },
             { name = 'firewood', min = 1, max = 3, weight = 10 },
+            { name = 'wood_planks', min = 2, max = 4, weight = 20 },
+            { name = 'stone', min = 2, max = 5, weight = 12 },
+            { name = 'metal_sheet', min = 1, max = 1, weight = 4 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
             { name = 'sewing_kit', min = 1, max = 1, weight = 3 },
@@ -169,6 +173,10 @@ return {
             { name = 'blueprint_battleaxe', min = 1, max = 1, weight = 1 },
             { name = 'firewood', min = 1, max = 3, weight = 6 },
             { name = 'matches', min = 2, max = 6, weight = 4 },
+            { name = 'wood_planks', min = 2, max = 4, weight = 12 },
+            { name = 'stone', min = 2, max = 6, weight = 10 },
+            { name = 'metal_sheet', min = 1, max = 2, weight = 4 },
+            { name = 'building_plan', min = 1, max = 1, weight = 2 },
         } },
         -- Wrecked vehicles: scrap and car parts, sometimes something left behind.
         wreck = { emptyChance = 0.45, rolls = { 1, 2 }, items = {
@@ -187,6 +195,7 @@ return {
             { name = 'soda_can', min = 1, max = 1, weight = 3 },
             { name = 'flashlight', min = 1, max = 1, weight = 2 },
             { name = 'gun_parts', min = 1, max = 1, weight = 2 },
+            { name = 'metal_sheet', min = 1, max = 1, weight = 3 },
         } },
         -- World events (events.lua): the reward for clearing them.
         helicrash = { emptyChance = 0, rolls = { 2, 3 }, items = {

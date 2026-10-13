@@ -61,6 +61,7 @@ function MemoryDB.new(resourcesDir)
     local wlv = loadSqlFile(resourcesDir .. '/wasteland_vehicles/server/sql.lua', 'WLV')
     local wlg = loadSqlFile(resourcesDir .. '/wasteland_groups/server/sql.lua', 'WLG')
     local wlb = loadSqlFile(resourcesDir .. '/wasteland_bases/server/sql.lua', 'WLB')
+    local wlbb = loadSqlFile(resourcesDir .. '/wasteland_basebuilding/server/sql.lua', 'WLBB')
     self:installDatabase(wld.SQL)
     self:installPlayers(wlp.SQL)
     self:installInventory(wli.SQL)
@@ -68,6 +69,7 @@ function MemoryDB.new(resourcesDir)
     self:installVehicles(wlv.SQL)
     self:installGroups(wlg.SQL)
     self:installBases(wlb.SQL)
+    self:installBasebuilding(wlbb.SQL)
     return self
 end
 
@@ -295,6 +297,64 @@ function MemoryDB:installVehicles(SQL)
     self:on(SQL.delete, function(db, p)
         if not db.data.wl_vehicles[p[1]] then return header(0) end
         db.data.wl_vehicles[p[1]] = nil
+        return header(1)
+    end)
+end
+
+function MemoryDB:installBasebuilding(SQL)
+    local d = self.data
+    d.wl_bb_cupboards, d.wl_bb_auth, d.wl_bb_props, d.wl_bb_notices = d.wl_bb_cupboards or {}, d.wl_bb_auth or {}, d.wl_bb_props or {}, d.wl_bb_notices or {}
+    local nextC, nextP, nextN = 0, 0, 0
+    local function rows(t) local out = {} for _, r in pairs(t) do out[#out + 1] = deepCopy(r) end return out end
+    local function ins(id) local h = header(1); h.insertId = id; return h end
+    self:on(SQL.selectCupboards, function(db) return rows(db.data.wl_bb_cupboards) end)
+    self:on(SQL.selectAuth, function(db) return rows(db.data.wl_bb_auth) end)
+    self:on(SQL.selectProps, function(db) return rows(db.data.wl_bb_props) end)
+    self:on(SQL.insertCupboard, function(db, p)
+        nextC = nextC + 1
+        db.data.wl_bb_cupboards[nextC] = { id = nextC, owner_id = p[1], x = p[2], y = p[3], z = p[4], heading = p[5], radius = p[6],
+            health = p[7], max_health = p[8], created_unix = p[9] }
+        return ins(nextC)
+    end)
+    self:on(SQL.deleteCupboard, function(db, p) db.data.wl_bb_cupboards[p[1]] = nil; return header(1) end)
+    self:on(SQL.cupboardHealth, function(db, p) local r = db.data.wl_bb_cupboards[p[2]]; if r then r.health = p[1] end; return header(1) end)
+    self:on(SQL.insertAuth, function(db, p) db.data.wl_bb_auth[p[1] .. ':' .. p[2]] = { cupboard_id = p[1], character_id = p[2], name = p[3] }; return header(1) end)
+    self:on(SQL.deleteAuth, function(db, p) db.data.wl_bb_auth[p[1] .. ':' .. p[2]] = nil; return header(1) end)
+    self:on(SQL.deleteAuthAll, function(db, p)
+        for k, r in pairs(db.data.wl_bb_auth) do if r.cupboard_id == p[1] then db.data.wl_bb_auth[k] = nil end end
+        return header(1)
+    end)
+    self:on(SQL.insertProp, function(db, p)
+        nextP = nextP + 1
+        db.data.wl_bb_props[nextP] = { id = nextP, cupboard_id = p[1], category = p[2], piece = p[3], model = p[4], x = p[5], y = p[6], z = p[7],
+            heading = p[8], is_open = 0, health = p[9], max_health = p[10], material = p[11], created_unix = p[12] }
+        return ins(nextP)
+    end)
+    self:on(SQL.deleteProp, function(db, p) db.data.wl_bb_props[p[1]] = nil; return header(1) end)
+    self:on(SQL.propOpen, function(db, p) local r = db.data.wl_bb_props[p[2]]; if r then r.is_open = p[1] end; return header(1) end)
+    self:on(SQL.propHealth, function(db, p) local r = db.data.wl_bb_props[p[2]]; if r then r.health = p[1] end; return header(1) end)
+    self:on(SQL.propUpgrade, function(db, p)
+        local r = db.data.wl_bb_props[p[6]]
+        if r then r.piece, r.model, r.health, r.max_health, r.material = p[1], p[2], p[3], p[4], p[5] end
+        return header(1)
+    end)
+    self:on(SQL.detachProps, function(db, p)
+        for _, r in pairs(db.data.wl_bb_props) do if r.cupboard_id == p[1] then r.cupboard_id = nil end end
+        return header(1)
+    end)
+    self:on(SQL.attachProp, function(db, p) local r = db.data.wl_bb_props[p[2]]; if r then r.cupboard_id = p[1] end; return header(1) end)
+    self:on(SQL.insertNotice, function(db, p)
+        nextN = nextN + 1
+        db.data.wl_bb_notices[nextN] = { id = nextN, character_id = p[1], message = p[2], created_unix = p[3] }
+        return ins(nextN)
+    end)
+    self:on(SQL.selectNotices, function(db, p)
+        local out = {}
+        for _, r in pairs(db.data.wl_bb_notices) do if r.character_id == p[1] then out[#out + 1] = deepCopy(r) end end
+        return out
+    end)
+    self:on(SQL.deleteNotices, function(db, p)
+        for k, r in pairs(db.data.wl_bb_notices) do if r.character_id == p[1] then db.data.wl_bb_notices[k] = nil end end
         return header(1)
     end)
 end

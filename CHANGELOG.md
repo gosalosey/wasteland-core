@@ -1,5 +1,29 @@
 # Changelog
 
+## Base building (new module wasteland_basebuilding, ported from sbb-basebuilding)
+* **Ported from sbb-basebuilding** (QBCore / ox) to Wasteland Core:
+  * Wasteland characters, inventory (items and stash grids), target (Left Alt), UI screens, the lockpick minigame and the database (migrations).
+  * Nothing from QBCore or ox is needed.
+* **Needs the "sinor-buildingProps-v2" props pack.** It is NOT part of Wasteland Core: it is a Cfx escrow asset pack, licensed to the account that owns it. Install it on the server and `ensure` it before wasteland_basebuilding; the module warns if it is missing.
+* **Tool cupboards** claim 40 m.
+  * The owner, players they authorize (by player id), and the owner's group (/group) may build, open doors and storage, repair and remove there.
+  * The cupboard screen shows upkeep per material, who has access, Supplies, Repair all and Remove.
+* **Building:** use a Building plan (craft: rag + duct tape, or buy one) to open the build menu.
+  * Pieces: foundation, wall, doorway, window frame, half wall, ceiling, frame, ramp, gate frame, doors, gate door, garage door, storage (3 sizes).
+  * Pieces snap to foundations and to each other.
+  * Controls: E place, wheel turn, arrows turn freely, Shift+wheel height, Tab snapping, Backspace cancel.
+* **Upgrades** wood → stone → metal, repairs, and doors with E.
+* **Raids:** explosives damage pieces, wood also takes melee hits.
+  * Doors and storage can be lockpicked (the minigame; a failed try breaks the pick).
+  * Owners are told when their base is lockpicked, also later if they were offline.
+* **Upkeep** comes from the cupboard's supplies (wood planks, stone, metal sheets): 1 a day per piece of each material. Short of a material, its pieces decay.
+  * Fix from the original: the cost was rounded up on every 5-minute tick (about 288 a day per piece); the fraction now carries over.
+* **Items and recipes:**
+  * New items: building plan, stone.
+  * Wood planks are back in loot and at the trader and weigh 0.5 kg.
+  * Metal sheets can be crafted again (no station).
+* Tables `wl_bb_cupboards`, `wl_bb_auth`, `wl_bb_props`, `wl_bb_notices`. Config: basebuilding.lua.
+
 ## Update notice: the console says when GitHub has a newer Wasteland Core
 * 15 s after the server starts, and every 6 hours, the core compares the installed version with GitHub. The installed version is `wasteland_core/VERSION.txt`, written by the updater (a resource may only read its own files); a fresh install records the newest version on its first start.
 * If there are updates, a yellow banner in the console shows how many, the installed and newest versions, the titles of up to 10 changes, and how to update (run update_wasteland.bat).

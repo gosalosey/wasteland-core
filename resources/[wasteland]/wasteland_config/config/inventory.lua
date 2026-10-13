@@ -160,7 +160,12 @@ return {
             description = 'Two pieces keep a campfire going.' },
         campfire = { label = 'Campfire', image = 'log', category = 'tool', width = 2, height = 2, weight = 3.0, stack = 1,
             description = 'Use it to make a fire (needs a match and 2 firewood). Cook on it, then pick it up again.' },
-        wood_planks = { label = 'Wood planks', image = 'woodplank', category = 'material', width = 2, height = 1, weight = 1.0, stack = 50,
+        -- Base building (wasteland_basebuilding)
+        building_plan = { label = 'Building plan', image = '2-blank-blurprint', category = 'tool', width = 1, height = 1, weight = 0.1, stack = 1,
+            description = 'Use it to open the build menu. Place a Tool Cupboard first.' },
+        stone = { label = 'Stone', image = 'rock', category = 'material', width = 1, height = 1, weight = 1.0, stack = 50,
+            description = 'For stone upgrades and base upkeep.' },
+        wood_planks = { label = 'Wood planks', image = 'woodplank', category = 'material', width = 2, height = 1, weight = 0.5, stack = 50,
             description = 'For building. Found in trash, sheds and crates.' },
         nails = { label = 'Nails', category = 'material', width = 1, height = 1, weight = 0.01, stack = 200,
             description = 'For building. Make more from scrap metal.' },

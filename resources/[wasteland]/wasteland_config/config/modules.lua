@@ -64,6 +64,10 @@ return {
         -- Hunting: animals, harvesting with a knife, campfires, cooking.
         hunting    = true,
 
+        -- Base building: tool cupboards, snapping walls, doors, storage,
+        -- upkeep, raids. Needs the sinor-buildingProps-v2 props pack.
+        basebuilding = true,
+
         -- Base building: switched off for now (the props need a better look).
         -- The code stays in wasteland_bases; set true and ensure it to try it.
         bases      = false,

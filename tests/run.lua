@@ -75,6 +75,7 @@ function _G.newServer(opts)
     server:addResource('wasteland_groups', RESOURCES .. '/wasteland_groups')
     server:addResource('wasteland_trade', RESOURCES .. '/wasteland_trade')
     server:addResource('wasteland_hunting', RESOURCES .. '/wasteland_hunting')
+    server:addResource('wasteland_basebuilding', RESOURCES .. '/wasteland_basebuilding')
     server:addResource('wasteland_bases', RESOURCES .. '/wasteland_bases')
     server.db = {
         backend = opts.dbBackend or MemoryDB.new(RESOURCES),
