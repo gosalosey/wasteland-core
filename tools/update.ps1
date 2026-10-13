@@ -203,6 +203,8 @@ if (Test-Path -LiteralPath (Join-Path $oldModels 'peds.meta')) {
 Remove-Item -LiteralPath $wlPath -Recurse -Force
 Move-Item -LiteralPath $newWl -Destination $wlPath
 Set-Content -LiteralPath (Join-Path $wlPath 'VERSION.txt') -Value $latest -Encoding ASCII
+# The core keeps its own copy for the update notice (a resource may only read its own files).
+Set-Content -LiteralPath (Join-Path $wlPath 'wasteland_core\VERSION.txt') -Value $latest -Encoding ASCII
 Say 'resources\[wasteland] updated.' Green
 
 # --- server.cfg -------------------------------------------------------------------

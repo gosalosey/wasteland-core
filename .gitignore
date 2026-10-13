@@ -5,3 +5,6 @@ tests/.tmp/
 tests/db.env
 tools/backup.cnf
 backups/
+
+# written on servers (update notice)
+resources/*/wasteland_core/VERSION.txt

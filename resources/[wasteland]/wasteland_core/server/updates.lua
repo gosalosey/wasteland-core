@@ -3,9 +3,10 @@
 -- in the server console after start (and every few hours), and a line in
 -- chat for admins when they join.
 --
--- The installed version is the commit in resources/[wasteland]/VERSION.txt,
--- written by the updater (tools/update.ps1). A server without that file
--- (a fresh install) records the newest commit on its first start.
+-- The installed version is the commit in wasteland_core/VERSION.txt (a
+-- resource may only read its own files), written by the updater
+-- (tools/update.ps1). A server without that file (a fresh install) records
+-- the newest commit on its first start.
 -- framework.lua: updateCheck = { enabled, repo, branch, everyHours }.
 
 Updates = Updates or {}
@@ -47,32 +48,23 @@ function Updates.titles(commits)
     return out
 end
 
+local function coreConfig() return WL and WL.Lifecycle and WL.Lifecycle.coreConfig or nil end
+
 local function settings()
-    local c = Lifecycle and Lifecycle.coreConfig
+    local c = coreConfig()
     return c and c.framework and c.framework.updateCheck or nil
 end
 
--- resources/[wasteland] (the folder this resource is in)
-local function folder()
-    local path = GetResourcePath(GetCurrentResourceName()) or ''
-    return (path:gsub('[/\\][^/\\]+[/\\]?$', ''))
-end
-
+-- wasteland_core/VERSION.txt (a resource may only read its own files)
 local function readInstalled()
-    local f = io.open(folder() .. '/VERSION.txt', 'r')
-    if not f then return nil end
-    local sha = (f:read('a') or ''):match('%x+')
-    f:close()
+    local text = LoadResourceFile(GetCurrentResourceName(), 'VERSION.txt')
+    local sha = text and text:match('%x+')
     if sha and #sha >= 7 then return sha end
     return nil
 end
 
 local function writeInstalled(sha)
-    local f = io.open(folder() .. '/VERSION.txt', 'w')
-    if not f then return false end
-    f:write(sha)
-    f:close()
-    return true
+    return SaveResourceFile(GetCurrentResourceName(), 'VERSION.txt', sha, -1) == true
 end
 
 local function get(url, cb)
@@ -83,6 +75,7 @@ end
 function Updates.check()
     local s = settings()
     if not s or not s.enabled or type(PerformHttpRequest) ~= 'function' then return end
+    log:info('checking GitHub (%s, %s) for updates', s.repo, s.branch)
     local api = 'https://api.github.com/repos/' .. s.repo
     get(api .. '/commits/' .. s.branch, function(status, body)
         local ok, latest = pcall(json.decode, body or '')
@@ -136,7 +129,7 @@ end)
 AddEventHandler('wasteland:players:characterLoaded', function(src)
     local info = Updates.available
     if not info then return end
-    local c = Lifecycle and Lifecycle.coreConfig
+    local c = coreConfig()
     local ace = c and c.framework and c.framework.adminAce or 'wasteland.admin'
     if not IsPlayerAceAllowed(tostring(src), ace) then return end
     TriggerClientEvent('chat:addMessage', src, { color = { 232, 194, 90 }, multiline = true,
