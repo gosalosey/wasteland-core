@@ -281,7 +281,7 @@ local function putOut(f, why)
     for src, c in pairs(cooking) do
         if c.fire == f.id then
             cooking[src] = nil
-            TriggerClientEvent('wasteland:hunting:client:cooking', src, { done = true, message = 'The fire went out.' })
+            TriggerClientEvent('wasteland:hunting:client:cooking', src, { finished = true, message = 'The fire went out.' })
         end
     end
     if DoesEntityExist(f.handle) then DeleteEntity(f.handle) end
@@ -366,7 +366,7 @@ local function stopCook(src, message)
     local c = cooking[src]
     if not c then return end
     cooking[src] = nil
-    TriggerClientEvent('wasteland:hunting:client:cooking', src, { done = true, message = message })
+    TriggerClientEvent('wasteland:hunting:client:cooking', src, { finished = true, message = message })
     local f = fires[c.fire]
     if f then cookScreen(src, f, message) end
 end
@@ -389,7 +389,7 @@ local function cookTick()
                 c.left, c.done = c.left - 1, c.done + 1
                 if c.left <= 0 then
                     cooking[src] = nil
-                    TriggerClientEvent('wasteland:hunting:client:cooking', src, { done = true, message = string.format('Cooked %d x %s.', c.done, label(out)) })
+                    TriggerClientEvent('wasteland:hunting:client:cooking', src, { finished = true, message = string.format('Cooked %d x %s.', c.done, label(out)) })
                     cookScreen(src, f, string.format('Cooked %d x %s.', c.done, label(out)))
                 else
                     c.nextAt = t + M.config.cooking.seconds * 1000

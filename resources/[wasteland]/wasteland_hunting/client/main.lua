@@ -145,7 +145,7 @@ end)
 
 RegisterNetEvent('wasteland:hunting:client:cooking', function(p)
     if isOpen(COOK) then exports.wasteland_ui:Update(COOK, { progress = p }) end
-    if type(p) == 'table' and p.done and p.message and not isOpen(COOK) then notice(p.message) end
+    if type(p) == 'table' and p.finished and p.message and not isOpen(COOK) then notice(p.message) end
 end)
 
 AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)

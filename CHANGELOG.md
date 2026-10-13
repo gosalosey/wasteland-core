@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: the cooking window fell back to the list after the first piece (owner report)
+* The server sent "pieces done" as `done`, and the window read any number above 0 as "finished". After the first piece, the window showed the list again while the server was still cooking, and Cook did nothing.
+* The end of cooking is now its own flag (`finished`). The window keeps showing "Cooking 3 of 5" until the last piece, and Cook works again right after.
+
 ## Fix: campfires stopped working after a while (owner report)
 * The game deletes server-made props it thinks nobody needs, and the fire was one: the server then no longer knew the fire, so Cook did nothing. Fires are now kept (orphan mode 2), and a lost fire prop is made again in the same place.
 * A fire now burns as long as anyone is within 30 m. Left alone for 15 minutes (`idleMinutes` in hunting.lua; it replaces `burnMinutes`), it goes out and goes back to its owner.

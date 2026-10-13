@@ -92,3 +92,12 @@ test('cooking amount stays between 1 and what you have', () => {
     assert.strictEqual(cook.clampCount('abc', 3, 50), 1);
     assert.strictEqual(cook.clampCount(80, 100, 50), 50);
 });
+
+test('cooking window: still cooking after the first pieces, until finished', () => {
+    assert.strictEqual(cook.cooking({ label: 'Raw meat', done: 0, total: 5 }), true);
+    assert.strictEqual(cook.cooking({ label: 'Raw meat', done: 1, total: 5 }), true);   // the bug: 1 piece ready looked "done"
+    assert.strictEqual(cook.cooking({ label: 'Raw meat', done: 4, total: 5 }), true);
+    assert.strictEqual(cook.cooking({ finished: true, message: 'Cooked 5 x Cooked meat.' }), false);
+    assert.strictEqual(cook.cooking(null), false);
+});
+

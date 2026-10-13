@@ -2,11 +2,15 @@
 // Cooking at a campfire: pick how many to cook (up to what you carry),
 // then watch the progress ("Cooking 2 of 5"); Stop at any time.
 // Data: { view = { fire, items = [{ item, label, result, have, image }], seconds, max, message, cooking? },
-//         progress = { label, done, total, seconds } | { done = true, message } }
+//         progress = { label, done, total, seconds } | { finished = true, message } }
 // Posts: cook { item, count }, stop, close
 
 (function () {
     'use strict';
+
+    // Pure helper (unit-tested): is something cooking right now? (`done` is
+    // how many pieces are ready; `finished` marks the end.)
+    function cooking(p) { return !!p && !p.finished && typeof p.total === 'number' && p.done < p.total; }
 
     // Pure helper (unit-tested): the amount typed, kept between 1 and what can be cooked.
     function clampCount(value, have, max) {
@@ -14,7 +18,7 @@
         return Math.max(1, Math.min(n, have, max || 50));
     }
 
-    if (typeof module === 'object' && module.exports) { module.exports = { clampCount: clampCount }; return; }
+    if (typeof module === 'object' && module.exports) { module.exports = { clampCount: clampCount, cooking: cooking }; return; }
 
     const UI = window.WastelandUI;
     const h = UI.h;
@@ -25,7 +29,7 @@
         st.body.innerHTML = '';
         if (!v) return;
         const p = st.progress;
-        if (p && !p.done) {
+        if (cooking(p)) {
             const fill = h('div', { class: 'wck-fill' });
             st.body.appendChild(h('div', { class: 'wck-busy' },
                 h('div', { class: 'wck-busy__label', text: 'Cooking ' + p.label.toLowerCase() + ': ' + (p.done + 1) + ' of ' + p.total }),
@@ -80,7 +84,7 @@
                     seconds: data.view.seconds } : null;
             }
             if (data.progress) {
-                st.progress = data.progress.done === true ? null : data.progress;
+                st.progress = data.progress.finished ? null : data.progress;
                 if (data.progress.message) st.message.textContent = data.progress.message;
             }
             if (data.message) st.message.textContent = data.message;
