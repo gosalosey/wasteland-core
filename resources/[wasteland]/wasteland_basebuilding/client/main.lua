@@ -111,7 +111,11 @@ local function cacheAllModels()
 end
 
 -- Candidate snap positions for `pieceKey` against every known piece.
-local function GetSnapCandidates(pieceKey, overlap)
+-- opts.rampLevel: 'ground' (beside the foundation, its top level with the
+-- foundation's top: walk up onto it) or 'top' (standing on the foundation);
+-- opts.rampFlip: turned round (up <-> down).
+local function GetSnapCandidates(pieceKey, overlap, opts)
+    opts = opts or {}
     local P = cfg.placement
     overlap = overlap or P.snapOverlap
     local rules = cfg.snapRules[pieceKey]
@@ -140,7 +144,14 @@ local function GetSnapCandidates(pieceKey, overlap)
                 local leftDist = -dims.min.x + newHalf - overlap
                 local flip = P.wallFacesOutward and 0.0 or 180.0
                 local zOffset = 0.0
-                if pieceKey ~= 'foundation' and pieceKey ~= 'ceiling' then
+                if pieceKey == 'ramp' then
+                    if opts.rampLevel == 'top' then
+                        zOffset = dims.max.z + (-newDims.min.z) - overlap
+                    else
+                        zOffset = dims.max.z - newDims.max.z -- its top level with the foundation's top
+                    end
+                    if opts.rampFlip then flip = flip + 180.0 end
+                elseif pieceKey ~= 'foundation' and pieceKey ~= 'ceiling' then
                     zOffset = dims.max.z + (-newDims.min.z) - overlap
                 end
                 for _, e in ipairs({
@@ -451,6 +462,40 @@ end)
 -- Placement
 -------------------------------------------------------------------------------
 
+-- Snap overlap per piece: Ctrl+wheel tunes it and it is remembered on this
+-- computer; basebuilding.lua placement.overlap = { piece = metres } sets the
+-- default for everyone (/bbsnap lists what you tuned, to copy in there).
+local function overlapFor(key)
+    local saved = GetResourceKvpString('bb_overlap_' .. key)
+    if saved and tonumber(saved) then return tonumber(saved) end
+    local per = cfg.placement.overlap
+    if type(per) == 'table' and tonumber(per[key]) then return tonumber(per[key]) end
+    return cfg.placement.snapOverlap
+end
+
+local function saveOverlap(key, value)
+    SetResourceKvp('bb_overlap_' .. key, ('%.2f'):format(value))
+end
+
+RegisterCommand('bbsnap', function(_, args)
+    if not cfg then return end
+    if args[1] == 'reset' then
+        for key in pairs(cfg.pieces) do DeleteResourceKvp('bb_overlap_' .. key) end
+        notify('Snap overlaps back to the defaults.')
+        return
+    end
+    local parts = {}
+    for key in pairs(cfg.pieces) do
+        local saved = GetResourceKvpString('bb_overlap_' .. key)
+        if saved then parts[#parts + 1] = key .. ' = ' .. saved end
+    end
+    table.sort(parts)
+    local text = #parts > 0 and ('Your snap overlaps: ' .. table.concat(parts, ', ')) or 'You have not tuned any snap overlap (Ctrl+wheel while placing).'
+    notify(text)
+    print('[wasteland_basebuilding] ' .. text)
+    print('[wasteland_basebuilding] For everyone: basebuilding.lua placement.overlap = { ' .. table.concat(parts, ', ') .. ' }')
+end, false)
+
 local function RotationToDirection(rot)
     local z, x = math.rad(rot.z), math.rad(rot.x)
     local num = math.abs(math.cos(x))
@@ -479,8 +524,9 @@ StartPlacement = function(pieceKey)
 
     local heading, heightOffset, placeCoords = GetEntityHeading(ped), 0.0, start
     local snapEnabled = true
-    local overlap = P.snapOverlap
-    local candidates = cfg.snapRules[pieceKey] and GetSnapCandidates(pieceKey, overlap) or nil
+    local overlap = overlapFor(pieceKey)
+    local rampOpts = { rampLevel = 'ground', rampFlip = false }
+    local candidates = cfg.snapRules[pieceKey] and GetSnapCandidates(pieceKey, overlap, rampOpts) or nil
     local lastRefresh, lastKey = GetGameTimer(), nil
 
     local function cleanup()
@@ -490,7 +536,7 @@ StartPlacement = function(pieceKey)
 
     Citizen.CreateThread(function()
         while isPlacing do
-            for _, c in ipairs({ 14, 15, 16, 17, 24, 25, 36, 37, 38, 44, 140, 141, 142, 174, 175, 177, 194, 199, 200 }) do DisableControlAction(0, c, true) end
+            for _, c in ipairs({ 14, 15, 16, 17, 24, 25, 36, 37, 38, 44, 45, 140, 141, 142, 174, 175, 177, 194, 199, 200 }) do DisableControlAction(0, c, true) end
             local camCoord = GetGameplayCamCoord()
             local destination = camCoord + RotationToDirection(GetGameplayCamRot(2)) * P.maxPlaceDistance
             local ray = StartExpensiveSynchronousShapeTestLosProbe(camCoord.x, camCoord.y, camCoord.z, destination.x, destination.y, destination.z, 1 + 16, ped, 7)
@@ -501,16 +547,29 @@ StartPlacement = function(pieceKey)
                 snapEnabled = not snapEnabled
                 notify(snapEnabled and 'Snapping on' or 'Snapping off')
             end
-            if candidates and IsDisabledControlPressed(0, 36) then -- Ctrl + wheel: snap overlap (this placement only)
+            if candidates and IsDisabledControlPressed(0, 36) then -- Ctrl + wheel: snap overlap (remembered per piece)
                 local step = IsDisabledControlPressed(0, 21) and 0.5 or 0.05
                 local changed = false
                 if IsDisabledControlJustPressed(0, 14) then overlap = overlap + step; changed = true end
                 if IsDisabledControlJustPressed(0, 15) then overlap = overlap - step; changed = true end
-                if changed then candidates = GetSnapCandidates(pieceKey, overlap); notify(('Snap overlap: %.2f'):format(overlap)) end
+                if changed then
+                    saveOverlap(pieceKey, overlap)
+                    candidates = GetSnapCandidates(pieceKey, overlap, rampOpts)
+                    notify(('Snap overlap for %s: %.2f (remembered; /bbsnap lists them)'):format(piece.label, overlap))
+                end
+            end
+            if pieceKey == 'ramp' and candidates then
+                if IsDisabledControlJustPressed(0, 45) then -- R: up <-> down
+                    rampOpts.rampFlip = not rampOpts.rampFlip
+                    candidates, lastKey = GetSnapCandidates(pieceKey, overlap, rampOpts), nil
+                elseif IsDisabledControlJustPressed(0, 44) then -- Q: ground level <-> on top of the foundation
+                    rampOpts.rampLevel = rampOpts.rampLevel == 'top' and 'ground' or 'top'
+                    candidates, lastKey = GetSnapCandidates(pieceKey, overlap, rampOpts), nil
+                end
             end
             local t = GetGameTimer()
             if snapEnabled and candidates and t - lastRefresh > 300 then
-                candidates = GetSnapCandidates(pieceKey, overlap)
+                candidates = GetSnapCandidates(pieceKey, overlap, rampOpts)
                 lastRefresh = t
             end
             if not IsDisabledControlPressed(0, 36) then
@@ -550,8 +609,10 @@ StartPlacement = function(pieceKey)
             end
             SetEntityCoordsNoOffset(ghost, placeCoords.x, placeCoords.y, placeCoords.z, false, false, false)
             SetEntityHeading(ghost, heading)
-            help(('%s%s~n~~INPUT_CONTEXT~ place   ~INPUT_FRONTEND_RRIGHT~ cancel~n~Wheel: turn 45   Arrows: turn freely~n~Shift+wheel: height   Tab: snapping %s'):format(
-                piece.label, didSnap and ' (snapped)' or '', snapEnabled and 'on' or 'off'))
+            local rampHelp = pieceKey == 'ramp' and ('~n~R: %s   Q: %s'):format(rampOpts.rampFlip and 'facing down' or 'facing up',
+                rampOpts.rampLevel == 'top' and 'on top of the foundation' or 'up onto the foundation') or ''
+            help(('%s%s~n~~INPUT_CONTEXT~ place   ~INPUT_FRONTEND_RRIGHT~ cancel~n~Wheel: turn 45   Arrows: turn freely~n~Shift+wheel: height   Tab: snapping %s~n~Ctrl+wheel: close gaps (%.2f)%s'):format(
+                piece.label, didSnap and ' (snapped)' or '', snapEnabled and 'on' or 'off', overlap, rampHelp))
 
             if IsDisabledControlJustReleased(0, KEY_E) then
                 TriggerServerEvent('wasteland:basebuilding:server:place', pieceKey, placeCoords.x, placeCoords.y, placeCoords.z, heading)

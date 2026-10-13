@@ -1,5 +1,13 @@
 # Changelog
 
+## Base building: ramp up/down, gap tuning that is kept (owner report)
+* Ramps snap four ways:
+  * R turns them up or down.
+  * Q puts them beside the foundation (top level with it: walk up onto it) or on top of the foundation.
+  * The help line shows which.
+* Gaps between snapped pieces: Ctrl+wheel while placing (Ctrl+Shift+wheel for big steps) is now remembered per piece on that computer, not only for one placement.
+* /bbsnap lists the values (and prints a line to paste into basebuilding.lua `placement.overlap` for everyone); /bbsnap reset clears them.
+
 ## Base building (new module wasteland_basebuilding, ported from sbb-basebuilding)
 * **Ported from sbb-basebuilding** (QBCore / ox) to Wasteland Core:
   * Wasteland characters, inventory (items and stash grids), target (Left Alt), UI screens, the lockpick minigame and the database (migrations).

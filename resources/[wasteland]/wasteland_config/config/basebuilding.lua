@@ -12,7 +12,9 @@
 --     build, open doors and storage, repair and remove there.
 --   * Walls, doorways, ceilings... snap to foundations and to each other.
 --     E places, the mouse wheel turns, Shift+wheel raises/lowers, Tab turns
---     snapping off, Backspace cancels.
+--     snapping off, Ctrl+wheel closes gaps, Backspace cancels. Ramps: R turns
+--     them up/down, Q puts them beside the foundation (walk up onto it) or on
+--     top of it.
 --   * Upgrade pieces wood -> stone -> metal; repair damaged ones (hold Left
 --     Alt on a piece). Doors open with E when you stand next to them.
 --   * Upkeep: keep wood planks / stone / metal sheets in the cupboard's
@@ -53,6 +55,10 @@ return {
     placement = {
         rotateStep = 45.0, fineRotateSpeed = 30.0, heightStep = 0.05,
         maxPlaceDistance = 15.0, snapDistance = 2.0, wallFacesOutward = true, snapOverlap = 0.15,
+        -- Gaps between snapped pieces: metres each piece is pulled in, per piece
+        -- (default snapOverlap). Tune in game with Ctrl+wheel while placing
+        -- (remembered on that computer), then /bbsnap prints the values to copy here.
+        overlap = {},
     },
 
     categoryOrder = { 'structure', 'door', 'garage', 'stash', 'cupboard' },
