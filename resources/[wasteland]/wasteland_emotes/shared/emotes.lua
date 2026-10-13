@@ -24,7 +24,7 @@ WLE.EMOTES = {
     { name = 'nod', label = 'Nod yes', cat = 'Gestures', dict = 'gestures@f@standing@casual', anim = 'gesture_pleased', flag = 48 },
     { name = 'no', label = 'Shake head', cat = 'Gestures', dict = 'gestures@f@standing@casual', anim = 'gesture_head_no', flag = 48 },
     { name = 'clap', label = 'Clap', cat = 'Gestures', dict = 'amb@world_human_cheering@male_a', anim = 'base', flag = 1 },
-    { name = 'handsup', label = 'Hands up (X)', cat = 'Gestures', dict = 'missminuteman_1ink', anim = 'handsup_base', flag = 49 },
+    { name = 'handsup', label = 'Hands up (X)', cat = 'Gestures', dict = 'missminuteman_1ig_2', anim = 'handsup_base', flag = 49 },
     { name = 'surrender', label = 'Surrender on knees', cat = 'Gestures', dict = 'random@arrests@busted', anim = 'idle_a', flag = 1 },
 
     -- Survival

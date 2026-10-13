@@ -7,7 +7,7 @@
 local MENU = 'emoteMenu'
 local playing = nil      -- the emote being played
 local handsUp = false
-local HANDS = { dict = 'missminuteman_1ink', anim = 'handsup_base' }
+local HANDS = { dict = 'missminuteman_1ig_2', anim = 'handsup_base' }
 
 -- Progress bars and minigames of other modules use X too (to cancel).
 local BUSY_SCREENS = { 'vehProgress', 'lootProgress', 'craftProgress', 'vehLockpick' }
