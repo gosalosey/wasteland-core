@@ -14,7 +14,7 @@ local M
 local animals = {}   -- handle -> { handle, kind, spawnedAt, deadAt }
 local pending = {}   -- source -> true while a client looks for spawn spots
 local harvesting = {} -- source -> { netId, at }
-local fires = {}     -- id -> { id, handle, netId, owner (character id), ownerSrc, x, y, z, expiresAt }
+local fires = {}     -- id -> { id, handle, netId, owner (character id), ownerSrc, x, y, z, lastNear }
 local cooking = {}   -- source -> { fire, item, left, done, nextAt }
 local nextFire = 0
 local animalModels = {} -- model hash -> true
@@ -213,6 +213,19 @@ end
 -- Campfires
 -------------------------------------------------------------------------------
 
+-- The fire prop. The game deletes server-made entities it thinks nobody
+-- needs; a fire must stay, so it is kept (orphan mode 2), and made again if
+-- it is ever gone.
+local function makeFireProp(f)
+    local handle = CreateObjectNoOffset(GetHashKey(M.config.campfire.model), f.x + 0.0, f.y + 0.0, f.z + 0.0, true, true, false)
+    if not handle or handle == 0 or not DoesEntityExist(handle) then return false end
+    FreezeEntityPosition(handle, true)
+    pcall(function() SetEntityOrphanMode(handle, 2) end)
+    f.handle, f.netId = handle, NetworkGetNetworkIdFromEntity(handle)
+    Entity(handle).state:set('wlCampfire', { id = f.id, owner = f.owner }, true)
+    return true
+end
+
 local function fireByNet(netId)
     for _, f in pairs(fires) do if f.netId == netId then return f end end
     return nil
@@ -249,20 +262,18 @@ local function placeFire(src, x, y, z)
     if why then notice(src, why); return end
     if not inv():RemoveItem(src, cf.item, 1) then return end
     for _, n in ipairs(cf.needs) do inv():RemoveItem(src, n.name, n.count) end
-    local handle = CreateObjectNoOffset(GetHashKey(cf.model), x + 0.0, y + 0.0, z + 0.0, true, true, false)
-    if not handle or handle == 0 or not DoesEntityExist(handle) then
+    nextFire = nextFire + 1
+    local f = { id = nextFire, owner = cid, ownerSrc = src, x = x, y = y, z = z, lastNear = now() }
+    if not makeFireProp(f) then
         give(src, cf.item, 1)
+        for _, n in ipairs(cf.needs) do give(src, n.name, n.count) end
         notice(src, 'The campfire could not be placed here.')
         return
     end
-    FreezeEntityPosition(handle, true)
-    nextFire = nextFire + 1
-    local f = { id = nextFire, handle = handle, netId = NetworkGetNetworkIdFromEntity(handle), owner = cid, ownerSrc = src,
-        x = x, y = y, z = z, expiresAt = now() + cf.burnMinutes * 60000 }
     fires[f.id] = f
-    Entity(handle).state:set('wlCampfire', { id = f.id, owner = cid }, true)
     TriggerClientEvent('wasteland:hunting:client:fires', -1, { [f.netId] = true })
-    notice(src, string.format('The fire is burning (about %d minutes). Hold Left Alt on it to cook, or to pick it up.', cf.burnMinutes))
+    notice(src, string.format('The fire is burning. It keeps going while someone is near it (it goes out after %d minutes with nobody around). '
+        .. 'Hold Left Alt on it to cook, or to put it out and pick it up.', cf.idleMinutes))
 end
 
 local function putOut(f, why)
@@ -294,7 +305,7 @@ local function burnOut(f)
     local item = M.config.campfire.item
     local ok, src = pcall(function() return players():GetSourceByCharacterId(f.owner) end)
     if ok and src and inv():AddItem(src, item, 1) then
-        notice(src, 'Your campfire burnt out. It is back in your inventory.')
+        notice(src, 'Your campfire went out (nobody was near it). It is back in your inventory.')
     else
         inv():CreateLootDrop({ x = f.x, y = f.y, z = f.z }, { { name = item, count = 1 } }, { label = label(item) })
     end
@@ -404,9 +415,18 @@ local function loop(token)
         if sinceClean >= 10000 then
             sinceClean = 0
             cleanup()
+            -- A fire burns as long as someone is near it; left alone for
+            -- idleMinutes it goes out. A prop that was lost is made again.
             local t = now()
+            local where = {}
+            for _, c in ipairs(onlinePlayers()) do where[#where + 1] = playerCoords(c.source) end
             for _, f in pairs(fires) do
-                if t >= f.expiresAt then burnOut(f) elseif not DoesEntityExist(f.handle) then putOut(f, 'gone') end
+                for _, w in ipairs(where) do if dist(w, f) <= 30.0 then f.lastNear = t end end
+                if t - f.lastNear >= M.config.campfire.idleMinutes * 60000 then
+                    burnOut(f)
+                elseif not DoesEntityExist(f.handle) then
+                    if makeFireProp(f) then M.log:info('campfire %d prop made again', f.id) else putOut(f, 'gone') end
+                end
             end
         end
         if M.config.spawn.enabled and sinceSpawn >= M.config.spawn.everySeconds * 1000 then
@@ -486,7 +506,8 @@ M = Wasteland.DefineModule({
                     name = { type = 'string', required = true, pattern = '^[%w_]+$' },
                     count = { type = 'integer', required = true, min = 1, max = 100 },
                 } } },
-                burnMinutes = { type = 'number', default = 30, min = 1, max = 600 },
+                idleMinutes = { type = 'number', default = 15, min = 1, max = 600,
+                    description = 'A fire with nobody within 30 m for this long goes out (back to its owner)' },
                 warmth = { type = 'number', default = 8, min = 0, max = 50 },
                 warmthRadius = { type = 'number', default = 5, min = 1, max = 30 },
             } },

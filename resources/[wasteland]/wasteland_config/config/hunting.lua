@@ -8,7 +8,8 @@
 -- Campfire: craft one (scrap metal) and use it from the inventory. Lighting
 -- it takes `needs` (a match and firewood). Anyone can cook on it and it
 -- keeps you warm; the player who made it can put it out and pick it up to use
--- again. It burns out after burnMinutes (the fire pit goes back to its owner).
+-- again. It keeps burning while anyone is within 30 m; left alone for
+-- idleMinutes it goes out (the fire pit goes back to its owner).
 --
 -- Cooking: Left Alt on the fire: Cook. Choose how many; each piece takes
 -- `seconds`. Raw meat can be eaten but may make you sick (survival.lua).
@@ -44,7 +45,7 @@ return {
         item = 'campfire',
         model = 'prop_beach_fire',
         needs = { { name = 'matches', count = 1 }, { name = 'firewood', count = 2 } },
-        burnMinutes = 30,
+        idleMinutes = 15,       -- nobody within 30 m this long: it goes out
         warmth = 8,             -- degrees of warmth within warmthRadius
         warmthRadius = 5,
     },

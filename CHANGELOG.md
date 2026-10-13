@@ -1,5 +1,10 @@
 # Changelog
 
+## Fix: campfires stopped working after a while (owner report)
+* The game deletes server-made props it thinks nobody needs, and the fire was one: the server then no longer knew the fire, so Cook did nothing. Fires are now kept (orphan mode 2), and a lost fire prop is made again in the same place.
+* A fire now burns as long as anyone is within 30 m. Left alone for 15 minutes (`idleMinutes` in hunting.lua; it replaces `burnMinutes`), it goes out and goes back to its owner.
+* If a fire cannot be placed, the match and firewood are given back too.
+
 ## Fix: supply crates landing on roofs, and "too far away" when you reach them (owner report)
 * The crate looked for the ground from 50 m above its point, so it could land on a roof over the point. It now looks just above the point, so it lands on the ground there.
 * Opening checks the distance along the ground (3.5 m) and allows 4 m up or down, for slopes and steps. Someone on a roof high above still cannot open it.

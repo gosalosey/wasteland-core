@@ -13,7 +13,7 @@ end
 local CFG = {
     ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 1000, healthCheckSeconds = 2 }',
     ['players.lua'] = 'return { restoreDelayMs = 200 }',
-    ['hunting.lua'] = shipped('hunting.lua', { 'everySeconds = 20,', 'burnMinutes = 30,' }, { 'everySeconds = 5,', 'burnMinutes = 2,' }),
+    ['hunting.lua'] = shipped('hunting.lua', { 'everySeconds = 20,', 'idleMinutes = 15,' }, { 'everySeconds = 5,', 'idleMinutes = 2,' }),
 }
 
 local function defaults(model)
@@ -145,14 +145,32 @@ describe('hunting', function()
         expect(#server:entityList('wlCampfire')).toBe(0)
     end)
 
-    it('a fire that burns out goes back to its owner', function()
+    it('a fire keeps burning while someone is near, cooks again and again, and is made again if its prop is lost', function()
         I('AddItem', a, 'firewood', 2); server:advance(100)
         act(a, 'placeFire', -1.0, 1.0, 30.0)
+        local f = server:entityList('wlCampfire')[1]
+        server:advance(5 * 60000) -- well past idleMinutes, but the players are next to it
         expect(#server:entityList('wlCampfire')).toBe(1)
+        -- the game cleaned the prop up: it comes back, and cooking still works
+        server.entities[f.handle] = nil
+        server:advance(11000)
+        f = server:entityList('wlCampfire')[1]
+        expect(f ~= nil).toBe(true)
+        for round = 1, 2 do
+            I('AddItem', a, 'raw_meat', 1); server:advance(100)
+            act(a, 'cook', f.netId, 'raw_meat', 1)
+            server:advance(5600)
+        end
+        expect(last(a, 'wasteland:hunting:client:cooking').args[1].message).toBe('Cooked 1 x Cooked meat.')
+    end)
+
+    it('a fire left alone goes out and back to its owner', function()
+        server.players[a].coords = { x = 300.0, y = 0.0, z = 30.0 }
+        server.players[b].coords = { x = 300.0, y = 5.0, z = 30.0 }
         server:advance(2 * 60000 + 11000)
         expect(#server:entityList('wlCampfire')).toBe(0)
         expect(I('GetItemCount', a, 'campfire')).toBe(1)
-        expect(note(a)).toBe('Your campfire burnt out. It is back in your inventory.')
+        expect(note(a)).toBe('Your campfire went out (nobody was near it). It is back in your inventory.')
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
