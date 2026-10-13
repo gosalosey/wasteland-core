@@ -102,8 +102,8 @@ function _G.newServer(opts)
         local b = a and text:find('\n    },\n', a, true)
         if a and b then
             text = text:sub(1, a) .. '    pockets = { width = 6, height = 4, maxWeight = 35.0 },\n' .. text:sub(b + 8)
-            text = text:gsub('container = { width = 10, height = 10, maxWeight = 100 }', 'container = { width = 5, height = 4, maxWeight = 35 }')
-            text = text:gsub('container = { width = 15, height = 15, maxWeight = 175 }', 'container = { width = 7, height = 6, maxWeight = 60 }')
+            text = text:gsub('container = { width = 8, height = 8, maxWeight = 100 }', 'container = { width = 5, height = 4, maxWeight = 35 }')
+            text = text:gsub('container = { width = 12, height = 10, maxWeight = 175 }', 'container = { width = 7, height = 6, maxWeight = 60 }')
             server:setFile('wasteland_config', 'config/inventory.lua', text)
         end
     end

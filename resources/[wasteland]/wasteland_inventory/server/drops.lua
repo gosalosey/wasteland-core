@@ -171,7 +171,7 @@ function Drops.loadAll()
         for _, s in pairs(items) do
             if WLI.defs[s.name].container then
                 local contents = Store.loadItems('item:' .. s.uid)
-                Inv.containerFor(s).items = contents or {}
+                Inv.loadContainer(s, contents or {})
             end
         end
         if next(items) == nil then Drops.onChanged('drop:' .. r.id) end
@@ -226,7 +226,7 @@ function Drops.ensureStash(name, opts)
     })
     for _, s in pairs(items) do
         if WLI.defs[s.name] and WLI.defs[s.name].container then
-            Inv.containerFor(s).items = Store.loadItems('item:' .. s.uid) or {}
+            Inv.loadContainer(s, Store.loadItems('item:' .. s.uid) or {})
         end
     end
     return inv

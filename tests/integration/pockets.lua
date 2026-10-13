@@ -138,11 +138,11 @@ describe('pockets grow with clothing', function()
         expect(snap.width .. 'x' .. snap.height .. ' ' .. snap.maxWeight).toBe('15x12 300')
     end)
 
-    it('backpacks: small 10 x 10 / 100 kg, hiking 15 x 15 / 175 kg', function()
+    it('backpacks: small 8 x 8 / 100 kg, hiking 12 x 10 / 175 kg', function()
         local small = server:export('wasteland_inventory', 'GetItemDefinition', 'backpack_small').container
         local large = server:export('wasteland_inventory', 'GetItemDefinition', 'backpack_large').container
-        expect(small.width .. 'x' .. small.height .. ' ' .. small.maxWeight).toBe('10x10 100')
-        expect(large.width .. 'x' .. large.height .. ' ' .. large.maxWeight).toBe('15x15 175')
+        expect(small.width .. 'x' .. small.height .. ' ' .. small.maxWeight).toBe('8x8 100')
+        expect(large.width .. 'x' .. large.height .. ' ' .. large.maxWeight).toBe('12x10 175')
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)

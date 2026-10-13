@@ -97,6 +97,35 @@ function Inv.containerFor(stack)
     })
 end
 
+--- A bag's grid with its stored items. If the bag got smaller in the
+--- settings, stacks outside the grid move inside; if they cannot all fit,
+--- the grid stays just big enough for them (nothing is lost).
+function Inv.loadContainer(stack, items)
+    local inv = Inv.containerFor(stack)
+    if not inv then return nil end
+    inv.items = items or {}
+    local moves, over = Grid.repack(inv, WLI.defs, inv.width, inv.height)
+    if #over > 0 then
+        local w, h = inv.width, inv.height
+        for _, s in pairs(inv.items) do
+            if s.x ~= nil then
+                local fw, fh = Grid.footprint(WLI.defs[s.name] or { width = 1, height = 1 }, s.rotated)
+                w, h = math.max(w, s.x + fw), math.max(h, s.y + fh)
+            end
+        end
+        inv.width, inv.height = w, h
+    elseif next(moves) then
+        local statements = {}
+        for uid, m in pairs(moves) do
+            local s = inv.items[uid]
+            s.x, s.y, s.rotated = m.x, m.y, m.rotated
+            statements[#statements + 1] = Store.upsert(s, inv.id)
+        end
+        Store.enqueue(statements, 'fit bag ' .. inv.id .. ' to its size')
+    end
+    return inv
+end
+
 -------------------------------------------------------------------------------
 -- Access
 -------------------------------------------------------------------------------

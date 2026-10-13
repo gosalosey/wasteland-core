@@ -292,9 +292,9 @@ return {
             description = 'Repairs the weapon in your hands.' },
 
         backpack_small = { label = 'Small backpack', image = 'bag', category = 'container', width = 3, height = 3, weight = 0.8,
-            equip = 'back', container = { width = 10, height = 10, maxWeight = 100 } },
+            equip = 'back', container = { width = 8, height = 8, maxWeight = 100 } },
         backpack_large = { label = 'Hiking backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 1.8,
-            equip = 'back', container = { width = 15, height = 15, maxWeight = 175 } },
+            equip = 'back', container = { width = 12, height = 10, maxWeight = 175 } },
 
         clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'torso', warmth = 6, durability = 100 },
         clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.5, equip = 'legs', warmth = 4, durability = 100 },

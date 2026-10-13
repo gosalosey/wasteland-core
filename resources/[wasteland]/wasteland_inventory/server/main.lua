@@ -39,7 +39,7 @@ function Inv.loadCharacter(src, cid)
     for _, items in ipairs({ pocketItems, equipItems }) do
         for _, s in pairs(items) do
             if WLI.defs[s.name].container then
-                Inv.containerFor(s).items = Store.loadItems('item:' .. s.uid) or {}
+                Inv.loadContainer(s, Store.loadItems('item:' .. s.uid) or {})
             end
         end
     end

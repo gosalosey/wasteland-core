@@ -1,5 +1,9 @@
 # Changelog
 
+## Smaller backpacks (they covered most of the screen)
+* Small backpack: 8 x 8 (was 10 x 10). Hiking backpack: 12 x 10 (was 15 x 15). Weight limits unchanged (100 and 175 kg).
+* A bag that holds more than fits in its new size keeps everything: stacks move into the smaller grid, and a bag that really cannot fit them stays just big enough until it is emptied a bit.
+
 ## Inventory: Sort button
 * Every grid (pockets, the open backpack, storage, trunks, the ground) has a Sort button.
 * Part stacks of the same item merge (same condition and metadata only); then everything is packed from the top left, grouped by category (weapons, ammo, medical, food, drinks, tools, materials, clothing, armor, bags, other), biggest first.
