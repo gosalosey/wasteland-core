@@ -23,6 +23,7 @@ The recipe installs:
 
 * FiveM's base resources (mapmanager, spawnmanager, ...),
 * [oxmysql](https://github.com/overextended/oxmysql) (database driver, latest release),
+* [pma-voice](https://github.com/AvarianKnight/pma-voice) v6.6.2 (voice chat) into `resources/[standalone]/pma-voice`,
 * every Wasteland Core resource (`resources/[wasteland]`),
 * a ready `server.cfg` (game build 3570, OneSync on, everything started in the right order, admins set up) and the server icon.
 
@@ -34,7 +35,7 @@ add_principal identifier.fivem:12345678 group.admin
 
 ## Option 2: by hand
 
-1. Put `resources/[wasteland]` from this repository into your server's `resources` folder, and install [oxmysql](https://github.com/overextended/oxmysql/releases/latest) into `resources/[standalone]/oxmysql`.
+1. Put `resources/[wasteland]` from this repository into your server's `resources` folder, and install [oxmysql](https://github.com/overextended/oxmysql/releases/latest) into `resources/[standalone]/oxmysql` and [pma-voice](https://github.com/AvarianKnight/pma-voice) into `resources/[standalone]/pma-voice` (copy the voice chat lines from `server.cfg.example`).
 2. Create a database and a user for it (see [DATABASE.md](DATABASE.md)).
 3. Use [`txadmin/server.cfg`](../txadmin/server.cfg) as your `server.cfg`, replacing the `{{...}}` parts: your server name, license key, `mysql://user:password@127.0.0.1/database?charset=utf8mb4`, the endpoints and your admins.
 4. Start with OneSync on (`+set onesync on`, or the txAdmin setting).

@@ -33,6 +33,18 @@ tasks:
     src: ./tmp/oxmysql/oxmysql
     dest: ./resources/[standalone]/oxmysql
 
+  # 2b. pma-voice (voice chat; MIT licence, github.com/AvarianKnight/pma-voice)
+  - action: download_file
+    url: https://codeload.github.com/AvarianKnight/pma-voice/zip/refs/tags/v6.6.2
+    path: ./tmp/pma-voice.zip
+    timeoutSeconds: 600
+  - action: unzip
+    src: ./tmp/pma-voice.zip
+    dest: ./tmp/pma-voice
+  - action: move_path
+    src: ./tmp/pma-voice/pma-voice-6.6.2
+    dest: ./resources/[standalone]/pma-voice
+
   # 3. Wasteland Core: the main branch as one zip file (about 22 MB). A
   #    plain file download: faster and more reliable for a repository this
   #    size than download_github (which goes through the GitHub API).

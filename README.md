@@ -62,4 +62,4 @@ The pictures `cap`, `jeans`, `sunglasses` and `siphon_hose` were made for Wastel
 
 If you are an author of one of these pictures and want it credited differently or removed, please open an issue.
 
-**Other software** used by Wasteland Core and not included here: [FiveM / FXServer](https://fivem.net) and [oxmysql](https://github.com/overextended/oxmysql) (database driver).
+**Other software** used by Wasteland Core and not included here: [FiveM / FXServer](https://fivem.net) and [oxmysql](https://github.com/overextended/oxmysql) (database driver) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (voice chat, MIT licence, by AvarianKnight).

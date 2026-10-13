@@ -9,6 +9,14 @@ sv_enforceGameBuild 3570
 # --- database (see docs/DATABASE.md) ---
 set mysql_connection_string "mysql://wasteland:PASSWORD@127.0.0.1/wasteland?charset=utf8mb4"
 ensure oxmysql
+## Voice chat (pma-voice): players near you hear you. F11 changes how far
+## (whisper / normal / shout). Caps Lock talks on your group's radio (/group).
+setr voice_useNativeAudio true
+setr voice_useSendingRangeOnly true
+setr voice_defaultCycle "F11"
+setr voice_defaultRadio "CAPITAL"
+setr voice_enableRadioAnim 1
+ensure pma-voice
 
 # --- framework (order matters) ---
 ensure wasteland_loadscreen

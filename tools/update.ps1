@@ -225,6 +225,43 @@ if ($missing.Count -gt 0) {
     }
 }
 
+# --- voice chat (pma-voice) ------------------------------------------------------------
+$voicePath = Join-Path $ServerPath 'resources\[standalone]\pma-voice'
+if (-not (Test-Path -LiteralPath $voicePath)) {
+    Say ''
+    Say 'Voice chat (pma-voice) is not installed.' Yellow
+    if (Ask 'Download and install pma-voice into resources\[standalone]?') {
+        $vzip = Join-Path $tmp 'pma-voice.zip'
+        Invoke-WebRequest -Uri 'https://codeload.github.com/AvarianKnight/pma-voice/zip/refs/tags/v6.6.2' -OutFile $vzip -UseBasicParsing
+        $vdir = Join-Path $tmp 'pma-voice'
+        Expand-Archive -LiteralPath $vzip -DestinationPath $vdir -Force
+        New-Item -ItemType Directory -Force -Path (Join-Path $ServerPath 'resources\[standalone]') | Out-Null
+        Move-Item -LiteralPath (Join-Path $vdir 'pma-voice-6.6.2') -Destination $voicePath
+        Say 'pma-voice installed.' Green
+    }
+}
+$cfg = Get-Content -LiteralPath $cfgPath
+if ((Test-Path -LiteralPath $voicePath) -and -not ($cfg | Where-Object { $_ -match '^\s*ensure\s+pma-voice' })) {
+    $block = @()
+    $inBlock = $false
+    foreach ($line in $template) {
+        if ($line -match '^## Voice chat') { $inBlock = $true }
+        if ($inBlock) { $block += $line }
+        if ($inBlock -and $line -match '^ensure\s+pma-voice') { break }
+    }
+    Say ''
+    Say 'server.cfg does not start pma-voice (voice chat).' Yellow
+    if ($block.Count -gt 0 -and (Ask 'Add the voice chat lines after "ensure oxmysql"?')) {
+        $at = -1
+        for ($i = 0; $i -lt $cfg.Count; $i++) { if ($cfg[$i] -match '^\s*ensure\s+oxmysql') { $at = $i } }
+        if ($at -ge 0 -and $at -lt $cfg.Count - 1) { $cfg = @($cfg[0..$at]) + $block + @($cfg[($at + 1)..($cfg.Count - 1)]) }
+        else { $cfg = @($cfg) + $block }
+        Copy-Item -LiteralPath $cfgPath -Destination (Join-Path $backupDir 'server.cfg.before-voice') -Force
+        Set-Content -LiteralPath $cfgPath -Value $cfg -Encoding UTF8
+        Say 'server.cfg updated.' Green
+    }
+}
+
 # --- update this script -----------------------------------------------------------
 $newScript = Join-Path $root.FullName 'tools\update.ps1'
 if ((Test-Path -LiteralPath $newScript) -and $PSCommandPath) { Copy-Item -LiteralPath $newScript -Destination $PSCommandPath -Force }

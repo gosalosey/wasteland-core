@@ -576,3 +576,14 @@ First run: give yourself materials with the admin panel. You need base_flag, woo
 | R39.12 | Walk 200 m away and back | The base disappears far away and comes back when near |
 | R39.13 | Restart the server | Everything is still there |
 
+## R40: voice chat
+Needs two players. Each needs a microphone, and voice chat turned on in the FiveM settings (Settings > Voice Chat).
+
+| # | Do | Expect |
+|---|---|---|
+| R40.1 | Stand near each other and talk (hold N, or open mic) | The other player hears you; it gets quieter further away |
+| R40.2 | Press F11 | The range cycles (whisper / normal / shout), shown on screen |
+| R40.3 | Walk 100 m apart; both in the same group (/group); hold Caps Lock and talk | The other player hears you on the radio |
+| R40.4 | One player leaves the group; hold Caps Lock | They no longer hear the group |
+| R40.5 | Hold Left Alt | The interaction (target) works as before; it is not the radio |
+

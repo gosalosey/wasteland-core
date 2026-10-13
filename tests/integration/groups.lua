@@ -13,7 +13,20 @@ local function last(list) return list[#list] end
 
 describe('groups', function()
     local server = newServer({ config = CFG })
-    boot(server, { 'wasteland_players', 'wasteland_groups' })
+    -- a stand-in for pma-voice: records the radio channels it is told
+    server:addVirtualResource('pma-voice', { fx_version = { 'cerulean' }, game = { 'gta5' }, server_script = { 'server.lua' } }, {
+        ['server.lua'] = [[
+            local calls = {}
+            exports('setPlayerRadio', function(src, channel) calls[#calls + 1] = { src = src, channel = channel } end)
+            exports('Calls', function() return calls end)
+        ]],
+    })
+    boot(server, { 'pma-voice', 'wasteland_players', 'wasteland_groups' })
+    local function radioOf(id)
+        local ch = nil
+        for _, c in ipairs(server:export('pma-voice', 'Calls')) do if c.src == id then ch = c.channel end end
+        return ch
+    end
     local function player(license, first, x)
         local id = server:connectAndJoin({ name = 'P-' .. license, license = license })
         server:advance(200)
@@ -39,6 +52,7 @@ describe('groups', function()
         expect(v.group.name).toBe('The Survivors'); expect(v.group.leader).toBe(true); expect(#v.group.members).toBe(1)
         act(b, 'create', 'the survivors')
         expect(note(b)).toBe('A group with that name already exists.')
+        expect(radioOf(a)).toBe(1001) -- group 1 talks on radio channel 1001
     end)
 
     it('only the leader invites; the invited player accepts and joins', function()
@@ -48,6 +62,7 @@ describe('groups', function()
         expect(v.invite.name).toBe('The Survivors')
         act(b, 'respond', v.invite.group, true)
         expect(note(a)).toBe('Bert Test joined the group.')
+        expect(radioOf(b)).toBe(1001)
         expect(#view(a).group.members).toBe(2)
         act(b, 'invite', c)
         expect(note(b)).toBe('Only the leader can invite players.')
@@ -86,6 +101,7 @@ describe('groups', function()
         expect(note(c)).toBe('Only the leader can do that.')
         act(b, 'kick', cId)
         expect(note(c)).toBe('You were removed from "Dead End".')
+        expect(radioOf(c)).toBe(0) -- off the group radio
         expect(view(c).group == nil).toBe(true)
     end)
 
@@ -101,6 +117,7 @@ describe('groups', function()
     it('the leader disbands it: everyone is out, the markers go', function()
         act(b, 'disband')
         expect(note(a)).toBe('The group "Dead End" was disbanded.')
+        expect(radioOf(a)).toBe(0); expect(radioOf(b)).toBe(0)
         expect(view(a).group == nil).toBe(true)
         expect(last(events(server, a, 'wasteland:groups:client:positions')).args[1] == nil).toBe(true)
         local n = 0

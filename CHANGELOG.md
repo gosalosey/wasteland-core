@@ -1,5 +1,17 @@
 # Changelog
 
+## Voice chat (pma-voice) and group radio
+* Proximity voice with [pma-voice](https://github.com/AvarianKnight/pma-voice) v6.6.2: players near you hear you.
+  * F11 cycles whisper, normal and shout.
+  * Push-to-talk is the FiveM voice key, N by default.
+* Group radio: everyone in your group (/group) is on the group's own radio channel. Hold Caps Lock to talk to them anywhere on the map. You join it when you join, log in, or the group is made; you leave it when you leave, are removed, or the group is disbanded.
+* The radio key is Caps Lock, not pma-voice's default Left Alt, which is the interaction key.
+* Installing it:
+  * The txAdmin recipe downloads pma-voice.
+  * The updater offers to install it and add its server.cfg lines.
+  * server.cfg.example and the txAdmin server.cfg have the lines: `setr voice_*` and `ensure pma-voice` after oxmysql.
+* groups.lua: `radio = { enabled, channelBase, keyName }`.
+
 ## Fix: hands up (X and the emote menu) did nothing (owner report)
 * The animation dictionary was misspelled (`missminuteman_1ink` instead of `missminuteman_1ig_2`), so the game never found the animation.
 

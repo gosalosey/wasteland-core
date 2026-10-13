@@ -47,6 +47,29 @@ local function count(g)
 end
 
 -------------------------------------------------------------------------------
+-- Group radio (pma-voice): every group has its own radio channel; members
+-- online are on it and talk to each other anywhere on the map.
+-------------------------------------------------------------------------------
+
+local function voiceRunning() return M.config.radio.enabled and GetResourceState('pma-voice') == 'started' end
+
+local function setRadio(src, groupId)
+    if not src or not voiceRunning() then return end
+    local channel = groupId and (M.config.radio.channelBase + groupId) or 0
+    local ok, err = pcall(function() exports['pma-voice']:setPlayerRadio(src, channel) end)
+    if not ok then M.log:warn('group radio for player %d: %s', src, tostring(err)) end
+end
+
+local function radioFor(cid, groupId)
+    local s = sourceOf(cid)
+    if s then setRadio(s, groupId) end
+end
+
+local function radioAll()
+    for cid, gid in pairs(memberOf) do radioFor(cid, gid) end
+end
+
+-------------------------------------------------------------------------------
 -- What a player sees on the group screen
 -------------------------------------------------------------------------------
 
@@ -110,6 +133,7 @@ local function create(src, name)
     groups[id], memberOf[cid] = g, id
     WDB.update(SQL.insertMember, { cid, id, myName, os.time() })
     M.log:info('player %d (character %d) created group %d "%s"', src, cid, id, clean)
+    setRadio(src, id)
     notice(src, 'Group "' .. clean .. '" created. Invite players from /group.')
     TriggerEvent('wasteland:groups:created', id, cid)
     sendView(src)
@@ -154,13 +178,15 @@ local function respond(src, groupId, accept)
         local s = sourceOf(mcid)
         if s and mcid ~= cid then notice(s, myName .. ' joined the group.') end
     end
-    notice(src, 'You joined "' .. g.name .. '".')
+    notice(src, 'You joined "' .. g.name .. '".' .. (voiceRunning() and (' Group radio: hold ' .. M.config.radio.keyName .. ' to talk to your group.') or ''))
+    setRadio(src, g.id)
     TriggerEvent('wasteland:groups:joined', g.id, cid)
     refreshGroup(g)
 end
 
 local function removeMember(g, cid, why)
     g.members[cid], memberOf[cid] = nil, nil
+    radioFor(cid, nil)
     write(SQL.deleteMember, { cid }, 'leaving group ' .. g.id)
     clearMarkers(cid)
     TriggerEvent('wasteland:groups:left', g.id, cid, why)
@@ -170,6 +196,7 @@ local function disband(g, why)
     for cid in pairs(g.members) do
         memberOf[cid] = nil
         clearMarkers(cid)
+        radioFor(cid, nil)
         local s = sourceOf(cid)
         if s then
             notice(s, 'The group "' .. g.name .. '" was disbanded.')
@@ -276,10 +303,15 @@ local function loop(token)
 end
 
 -- A member logs in: keep the stored name current, show them their group.
+AddEventHandler('onResourceStart', function(res)
+    if res == 'pma-voice' and M and M.active then Citizen.SetTimeout(2000, radioAll) end
+end)
+
 AddEventHandler('wasteland:players:characterLoaded', function(src, character)
     if not (M and M.active) or type(character) ~= 'table' then return end
     local g = groups[memberOf[character.id]]
     if not g then return end
+    setRadio(src, g.id)
     local name = character.firstName .. ' ' .. character.lastName
     if g.members[character.id] ~= name then
         g.members[character.id] = name
@@ -293,6 +325,7 @@ end)
 
 AddEventHandler('wasteland:players:characterUnloaded', function(src, cid)
     if not (M and M.active) or not cid then return end
+    if memberOf[cid] and GetPlayerName(tostring(src)) then setRadio(src, nil) end
     invites[cid] = nil
     local g = groups[memberOf[cid]]
     if g then Citizen.SetTimeout(500, function() if groups[g.id] then refreshGroup(g) end end) end
@@ -319,6 +352,12 @@ M = Wasteland.DefineModule({
             inviteSeconds = { type = 'integer', default = 120, min = 10, max = 3600 },
             markerSeconds = { type = 'number', default = 2, min = 0.5, max = 30, description = 'How often member markers move' },
             command = { type = 'string', default = 'group', pattern = '^[a-z][a-z0-9_]*$' },
+            radio = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = true, description = 'Group radio through pma-voice (if it runs)' },
+                channelBase = { type = 'integer', default = 1000, min = 1, max = 100000,
+                    description = 'Group N talks on radio channel channelBase + N' },
+                keyName = { type = 'string', default = 'Caps Lock', description = 'Shown to players (the key is pma-voice voice_defaultRadio)' },
+            } },
         } },
     },
     onInit = function(mod)
@@ -354,6 +393,7 @@ M = Wasteland.DefineModule({
             for _ in pairs(groups) do n = n + 1 end
             M.log:info('%d groups loaded', n)
             Citizen.CreateThread(function() loop(token) end)
+            radioAll()
             M.ready()
         end)
         return true

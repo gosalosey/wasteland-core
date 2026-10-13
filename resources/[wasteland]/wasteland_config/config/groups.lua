@@ -9,4 +9,13 @@ return {
     nameMax = 24,
     inviteSeconds = 120,    -- an invitation lasts this long
     markerSeconds = 2,      -- how often the map markers move
+
+    -- Group radio (needs pma-voice): members talk to each other anywhere on
+    -- the map while holding the radio key (pma-voice convar voice_defaultRadio,
+    -- set to Caps Lock in server.cfg). Group N uses channel channelBase + N.
+    radio = {
+        enabled = true,
+        channelBase = 1000,
+        keyName = 'Caps Lock',
+    },
 }
