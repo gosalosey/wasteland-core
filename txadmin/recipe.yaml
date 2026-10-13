@@ -1,7 +1,7 @@
 $engine: 3
 $onesync: on
 name: Wasteland Core
-version: 1.0.3
+version: 1.0.4
 author: gosalosey
 description: |
   Zombie survival framework for FiveM: zombies, looting, crafting, survival,
