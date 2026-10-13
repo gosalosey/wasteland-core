@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: supply crates landing on roofs, and "too far away" when you reach them (owner report)
+* The crate looked for the ground from 50 m above its point, so it could land on a roof over the point. It now looks just above the point, so it lands on the ground there.
+* Opening checks the distance along the ground (3.5 m) and allows 4 m up or down, for slopes and steps. Someone on a roof high above still cannot open it.
+
 ## Hunting, campfires and cooking (new module wasteland_hunting)
 * **Animals:** deer, boars, rabbits and coyotes wander near every player.
   * Three per player, 40 on the map at most.

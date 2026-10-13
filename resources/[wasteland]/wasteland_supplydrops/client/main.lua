@@ -29,8 +29,10 @@ local function makeCrate(id, d)
     while not HasModelLoaded(CRATE) and GetGameTimer() < deadline do Citizen.Wait(0) end
     if not HasModelLoaded(CRATE) or not drops[id] then return end
     local c = d.info.coords
-    local found, ground = GetGroundZFor_3dCoord(c.x + 0.0, c.y + 0.0, c.z + 50.0, false)
-    local z = found and ground or c.z
+    -- Look for the ground just above the drop point, not from high up: from
+    -- 50 m up the first thing found can be a roof.
+    local found, ground = GetGroundZFor_3dCoord(c.x + 0.0, c.y + 0.0, c.z + 2.0, false)
+    local z = (found and math.abs(ground - c.z) < 3.0) and ground or c.z
     d.object = CreateObject(CRATE, c.x + 0.0, c.y + 0.0, z + 0.0, false, false, false)
     SetModelAsNoLongerNeeded(CRATE)
     PlaceObjectOnGroundProperly(d.object)

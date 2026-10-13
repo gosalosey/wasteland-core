@@ -101,10 +101,12 @@ local function openDrop(src, id)
     if not d then notice(src, 'The crate is gone.'); return end
     -- The client says "I opened crate 12"; the server checks it is true.
     local p = playerCoords(src)
+    -- Distance along the ground, with room for slopes and steps: the crate's
+    -- height on the ground can differ from the point's by a few metres.
     local dx, dy, dz = (p and p.x or 1e9) - d.coords.x, (p and p.y or 0) - d.coords.y, (p and p.z or 0) - d.coords.z
-    if dx * dx + dy * dy + dz * dz > M.config.reach * M.config.reach then notice(src, 'You are too far away.'); return end
+    if dx * dx + dy * dy > M.config.reach * M.config.reach or math.abs(dz) > 4.0 then notice(src, 'You are too far away.'); return end
     local opts = { label = 'Supply crate', width = M.config.grid[1], height = M.config.grid[2], maxWeight = 200,
-        coords = d.coords, reach = M.config.reach }
+        coords = d.coords, reach = M.config.reach + 4.0 }
     local stashId, err = inv():EnsureStash(stashName(id), opts)
     if not stashId then notice(src, 'The crate is stuck.'); M.log:warn('stash: %s', tostring(err)); return end
     if not d.filled then

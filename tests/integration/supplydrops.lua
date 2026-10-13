@@ -85,6 +85,19 @@ describe('supply drops (SDK example)', function()
         expect(server.db.backend.data.wl_supply_drops[drop.id].opened_by).toBe(1)
     end)
 
+    it('a few metres above or below the crate still counts; on a roof high above it does not', function()
+        local drop = SD('GetActiveDrops')[1]
+        server.players[id].coords = { x = 101.0, y = 100.0, z = 33.0 } -- on a slope / step
+        server:advance(1100)
+        server:clientEvent(id, 'wasteland:supplydrops:server:open', drop.id); server:advance(300)
+        expect(#events(server, id, 'wasteland:inventory:client:open')).toBe(2)
+        server.players[id].coords = { x = 101.0, y = 100.0, z = 42.0 } -- a roof above it
+        server:advance(1100)
+        server:clientEvent(id, 'wasteland:supplydrops:server:open', drop.id); server:advance(300)
+        expect(last(events(server, id, 'wasteland:supplydrops:client:notice')).args[1]).toBe('You are too far away.')
+        server.players[id].coords = { x = 101.0, y = 100.0, z = 30.0 }
+    end)
+
     it('is gone after its lifetime', function()
         server:advance(125000)
         expect(#events(server, -1, 'wasteland:supplydrops:client:remove') >= 1).toBe(true)
