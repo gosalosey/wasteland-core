@@ -1,5 +1,21 @@
 # Changelog
 
+## Trading between players (new module wasteland_trade)
+* Hold Left Alt on another player: **Trade**. They get a popup (Trade / No thanks); the request lasts 30 seconds.
+* One window with three lists side by side:
+  * your items (Offer);
+  * your offer (change the amount, remove);
+  * their offer.
+* Each list scrolls on its own, so any number of items fits without overlapping. Up to 40 different stacks per side.
+* Both press Accept. Any change to either offer takes both accepts back, so nobody can swap something at the last second.
+* The swap is all or nothing:
+  * whole stacks keep their condition (and a bag keeps its contents);
+  * part of a stack splits off;
+  * cash trades like any item;
+  * if anything does not fit (room or weight), nothing changes and the trade stays open.
+* Moving more than 8 m apart, dying or leaving cancels the trade. Traded items leave the giver's hotbar.
+* Inventory exports: `GetTradeable(source)` and `Trade(a, offerA, b, offerB)`. Config: trade.lua.
+
 ## Inventory: a hover box with the item's name and amount
 * Hovering over an item shows a box to the bottom right of the cursor, in large text (18 and 16 px):
   * the item's name;

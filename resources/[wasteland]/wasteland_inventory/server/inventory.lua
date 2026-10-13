@@ -788,6 +788,152 @@ function Inv.ownInventories(c)
     return out
 end
 
+-------------------------------------------------------------------------------
+-- Trading between two players: both sides at once, all or nothing
+-------------------------------------------------------------------------------
+
+--- Stacks a player can trade: pockets and worn bag (not worn items).
+--- -> list of { stack, inventoryId }
+function Inv.tradeable(src)
+    local c = Inv.characterOf(src)
+    if not c or not c.loaded then return {} end
+    local out = {}
+    for _, inv in ipairs(Inv.targetsFor(src) or {}) do
+        for _, s in pairs(inv.items) do out[#out + 1] = { stack = s, inventoryId = inv.id } end
+    end
+    return out
+end
+
+--- Swap: offerA (list of { uid, count }) goes from player a to b, offerB
+--- from b to a. Checks every stack is still there, then places everything;
+--- if anything does not fit (room or weight) nothing changes.
+--- Whole stacks keep their uid (a bag keeps its contents); part of a stack
+--- becomes a new stack. One transaction. -> true | false, err
+function Inv.trade(a, offerA, b, offerB)
+    local accepting, why = Store.accepting()
+    if not accepting then return false, 'inventory changes are paused: ' .. why end
+    local ca, cb = Inv.characterOf(a), Inv.characterOf(b)
+    if not ca or not ca.loaded or not cb or not cb.loaded then return false, 'an inventory is not loaded' end
+    local ta, tb = Inv.targetsFor(a), Inv.targetsFor(b)
+    local involved = {}
+    for _, inv in ipairs(ta) do involved[#involved + 1] = inv end
+    for _, inv in ipairs(tb) do involved[#involved + 1] = inv end
+
+    -- find every offered stack where it is now
+    local function locate(targets, offer, who)
+        local out, seen = {}, {}
+        for _, o in ipairs(offer or {}) do
+            if type(o.uid) ~= 'string' or seen[o.uid] then return nil, 'the offer is not valid' end
+            seen[o.uid] = true
+            local found, from
+            for _, inv in ipairs(targets) do if inv.items[o.uid] then found, from = inv.items[o.uid], inv end end
+            if not found then return nil, who .. ' no longer has an offered item' end
+            local n = math.tointeger(o.count)
+            if not n or n < 1 or n > found.count then return nil, who .. ' no longer has that many ' .. WLI.defs[found.name].label end
+            out[#out + 1] = { stack = found, from = from, count = n }
+        end
+        return out
+    end
+    local la, e1 = locate(ta, offerA, 'the other player'); if not la then return false, e1 end
+    local lb, e2 = locate(tb, offerB, 'the other player'); if not lb then return false, e2 end
+
+    -- remember everything so a failed placement can be undone
+    local before, beforeSize = {}, {}
+    for _, inv in ipairs(involved) do
+        local m = {}
+        for uid, s in pairs(inv.items) do m[uid] = copy(s) end
+        before[inv.id] = m
+    end
+    local function undo()
+        for _, inv in ipairs(involved) do
+            local m = {}
+            for uid, s in pairs(before[inv.id]) do m[uid] = copy(s) end
+            inv.items = m
+        end
+    end
+
+    -- 1. take everything offered out
+    local moving = {}   -- { to = targets, whole = stack } | { to = targets, name, count, metadata }
+    local function take(list, to)
+        for _, l in ipairs(list) do
+            if l.count == l.stack.count then
+                l.from.items[l.stack.uid] = nil
+                moving[#moving + 1] = { to = to, whole = l.stack }
+            else
+                l.stack.count = l.stack.count - l.count
+                moving[#moving + 1] = { to = to, name = l.stack.name, count = l.count, metadata = copy(l.stack.metadata or {}) }
+            end
+        end
+    end
+    take(la, tb)
+    take(lb, ta)
+
+    -- 2. put it in (big things first so they find room)
+    table.sort(moving, function(x, y)
+        local dx = WLI.defs[x.whole and x.whole.name or x.name]
+        local dy = WLI.defs[y.whole and y.whole.name or y.name]
+        return dx.width * dx.height > dy.width * dy.height
+    end)
+    for _, m in ipairs(moving) do
+        if m.whole then
+            local s, d = m.whole, WLI.defs[m.whole.name]
+            local placed = false
+            for _, inv in ipairs(m.to) do
+                if inv.kind == 'grid' and not bagCheck(d, inv, s.uid) and not weightCheck(inv, Inv.stackWeight(s)) then
+                    local x, y, rotated = Grid.findSpot(inv, WLI.defs, d)
+                    if x then
+                        s.x, s.y, s.rotated, s.slot = x, y, rotated, nil
+                        inv.items[s.uid] = s
+                        placed = true
+                        break
+                    end
+                end
+            end
+            if not placed then undo(); return false, string.format('not enough room for %s', d.label) end
+        else
+            local plan, err = planAdd(m.to, m.name, m.count, m.metadata)
+            if not plan then undo(); return false, err end
+            for _, mg in ipairs(plan.merges) do mg.stack.count = mg.stack.count + mg.n end
+            for _, cr in ipairs(plan.creates) do cr.inv.items[cr.stack.uid] = cr.stack end
+        end
+    end
+
+    -- 3. write the result: rows that changed or moved, rows that are gone
+    local statements, changed = {}, {}
+    local after = {}
+    for _, inv in ipairs(involved) do
+        for uid, s in pairs(inv.items) do
+            after[uid] = true
+            local old = before[inv.id][uid]
+            if not old or not Grid.deepEqual(old, s) then
+                statements[#statements + 1] = Store.upsert(s, inv.id)
+                changed[inv.id] = true
+            end
+        end
+    end
+    for _, inv in ipairs(involved) do
+        for uid in pairs(before[inv.id]) do
+            if not after[uid] then
+                statements[#statements + 1] = Store.delete(uid)
+                changed[inv.id] = true
+            end
+        end
+    end
+    -- traded stacks leave the giver's hotbar
+    for _, c in ipairs({ ca, cb }) do
+        local cleared = false
+        for i = 1, 5 do
+            local uid = c.hotbar[i]
+            if uid and not Inv.findOwn(c.source, uid) then c.hotbar[i] = false; cleared = true end
+        end
+        if cleared then exports.wasteland_players:SetCharacterData(c.id, 'hotbar', c.hotbar) end
+    end
+    Store.enqueue(statements, string.format('trade between characters %d and %d', ca.id, cb.id))
+    WLI.Sync.changed(changed, a)
+    WLI.Sync.player(b)
+    return true
+end
+
 --- A stack the player carries (pockets, worn, worn bag): stack, inventoryId | nil
 function Inv.findOwn(src, uid)
     local c = Inv.characterOf(src)

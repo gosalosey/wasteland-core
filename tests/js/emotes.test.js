@@ -73,3 +73,13 @@ test('inventory hover box: name, amount, money for cash, condition', () => {
     assert.deepStrictEqual(invUi.tipLines({ label: 'Pistol' }, { name: 'weapon_pistol', count: 1 }, { text: 'Condition 80%' }, 'cash'),
         ['Pistol', 'Amount: 1 · Condition 80%']);
 });
+
+const trade = require(path.join(R, 'wasteland_trade', 'html', 'trade.js'));
+
+test('trade status line', () => {
+    const v = (me, them) => ({ me: { ready: me }, them: { ready: them, name: 'Bert' } });
+    assert.strictEqual(trade.status(v(false, false)), 'Add items, then both press Accept. Any change cancels the accepts.');
+    assert.strictEqual(trade.status(v(true, false)), 'You accepted. Waiting for Bert.');
+    assert.strictEqual(trade.status(v(false, true)), 'Bert accepted. Check their offer and accept.');
+});
+

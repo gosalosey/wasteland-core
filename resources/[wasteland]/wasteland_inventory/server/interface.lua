@@ -242,6 +242,28 @@ exports('GetInventory', function(id)
     return inv and Sync.snapshot(inv) or nil
 end)
 
+--- GetTradeable(source) -> list of { uid, name, count, durability?, inventoryId }
+--- (pockets and worn bag; not worn items)
+exports('GetTradeable', function(src)
+    if inactive() then return {} end
+    local out = {}
+    for _, e in ipairs(Inv.tradeable(tonumber(src))) do
+        local s = e.stack
+        out[#out + 1] = { uid = s.uid, name = s.name, count = s.count, inventoryId = e.inventoryId,
+            durability = s.metadata and s.metadata.durability or nil }
+    end
+    table.sort(out, function(x, y) return x.uid < y.uid end)
+    return out
+end)
+
+--- Trade(sourceA, offerA, sourceB, offerB) -> ok, err
+--- offer: list of { uid, count } from that player's pockets / worn bag.
+--- Both directions at once; all or nothing.
+exports('Trade', function(a, offerA, b, offerB)
+    if inactive() then return false, 'inventory module is not running' end
+    return Inv.trade(tonumber(a), offerA, tonumber(b), offerB)
+end)
+
 --- DeathDrop(source, label) -> { dropIds } | nil, err
 --- Everything except hotbar items goes into body bag(s) at the player's
 --- position, marked with the character as owner (map marker).
