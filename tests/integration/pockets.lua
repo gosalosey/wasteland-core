@@ -109,6 +109,20 @@ describe('pockets grow with clothing', function()
         expect(find(id, 'clothing_top') == nil).toBe(true)
     end)
 
+    it('a stash that is already loaded takes a new, bigger size (e.g. a trunk after a settings change)', function()
+        server:createThread('wasteland_inventory', function()
+            local small = I('EnsureStash', 'test_trunk', { width = 6, height = 5, maxWeight = 80 })
+            I('AddItem', small, 'bandage', 1)
+            local big = I('EnsureStash', 'test_trunk', { width = 15, height = 12, maxWeight = 300 })
+            local snap = I('GetInventory', big)
+            assert(snap.width == 15 and snap.height == 12 and snap.maxWeight == 300, 'grew')
+            assert(#snap.items == 1, 'kept its items')
+        end)
+        server:advance(300)
+        local snap = I('GetInventory', 'stash:test_trunk')
+        expect(snap.width .. 'x' .. snap.height .. ' ' .. snap.maxWeight).toBe('15x12 300')
+    end)
+
     it('backpacks: small 10 x 10 / 100 kg, hiking 15 x 15 / 175 kg', function()
         local small = server:export('wasteland_inventory', 'GetItemDefinition', 'backpack_small').container
         local large = server:export('wasteland_inventory', 'GetItemDefinition', 'backpack_large').container

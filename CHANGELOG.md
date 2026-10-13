@@ -1,5 +1,10 @@
 # Changelog
 
+## Bigger vehicle trunks
+* Trunks are now 15 x 12 cells and hold 300 kg (were 6 x 5, 80 kg). Pickups and vans (Bison, Sadler, Rebel, Rat-Loader, Bodhi, Duneloader, Surfer, Rumpo, Youga) are 18 x 14 and hold 450 kg.
+* vehicles.lua: `trunk = { width, height, maxWeight, models = { <model> = { width, height, maxWeight } } }`.
+* A stash that is already loaded takes a new size from the settings straight away (never smaller than what is in it), so existing trunks grow without a restart.
+
 ## Inventory: the backpack opens on demand
 * Opening the inventory shows the pockets only. To use the worn backpack, right-click it in the Back slot and choose Open backpack (or double-click it). Its grid then shows next to the pockets, with a Close button.
 * With the backpack open and nothing else open, double-click (or Shift+click) moves items between the pockets and the backpack. Dragging works as before.

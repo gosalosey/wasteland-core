@@ -200,7 +200,22 @@ function Drops.ensureStash(name, opts)
     end
     local id = 'stash:' .. name
     local inv = WLI.invs[id]
-    if inv then return inv end
+    if inv then
+        -- The size may have changed in the settings: follow it (but never
+        -- smaller than the stacks already in it).
+        if type(opts) == 'table' and (opts.width or opts.height or opts.maxWeight) then
+            local w, h = math.floor(tonumber(opts.width) or inv.width), math.floor(tonumber(opts.height) or inv.height)
+            for _, s in pairs(inv.items) do
+                if s.x ~= nil then
+                    local fw, fh = WLI.Grid.footprint(WLI.defs[s.name] or { width = 1, height = 1 }, s.rotated)
+                    w, h = math.max(w, s.x + fw), math.max(h, s.y + fh)
+                end
+            end
+            inv.width, inv.height = w, h
+            if tonumber(opts.maxWeight) then inv.maxWeight = tonumber(opts.maxWeight) end
+        end
+        return inv
+    end
     opts = opts or {}
     local items, err = Store.loadItems(id)
     if not items then return nil, err end

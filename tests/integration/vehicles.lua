@@ -225,6 +225,12 @@ describe('vehicles', function()
         expect(note(server, thief)).toBe('Unlocked.')
         server:clientEvent(thief, 'wasteland:vehicles:server:act', veh(server).netId, 'trunk'); server:advance(300)
         expect(#events(server, thief, 'wasteland:inventory:client:open')).toBe(1)
+        -- a big trunk (vehicles.lua trunk: 15 x 12, 300 kg by default)
+        local snap = events(server, thief, 'wasteland:inventory:client:sync')
+        snap = snap[#snap].args[1]
+        local trunk
+        for _, i in ipairs(snap.inventories) do if i.label == 'Trunk' then trunk = i end end
+        expect(trunk.width .. 'x' .. trunk.height .. ' ' .. trunk.maxWeight).toBe('15x12 300')
     end)
 
     it('position and damage are saved; the vehicle is put away when nobody is near', function()

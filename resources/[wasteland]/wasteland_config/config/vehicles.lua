@@ -49,6 +49,22 @@ return {
         fuel = { 0, 8 }, engine = { 250, 700 }, body = { 300, 800 },
     },
 
+    -- Trunk size (cells) and how much it holds (kg). Pickups and vans hold more.
+    trunk = {
+        width = 15, height = 12, maxWeight = 300,
+        models = {
+            bison = { width = 18, height = 14, maxWeight = 450 },
+            sadler = { width = 18, height = 14, maxWeight = 450 },
+            rebel = { width = 18, height = 14, maxWeight = 450 },
+            ratloader = { width = 18, height = 14, maxWeight = 450 },
+            bodhi2 = { width = 18, height = 14, maxWeight = 450 },
+            dloader = { width = 18, height = 14, maxWeight = 450 },
+            surfer2 = { width = 18, height = 14, maxWeight = 450 },
+            rumpo = { width = 18, height = 14, maxWeight = 450 },
+            youga = { width = 18, height = 14, maxWeight = 450 },
+        },
+    },
+
     -- Rusty and ordinary cars (GTA model names).
     models = { 'emperor2', 'rebel', 'tornado3', 'surfer2', 'ratloader', 'bodhi2', 'regina', 'dloader', 'sadler', 'bison',
         'rumpo', 'youga', 'mesa', 'voodoo2', 'asea', 'ingot', 'primo', 'stanier' },

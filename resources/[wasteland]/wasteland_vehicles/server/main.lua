@@ -365,7 +365,13 @@ local function start(src, netId, action)
     if action == 'trunk' then
         local ok, reason = Rules.check('trunk', v, has(src), keyFor(src, v) ~= nil, M.config)
         if not ok then notice(src, reason); return end
-        inv():OpenStash(src, 'veh_' .. v.id, { label = 'Trunk', width = 6, height = 5, maxWeight = 80, coords = coordsOf(v.handle), open = true })
+        local t = M.config.trunk
+        local model = GetEntityModel(v.handle)
+        for name, size in pairs(t.models) do
+            if GetHashKey(name) == model then t = size; break end
+        end
+        inv():OpenStash(src, 'veh_' .. v.id, { label = 'Trunk', width = t.width, height = t.height, maxWeight = t.maxWeight,
+            coords = coordsOf(v.handle), open = true })
         return
     end
     local ok, reason = Rules.check(action, v, has(src), keyFor(src, v) ~= nil, M.config, ownsLock(src, v))
@@ -514,6 +520,16 @@ M = Wasteland.DefineModule({
             despawnAfterSeconds = { type = 'integer', default = 30, min = 0, max = 3600 },
             saveSeconds = { type = 'integer', default = 30, min = 2, max = 3600 },
             reach = { type = 'number', default = 4.0, min = 1, max = 20 },
+            trunk = { type = 'table', fields = {
+                width = { type = 'integer', default = 15, min = 1, max = 20 },
+                height = { type = 'integer', default = 12, min = 1, max = 20 },
+                maxWeight = { type = 'number', default = 300, min = 1, max = 10000 },
+                models = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'table', fields = {
+                    width = { type = 'integer', required = true, min = 1, max = 20 },
+                    height = { type = 'integer', required = true, min = 1, max = 20 },
+                    maxWeight = { type = 'number', required = true, min = 1, max = 10000 },
+                } }, description = 'Bigger (or smaller) trunks for some models' },
+            } },
             tankLitres = { type = 'number', default = 50, min = 1, max = 1000 },
             jerryCanLitres = { type = 'number', default = 20, min = 1, max = 1000 },
             fuel = { type = 'table', fields = { idlePerMinute = { type = 'number', default = 0.06, min = 0 },
