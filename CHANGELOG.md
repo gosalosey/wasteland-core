@@ -1,5 +1,11 @@
 # Changelog
 
+## Fix: "Last known position" put you on the roof; no more idle camera (owner reports)
+* After spawning, the ground was looked for from 5 m above the point, and inside a building the first thing found is the roof.
+  * "Last known position" now puts you exactly where you were, after the building's interior has loaded.
+  * Camp spawns look for the ground from just above the point.
+* GTA's idle camera (it starts slowly panning when you stand still) is switched off: world.lua `idleCamera = false`.
+
 ## Fix: the cooking window fell back to the list after the first piece (owner report)
 * The server sent "pieces done" as `done`, and the window read any number above 0 as "finished". After the first piece, the window showed the list again while the server was still cooking, and Cook did nothing.
 * The end of cooking is now its own flag (`finished`). The window keeps showing "Cooking 3 of 5" until the last piece, and Cook works again right after.

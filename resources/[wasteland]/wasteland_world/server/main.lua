@@ -15,7 +15,7 @@ local function payload(transition)
         hour = clock.hour, minute = clock.minute, frozen = clock.frozen,
         msPerMinute = M.config.time.msPerMinute,
         weather = weather.current, transition = transition or 0,
-        population = M.config.population, audio = M.config.audio,
+        population = M.config.population, audio = M.config.audio, idleCamera = M.config.idleCamera,
     }
 end
 
@@ -70,6 +70,8 @@ M = Wasteland.DefineModule({
         file = 'world.lua',
         optional = true,
         schema = { type = 'table', fields = {
+            idleCamera = { type = 'boolean', default = false,
+                description = 'GTA idle camera (pans around when you stand still): off unless true' },
             population = { type = 'table', fields = {
                 peds = { type = 'boolean', default = false, description = 'Ambient pedestrians' },
                 vehicles = { type = 'boolean', default = false, description = 'Ambient traffic' },

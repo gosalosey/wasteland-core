@@ -230,6 +230,7 @@ describe('returning characters: last known position or a safe camp', function()
         local at = last(events(server, back, 'wasteland:camps:client:spawnAt')).args
         expect(at[1].x).toBe(500.0); expect(at[1].y).toBe(600.0)
         expect(at[2] == nil).toBe(true)
+        expect(at[3]).toBe(true) -- exactly there (inside a building: not on its roof)
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)

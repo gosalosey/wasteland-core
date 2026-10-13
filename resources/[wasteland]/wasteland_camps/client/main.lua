@@ -205,7 +205,9 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     end
 end)
 
-RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label)
+-- exact: the saved position (maybe inside a building): put them exactly
+-- there. Otherwise (a camp point) find the ground under the point.
+RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label, exact)
     if type(at) ~= 'table' then return end
     Citizen.CreateThread(function()
         local ped = PlayerPedId()
@@ -218,8 +220,20 @@ RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label)
         SetEntityHeading(ped, (at.heading or 0.0) + 0.0)
         local deadline = GetGameTimer() + 5000
         while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < deadline do Citizen.Wait(0) end
-        local found, ground = GetGroundZFor_3dCoord(x, y, z + 5.0, false)
-        if found then SetEntityCoordsNoOffset(ped, x, y, ground + 0.1, false, false, false) end
+        if not exact then
+            -- look from just above the point: from higher up the first thing found can be a roof
+            local found, ground = GetGroundZFor_3dCoord(x, y, z + 1.0, false)
+            if found and math.abs(ground - z) < 3.0 then SetEntityCoordsNoOffset(ped, x, y, ground + 0.1, false, false, false) end
+        else
+            -- inside a building: wait for its interior so the floor is there
+            local interior = GetInteriorAtCoords(x, y, z)
+            if interior ~= 0 then
+                PinInteriorInMemory(interior)
+                local until_ = GetGameTimer() + 5000
+                while not IsInteriorReady(interior) and GetGameTimer() < until_ do Citizen.Wait(0) end
+            end
+            SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
+        end
         FreezeEntityPosition(ped, false)
         SetEntityInvincible(ped, false)
         DoScreenFadeIn(600)

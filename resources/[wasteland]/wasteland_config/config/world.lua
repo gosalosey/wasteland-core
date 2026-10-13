@@ -1,6 +1,10 @@
 -- Wasteland Core :: world (module "world", resource wasteland_world)
 -- One clock and one weather for everyone, an empty world and silence.
 return {
+    -- GTA's idle camera starts panning around when you stand still for a
+    -- while. Off (false) keeps your camera where you left it.
+    idleCamera = false,
+
     -- What lives in the world besides players (false = removed).
     -- Zombies and other scripted characters are not affected.
     population = {

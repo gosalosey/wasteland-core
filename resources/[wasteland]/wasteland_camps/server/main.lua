@@ -361,7 +361,7 @@ M.netEvent('wasteland:camps:server:chooseSpawn', {
     if campId == 'last' and type(open) == 'table' and open.last then
         choosing[src] = nil
         M.log:info('player %d goes back to where they left', src)
-        TriggerClientEvent('wasteland:camps:client:spawnAt', src, open.last, nil)
+        TriggerClientEvent('wasteland:camps:client:spawnAt', src, open.last, nil, true)
         Citizen.SetTimeout(8000, function() if not choosing[src] then protect(src, false) end end)
         TriggerEvent('wasteland:camps:spawnChosen', src, 'last')
         return

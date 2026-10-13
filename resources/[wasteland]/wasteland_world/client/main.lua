@@ -54,6 +54,20 @@ Citizen.CreateThread(function()
 end)
 
 -------------------------------------------------------------------------------
+-- No idle camera: standing still must not start GTA's slow camera pan
+-------------------------------------------------------------------------------
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(5000)
+        if not (settings and settings.idleCamera) then
+            InvalidateIdleCam()
+            InvalidateVehicleIdleCam()
+        end
+    end
+end)
+
+-------------------------------------------------------------------------------
 -- Empty world
 -------------------------------------------------------------------------------
 
