@@ -437,12 +437,28 @@ RegisterNetEvent('wasteland:basebuilding:client:door', function(id, isOpen)
     end
     local from = GetEntityHeading(e.obj)
     local to = isOpen and DoorOpenHeading(data) or data.heading
+    local piece = cfg and cfg.pieces[data.piece]
+    local through = piece and piece.passThrough
     Citizen.CreateThread(function()
-        for i = 1, 8 do
+        -- a gate swings through players and vehicles instead of shoving them
+        if through then SetEntityCollision(e.obj, false, false) end
+        local steps = through and 30 or 8
+        for i = 1, steps do
             if not DoesEntityExist(e.obj) then return end
             local diff = ((to - from + 540.0) % 360.0) - 180.0
-            SetEntityHeading(e.obj, (from + diff * (i / 8)) % 360.0)
+            SetEntityHeading(e.obj, (from + diff * (i / steps)) % 360.0)
             Wait(25)
+        end
+        if through and DoesEntityExist(e.obj) then
+            -- solid again once nobody is standing or parked inside it
+            local until_ = GetGameTimer() + 15000
+            while GetGameTimer() < until_ do
+                local ped = PlayerPedId()
+                local veh = GetVehiclePedIsIn(ped, false)
+                if not IsEntityTouchingEntity(e.obj, ped) and (veh == 0 or not IsEntityTouchingEntity(e.obj, veh)) then break end
+                Wait(200)
+            end
+            if DoesEntityExist(e.obj) then SetEntityCollision(e.obj, true, true) end
         end
     end)
 end)
@@ -694,16 +710,29 @@ Citizen.CreateThread(function()
     while true do
         local sleep = 800
         if cfg and not isPlacing then
-            local pos = GetEntityCoords(PlayerPedId())
-            local reach = cfg.interact.distance
+            local ped = PlayerPedId()
+            local pos = GetEntityCoords(ped)
+            local inVehicle = IsPedInAnyVehicle(ped, false)
+            -- the nearest door in reach (gates reach further, and from a vehicle)
+            local best, bestDist
             for id, data in pairs(propCache) do
-                if (data.category == 'door' or data.category == 'garage') and #(pos - data.coords) <= reach then
-                    sleep = 0
-                    DrawText3D(data.coords + vector3(0.0, 0.0, 1.0), ('[E] %s'):format(data.is_open and 'Close' or 'Open'))
-                    if IsControlJustReleased(0, KEY_E) and not (uiRunning() and exports.wasteland_ui:IsOpen('inventory')) then
-                        TriggerServerEvent('wasteland:basebuilding:server:door', id)
+                if data.category == 'door' or data.category == 'garage' then
+                    local piece = cfg.pieces[data.piece]
+                    local far = piece and piece.interactDistance
+                    if not inVehicle or far then
+                        local d = #(pos - data.coords)
+                        if d <= (far or cfg.interact.distance) and (not bestDist or d < bestDist) then best, bestDist = id, d end
                     end
-                    break
+                end
+            end
+            if best then
+                local data = propCache[best]
+                sleep = 0
+                DrawText3D(data.coords + vector3(0.0, 0.0, 1.0), ('[E] %s'):format(data.is_open and 'Close' or 'Open'))
+                -- in a vehicle E is the horn (86)
+                local pressed = IsControlJustReleased(0, KEY_E) or (inVehicle and IsControlJustReleased(0, 86))
+                if pressed and not (uiRunning() and exports.wasteland_ui:IsOpen('inventory')) then
+                    TriggerServerEvent('wasteland:basebuilding:server:door', best)
                 end
             end
         end

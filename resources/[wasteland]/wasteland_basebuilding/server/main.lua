@@ -129,7 +129,8 @@ local function clientConfig()
     local pieces = {}
     for key, p in pairs(c.pieces) do
         pieces[key] = { label = p.label, model = p.model, category = p.category, family = p.family, hidden = p.hidden,
-            openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material }
+            openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material,
+            interactDistance = p.interactDistance, passThrough = p.passThrough }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -384,7 +385,9 @@ local function toggleDoor(src, id)
     local cid = characterOf(src)
     local p = props[id]
     if not p or (p.category ~= 'door' and p.category ~= 'garage') then return end
-    if not near(src, p.coords, M.config.interact.distance + 1.5) then return end
+    local piece = M.config.pieces[p.piece]
+    local reach = (piece and piece.interactDistance) or M.config.interact.distance
+    if not near(src, p.coords, reach + 1.5) then return end
     local ok, c = accessAt(cid, p.coords)
     if not ok or not c then notice(src, 'This door is locked. (A lockpick might open it.)'); return end
     setDoor(p, not p.is_open)
@@ -751,6 +754,8 @@ M = Wasteland.DefineModule({
                 hidden = { type = 'boolean', default = false },
                 openAngleOffset = { type = 'number' },
                 openLift = { type = 'number', min = 0.1, max = 20, description = 'Garage doors: metres they roll up' },
+                interactDistance = { type = 'number', min = 1, max = 20, description = 'Doors: E works from this far (also from a vehicle)' },
+                passThrough = { type = 'boolean', description = 'Doors: swing through players and vehicles' },
                 grid = { type = 'table', nullable = true, fields = {
                     width = { type = 'integer', required = true, min = 1, max = 20 },
                     height = { type = 'integer', required = true, min = 1, max = 20 },

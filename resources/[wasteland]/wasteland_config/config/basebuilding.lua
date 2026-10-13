@@ -88,8 +88,10 @@ return {
             material = 'wood', openAngleOffset = 100.0 },
         metaldoor = { label = 'Metal Door', model = 'sinor_prop_door_metal', category = 'door', cost = { metal_sheet = 6 }, health = 1500,
             material = 'metal', openAngleOffset = 100.0, family = 'door', hidden = true },
+        -- interactDistance: E works from this far (metres), also from a vehicle;
+        -- passThrough: swings through players and vehicles instead of pushing them.
         gatedoor = { label = 'Gate Door', model = 'sinor_prop_gate_door', category = 'door', cost = { wood_planks = 20, metal_sheet = 2 }, health = 700,
-            material = 'wood', openAngleOffset = 100.0 },
+            material = 'wood', openAngleOffset = 100.0, interactDistance = 8.0, passThrough = true },
         -- Garage doors roll up when opened (openLift: metres; leave it out to use the door's own height).
         garagedoor = { label = 'Garage Door', model = 'sinor_prop_garage_wood', category = 'garage', cost = { wood_planks = 20 }, health = 600,
             material = 'wood' },
