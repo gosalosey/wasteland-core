@@ -122,6 +122,17 @@ Config.CORE_SCHEMAS = {
                 description = 'Run the ordered module shutdown when txAdmin announces a server shutdown.' },
             restartModulesAfterCoreRestart = { type = 'boolean', default = true,
                 description = 'Start module resources again after FiveM stopped them because a resource they depend on (the core or another module) restarted.' },
+            updateCheck = {
+                type = 'table',
+                description = 'Checks GitHub for Wasteland Core updates and tells the console (and admins in chat).',
+                fields = {
+                    enabled = { type = 'boolean', default = true, description = 'Check for updates after start and every few hours.' },
+                    repo = { type = 'string', default = 'gosalosey/wasteland-core', pattern = '^[%w%-_%.]+/[%w%-_%.]+$',
+                        description = 'GitHub repository (owner/name).' },
+                    branch = { type = 'string', default = 'main', pattern = '^[%w%-_%./]+$', description = 'Branch to compare with.' },
+                    everyHours = { type = 'number', default = 6, min = 1, max = 168, description = 'Hours between checks.' },
+                },
+            },
             security = {
                 type = 'table',
                 description = 'Handling of rejected client requests (net-event guard).',

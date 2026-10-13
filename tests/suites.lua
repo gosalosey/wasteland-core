@@ -8,6 +8,7 @@ return {
     'unit/group_rules.lua',
     'unit/base_rules.lua',
     'unit/hunting_rules.lua',
+    'unit/update_check.lua',
     'unit/schema.lua',
     'unit/logger.lua',
     'unit/config_loader.lua',

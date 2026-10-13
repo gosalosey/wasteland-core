@@ -1,5 +1,11 @@
 # Changelog
 
+## Update notice: the console says when GitHub has a newer Wasteland Core
+* 15 s after the server starts, and every 6 hours, the core compares the installed version with GitHub. The installed version is `resources/[wasteland]/VERSION.txt`, written by the updater; a fresh install records the newest version on its first start.
+* If there are updates, a yellow banner in the console shows how many, the installed and newest versions, the titles of up to 10 changes, and how to update (run update_wasteland.bat).
+* Admins (wasteland.admin) get a line in chat when they join while updates wait.
+* framework.lua: `updateCheck = { enabled, repo, branch, everyHours }`.
+
 ## Bigger vehicle trunks
 * Trunks are now 15 x 12 cells and hold 300 kg (were 6 x 5, 80 kg). Pickups and vans (Bison, Sadler, Rebel, Rat-Loader, Bodhi, Duneloader, Surfer, Rumpo, Youga) are 18 x 14 and hold 450 kg.
 * vehicles.lua: `trunk = { width, height, maxWeight, models = { <model> = { width, height, maxWeight } } }`.

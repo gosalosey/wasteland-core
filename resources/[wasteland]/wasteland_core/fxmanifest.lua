@@ -22,6 +22,7 @@ server_scripts {
     'server/security.lua',
     'server/commands.lua',
     'server/exports.lua',
+    'server/updates.lua',
     'server/main.lua',
 }
 

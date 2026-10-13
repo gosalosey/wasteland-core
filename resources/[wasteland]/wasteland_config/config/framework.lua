@@ -27,6 +27,17 @@ return {
     -- core restarts exactly the modules that were running before.
     restartModulesAfterCoreRestart = true,
 
+    -- Update check: after the server starts (and every few hours) the
+    -- console shows a banner when GitHub has a newer Wasteland Core than the
+    -- one installed (resources/[wasteland]/VERSION.txt, written by the
+    -- updater); admins also get a line in chat when they join.
+    updateCheck = {
+        enabled = true,
+        repo = 'gosalosey/wasteland-core',
+        branch = 'main',
+        everyHours = 6,
+    },
+
     -- Client requests that fail validation (bad data, spam, invalid sender)
     -- are always rejected and logged. Optionally kick repeat offenders.
     security = {
