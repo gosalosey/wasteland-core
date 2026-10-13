@@ -17,7 +17,7 @@ return {
 
     -- Returning characters choose where they wake up: their last known
     -- position or one of the safe camps (new characters always pick a camp).
-    chooseSpawnOnLogin = true,
+    chooseSpawnOnLogin = false,
 
     -- Traders buy anything you carry (except cash), not only what is on
     -- their list. A shop's own `sell` price wins; otherwise the price is

@@ -102,13 +102,28 @@ local function teleport(pos)
     local x, y, z = pos.x + 0.0, pos.y + 0.0, pos.z + 0.0
     DoScreenFadeOut(250)
     while not IsScreenFadedOut() do Citizen.Wait(0) end
-    RequestCollisionAtCoord(x, y, z)
+    -- held in the air until the world (and any building) under them is loaded,
+    -- so nobody drops through the map
+    FreezeEntityPosition(ped, true)
     SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
     SetEntityHeading(ped, (pos.heading or 0.0) + 0.0)
-    local deadline = GetGameTimer() + 5000
-    while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < deadline do
-        Citizen.Wait(0)
+    local interior = GetInteriorAtCoords(x, y, z)
+    if interior ~= 0 then PinInteriorInMemory(interior) end
+    local deadline = GetGameTimer() + 10000
+    local ground
+    while GetGameTimer() < deadline do
+        RequestCollisionAtCoord(x, y, z)
+        if HasCollisionLoadedAroundEntity(ped) and (interior == 0 or IsInteriorReady(interior)) then
+            -- the floor right under where they logged out (from just above
+            -- their feet, so a roof is never picked)
+            local found, gz = GetGroundZFor_3dCoord(x, y, z + 1.0, false)
+            if found and math.abs(gz - z) < 3.0 then ground = gz; break end
+        end
+        Citizen.Wait(50)
     end
+    if ground then SetEntityCoordsNoOffset(ped, x, y, ground + 0.05, false, false, false)
+    else SetEntityCoordsNoOffset(ped, x, y, z, false, false, false) end
+    FreezeEntityPosition(ped, false)
     DoScreenFadeIn(500)
 end
 
