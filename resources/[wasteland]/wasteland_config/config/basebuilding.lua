@@ -87,8 +87,9 @@ return {
             material = 'metal', openAngleOffset = 100.0, family = 'door', hidden = true },
         gatedoor = { label = 'Gate Door', model = 'sinor_prop_gate_door', category = 'door', cost = { wood_planks = 20, metal_sheet = 2 }, health = 700,
             material = 'wood', openAngleOffset = 100.0 },
+        -- Garage doors roll up when opened (openLift: metres; leave it out to use the door's own height).
         garagedoor = { label = 'Garage Door', model = 'sinor_prop_garage_wood', category = 'garage', cost = { wood_planks = 20 }, health = 600,
-            material = 'wood', openAngleOffset = 90.0 },
+            material = 'wood' },
         stash_small = { label = 'Small Storage Box', model = 'prop_cs_lester_crate', category = 'stash', cost = { wood_planks = 6, scrap_metal = 2 },
             health = 400, material = 'wood', grid = { width = 8, height = 6, maxWeight = 100 } },
         stash_large = { label = 'Large Storage Container', model = 'v_res_tre_storagebox', category = 'stash', cost = { wood_planks = 15, metal_sheet = 4 },

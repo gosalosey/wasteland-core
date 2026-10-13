@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: the garage door swung sideways like a normal door (owner report)
+* Garage doors now roll up into their frame when opened (about a second) and back down when closed, and they stay up or down after a restart and for players who come near later.
+* How far they go up: the door's own height less 0.3 m, or the piece's `openLift` in basebuilding.lua.
+
 ## Fix: gaps at wall corners; ramp distance when turned round (owner report)
 * Walls, doorways, window frames and half walls snapped to the outside of the foundation edge, so two walls on neighbouring edges left a gap the thickness of a wall at the corner.
   * They now stand on the edge, their outer face flush with it; at a corner they overlap instead.

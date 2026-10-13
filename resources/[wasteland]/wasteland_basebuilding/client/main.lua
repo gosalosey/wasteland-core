@@ -297,13 +297,27 @@ local function DespawnCupboard(id)
     spawnedCupboards[id] = nil
 end
 
+-- Garage doors roll up instead of swinging: how far up (metres) when open.
+-- basebuilding.lua piece `openLift`, or the door's own height less a little.
+local function garageLift(data)
+    local piece = cfg.pieces[data.piece]
+    if piece and tonumber(piece.openLift) then return tonumber(piece.openLift) end
+    local hash = GetHashKey(data.model)
+    CacheModelDims(hash)
+    return math.max(0.5, GetModelDims(hash).size.z - 0.3)
+end
+
 local function SpawnProp(id)
     if spawnedProps[id] then return end
     local data = propCache[id]
     if not data then return end
-    local heading = data.heading
-    if (data.category == 'door' or data.category == 'garage') and data.is_open then heading = DoorOpenHeading(data) end
-    local obj = spawnObject(data.model, data.coords, heading)
+    local heading, at = data.heading, data.coords
+    if data.category == 'door' and data.is_open then heading = DoorOpenHeading(data) end
+    if data.category == 'garage' and data.is_open then
+        RequestModelHash(GetHashKey(data.model))
+        at = data.coords + vector3(0.0, 0.0, garageLift(data))
+    end
+    local obj = spawnObject(data.model, at, heading)
     if not obj then return end
     spawnedProps[id] = { obj = obj, targets = addTargets(obj, id, false) }
 end
@@ -406,6 +420,21 @@ RegisterNetEvent('wasteland:basebuilding:client:door', function(id, isOpen)
     data.is_open = isOpen
     local e = spawnedProps[id]
     if not e or not DoesEntityExist(e.obj) then return end
+    if data.category == 'garage' then
+        -- roll up / down, about a second
+        local fromZ = GetEntityCoords(e.obj).z
+        local toZ = data.coords.z + (isOpen and garageLift(data) or 0.0)
+        Citizen.CreateThread(function()
+            for i = 1, 30 do
+                if not DoesEntityExist(e.obj) then return end
+                local z = fromZ + (toZ - fromZ) * (i / 30)
+                SetEntityCoordsNoOffset(e.obj, data.coords.x, data.coords.y, z, false, false, false)
+                SetEntityHeading(e.obj, data.heading)
+                Wait(33)
+            end
+        end)
+        return
+    end
     local from = GetEntityHeading(e.obj)
     local to = isOpen and DoorOpenHeading(data) or data.heading
     Citizen.CreateThread(function()

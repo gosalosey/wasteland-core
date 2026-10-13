@@ -129,7 +129,7 @@ local function clientConfig()
     local pieces = {}
     for key, p in pairs(c.pieces) do
         pieces[key] = { label = p.label, model = p.model, category = p.category, family = p.family, hidden = p.hidden,
-            openAngleOffset = p.openAngleOffset, cost = p.cost, material = p.material }
+            openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -748,6 +748,7 @@ M = Wasteland.DefineModule({
                 family = { type = 'string' },
                 hidden = { type = 'boolean', default = false },
                 openAngleOffset = { type = 'number' },
+                openLift = { type = 'number', min = 0.1, max = 20, description = 'Garage doors: metres they roll up' },
                 grid = { type = 'table', nullable = true, fields = {
                     width = { type = 'integer', required = true, min = 1, max = 20 },
                     height = { type = 'integer', required = true, min = 1, max = 20 },
