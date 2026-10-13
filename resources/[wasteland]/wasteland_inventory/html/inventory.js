@@ -226,6 +226,16 @@
         return label.split(/\s+/).map((w) => w[0]).join('').toUpperCase().slice(0, 4);
     }
 
+    // Pure helper (unit-tested): the two lines of the hover box: the item's
+    // name, then how many (money for cash) and its condition if it wears.
+    function tipLines(def, stack, cond, cashItem) {
+        const name = (def && def.label) || stack.name;
+        let amount = stack.name === cashItem ? '$' + Number(stack.count).toLocaleString('en-US')
+            : 'Amount: ' + Number(stack.count).toLocaleString('en-US');
+        if (cond) amount += ' · ' + cond.text;
+        return [name, amount];
+    }
+
     // Pure helper (unit-tested): cell size in pixels so the grids fit the
     // screen. rows: tallest grid; cols: grid widths side by side (pockets,
     // bag and what is being looted). Without loot the health panel still
@@ -237,7 +247,7 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { cellSize: cellSize, footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
+        module.exports = { tipLines: tipLines, cellSize: cellSize, footprint: footprint, fits: fits, findSpot: findSpot, stackAt: stackAt, decideDrop: decideDrop, quickTarget: quickTarget,
             formatKg: formatKg, shortLabel: shortLabel, condition: condition, conditions: conditions, toF: toF, feels: feels, repairChoices: repairChoices };
         return;
     }
@@ -266,12 +276,47 @@
 
     function closeMenu() { if (st.menu) { st.menu.remove(); st.menu = null; } }
 
+    // ------------------------------------------------------------ hover box
+    // Name and amount of the item under the mouse, below and right of the
+    // cursor (flipped to stay on screen). Hidden while dragging.
+    function showTip(e, def, stack, cond) {
+        if (st.drag || st.menu) return;
+        if (!st.tip) {
+            st.tip = h('div', { class: 'wli-tip' });
+            st.root.appendChild(st.tip);
+        }
+        const lines = tipLines(def, stack, cond, st.defs.cashItem);
+        st.tip.innerHTML = '';
+        st.tip.appendChild(h('div', { class: 'wli-tip__name', text: lines[0] }));
+        st.tip.appendChild(h('div', { class: 'wli-tip__amount', text: lines[1] }));
+        if (def.description) st.tip.appendChild(h('div', { class: 'wli-tip__desc', text: def.description }));
+        st.tip.hidden = false;
+        moveTip(e);
+    }
+
+    function moveTip(e) {
+        if (!st.tip || st.tip.hidden) return;
+        if (st.drag) { hideTip(); return; }
+        const gap = 18;
+        let x = e.clientX + gap, y = e.clientY + gap;
+        const r = st.tip.getBoundingClientRect();
+        if (x + r.width > window.innerWidth - 8) x = e.clientX - gap - r.width;
+        if (y + r.height > window.innerHeight - 8) y = e.clientY - gap - r.height;
+        st.tip.style.left = x + 'px';
+        st.tip.style.top = y + 'px';
+    }
+
+    function hideTip() { if (st && st.tip) st.tip.hidden = true; }
+
     function tile(stack, inv, opts) {
         const def = st.defs.items[stack.name] || { label: stack.name, width: 1, height: 1, category: 'misc' };
         const f = opts && opts.fixed ? { w: opts.fixed, h: opts.fixed } : footprint(def, stack.rotated);
         const cond = condition(def, stack);
-        const el = h('div', { class: 'wli-item' + (cond && cond.ruined ? ' is-ruined' : ''),
-            title: def.label + (cond ? ' (' + cond.text + ')' : '') + (def.description ? ' – ' + def.description : '') });
+        const el = h('div', { class: 'wli-item' + (cond && cond.ruined ? ' is-ruined' : '') });
+        el.addEventListener('mouseenter', (e) => showTip(e, def, stack, cond));
+        el.addEventListener('mousemove', moveTip);
+        el.addEventListener('mouseleave', hideTip);
+        el.addEventListener('mousedown', hideTip);
         el.style.width = (f.w * CELL - 4) + 'px';
         el.style.height = (f.h * CELL - 4) + 'px';
         el.style.background = def.color || CATEGORY_COLORS[def.category] || CATEGORY_COLORS.misc;
@@ -439,6 +484,7 @@
 
     function render() {
         closeMenu();
+        hideTip();
         st.left.innerHTML = '';
         st.middle.innerHTML = '';
         st.right.innerHTML = '';
@@ -757,6 +803,11 @@
         '.wli-item.is-ruined { filter: grayscale(0.85) brightness(0.75); }',
         '.wli-item.is-ruined::after { content: "RUINED"; position: absolute; right: 3px; bottom: 5px; font-size: 9px; font-weight: 700; color: #ff9c90; letter-spacing: 0.05em; }',
         '.wli-ghost { position: fixed; pointer-events: none; z-index: 50; opacity: 0.9; }',
+        '.wli-tip { position: fixed; z-index: 70; pointer-events: none; max-width: 320px; padding: 8px 12px;',
+        '  background: rgba(12,14,12,0.96); border: 1px solid var(--wl-accent); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }',
+        '.wli-tip__name { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.25; }',
+        '.wli-tip__amount { font-size: 16px; color: var(--wl-accent); margin-top: 2px; }',
+        '.wli-tip__desc { font-size: 13px; color: var(--wl-text-dim); margin-top: 4px; }',
         '.wli-preview { position: absolute; pointer-events: none; background: rgba(127,174,90,0.25); border: 1px solid var(--wl-ok); }',
         '.wli-preview.is-bad { background: rgba(196,69,58,0.25); border-color: var(--wl-danger); }',
         '.wli-health { margin-bottom: 4px; min-width: 300px; max-width: 440px; }',

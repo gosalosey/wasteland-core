@@ -66,3 +66,10 @@ test('inventory cells shrink to fit big grids on the screen', () => {
     assert.ok(330 + 25 * c + 70 + 330 + 2 * 22 + 110 <= 1600, 'fits: ' + c);
     assert.ok(c >= 24);
 });
+
+test('inventory hover box: name, amount, money for cash, condition', () => {
+    assert.deepStrictEqual(invUi.tipLines({ label: '9mm rounds' }, { name: 'ammo_9mm', count: 23 }, null, 'cash'), ['9mm rounds', 'Amount: 23']);
+    assert.deepStrictEqual(invUi.tipLines({ label: 'Cash' }, { name: 'cash', count: 8220 }, null, 'cash'), ['Cash', '$8,220']);
+    assert.deepStrictEqual(invUi.tipLines({ label: 'Pistol' }, { name: 'weapon_pistol', count: 1 }, { text: 'Condition 80%' }, 'cash'),
+        ['Pistol', 'Amount: 1 · Condition 80%']);
+});

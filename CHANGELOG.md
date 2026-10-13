@@ -1,5 +1,12 @@
 # Changelog
 
+## Inventory: a hover box with the item's name and amount
+* Hovering over an item shows a box to the bottom right of the cursor, in large text (18 and 16 px):
+  * the item's name;
+  * the amount in the stack (dollars for cash) and its condition if it wears;
+  * its description.
+* The box stays on screen near the edges and hides while dragging. It replaces the browser's small, slow tooltip.
+
 ## Traders buy anything you carry
 * Every trader buys every item except cash, not only what is on its list. The sell list shows whatever you carry.
 * Price:
