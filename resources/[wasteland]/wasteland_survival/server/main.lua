@@ -71,6 +71,8 @@ local function sendStats(src, cid)
         name = name,
         hunger = s.hunger, thirst = s.thirst, infection = s.infection, bleeding = s.bleeding,
         temperature = s.temperature, treatment = s.treatment > 0, dead = s.dead,
+        bladder = (M.config.toilet and M.config.toilet.enabled) and s.bladder or nil,
+        bowel = (M.config.toilet and M.config.toilet.enabled) and s.bowel or nil,
         ambient = e.ambient,
         cures = curesList(),
         limits = { hypothermia = M.config.temperature.hypothermia, hyperthermia = M.config.temperature.hyperthermia,
@@ -184,6 +186,11 @@ local function useConsumable(src, stack)
     if not effect then return false, 'Nothing happens.' end
     if not Model.useful(s, effect) then return false, 'You do not need that right now.' end
     local heal = Model.consume(s, effect)
+    local t = M.config.toilet
+    if t and t.enabled then
+        s.bladder = Model.clamp((s.bladder or 0) + math.max(0, effect.thirst or 0) * t.drinkToBladder, 0, 100)
+        s.bowel = Model.clamp((s.bowel or 0) + math.max(0, effect.hunger or 0) * t.foodToBowel, 0, 100)
+    end
     if heal > 0 then TriggerClientEvent('wasteland:survival:client:heal', src, heal) end
     TriggerClientEvent('wasteland:survival:client:consumed', src, effect.animation or 'eat', effect.prop)
     players():SetCharacterData(cid, DATA_KEY, s)
@@ -454,6 +461,11 @@ M = Wasteland.DefineModule({
             hunger = { type = 'table', fields = { drainPerHour = num(50, 0, 1000), starvingDamagePerMinute = num(2, 0, 200) } },
             thirst = { type = 'table', fields = { drainPerHour = num(66.7, 0, 1000), dehydratedDamagePerMinute = num(3, 0, 200),
                 hotMultiplier = num(1.5, 1, 10) } },
+            toilet = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = true },
+                bladderPerHour = num(50, 0, 1000), bowelPerHour = num(25, 0, 1000),
+                drinkToBladder = num(0.4, 0, 5), foodToBowel = num(0.3, 0, 5), minToGo = num(20, 0, 100),
+            } },
             bleeding = { type = 'table', fields = {
                 enabled = { type = 'boolean', default = true }, minDamage = num(10, 0, 200),
                 chancePer10Damage = num(0.25, 0, 1), heavyDamage = num(40, 1, 400),
@@ -565,6 +577,27 @@ M.netEvent('wasteland:survival:server:environment', {
     rateLimit = { burst = 3, perSecond = 0.5 },
 }, function(src, ambient, wet)
     env[src] = { ambient = ambient, wet = wet }
+end)
+
+-- /pee and /poop: empty the meter, everyone nearby sees the animation.
+M.netEvent('wasteland:survival:server:relieve', {
+    args = { { type = 'string', required = true, pattern = '^%a+$', maxLength = 8 } },
+    rateLimit = { burst = 2, perSecond = 0.2 },
+}, function(src, kind)
+    local t = M.config.toilet
+    if not (t and t.enabled) or (kind ~= 'pee' and kind ~= 'poop') then return end
+    local cid = characterOf(src)
+    local s = cid and states[cid]
+    if not s or s.dead then return end
+    local field = kind == 'pee' and 'bladder' or 'bowel'
+    if (s[field] or 0) < t.minToGo then
+        notice(src, kind == 'pee' and 'You do not need to pee right now.' or 'You do not need to go right now.')
+        return
+    end
+    s[field] = 0
+    players():SetCharacterData(cid, DATA_KEY, s)
+    sendStats(src, cid)
+    TriggerClientEvent('wasteland:survival:client:relieve', -1, src, kind)
 end)
 
 M.netEvent('wasteland:survival:server:request', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)

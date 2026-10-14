@@ -19,6 +19,16 @@ return {
     thirst = { drainPerHour = 66.7, dehydratedDamagePerMinute = 3,
         hotMultiplier = 1.5 },   -- thirst drains faster while overheated
 
+    -- Needing the toilet (0 = empty, 100 = you really have to go). /pee and
+    -- /poop empty them (with an animation); drinking fills the bladder and
+    -- eating the bowels a bit faster. minToGo: below this you do not need to.
+    toilet = {
+        enabled = true,
+        bladderPerHour = 50, bowelPerHour = 25,
+        drinkToBladder = 0.4, foodToBowel = 0.3, -- share of thirst / hunger restored
+        minToGo = 20,
+    },
+
     bleeding = {
         enabled = true,
         minDamage = 10,           -- hits below this never cause bleeding

@@ -27,6 +27,7 @@ function Model.fresh(cfg)
     return {
         hunger = cfg.start.hunger, thirst = cfg.start.thirst, infection = 0, treatment = 0,
         bleeding = 0, temperature = cfg.temperature.normal, dead = false,
+        bladder = 0, bowel = 0,
     }
 end
 
@@ -58,6 +59,11 @@ function Model.tick(state, dt, cfg, env)
         thirstRate = thirstRate * cfg.thirst.hotMultiplier
     end
     state.thirst = clamp(state.thirst - thirstRate * hours, 0, 100)
+    local t = cfg.toilet
+    if t and t.enabled then
+        state.bladder = clamp((state.bladder or 0) + t.bladderPerHour * hours, 0, 100)
+        state.bowel = clamp((state.bowel or 0) + t.bowelPerHour * hours, 0, 100)
+    end
     if state.hunger <= 0 then
         damage = damage + cfg.hunger.starvingDamagePerMinute * minutes
         reasons.starving = true

@@ -152,8 +152,14 @@ end, false)
 -- Server events
 -------------------------------------------------------------------------------
 
+local toldFull = {}
 RegisterNetEvent('wasteland:survival:client:stats', function(s)
     if type(s) ~= 'table' then return end
+    -- a reminder once when a meter is full
+    for field, msg in pairs({ bladder = 'You really need to pee. (/pee)', bowel = 'You really need to poop. (/poop)' }) do
+        if (s[field] or 0) >= 100 and not toldFull[field] then toldFull[field] = true; notice(msg)
+        elseif (s[field] or 0) < 90 then toldFull[field] = nil end
+    end
     stats = s
     ensureHud()
 end)
@@ -237,6 +243,91 @@ RegisterNetEvent('wasteland:survival:client:dead', function(info)
         return
     end
     exports.wasteland_ui:Open(DEATH, { script = 'html/death.js', data = { respawnSeconds = (info and info.respawnSeconds) or 0 } })
+end)
+
+-------------------------------------------------------------------------------
+-- Toilet: /pee and /poop
+-------------------------------------------------------------------------------
+
+local relieving = false
+RegisterCommand('pee', function()
+    if relieving or IsPedInAnyVehicle(PlayerPedId(), false) then return end
+    TriggerServerEvent('wasteland:survival:server:relieve', 'pee')
+end, false)
+RegisterCommand('poop', function()
+    if relieving or IsPedInAnyVehicle(PlayerPedId(), false) then return end
+    TriggerServerEvent('wasteland:survival:server:relieve', 'poop')
+end, false)
+
+local function loadDict(d)
+    RequestAnimDict(d)
+    local until_ = GetGameTimer() + 3000
+    while not HasAnimDictLoaded(d) and GetGameTimer() < until_ do Citizen.Wait(0) end
+    return HasAnimDictLoaded(d)
+end
+
+local function loadPtfx(asset)
+    RequestNamedPtfxAsset(asset)
+    local until_ = GetGameTimer() + 3000
+    while not HasNamedPtfxAssetLoaded(asset) and GetGameTimer() < until_ do Citizen.Wait(0) end
+    return HasNamedPtfxAssetLoaded(asset)
+end
+
+-- Every client near the player shows the particles; the player's own client
+-- plays the animation (the game syncs it to the others).
+RegisterNetEvent('wasteland:survival:client:relieve', function(serverId, kind)
+    local player = GetPlayerFromServerId(serverId)
+    if player == -1 then return end
+    local ped = GetPlayerPed(player)
+    if not DoesEntityExist(ped) or #(GetEntityCoords(ped) - GetEntityCoords(PlayerPedId())) > 60.0 then return end
+    local mine = serverId == GetPlayerServerId(PlayerId())
+    local male = GetEntityModel(ped) == GetHashKey('mp_m_freemode_01')
+    local seconds = kind == 'pee' and 9 or 12
+    Citizen.CreateThread(function()
+        if mine then
+            relieving = true
+            local dict, name = 'missfbi3ig_0', 'shit_loop_trev'      -- squat
+            if kind == 'pee' and male then dict, name = 'misscarsteal2peeing', 'peeing_loop' end
+            if loadDict(dict) then
+                ClearPedTasks(ped)
+                TaskPlayAnim(ped, dict, name, 8.0, -8.0, seconds * 1000, 1, 0, false, false, false)
+                RemoveAnimDict(dict)
+            end
+        end
+        Citizen.Wait(kind == 'pee' and 1200 or 3000)
+        local fx
+        if loadPtfx('scr_amb_chop') then
+            UseParticleFxAssetNextCall('scr_amb_chop')
+            if kind == 'pee' then
+                fx = StartParticleFxLoopedOnEntityBone('ent_anim_dog_peeing', ped, 0.0, male and 0.2 or 0.0, -0.2, -140.0, 0.0, 0.0,
+                    GetPedBoneIndex(ped, 11816), male and 2.0 or 1.2, false, false, false)
+            else
+                fx = StartParticleFxLoopedOnEntityBone('ent_anim_dog_poo', ped, 0.0, -0.1, -0.3, 0.0, 0.0, 20.0,
+                    GetPedBoneIndex(ped, 11816), 2.0, false, false, false)
+            end
+        end
+        Citizen.Wait(kind == 'pee' and 6500 or 5000)
+        if fx then StopParticleFxLooped(fx, false) end
+        if kind == 'poop' and mine then
+            -- leave a pile behind (gone after a minute)
+            local hash = GetHashKey('prop_big_shit_02')
+            RequestModel(hash)
+            local until_ = GetGameTimer() + 3000
+            while not HasModelLoaded(hash) and GetGameTimer() < until_ do Citizen.Wait(0) end
+            if HasModelLoaded(hash) then
+                local at = GetOffsetFromEntityInWorldCoords(ped, 0.0, -0.4, 0.0)
+                local pile = CreateObject(hash, at.x, at.y, at.z, true, true, false)
+                PlaceObjectOnGroundProperly(pile)
+                SetModelAsNoLongerNeeded(hash)
+                SetTimeout(60000, function() if DoesEntityExist(pile) then DeleteEntity(pile) end end)
+            end
+        end
+        if mine then
+            Citizen.Wait(kind == 'pee' and 500 or 3000)
+            ClearPedTasks(ped)
+            relieving = false
+        end
+    end)
 end)
 
 RegisterCommand('respawn', function() TriggerServerEvent('wasteland:survival:server:respawn') end, false)

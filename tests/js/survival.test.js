@@ -86,3 +86,11 @@ test('armor plate icon only while a plate is worn', () => {
     const a = hud.icons(Object.assign({ armor: 30 }, base)).find((i) => i.key === 'armor');
     assert.deepStrictEqual([a.fill, a.level], [30, 'low']);
 });
+
+test('pee and poop icons fill up and warn when nearly full', () => {
+    const list = hud.icons({ mode: 'compact', health: 90, stats: stats({ bladder: 90, bowel: 30 }) });
+    const pee = list.find((i) => i.key === 'pee'), poop = list.find((i) => i.key === 'poop');
+    assert.strictEqual(pee.fill, 90); assert.strictEqual(pee.level, 'critical');
+    assert.strictEqual(poop.level, 'ok');
+    assert.deepStrictEqual(hud.icons({ mode: 'immersive', health: 90, stats: stats({ bladder: 70, bowel: 10 }) }).map((i) => i.key), ['pee']);
+});

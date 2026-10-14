@@ -56,6 +56,10 @@
             all.push({ key: 'temp', label: 'Temp.', fill: clamp((t - TEMP_MIN) / (TEMP_MAX - TEMP_MIN) * 100), level: tempLevel(t),
                 hot: t >= 38.5 });
         }
+        // toilet: these fill up (full = you have to go)
+        const need = (v) => (v >= 85 ? 'critical' : v >= 65 ? 'low' : 'ok');
+        if (typeof s.bladder === 'number') all.push({ key: 'pee', label: 'Pee', fill: clamp(s.bladder), level: need(s.bladder) });
+        if (typeof s.bowel === 'number') all.push({ key: 'poop', label: 'Poop', fill: clamp(s.bowel), level: need(s.bowel) });
         if (data.mode === 'immersive') return all.filter((i) => i.level !== 'ok');
         return all;
     }
@@ -168,6 +172,17 @@
             outline: 'M20 3 L35 9 V22 C35 33 28 41 20 45 C12 41 5 33 5 22 V9 Z',
             inner: 'M20 7 L31 11.5 V22 C31 30.5 26 37 20 40.5 C14 37 9 30.5 9 22 V11.5 Z',
         },
+        // a droplet with a "P"
+        pee: {
+            outline: 'M20 3 C20 3 6 20 6 30 A14 14 0 0 0 34 30 C34 20 20 3 20 3 Z',
+            inner: 'M20 9 C20 9 10 22 10 30 A10 10 0 0 0 30 30 C30 22 20 9 20 9 Z',
+            detail: 'M16.5 38 V24 H21.5 A3.5 3.5 0 0 1 21.5 31 H16.5',
+        },
+        // a swirl pile
+        poop: {
+            outline: 'M20 4 C25 6 25 11 22 13 C29 13 31 18 28 21 C35 22 37 28 34 32 C39 34 39 44 32 45 H8 C1 44 1 34 6 32 C3 28 5 22 12 21 C9 18 11 13 18 13 C15 10 16 6 20 4 Z',
+            inner: 'M20 8 C22 10 21 13 18 16 C25 16 28 18 26 22 C32 23 34 28 31 32 C36 34 36 41 31 42 H9 C4 41 4 34 9 32 C6 28 8 23 14 22 C12 18 14 16 18 16 Z',
+        },
         temp: {
             outline: 'M15 8 A5 5 0 0 1 25 8 V28 A10 10 0 1 1 15 28 Z',
             inner: 'M18 9 A2 2 0 0 1 22 9 V30.5 A6.5 6.5 0 1 1 18 30.5 Z',
@@ -202,7 +217,7 @@
     let last = null;    // last data from the game
 
     const MODES = [['compact', 'Always'], ['immersive', 'When it matters'], ['off', 'Off']];
-    const DEMO = { hunger: 80, thirst: 60, temperature: 37, infection: 0, bleeding: 0 };
+    const DEMO = { hunger: 80, thirst: 60, temperature: 37, infection: 0, bleeding: 0, bladder: 40, bowel: 20 };
 
     function view() { return { w: window.innerWidth, h: window.innerHeight }; }
     function box() { const r = root.getBoundingClientRect(); return { w: r.width, h: r.height }; }
