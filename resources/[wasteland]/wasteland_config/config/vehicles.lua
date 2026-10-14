@@ -20,7 +20,7 @@ return {
 
     tankLitres = 50,
     jerryCanLitres = 20,
-    fuel = { idlePerMinute = 0.06, per100km = 14 },
+    fuel = { idlePerMinute = 0.1, per100km = 40 },   -- litres; a 50 L tank lasts ~125 km of driving
     repair = { engine = 400, body = 400 },   -- health a toolkit restores (of 1000)
 
     seconds = { battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, removeLock = 6, siphon = 10, fillCan = 8 },

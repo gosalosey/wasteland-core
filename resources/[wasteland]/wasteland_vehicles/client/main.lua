@@ -362,14 +362,19 @@ Citizen.CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
-    local fuel, fuelVeh, lastReport, told = nil, nil, 0, nil
+    local fuel, fuelVeh, lastReport, told, savedSeen = nil, nil, 0, nil, nil
     while true do
         local ped = PlayerPedId()
         local veh = GetVehiclePedIsIn(ped, false)
         local s = veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped and stateOf(veh) or nil
         if s and cfg then
-            -- Take the saved level when it went up (refuelled) or clearly down (siphoned).
-            if fuelVeh ~= veh or (s.fuel or 0) > (fuel or 0) + 0.01 or (s.fuel or 0) < (fuel or 0) - 0.5 then fuel, fuelVeh = s.fuel or 0, veh end
+            -- Take the saved level only when the server changed it (refuelled,
+            -- siphoned, or our own report coming back), not every frame: the
+            -- saved level is always a little behind what we have burned.
+            if fuelVeh ~= veh or (s.fuel or 0) ~= savedSeen then
+                if fuelVeh ~= veh or math.abs((s.fuel or 0) - (fuel or 0)) > 0.2 then fuel = s.fuel or 0 end
+                fuelVeh, savedSeen = veh, s.fuel or 0
+            end
             local can, why = Rules.canRun({ fuel = fuel, engine = GetVehicleEngineHealth(veh), parts = s.parts })
             driving = { veh = veh, fuel = fuel, why = (not can) and why or nil }
             if not can then
@@ -382,7 +387,7 @@ Citizen.CreateThread(function()
                 if GetIsVehicleEngineRunning(veh) then
                     fuel = math.max(0, fuel - Rules.fuelUsed(cfg.fuel, GetEntitySpeed(veh) * 3.6, GetFrameTime()))
                     SetVehicleFuelLevel(veh, fuel / (s.tank or 50) * 100.0)
-                    if GetGameTimer() - lastReport > 5000 and fuel < (s.fuel or 0) - 0.05 then
+                    if GetGameTimer() - lastReport > 5000 and fuel < (s.fuel or 0) - 0.01 then
                         lastReport = GetGameTimer()
                         TriggerServerEvent('wasteland:vehicles:server:fuel', NetworkGetNetworkIdFromEntity(veh), fuel + 0.0)
                     end
@@ -394,7 +399,7 @@ Citizen.CreateThread(function()
                 -- left the vehicle: report the last bit of fuel used
                 TriggerServerEvent('wasteland:vehicles:server:fuel', NetworkGetNetworkIdFromEntity(fuelVeh), fuel + 0.0)
             end
-            fuel, fuelVeh, told, driving = nil, nil, nil, nil
+            fuel, fuelVeh, told, driving, savedSeen = nil, nil, nil, nil, nil
             Citizen.Wait(500)
         end
     end
