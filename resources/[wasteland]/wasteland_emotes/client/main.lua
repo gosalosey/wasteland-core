@@ -145,7 +145,8 @@ end)
 
 RegisterCommand('handsup', function()
     local ped = PlayerPedId()
-    if handsUp then
+    -- down if they are up (also when only the animation is still playing)
+    if handsUp or IsEntityPlayingAnim(ped, HANDS.dict, HANDS.anim, 3) then
         StopAnimTask(ped, HANDS.dict, HANDS.anim, 2.0)
         handsUp = false
         return
@@ -165,7 +166,13 @@ RegisterCommand('handsup', function()
             DisablePlayerFiring(PlayerId(), true)
             DisableControlAction(0, 24, true); DisableControlAction(0, 25, true)
             DisableControlAction(0, 140, true); DisableControlAction(0, 141, true); DisableControlAction(0, 142, true)
-            if not canEmote(me) then handsUp = false; return end
+            -- dead, in a vehicle, swimming or ragdolled: hands come down
+            -- (a short stumble or step does not count)
+            if IsEntityDead(me) or IsPedInAnyVehicle(me, true) or IsPedSwimming(me) or IsPedRagdoll(me) then
+                StopAnimTask(me, HANDS.dict, HANDS.anim, 2.0)
+                handsUp = false
+                return
+            end
             if not IsEntityPlayingAnim(me, HANDS.dict, HANDS.anim, 3) then
                 TaskPlayAnim(me, HANDS.dict, HANDS.anim, 3.0, 3.0, -1, 49, 0, false, false, false)
             end
