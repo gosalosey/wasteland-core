@@ -1,5 +1,10 @@
 # Changelog
 
+## Zombie sounds included; Chiliad camp; respawn at the safe zones (owner)
+* The zombie sound files are now part of Wasteland Core: `resources/[wasteland]/wasteland_zombiesounds` (Zombie Sound Pack, Free Version, by Catastic, plus a few extra clips). The recipe and the updater install them; `ensure wasteland_zombiesounds` is in the txAdmin server.cfg (the updater offers to add it). A server that had the folder outside `[wasteland]` should delete that copy.
+* New camp: Chiliad Mountain Camp (general trader, medic, gunsmith).
+* After dying you respawn at one of the safe zones: Sandy Shores, Paleto Bay, Pillbox, Chiliad.
+
 ## Survivor's guide (F2 or /guide)
 * Progress: 22 milestones that tick off by themselves as you play (search a container, eat, first kill, craft, treat a wound, trade, blueprint, campfire, hunt, cook, group, vehicle, 25 kills, a camp job, tool cupboard, supply drop, a player trade, skill level 5, two hours without dying, a world event, 250 kills, a maxed skill). Counted milestones show progress (7 / 25). A message and a sound when one is done.
 * "Try next": the next three unfinished milestones, each with a hint on how.

@@ -72,23 +72,9 @@ add_principal identifier.fivem:12345678 group.admin
 
 Without the pack the module still runs, but the pieces cannot be seen; the console says so when it starts.
 
-## Zombie sounds (optional)
+## Zombie sounds
 
-Zombies groan, grunt when they swing, cry out when hit and fall with a thud, if a sound pack is installed. The sound files are not part of Wasteland Core, because the free packs we know of do not allow passing the files on. To add sounds:
-
-1. Make a folder `resources/wasteland_zombiesounds` (outside `[wasteland]`, so updates leave it alone) with a `sounds` folder inside, and put your `.ogg` / `.mp3` files there.
-2. Give it an `fxmanifest.lua`:
-
-   ```lua
-   fx_version 'cerulean'
-   game 'gta5'
-   files { 'sounds/*.ogg', 'sounds/*.mp3' }
-   ```
-
-3. In `server.cfg`, `ensure wasteland_zombiesounds` before `ensure wasteland_zombies`.
-4. Which file plays for what (idle groans, chasing, attack, hurt, death, screamer calls) is listed in `wasteland_zombies/client/sounds.lua`. Change the lists in `zombies.lua` → `sounds.groups` to match your file names. Volume, range and how often they groan are also in `zombies.lua` → `sounds`.
-
-Without the pack, zombies are silent and nothing else changes.
+The sound files are in `resources/[wasteland]/wasteland_zombiesounds` (installed and updated with everything else; `ensure wasteland_zombiesounds` before `ensure wasteland_zombies`). Which file plays for what (idle groans, chasing, attack, hurt, death, screamer calls) is listed in `wasteland_zombies/client/sounds.lua`; volume, range and how often they groan are in `zombies.lua` → `sounds`. To use your own sounds, put them in its `sounds` folder and list them in `zombies.lua` → `sounds.groups`. Without the resource zombies are silent and nothing else changes.
 
 ## Keys for players
 

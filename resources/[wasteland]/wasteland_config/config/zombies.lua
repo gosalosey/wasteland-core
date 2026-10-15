@@ -79,9 +79,8 @@ return {
     adminCommand = 'zombies',      -- /zombies count | clear | spawn <n>
 
     -- Zombie sounds: groans, swings, being hurt, dying, screams. The sound
-    -- files are in their own resource (pack), kept on the server and not in
-    -- the public repository: resources/wasteland_zombiesounds (ensure it in
-    -- server.cfg). Without it zombies are silent as before.
+    -- files are in their own resource (pack = wasteland_zombiesounds; ensure
+    -- it before wasteland_zombies). Without it zombies are silent as before.
     -- Every setting and the file lists: wasteland_zombies/client/sounds.lua.
     sounds = {
         enabled = true,

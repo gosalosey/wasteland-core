@@ -144,6 +144,15 @@ return {
             },
         },
         {
+            id = 'Chiliad', label = 'Chiliad Mountain Camp', coords = { x = -1128.59, y = 4924.85, z = 219.44 }, radius = 100,
+            blip = { sprite = 40, color = 2 },
+            traders = {
+                { shop = 'general', model = 's_m_m_trucker_01', coords = { x = -1143.60, y = 4911.73, z = 220.97, heading = 301.05 } },
+                { shop = 'medic', model = 's_m_m_paramedic_01', coords = { x = -1113.40, y = 4904.04, z = 218.60, heading = 326.79 } },
+                { shop = 'gunsmith', model = 's_m_y_ammucity_01', coords = { x = -1111.35, y = 4937.19, z = 218.39, heading = 145.21 } },
+            },
+        },
+        {
             id = 'legion', label = 'Legion Square Camp', coords = { x = 307.21, y = -590.56, z = 43.29 }, radius = 60,
             blip = { sprite = 40, color = 2 },
             traders = {

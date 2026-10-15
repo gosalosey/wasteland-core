@@ -19,7 +19,7 @@ Full steps, a manual install and updating: [docs/INSTALL.md](docs/INSTALL.md).
 * Special infected: screamers call the horde, brutes are tough and hit hard, howlers call from far away, spitters attack from range, and hunters go after lone players. Boss types are included but off by default.
 * Horde behaviour: gunshots draw the nearest zombies, and repeated gunfire pulls them in from further away. Explosions and car crashes are loud too.
 * They break through wooden walls, doors and gates to reach players hiding behind them.
-* Zombie sounds (groans, attacks, pain, death), positioned around the player, from an optional sound pack.
+* Zombie sounds (groans, attacks, pain, death), positioned around the player.
 
 **Survival**
 * Hunger, thirst, bleeding, infection, body temperature and the need to pee or poop (`/pee`, `/poop`).
@@ -75,9 +75,7 @@ Chat commands: `/hud`, `/pee`, `/poop`, `/guide`, `/skills`.
 * FXServer with **OneSync** on (game build 3570 is set on purpose, see [docs/INSTALL.md](docs/INSTALL.md)).
 * **MySQL or MariaDB** with [oxmysql](https://github.com/overextended/oxmysql). Wasteland creates its own tables on first start.
 * [pma-voice](https://github.com/AvarianKnight/pma-voice) for voice chat. The recipe installs it.
-* Optional:
-  * the **sinor-buildingProps-v2** props pack for base building (licensed, not included);
-  * a zombie sound pack in `resources/wasteland_zombiesounds` (not included; see [docs/INSTALL.md](docs/INSTALL.md)).
+* Optional: the **sinor-buildingProps-v2** props pack for base building (licensed, not included).
 
 ## Configuration
 
@@ -97,6 +95,7 @@ resources/[wasteland]/
   wasteland_survival/     needs, health, death, HUD     wasteland_world: clock, weather, empty world
   wasteland_weapons/      weapons, ammo, durability
   wasteland_zombies/      population, AI, horde, sounds wasteland_zombiemodels: your own zombie models
+  wasteland_zombiesounds/ the zombie sound files
   wasteland_loot/         searchable containers         wasteland_supplydrops: supply drops (SDK example)
   wasteland_camps/        safe zones and traders        wasteland_quests: camp jobs
   wasteland_crafting/     crafting and blueprints       wasteland_hunting: animals, campfires, cooking
@@ -146,4 +145,4 @@ The pictures `cap`, `jeans`, `sunglasses`, `siphon_hose` (`tools/images`) and `m
 
 If you are an author of one of these pictures and want it credited differently or removed, please open an issue.
 
-**Other software** used by Wasteland Core and not included here: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) (database driver) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (voice chat, MIT licence, by AvarianKnight). Base building needs the **sinor-buildingProps-v2** props pack by sinorsystem, a licensed Cfx asset pack that you get and install yourself. The zombie sound player works with a sound pack you supply yourself; it is not included here.
+**Other software** used by Wasteland Core and not included here: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) (database driver) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (voice chat, MIT licence, by AvarianKnight). Base building needs the **sinor-buildingProps-v2** props pack by sinorsystem, a licensed Cfx asset pack that you get and install yourself. **Zombie sounds** (`wasteland_zombiesounds`) are from the free **Zombie Sound Pack** by Catastic, plus a few extra zombie clips. If you are the author of one of these sounds and want it credited differently or removed, please open an issue.

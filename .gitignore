@@ -9,5 +9,3 @@ backups/
 # written on servers (update notice)
 resources/*/wasteland_core/VERSION.txt
 
-# sound files (kept on the servers, not published)
-wasteland_zombiesounds/

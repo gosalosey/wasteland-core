@@ -73,11 +73,10 @@ return {
         stats = { hunger = 70, thirst = 70 }, -- after respawning (infection and bleeding reset)
         -- Random respawn points. z is corrected to the ground on arrival.
         points = {
-            { x = -275.0, y = 6635.0, z = 7.4, heading = 45.0 },     -- Paleto Bay beach
-            { x = 1308.0, y = 4241.0, z = 33.9, heading = 170.0 },   -- Alamo Sea shore
-            { x = 1200.0, y = 2650.0, z = 37.8, heading = 0.0 },     -- Harmony
-            { x = 2450.0, y = 4950.0, z = 45.0, heading = 0.0 },     -- Grapeseed
-            { x = -3190.0, y = 1100.0, z = 20.5, heading = 270.0 },  -- Chumash
+            { x = 1856.17, y = 3681.37, z = 34.27, heading = 213.11 },   -- Sandy safe zone
+            { x = -438.82, y = 6021.24, z = 31.49, heading = 313.63 },   -- Paleto safe zone
+            { x = 292.82, y = -607.50, z = 43.34, heading = 72.26 },     -- Pillbox safe zone
+            { x = -1128.59, y = 4924.85, z = 219.44, heading = 133.84 }, -- Chiliad safe zone
         },
     },
 

@@ -3,8 +3,8 @@
 -- zombies near its player (not only the game running a zombie), so all
 -- players hear the same zombie: groans (calm / chasing), the swing, being
 -- hurt, dying, a screamer's or howler's call. The files are in a separate
--- resource (`sounds.pack`, default wasteland_zombiesounds) kept on the server;
--- without it zombies are silent as before.
+-- resource (`sounds.pack`, default wasteland_zombiesounds); without it
+-- zombies are silent as before.
 
 local AI = WLZ.AI
 
