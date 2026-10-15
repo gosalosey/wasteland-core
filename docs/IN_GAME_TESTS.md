@@ -654,6 +654,6 @@ Tip: an admin overlay with zombie modes helps (`GetZombieMode`: idle, chase, sta
 | R44.2 | Search ten containers that have something | "Scavenging is now level 2!" with a sound; searches get a little faster |
 | R44.3 | Craft, harvest an animal, use a bandage, kill a zombie | Crafting, Hunting, Medicine, Combat XP go up (F9) |
 | R44.4 | Sprint for a minute | Fitness XP goes up (reported once a minute) |
-| R44.5 | `skills` admin: `AddXP` a skill to level 10 (server console export) | Full bonus shown; e.g. Hunting: 50 % more meat |
+| R44.5 | Set `xpMultiplier = 100` in skills.lua, restart skills, harvest a couple of animals | Hunting climbs fast; at level 10 the full bonus (50 % more meat). Put it back to 1 afterwards |
 | R44.6 | Die | "Dying cost you some skill progress"; no level lost |
 | R44.7 | Reconnect / restart the server | Skills are the same |
