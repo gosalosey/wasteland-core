@@ -122,6 +122,15 @@ end)
 
 local MAX_BATCH = 50
 
+-- Skill bonus (wasteland_skills; 0 when it is not running).
+local function skillBonus(src, skill, key)
+    if GetResourceState('wasteland_skills') ~= 'started' then return 0 end
+    local ok, v = pcall(function() return exports.wasteland_skills:GetBonus(src, skill, key) end)
+    return ok and tonumber(v) or 0
+end
+
+local function craftSeconds(src, r) return r.seconds * (1 - skillBonus(src, 'crafting', 'craftTime')) end
+
 -- count: how many to make one after another (each one timed).
 local function start(src, name, count)
     local r = M.config.recipes[name]
@@ -141,8 +150,9 @@ local function start(src, name, count)
         return
     end
     count = math.max(1, math.min(MAX_BATCH, math.floor(tonumber(count) or 1)))
-    crafting[src] = { recipe = name, startedAt = now(), total = count, made = 0 }
-    TriggerClientEvent('wasteland:crafting:client:progress', src, { seconds = r.seconds,
+    local seconds = craftSeconds(src, r)
+    crafting[src] = { recipe = name, startedAt = now(), total = count, made = 0, seconds = seconds }
+    TriggerClientEvent('wasteland:crafting:client:progress', src, { seconds = seconds,
         label = 'Making ' .. r.label:lower() .. (count > 1 and string.format(' (1 of %d)', count) or '') })
 end
 
@@ -151,7 +161,7 @@ local function finish(src)
     crafting[src] = nil
     if not c then return end
     local r = M.config.recipes[c.recipe]
-    if now() - c.startedAt < r.seconds * 1000 - 300 then
+    if now() - c.startedAt < (c.seconds or r.seconds) * 1000 - 300 then
         M.log:warn('player %d finished crafting "%s" too early', src, c.recipe)
         return
     end
@@ -179,6 +189,13 @@ local function finish(src)
         return
     end
     made = made + 1
+    -- a skilled crafter sometimes saves a material
+    if #taken > 0 and math.random() < skillBonus(src, 'crafting', 'saveChance') then
+        local back = taken[math.random(1, #taken)]
+        if inv():AddItem(src, back.name, 1) then
+            TriggerClientEvent('wasteland:crafting:client:notice', src, 'You saved 1 x ' .. label(back.name) .. '.')
+        end
+    end
     M.log:info('player %d crafted %d x %s', src, r.result.count, r.result.name)
     TriggerEvent('wasteland:crafting:crafted', src, c.recipe)
     if made < total then
@@ -187,9 +204,10 @@ local function finish(src)
             send(src, string.format('Made %d of %d x %s: out of materials.', made, total, label(r.result.name)), true)
             return
         end
-        crafting[src] = { recipe = c.recipe, startedAt = now(), total = total, made = made }
+        local seconds = craftSeconds(src, r)
+        crafting[src] = { recipe = c.recipe, startedAt = now(), total = total, made = made, seconds = seconds }
         TriggerClientEvent('wasteland:crafting:client:notice', src, string.format('Made %d of %d.', made, total))
-        TriggerClientEvent('wasteland:crafting:client:progress', src, { seconds = r.seconds,
+        TriggerClientEvent('wasteland:crafting:client:progress', src, { seconds = seconds,
             label = string.format('Making %s (%d of %d)', r.label:lower(), made + 1, total) })
         return
     end

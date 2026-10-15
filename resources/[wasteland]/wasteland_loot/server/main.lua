@@ -57,6 +57,13 @@ end
 -- Searching
 -------------------------------------------------------------------------------
 
+-- Skill bonus (wasteland_skills; 0 when it is not running).
+local function skillBonus(src, skill, key)
+    if GetResourceState('wasteland_skills') ~= 'started' then return 0 end
+    local ok, v = pcall(function() return exports.wasteland_skills:GetBonus(src, skill, key) end)
+    return ok and tonumber(v) or 0
+end
+
 -- Thread only (loading a stash may read the database).
 local function begin(src, name, typeName, coords, label)
     local busy = searching[src]
@@ -72,8 +79,9 @@ local function begin(src, name, typeName, coords, label)
             or string.format('Already searched. Nothing left (check back in about %d min).', left))
         return
     end
-    searching[src] = { name = name, type = typeName, startedAt = now(), coords = coords, id = id, label = label }
-    TriggerClientEvent('wasteland:loot:client:search', src, { seconds = c.searchSeconds,
+    local seconds = c.searchSeconds * (1 - skillBonus(src, 'scavenging', 'searchTime'))
+    searching[src] = { name = name, type = typeName, startedAt = now(), coords = coords, id = id, label = label, seconds = seconds }
+    TriggerClientEvent('wasteland:loot:client:search', src, { seconds = seconds,
         label = 'Searching ' .. (label or c.label:lower()), anim = c.anim })
 end
 
@@ -82,7 +90,7 @@ local function finish(src)
     searching[src] = nil
     if not s then return end
     local c = M.config.containers[s.type]
-    if now() - s.startedAt < c.searchSeconds * 1000 - 300 then
+    if now() - s.startedAt < (s.seconds or c.searchSeconds) * 1000 - 300 then
         M.log:warn('player %d finished searching %s too early', src, s.name)
         return
     end
@@ -92,9 +100,13 @@ local function finish(src)
     local empty = isEmpty(s.id)
     if Rules.needsFill(state[s.name], empty, now(), c.refillMinutes) then
         state[s.name] = { filledAt = now() }
-        for _, item in ipairs(Rules.roll(M.config.tables[c.table], math.random, math.random)) do
-            local ok, err = inv():AddItem(s.id, item.name, item.count)
-            if not ok then M.log:warn('loot %s: %s x %d: %s', s.name, item.name, item.count, tostring(err)) end
+        local rolls = 1
+        if math.random() < skillBonus(src, 'scavenging', 'extraLoot') then rolls = 2 end -- a good scavenger finds more
+        for _ = 1, rolls do
+            for _, item in ipairs(Rules.roll(M.config.tables[c.table], math.random, math.random)) do
+                local ok, err = inv():AddItem(s.id, item.name, item.count)
+                if not ok then M.log:warn('loot %s: %s x %d: %s', s.name, item.name, item.count, tostring(err)) end
+            end
         end
         empty = isEmpty(s.id)
     end

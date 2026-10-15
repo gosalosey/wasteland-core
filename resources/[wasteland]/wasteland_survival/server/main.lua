@@ -186,6 +186,16 @@ local function useConsumable(src, stack)
     if not effect then return false, 'Nothing happens.' end
     if not Model.useful(s, effect) then return false, 'You do not need that right now.' end
     local heal = Model.consume(s, effect)
+    -- medicine: treating wounds (healing, bleeding, infection) is a skill
+    local medical = (effect.health or 0) > 0 or (effect.stopBleeding or 0) > 0 or (effect.infection or 0) < 0
+        or (effect.treatmentMinutes or 0) > 0
+    if medical then
+        if heal > 0 and GetResourceState('wasteland_skills') == 'started' then
+            local ok, b = pcall(function() return exports.wasteland_skills:GetBonus(src, 'medicine', 'heal') end)
+            if ok and tonumber(b) then heal = math.floor(heal * (1 + b) + 0.5) end
+        end
+        TriggerEvent('wasteland:survival:treated', src, stack.name)
+    end
     local t = M.config.toilet
     if t and t.enabled then
         s.bladder = Model.clamp((s.bladder or 0) + math.max(0, effect.thirst or 0) * t.drinkToBladder, 0, 100)

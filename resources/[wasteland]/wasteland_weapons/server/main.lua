@@ -144,7 +144,13 @@ local function used(src, count, coords)
         end
     end
     if n > 0 and max > 0 then
-        local after = math.max(0, durability - n * w.wear)
+        -- a skilled fighter wears weapons slower (wasteland_skills)
+        local care = 0
+        if GetResourceState('wasteland_skills') == 'started' then
+            local ok, b = pcall(function() return exports.wasteland_skills:GetBonus(src, 'combat', 'weaponWear') end)
+            care = ok and tonumber(b) or 0
+        end
+        local after = math.max(0, durability - n * w.wear * (1 - care))
         inv():SetItemMetadata(src, h.uid, { durability = after })
         if after == 0 then notice(src, string.format('Your %s broke. Repair it with a repair kit.', d.label)) end
     end

@@ -64,6 +64,10 @@ return {
         -- Hunting: animals, harvesting with a knife, campfires, cooking.
         hunting    = true,
 
+        -- Skills: level up by doing (scavenging, crafting, medicine, hunting,
+        -- fitness, combat). /skills or F9.
+        skills     = true,
+
         -- Base building: tool cupboards, snapping walls, doors, storage,
         -- upkeep, raids. Needs the sinor-buildingProps-v2 props pack.
         basebuilding = true,

@@ -645,3 +645,15 @@ Tip: an admin overlay with zombie modes helps (`GetZombieMode`: idle, chase, sta
 | R43.18 | Camps and tool cupboard zones | Zombies still stop at safe zones exactly as before |
 | R43.19 | Build a wooden wall or door outside the cupboard's 12 m zone; stand behind it with zombies chasing you | They stop at it and hit it (its health goes down 4 a hit), you get "Zombies are attacking your base!"; when it breaks they come through |
 | R43.20 | The same with a metal door / an open door | Metal: 1 a hit (slow). Open door: they walk through, no hits |
+
+## R44 Skills (/skills, F9)
+
+| # | Do | Expect |
+|---|---|---|
+| R44.1 | F9 | The skills screen: six skills at level 1, "No bonus yet" |
+| R44.2 | Search ten containers that have something | "Scavenging is now level 2!" with a sound; searches get a little faster |
+| R44.3 | Craft, harvest an animal, use a bandage, kill a zombie | Crafting, Hunting, Medicine, Combat XP go up (F9) |
+| R44.4 | Sprint for a minute | Fitness XP goes up (reported once a minute) |
+| R44.5 | `skills` admin: `AddXP` a skill to level 10 (server console export) | Full bonus shown; e.g. Hunting: 50 % more meat |
+| R44.6 | Die | "Dying cost you some skill progress"; no level lost |
+| R44.7 | Reconnect / restart the server | Skills are the same |

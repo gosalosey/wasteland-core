@@ -197,6 +197,14 @@ local function harvestFinish(src)
     Entity(ent).state:set('wlHarvested', true, true)
     local entry = animalEntry(ent)
     local meat, pelt = Rules.yield(entry, M.config.otherAnimalMeat, math.random())
+    -- a skilled hunter gets more out of it (wasteland_skills)
+    if GetResourceState('wasteland_skills') == 'started' then
+        local ok, b = pcall(function() return exports.wasteland_skills:GetBonus(src, 'hunting', 'extraMeat') end)
+        if ok and tonumber(b) and b > 0 then
+            local want = meat * b
+            meat = meat + math.floor(want) + (math.random() < want - math.floor(want) and 1 or 0)
+        end
+    end
     give(src, M.config.harvest.meatItem, meat)
     if pelt > 0 then give(src, M.config.harvest.peltItem, pelt) end
     notice(src, string.format('You got %d x %s%s.', meat, label(M.config.harvest.meatItem),

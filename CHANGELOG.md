@@ -1,5 +1,13 @@
 # Changelog
 
+## Skills: level up by doing (/skills or F9)
+* Six skills, levels 1 - 10, saved with the character: Scavenging (searching), Crafting, Medicine (bandages, medkits, antibiotics), Hunting (harvesting), Fitness (sprinting), Combat (zombie kills).
+* Each level makes you a little better; level 1 has no bonus, level 10 the full one: searches 30 % faster and a 25 % chance of an extra find; crafting 30 % faster and a 20 % chance to get a material back; healing items heal 50 % more; 50 % more meat; stamina lasts longer; 20 % more melee damage and weapons wear 30 % slower.
+* A level-up message and sound. The skills screen shows every skill, its XP bar and what it gives you now.
+* Dying costs 10 % of the progress into each skill's current level - never a level (skills.lua `deathPenalty`: none / some / all).
+* skills.lua: XP per action, the bonuses, the level curve, an XP multiplier (double XP weekends). Exports for other scripts: GetBonus, GetLevel, GetSkills, AddXP.
+* Loot, crafting, hunting, survival and weapons ask for the bonus only when wasteland_skills is running; without it everything works as before.
+
 ## Zombie sounds
 * Zombies groan (now and then when calm, more often when coming at you), make a sound when they swing, when they are hit (with a thud) and when they fall dead; screamers and howlers call (heard up to 90 m). Sleepers are quiet.
 * Every player hears the zombies near them, louder when closer and from the side they are on.
