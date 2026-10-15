@@ -12,7 +12,7 @@ WLZ.ServerAI = SAI
 
 local cooldowns, gunHistory = {}, {}
 local lastPrune = 0
-local shouts, spits = {}, {}   -- zombie handle -> next allowed time
+local shouts, spits, pieceHits = {}, {}, {}   -- zombie handle -> next allowed / last time
 
 local function Srv() return WLZ.Server end
 local function M() return Srv() and Srv().module() end
@@ -27,7 +27,7 @@ function SAI.enabled()
 end
 
 function SAI.init()
-    cooldowns, gunHistory, shouts, spits = {}, {}, {}, {}
+    cooldowns, gunHistory, shouts, spits, pieceHits = {}, {}, {}, {}, {}
     local m = M()
     if not m then return end
     local warnings = {}
@@ -171,7 +171,6 @@ end
 
 -- A zombie hit a wall / door / gate (its game says so): it runs the zombie,
 -- not too often; base building checks the piece and the distance.
-local pieceHits = {}
 local function hitPiece(src, netId, pieceId)
     if not SAI.enabled() or not settings().barricades.enabled then return end
     if GetResourceState('wasteland_basebuilding') ~= 'started' then return end
