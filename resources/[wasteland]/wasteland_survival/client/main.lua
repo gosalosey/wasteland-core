@@ -278,7 +278,7 @@ end
 -- The pee stream: from the hips, placed by survival.lua toilet.pee
 -- (male / female: offset, rotation, scale).
 local STREAM_DEFAULT = {
-    male = { offset = { 0.05, 0.2, -0.25 }, rotation = { -140.0, 0.0, 0.0 }, scale = 2.0 },
+    male = { offset = { 0.05, 0.25, -0.35 }, rotation = { -140.0, 0.0, 0.0 }, scale = 2.0 },
     female = { offset = { 0.0, 0.0, -0.2 }, rotation = { -140.0, 0.0, 0.0 }, scale = 1.2 },
 }
 local function peeStream(ped, male, stream)

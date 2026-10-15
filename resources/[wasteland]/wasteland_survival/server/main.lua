@@ -484,7 +484,7 @@ M = Wasteland.DefineModule({
                 enabled = { type = 'boolean', default = true },
                 bladderPerHour = num(50, 0, 1000), bowelPerHour = num(25, 0, 1000),
                 drinkToBladder = num(0.4, 0, 5), foodToBowel = num(0.3, 0, 5), minToGo = num(20, 0, 100),
-                pee = { type = 'table', fields = { male = STREAM({ 0.05, 0.2, -0.25 }, 2.0), female = STREAM({ 0.0, 0.0, -0.2 }, 1.2) } },
+                pee = { type = 'table', fields = { male = STREAM({ 0.05, 0.25, -0.35 }, 2.0), female = STREAM({ 0.0, 0.0, -0.2 }, 1.2) } },
             } },
             bleeding = { type = 'table', fields = {
                 enabled = { type = 'boolean', default = true }, minDamage = num(10, 0, 200),
