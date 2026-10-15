@@ -201,3 +201,64 @@ describe('zombie ai: switched off', function()
         expect(list[#list].args[1].ai.enabled).toBe(false)
     end)
 end)
+
+describe('zombie ai: barricades (base building)', function()
+    local server = newServer({ config = {
+        ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 1000, healthCheckSeconds = 2 }',
+        ['players.lua'] = 'return { restoreDelayMs = 200 }',
+        ['zombies.lua'] = 'return {' .. BASE .. ' ai = { specials = { enabled = false } } }',
+    } })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival',
+        'wasteland_weapons', 'wasteland_zombies', 'wasteland_groups', 'wasteland_basebuilding' })
+    local id = player(server, 'walls')
+    local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+    local function act(what, ...) server:clientEvent(id, 'wasteland:basebuilding:server:' .. what, ...); server:advance(200) end
+    I('ClearInventory', id); server:advance(100)
+    I('AddItem', id, 'wood_planks', 40); I('AddItem', id, 'scrap_metal', 6); server:advance(100)
+    act('place', 'toolcupboard', 1.0, 1.0, 30.0, 0.0)
+    server.players[id].coords = { x = 24.0, y = 1.0, z = 30.0 }
+    act('place', 'door', 30.0, 1.0, 30.0, 0.0) -- outside the 12 m zombie-free zone
+    local added = server:clientEventsFor(id, 'wasteland:basebuilding:client:propAdded')
+    local door = added[#added].args[1]
+    local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 31.5, y = 1.0, z = 30.0 })
+    local z = server:entityList('wlZombie')[1]
+    z.owner = id
+    local function health() return server.db.backend.data.wl_bb_props[door.id].health end
+
+    it('a zombie at a closed wooden door hits it (4 a hit); the owner is told', function()
+        expect(door.piece).toBe('door')
+        server:clientEvent(id, 'wasteland:zombies:server:hitPiece', netId, door.id); server:advance(200)
+        expect(health()).toBe(596)
+        local n = server:clientEventsFor(id, 'wasteland:basebuilding:client:notice')
+        expect(n[#n].args[1]).toBe('Zombies are attacking your base!')
+    end)
+
+    it('not faster than its swing; not from far away; not from a game that does not run it', function()
+        server:clientEvent(id, 'wasteland:zombies:server:hitPiece', netId, door.id); server:advance(200)
+        expect(health()).toBe(596) -- too soon
+        server:advance(2000)
+        z.coords = { x = 40.0, y = 1.0, z = 30.0 }
+        server:clientEvent(id, 'wasteland:zombies:server:hitPiece', netId, door.id); server:advance(200)
+        expect(health()).toBe(596)
+        z.coords = { x = 31.5, y = 1.0, z = 30.0 }
+        z.owner = 99
+        server:advance(2000)
+        server:clientEvent(id, 'wasteland:zombies:server:hitPiece', netId, door.id); server:advance(200)
+        expect(health()).toBe(596)
+        z.owner = id
+    end)
+
+    it('an open door is left alone', function()
+        server.players[id].coords = { x = 29.0, y = 1.0, z = 30.0 }
+        act('door', door.id) -- open it
+        expect(server.db.backend.data.wl_bb_props[door.id].is_open).toBeTruthy()
+        server:advance(2000)
+        server:clientEvent(id, 'wasteland:zombies:server:hitPiece', netId, door.id); server:advance(200)
+        expect(health()).toBe(596)
+        act('door', door.id) -- shut again
+        server:advance(2000)
+        server:clientEvent(id, 'wasteland:zombies:server:hitPiece', netId, door.id); server:advance(200)
+        expect(health()).toBe(592)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

@@ -13,6 +13,7 @@ local Brain = {}
 WLZ.Brain = Brain
 
 local ALERT = { chase = true, stalk = true }
+-- (breach: attacking a wall / door / gate between it and its target)
 local SLEEP_DICT, SLEEP_ANIM = 'dead', 'dead_a'
 local SCREAM_DICT, SCREAM_ANIM = 'anim@mp_player_intcelebrationmale@freakout', 'freakout'
 local SPIT_DICT, SPIT_ANIM = 'random@drunk_driver_1', 'vomit_outside'
@@ -230,6 +231,28 @@ local function engage(ped, b, target, t, ai)
     end
 end
 
+-- The barricade (wall, door, gate) to attack: near the zombie, and on the
+-- way to where the target is. nil when there is none (or no base building).
+local function findBarricade(ai, here, targetPos)
+    local cfgB = ai.barricades
+    if not (cfgB and cfgB.enabled) or GetResourceState('wasteland_basebuilding') ~= 'started' then return nil end
+    if targetPos and #(targetPos - here) > cfgB.playerRadius then return nil end
+    local ok, list = pcall(function() return exports.wasteland_basebuilding:GetBarricadesNear(tbl(here), cfgB.searchRadius) end)
+    if not ok or type(list) ~= 'table' then return nil end
+    local best, bestScore
+    for _, p in ipairs(list) do
+        local pos = vector3(p.x, p.y, p.z)
+        local score = #(pos - here) + (targetPos and #(pos - targetPos) * 0.5 or 0)
+        if not bestScore or score < bestScore then best, bestScore = p, score end
+    end
+    return best
+end
+
+local function startBreach(b, piece, t, ai)
+    b.mode, b.piece, b.swing, b.nextTask, b.pieceHitAt = 'breach', piece, nil, 0, nil
+    b.breachUntil = t + ai.barricades.giveUpSeconds * 1000
+end
+
 local function giveUp(b)
     b.mode, b.target, b.chase, b.spit, b.swing, b.nextTask = 'return', nil, nil, nil, nil, 0
 end
@@ -275,6 +298,8 @@ function Brain.think(ped, b, info, investigate, night)
         b.lastKnown, b.lastSeen = tbl(GetEntityCoords(target)), t
         if ALERT[b.mode] then
             b.target = target
+        elseif b.mode == 'breach' and not (b.sSeen and not C().safe(target)) then
+            b.target = target -- heard through the wall: keep breaking through
         else
             -- reaction time: it turns to look first
             b.spotAt = b.spotAt or t
@@ -291,13 +316,19 @@ function Brain.think(ped, b, info, investigate, night)
 
     -- lost them, or they got away
     if ALERT[b.mode] then
-        if not b.target or not DoesEntityExist(b.target) or IsEntityDead(b.target) or C().safe(b.target)
-            or AI.giveUp(ai.memory, b.chase, t, tbl(here)) then
+        local gone = not b.target or not DoesEntityExist(b.target) or IsEntityDead(b.target)
+        if gone or AI.giveUp(ai.memory, b.chase, t, tbl(here)) then
             giveUp(b)
-        elseif not target and t - (b.lastSeen or 0) > 1500 then
-            -- go and look where they were last
-            b.mode, b.searchAt, b.searchFirst = 'search', b.lastKnown, true
-            b.searchUntil, b.nextTask = t + ai.memory.searchSeconds * 1000, 0
+        elseif C().safe(b.target) or (not target and t - (b.lastSeen or 0) > 1500) then
+            -- hiding in a base or behind its walls: break through if a wall,
+            -- door or gate is in the way; otherwise look where they were last
+            local piece = findBarricade(ai, here, GetEntityCoords(b.target))
+            if piece then startBreach(b, piece, t, ai)
+            elseif C().safe(b.target) then giveUp(b)
+            else
+                b.mode, b.searchAt, b.searchFirst = 'search', b.lastKnown, true
+                b.searchUntil, b.nextTask = t + ai.memory.searchSeconds * 1000, 0
+            end
         end
     end
 
@@ -321,6 +352,18 @@ function Brain.think(ped, b, info, investigate, night)
             elseif b.sprintUntil then b.sprintUntil, b.recoverUntil = nil, t + pers.cooldownSeconds * 1000
             elseif b.recoverUntil and t < b.recoverUntil then speed = pers.recoverSpeed
             else b.sprintUntil, b.recoverUntil = t + pers.sprintSeconds * 1000, nil end
+        end
+        -- not getting any closer (a wall, door or gate in the way): break through
+        if dist > cfg.attack.range + 1.0 then
+            if not b.progress or t - b.progress.t > 3000 then
+                if b.progress and b.progress.d - dist < 1.0 then
+                    local piece = findBarricade(ai, here, tp)
+                    if piece then startBreach(b, piece, t, ai); return end
+                end
+                b.progress = { d = dist, t = t }
+            end
+        else
+            b.progress = nil
         end
         if b.special == 'spitter' and spitStep(ped, b, t, dist) then b.swing = nil; return end
         if (b.special == 'howler' or b.special == 'alpha') then shout(ped, b, t, 'howl', sp.cooldownSeconds) end
@@ -366,6 +409,43 @@ function Brain.think(ped, b, info, investigate, night)
         elseif t >= (b.nextTask or 0) then
             b.nextTask = t + 2500
             goTo(ped, AI.stalkPoint(tbl(here), tbl(tp), b.stalkDist, b.stalkTurn), math.max(1.0, k.speed * speedMul))
+        end
+    elseif mode == 'breach' then
+        local p = b.piece
+        local pos = vector3(p.x, p.y, p.z)
+        if t > b.breachUntil then giveUp(b); return end
+        if t >= (b.nextPieceCheck or 0) then
+            -- still standing (and still shut)?
+            b.nextPieceCheck = t + 2000
+            local ok, list = pcall(function() return exports.wasteland_basebuilding:GetBarricadesNear(p, 0.5) end)
+            local still = false
+            for _, q in ipairs(ok and list or {}) do if q.id == p.id then still = true end end
+            if not still then
+                -- broken through: back after the target
+                if b.target and DoesEntityExist(b.target) and not IsEntityDead(b.target) and not C().safe(b.target) then
+                    engage(ped, b, b.target, t, ai)
+                else giveUp(b) end
+                return
+            end
+        end
+        if b.pieceHitAt and t >= b.pieceHitAt then
+            b.pieceHitAt = nil
+            TriggerServerEvent('wasteland:zombies:server:hitPiece', NetworkGetNetworkIdFromEntity(ped), p.id)
+        end
+        local flat = vector3(pos.x, pos.y, here.z)
+        if #(flat - here) > 2.4 then
+            if t >= (b.nextTask or 0) then
+                b.nextTask = t + 1500
+                -- the side of the piece the zombie is on
+                local dir = here - flat
+                local len = math.max(0.1, #dir)
+                goTo(ped, { x = pos.x + dir.x / len * 1.0, y = pos.y + dir.y / len * 1.0, z = here.z }, k.speed * speedMul)
+            end
+        elseif t >= (b.nextAttack or 0) and not b.pieceHitAt then
+            b.nextAttack = t + cfg.attack.cooldownMs * 1.3 * (sp.cooldownMult or 1)
+            TaskTurnPedToFaceCoord(ped, pos.x, pos.y, here.z, 300)
+            C().playAttack(ped)
+            b.pieceHitAt = t + (cfg.attack.windupMs or 450) * (sp.windupMult or 1)
         end
     elseif mode == 'search' then
         if t > b.searchUntil then giveUp(b)

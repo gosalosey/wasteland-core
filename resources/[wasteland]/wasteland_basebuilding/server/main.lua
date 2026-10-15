@@ -20,6 +20,8 @@ local runToken = nil
 local function inv() return exports.wasteland_inventory end
 local function players() return exports.wasteland_players end
 local function now() return GetGameTimer() end
+local zombieBarricades   -- function, below (damage section)
+local zombieNotice = {}   -- cupboard id -> last "zombies at your base" notice
 local function notice(src, msg) if src then TriggerClientEvent('wasteland:basebuilding:client:notice', src, msg) end end
 
 local function write(sql, params, what)
@@ -141,6 +143,7 @@ local function clientConfig()
         cupboardPiece = c.cupboard.piece, lockpick = c.lockpick.enabled, safeRadius = c.cupboard.safeRadius,
         raid = { enabled = c.raid.enabled, explosionDamage = c.raid.explosionDamage, explosionRadius = c.raid.explosionRadius,
             melee = c.raid.melee.enabled, repairCost = c.raid.repair.cost },
+        zombieBarricades = zombieBarricades(c),
     }
 end
 
@@ -457,6 +460,21 @@ end
 
 -- Raids and decay. Storage is never deleted at 0 (its contents would be lost):
 -- it stays as wreckage that anyone can loot until it is removed.
+-- Pieces zombies attack (by family: a stone wall is still a wall), and how
+-- much each material takes per hit. nil = zombies leave bases alone.
+local function familyOf(c, p)
+    local piece = c.pieces[p.piece]
+    return piece and piece.family or p.piece
+end
+
+zombieBarricades = function(c)
+    local z = c.raid and c.raid.zombies
+    if not (c.raid.enabled and z and z.enabled) then return nil end
+    local families = {}
+    for _, f in ipairs(z.pieces or {}) do families[f] = true end
+    return { families = families, damage = z.damage }
+end
+
 local function damage(id, amount)
     local p = props[id]
     if not p then return end
@@ -782,6 +800,11 @@ M = Wasteland.DefineModule({
         c.raid.explosionRadius = c.raid.explosionRadius or 4.0
         c.raid.melee = c.raid.melee or { enabled = false, cooldownMs = 850, woodDamage = 5 }
         c.raid.repair = c.raid.repair or { amount = {}, cost = {} }
+        -- zombies hitting walls, doors and gates (wasteland_zombies `ai.barricades`)
+        c.raid.zombies = c.raid.zombies or {}
+        local zd = { enabled = true, damage = { wood = 4, stone = 2, metal = 1 }, noticeMinutes = 3,
+            pieces = { 'wall', 'doorway', 'windowframe', 'halfwall', 'door', 'gateframe', 'gatedoor', 'garagedoor' } }
+        for k, v in pairs(zd) do if c.raid.zombies[k] == nil then c.raid.zombies[k] = v end end
         if c.raid.enabled == nil then c.raid.enabled = true end
         -- every item named must exist
         local function known(item) return inv():GetItemDefinition(item) ~= nil end
@@ -879,6 +902,30 @@ M.netEvent('wasteland:basebuilding:server:lockpickResult', { args = { { type = '
 M.netEvent('wasteland:basebuilding:server:explosion', { args = { ID, { type = 'integer', required = true, min = 0, max = 100 }, AT, { type = 'boolean', required = true } },
     rateLimit = { burst = 20, perSecond = 10 } }, function(src, id, kind, at, isCupboard) explosion(src, id, kind, at, isCupboard) end)
 M.netEvent('wasteland:basebuilding:server:melee', { args = { ID }, rateLimit = { burst = 6, perSecond = 3 } }, function(src, id) melee(src, id) end)
+
+--- ZombieHit(pieceId, zombieCoords) -> health left | nil   (wasteland_zombies:
+--- a zombie that stands at a wall, door or gate hits it; open doors, other
+--- pieces and materials that take no zombie damage are left alone)
+exports('ZombieHit', function(id, at)
+    if not (M and M.active) or type(at) ~= 'table' then return nil end
+    local zb = zombieBarricades(M.config)
+    local p = props[tonumber(id)]
+    if not zb or not p then return nil end
+    if not zb.families[familyOf(M.config, p)] or p.is_open then return nil end
+    local dmg = tonumber(zb.damage[p.material]) or 0
+    if dmg <= 0 then return nil end
+    if Rules.dist({ x = at.x, y = at.y, z = at.z or p.coords.z }, p.coords) > 4.0 then return nil end
+    damage(p.id, dmg)
+    -- tell the owner (not on every hit)
+    local c = p.cupboard_id and cupboards[p.cupboard_id]
+    local t = now()
+    if c and (not zombieNotice[c.id] or t - zombieNotice[c.id] > M.config.raid.zombies.noticeMinutes * 60000) then
+        zombieNotice[c.id] = t
+        local s = sourceOf(c.owner)
+        if s then notice(s, 'Zombies are attacking your base!') end
+    end
+    return props[p.id] and props[p.id].health or 0
+end)
 
 --- IsInBaseZone(coords) -> boolean   (within cupboard.safeRadius of a tool
 --- cupboard: zombies do not spawn, chase or hit there; ones inside are removed)

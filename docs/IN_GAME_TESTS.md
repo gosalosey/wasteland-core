@@ -643,3 +643,5 @@ Tip: an admin overlay with zombie modes helps (`GetZombieMode`: idle, chase, sta
 | R43.16 | Night (/time 23) | More stalkers; zombies a bit faster; hordes bigger. Day: back to normal, zombies change gradually (not all at once) |
 | R43.17 | Two players, one leaves while zombies chase the other | The zombies keep working (the other game takes them over); no duplicates (`/zombies sync` OK) |
 | R43.18 | Camps and tool cupboard zones | Zombies still stop at safe zones exactly as before |
+| R43.19 | Build a wooden wall or door outside the cupboard's 12 m zone; stand behind it with zombies chasing you | They stop at it and hit it (its health goes down 4 a hit), you get "Zombies are attacking your base!"; when it breaks they come through |
+| R43.20 | The same with a metal door / an open door | Metal: 1 a hit (slow). Open door: they walk through, no hits |

@@ -329,6 +329,7 @@ WLZ.Client = {
     cfg = function() return cfg end,
     safe = safe,
     chaseStep = chaseStep,
+    playAttack = playAttack,
 }
 
 --- GetZombieMode(ped) -> 'idle' | 'chase' | 'investigate' | (with ai) 'stalk' | 'search' | 'sleep' | 'ambush' | 'return' | nil   (admin overlay;

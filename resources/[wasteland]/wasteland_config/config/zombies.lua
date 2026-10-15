@@ -118,6 +118,10 @@ return {
         -- gunfire in one area reaching further (up to 2.5x).
         horde = { enabled = true, maxResponders = 15, repeatMax = 2.5 },
 
+        -- Zombies break through base walls, doors and gates to reach a player
+        -- hiding behind them (damage per material: basebuilding.lua raid.zombies).
+        barricades = { enabled = true, giveUpSeconds = 60 },
+
         -- Ambushers near these points wait there: { x = 0.0, y = 0.0, z = 0.0, radius = 40 }
         ambushPoints = {},
         -- A noise near a building sends zombies to its way in first:

@@ -797,6 +797,25 @@ Citizen.CreateThread(function()
     end
 end)
 
+--- GetBarricadesNear(coords, radius) -> list of { id, x, y, z, material }
+--- (wasteland_zombies: walls, doors and gates zombies may attack; open doors
+--- and materials zombies cannot hurt are left out)
+exports('GetBarricadesNear', function(coords, radius)
+    local out = {}
+    local zb = cfg and cfg.zombieBarricades
+    if not zb or not coords then return out end
+    local at = vector3(coords.x + 0.0, coords.y + 0.0, coords.z + 0.0)
+    for id, d in pairs(propCache) do
+        local piece = cfg.pieces[d.piece]
+        local family = piece and piece.family or d.piece
+        if zb.families[family] and not d.is_open and (tonumber(zb.damage[d.material]) or 0) > 0
+            and #(d.coords - at) <= (radius or 15.0) then
+            out[#out + 1] = { id = id, x = d.coords.x, y = d.coords.y, z = d.coords.z, material = d.material }
+        end
+    end
+    return out
+end)
+
 --- IsInBaseZone(coords) -> boolean   (near a tool cupboard: zombies keep out)
 exports('IsInBaseZone', function(coords)
     local r = cfg and cfg.safeRadius

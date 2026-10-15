@@ -52,6 +52,17 @@ AI.DEFAULTS = {
         vehicleEngine = 35,      -- hears a running engine this far (metres; moving: full, idling: 60%)
     },
 
+    -- Barricades (base building walls, doors and gates): a zombie whose
+    -- target hides behind them (or in a base's safe zone) attacks the nearest
+    -- piece between them instead of giving up. Damage per hit is set in
+    -- basebuilding.lua `raid.zombies`.
+    barricades = {
+        enabled = true,
+        searchRadius = 15,       -- pieces this close to the zombie
+        playerRadius = 35,       -- only while its target is this close
+        giveUpSeconds = 60,      -- stops after this long (then searches / wanders)
+    },
+
     memory = {
         searchSeconds = 20,      -- looks around the last place it saw you
         searchRadius = 12,

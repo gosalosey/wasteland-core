@@ -1,5 +1,13 @@
 # Changelog
 
+## Zombies break through base walls, doors and gates
+* A zombie whose target hides behind base walls (it stops getting closer), or inside a base's safe zone, attacks the nearest wall, doorway, window frame, half wall, door, gate or garage door in the way instead of giving up. When the piece breaks it goes after the player again; after 60 s it gives up.
+* Damage per hit: wood 4, stone 2, metal 1 (basebuilding.lua `raid.zombies`; 0 = zombies cannot hurt that material). Open doors are left alone. Repairs work as usual.
+* The owner gets "Zombies are attacking your base!" (at most every 3 minutes).
+* Every hit is checked by the server like a player hit: the game reporting it runs the zombie, the zombie stands at the piece, not faster than its swing.
+* Pieces inside the 12 m zombie-free zone round a tool cupboard stay out of reach (zombies cannot enter it); walls at its edge and outside it can be attacked.
+* Off: zombies.lua `ai.barricades.enabled = false`, or basebuilding.lua `raid.zombies.enabled = false`.
+
 ## Zombie AI upgrade (zombies.lua `ai`; `ai.enabled = false` restores the old zombies)
 * Personalities (share by day / night, configurable): wanderers, stalkers (follow from a distance, circle round, charge later, may back off and come again), ambushers (wait still, jump anyone close; optional `ambushPoints`), sprinters (slow until alerted, then sprint bursts with cooldowns), sleepers (lie down until you come close or make noise), pack hunters (surround you from different sides, no stacking).
 * Senses: a view cone (less to the sides), still players are harder to see and runners easier, nothing through walls, engines heard (idling less), a short reaction time per personality. Memory: zombies go to where they last saw you and search around, then go back to what they were doing; a chase ends after 2 minutes or 160 m.

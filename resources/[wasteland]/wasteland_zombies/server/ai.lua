@@ -65,6 +65,7 @@ function SAI.alert(coords, radius, kind)
         local live = Srv().zombies()
         for h in pairs(shouts) do if not live[h] then shouts[h] = nil end end
         for h in pairs(spits) do if not live[h] then spits[h] = nil end end
+        for h in pairs(pieceHits) do if not live[h] then pieceHits[h] = nil end end
     end
     local key = AI.cooldownKey(kind, coords)
     if cooldowns[key] and t < cooldowns[key] then return 0 end
@@ -168,6 +169,25 @@ local function spit(src, netId, victim)
     m.log:debug('spitter %d hit player %d', z.netId, victim)
 end
 
+-- A zombie hit a wall / door / gate (its game says so): it runs the zombie,
+-- not too often; base building checks the piece and the distance.
+local pieceHits = {}
+local function hitPiece(src, netId, pieceId)
+    if not SAI.enabled() or not settings().barricades.enabled then return end
+    if GetResourceState('wasteland_basebuilding') ~= 'started' then return end
+    local m = M()
+    local z = Srv().byNet(netId)
+    if not z or z.dead or NetworkGetEntityOwner(z.handle) ~= src then return end
+    local sp = SAI.specialOf(z)
+    local t = GetGameTimer()
+    local cooldown = m.config.attack.cooldownMs * 1.2 * ((sp and sp.cooldownMult) or 1)
+    if pieceHits[z.handle] and t - pieceHits[z.handle] < cooldown then return end
+    pieceHits[z.handle] = t
+    local at = Srv().coordsOf(z.handle)
+    local ok, left = pcall(function() return exports.wasteland_basebuilding:ZombieHit(pieceId, at) end)
+    if ok and left then m.log:debug('zombie %d hit base piece %d (%s left)', z.netId, pieceId, tostring(left)) end
+end
+
 local function register()
     local m = M()
     if not m then return end
@@ -176,6 +196,10 @@ local function register()
         args = { { type = 'integer', required = true, min = 1 }, { type = 'string', required = true, pattern = '^%a+$', maxLength = 8 } },
         rateLimit = { burst = 3, perSecond = 0.5 },
     }, function(src, netId, kind) shout(src, netId, kind) end)
+    m.netEvent('wasteland:zombies:server:hitPiece', {
+        args = { { type = 'integer', required = true, min = 1 }, { type = 'integer', required = true, min = 1 } },
+        rateLimit = { burst = 3, perSecond = 1 },
+    }, function(src, netId, pieceId) hitPiece(src, netId, pieceId) end)
     m.netEvent('wasteland:zombies:server:spit', {
         args = { { type = 'integer', required = true, min = 1 }, { type = 'integer', required = true, min = 1, max = 65535 } },
         rateLimit = { burst = 3, perSecond = 1 },

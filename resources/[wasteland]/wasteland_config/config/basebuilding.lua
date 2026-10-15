@@ -147,6 +147,12 @@ return {
         },
         explosionRadius = 4.0,
         melee = { enabled = true, cooldownMs = 850, woodDamage = 5 },   -- wood only
+        -- Zombies hit walls, doors and gates that stand between them and a
+        -- player (needs wasteland_zombies ai.barricades). Damage per hit by
+        -- material (0 = they cannot hurt it); the owner is told at most every
+        -- noticeMinutes. pieces: the kinds of pieces they attack.
+        zombies = { enabled = true, damage = { wood = 4, stone = 2, metal = 1 }, noticeMinutes = 3,
+            pieces = { 'wall', 'doorway', 'windowframe', 'halfwall', 'door', 'gateframe', 'gatedoor', 'garagedoor' } },
         repair = {
             amount = { wood = 250, stone = 300, metal = 350 },
             cost = { wood = { item = 'wood_planks', count = 3 }, stone = { item = 'stone', count = 2 }, metal = { item = 'metal_sheet', count = 1 } },
