@@ -24,6 +24,14 @@ local runToken = nil
 local commandRegistered = false
 local adminCommand -- defined below
 
+-- Where the pee stream starts (from the hips): offset x (right) y (forward)
+-- z (up), rotation, size. Tune it in-game with /peetest.
+local function STREAM(offset, scale)
+    local V3 = function(d) return { type = 'array', default = d, minItems = 3, maxItems = 3, items = { type = 'number', min = -360, max = 360 } } end
+    return { type = 'table', fields = { offset = V3(offset), rotation = V3({ -140.0, 0.0, 0.0 }),
+        scale = { type = 'number', default = scale, min = 0.1, max = 10 } } }
+end
+
 local function players() return exports.wasteland_players end
 
 local function characterOf(src)
@@ -476,6 +484,7 @@ M = Wasteland.DefineModule({
                 enabled = { type = 'boolean', default = true },
                 bladderPerHour = num(50, 0, 1000), bowelPerHour = num(25, 0, 1000),
                 drinkToBladder = num(0.4, 0, 5), foodToBowel = num(0.3, 0, 5), minToGo = num(20, 0, 100),
+                pee = { type = 'table', fields = { male = STREAM({ 0.05, 0.2, -0.25 }, 2.0), female = STREAM({ 0.0, 0.0, -0.2 }, 1.2) } },
             } },
             bleeding = { type = 'table', fields = {
                 enabled = { type = 'boolean', default = true }, minDamage = num(10, 0, 200),
@@ -608,7 +617,7 @@ M.netEvent('wasteland:survival:server:relieve', {
     s[field] = 0
     players():SetCharacterData(cid, DATA_KEY, s)
     sendStats(src, cid)
-    TriggerClientEvent('wasteland:survival:client:relieve', -1, src, kind)
+    TriggerClientEvent('wasteland:survival:client:relieve', -1, src, kind, t.pee)
 end)
 
 M.netEvent('wasteland:survival:server:request', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)

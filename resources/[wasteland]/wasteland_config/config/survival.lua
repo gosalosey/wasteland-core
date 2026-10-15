@@ -27,6 +27,13 @@ return {
         bladderPerHour = 50, bowelPerHour = 25,
         drinkToBladder = 0.4, foodToBowel = 0.3, -- share of thirst / hunger restored
         minToGo = 20,
+        -- Where the pee stream starts, from the hips: offset { right, forward,
+        -- up } in metres, rotation, size. Find good numbers in-game with
+        -- /peetest x y z (e.g. /peetest 0.05 0.2 -0.25), then put them here.
+        pee = {
+            male = { offset = { 0.05, 0.2, -0.25 }, rotation = { -140.0, 0.0, 0.0 }, scale = 2.0 },
+            female = { offset = { 0.0, 0.0, -0.2 }, rotation = { -140.0, 0.0, 0.0 }, scale = 1.2 },
+        },
     },
 
     bleeding = {

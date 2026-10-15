@@ -275,7 +275,41 @@ end
 
 -- Every client near the player shows the particles; the player's own client
 -- plays the animation (the game syncs it to the others).
-RegisterNetEvent('wasteland:survival:client:relieve', function(serverId, kind)
+-- The pee stream: from the hips, placed by survival.lua toilet.pee
+-- (male / female: offset, rotation, scale).
+local STREAM_DEFAULT = {
+    male = { offset = { 0.05, 0.2, -0.25 }, rotation = { -140.0, 0.0, 0.0 }, scale = 2.0 },
+    female = { offset = { 0.0, 0.0, -0.2 }, rotation = { -140.0, 0.0, 0.0 }, scale = 1.2 },
+}
+local function peeStream(ped, male, stream)
+    local s = (type(stream) == 'table' and stream[male and 'male' or 'female']) or STREAM_DEFAULT[male and 'male' or 'female']
+    local o, r = s.offset, s.rotation
+    UseParticleFxAssetNextCall('scr_amb_chop')
+    return StartParticleFxLoopedOnEntityBone('ent_anim_dog_peeing', ped, o[1] + 0.0, o[2] + 0.0, o[3] + 0.0,
+        r[1] + 0.0, r[2] + 0.0, r[3] + 0.0, GetPedBoneIndex(ped, 11816), s.scale + 0.0, false, false, false)
+end
+
+-- /peetest x y z [rx] [scale]: shows the stream on you for 5 s at that
+-- spot (only you see it), to find the numbers for survival.lua toilet.pee.
+RegisterCommand('peetest', function(_, args)
+    local ped = PlayerPedId()
+    local male = GetEntityModel(ped) == GetHashKey('mp_m_freemode_01')
+    local d = STREAM_DEFAULT[male and 'male' or 'female']
+    local s = {
+        offset = { tonumber(args[1]) or d.offset[1], tonumber(args[2]) or d.offset[2], tonumber(args[3]) or d.offset[3] },
+        rotation = { tonumber(args[4]) or d.rotation[1], d.rotation[2], d.rotation[3] },
+        scale = tonumber(args[5]) or d.scale,
+    }
+    RequestNamedPtfxAsset('scr_amb_chop')
+    local untilT = GetGameTimer() + 3000
+    while not HasNamedPtfxAssetLoaded('scr_amb_chop') and GetGameTimer() < untilT do Citizen.Wait(0) end
+    local fx = peeStream(ped, male, { [male and 'male' or 'female'] = s })
+    notice(string.format('peetest (%s): offset = { %.2f, %.2f, %.2f }, rotation = { %.0f, 0.0, 0.0 }, scale = %.1f',
+        male and 'male' or 'female', s.offset[1], s.offset[2], s.offset[3], s.rotation[1], s.scale))
+    SetTimeout(5000, function() StopParticleFxLooped(fx, false) end)
+end, false)
+
+RegisterNetEvent('wasteland:survival:client:relieve', function(serverId, kind, stream)
     local player = GetPlayerFromServerId(serverId)
     if player == -1 then return end
     local ped = GetPlayerPed(player)
@@ -299,8 +333,7 @@ RegisterNetEvent('wasteland:survival:client:relieve', function(serverId, kind)
         if loadPtfx('scr_amb_chop') then
             UseParticleFxAssetNextCall('scr_amb_chop')
             if kind == 'pee' then
-                fx = StartParticleFxLoopedOnEntityBone('ent_anim_dog_peeing', ped, 0.0, male and 0.2 or 0.0, -0.2, -140.0, 0.0, 0.0,
-                    GetPedBoneIndex(ped, 11816), male and 2.0 or 1.2, false, false, false)
+                fx = peeStream(ped, male, stream)
             else
                 fx = StartParticleFxLoopedOnEntityBone('ent_anim_dog_poo', ped, 0.0, -0.1, -0.3, 0.0, 0.0, 20.0,
                     GetPedBoneIndex(ped, 11816), 2.0, false, false, false)
