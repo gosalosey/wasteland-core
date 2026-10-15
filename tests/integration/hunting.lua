@@ -115,7 +115,9 @@ describe('hunting', function()
 
     it('cooks as many as chosen, one after another', function()
         local raw = I('GetItemCount', a, 'raw_meat')
-        I('AddItem', a, 'raw_meat', 5 - raw); server:advance(100)
+        -- the harvest above gives a random amount: make it exactly 5
+        if raw < 5 then I('AddItem', a, 'raw_meat', 5 - raw) elseif raw > 5 then I('RemoveItem', a, 'raw_meat', raw - 5) end
+        server:advance(100)
         act(a, 'openCook', fire.netId)
         local screen = last(a, 'wasteland:hunting:client:cookScreen').args[1]
         expect(screen.items[1].item).toBe('raw_meat'); expect(screen.items[1].have).toBe(5)
