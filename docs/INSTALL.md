@@ -72,3 +72,24 @@ add_principal identifier.fivem:12345678 group.admin
 
 Without the pack the module still runs, but the pieces cannot be seen; the console says so when it starts.
 
+## Zombie sounds (optional)
+
+Zombies groan, grunt when they swing, cry out when hit and fall with a thud, if a sound pack is installed. The sound files are not part of Wasteland Core, because the free packs we know of do not allow passing the files on. To add sounds:
+
+1. Make a folder `resources/wasteland_zombiesounds` (outside `[wasteland]`, so updates leave it alone) with a `sounds` folder inside, and put your `.ogg` / `.mp3` files there.
+2. Give it an `fxmanifest.lua`:
+
+   ```lua
+   fx_version 'cerulean'
+   game 'gta5'
+   files { 'sounds/*.ogg', 'sounds/*.mp3' }
+   ```
+
+3. In `server.cfg`, `ensure wasteland_zombiesounds` before `ensure wasteland_zombies`.
+4. Which file plays for what (idle groans, chasing, attack, hurt, death, screamer calls) is listed in `wasteland_zombies/client/sounds.lua`. Change the lists in `zombies.lua` → `sounds.groups` to match your file names. Volume, range and how often they groan are also in `zombies.lua` → `sounds`.
+
+Without the pack, zombies are silent and nothing else changes.
+
+## Keys for players
+
+Tab inventory · Left Alt (hold) interact · K crafting · F2 survivor's guide · F4 emotes · F6 group · F9 skills · F10 admin panel · X hands up · Caps Lock radio · 1-5 hotbar. Players can change them in GTA's Settings → Key Bindings → FiveM.

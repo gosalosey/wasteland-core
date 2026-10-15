@@ -1,8 +1,8 @@
 # Project status and development checklist
 
-**Current milestone:** 9 (persistent vehicles) complete in automated tests; installed; runtime verification pending (R19.x). Next: Milestone 10 admin tools and SDK.
-**Next milestone:** 5, zombies (and weapons).
-**Last updated:** 2026-10-10
+**Where things stand:** Milestones 1 - 11 are done (Milestone 12, the formal release, is open). Since then the work has been owner requests: everything listed under "After Milestone 11" below. Every change ships with automated tests (about 880, all passing) and in-game checks in docs/IN_GAME_TESTS.md; the newest features are installed on the owner's server and waiting for those checks.
+**Next:** progression part 2 - camp trust (better prices, rare stock, harder jobs), then blueprint tiers.
+**Last updated:** 2026-10-15
 
 ## How to resume work
 
@@ -152,6 +152,22 @@ Decisions (owner, 2026-10-11): all four admin tool sets (world tools, live serve
 - [x] Recipe txadmin/recipe.yaml + txadmin/server.cfg, checked against the current txAdmin recipe docs (engine 3)
 - [x] Clean-install test: the published recipe run into an empty folder (downloads from GitHub), FXServer started from it: every module running, tables created
 - [x] docs/INSTALL.md (recipe, manual install, admins, updating)
+
+## After Milestone 11: owner requests (2026-10-12 - 2026-10-15)
+Details of each in CHANGELOG.md. `[~]` = installed, in-game check pending.
+- [~] Groups with a group radio channel; voice chat (pma-voice)
+- [~] More food and drink; traders buy anything; player trading
+- [~] Crafting: rags from clothing, weapon / gun part / ammo blueprints
+- [~] Pockets that grow with clothing; backpacks that open on demand; auto-sort; hover box; bigger trunks
+- [~] Hunting, campfires and cooking
+- [~] Spawn where you logged out (ground and buildings load first); idle camera off
+- [~] Base building (wasteland_basebuilding, needs the sinor-buildingProps-v2 pack): snapping, ramps, doors, gates, garage doors, upkeep, raids, a zombie-free zone round each cupboard
+- [~] Update notice in the console; updater keeps settings
+- [~] Zombie AI upgrade: personalities, senses and memory, special infected, horde layer, day/night, breaking through base walls (R43.x)
+- [~] Zombie sounds from a server-only sound pack
+- [~] Needing the toilet (/pee, /poop) with HUD meters
+- [~] Skills (R44.x) and the survivor's guide (R45.x)
+- [ ] Camp trust · [ ] blueprint tiers
 
 ## Milestone 12: integration and release
 - [ ] Full integration, load tests, final docs, release notes, clean-install report
