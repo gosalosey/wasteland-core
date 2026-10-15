@@ -75,4 +75,53 @@ return {
     },
 
     adminCommand = 'zombies',      -- /zombies count | clear | spawn <n>
+
+    -- Zombie AI upgrade: personalities, better senses and memory, special
+    -- infected, horde responses, day/night behaviour. enabled = false puts
+    -- every zombie back to the original behaviour. Anything left out here
+    -- uses its default (all settings, explained: wasteland_zombies/shared/ai.lua).
+    ai = {
+        enabled = true,
+
+        -- Share of zombies with each personality (weight by day, nightWeight
+        -- at dusk and night). 0 = none.
+        --   wanderer  roams, investigates noises, chases what it finds
+        --   stalker   follows you from a distance, circles round, charges later
+        --   ambusher  stands still and jumps anyone who comes close
+        --   sprinter  slow until it sees you, then bursts of sprinting
+        --   sleeper   lies on the ground until you come close or make noise
+        --   pack      pack hunters surround you from different sides
+        personalities = {
+            wanderer = { weight = 45, nightWeight = 35 },
+            stalker = { weight = 10, nightWeight = 20 },
+            ambusher = { weight = 10, nightWeight = 10 },
+            sprinter = { weight = 10, nightWeight = 15 },
+            sleeper = { weight = 10, nightWeight = 5 },
+            pack = { weight = 15, nightWeight = 15 },
+        },
+
+        -- Special infected (percent of zombies each; 0 = off). They keep the
+        -- zombie's normal model. Bosses (juggernaut, alpha, butcher,
+        -- nightterror) are off until you give them a chance.
+        specials = {
+            enabled = true,
+            screamer = { chance = 3 },     -- screams when it spots you: brings the others
+            brute = { chance = 3 },        -- 3x health, slower, slow heavy swings
+            howler = { chance = 1 },       -- a long call that brings a horde from far away
+            spitter = { chance = 2 },      -- retches, then spits at you from up to 14 m
+            hunter = { chance = 2 },       -- stalks players who are on their own
+            crawler = { chance = 0 },
+            juggernaut = { chance = 0 }, alpha = { chance = 0 }, butcher = { chance = 0 }, nightterror = { chance = 0 },
+        },
+
+        -- How many zombies answer one noise (the nearest), and repeated
+        -- gunfire in one area reaching further (up to 2.5x).
+        horde = { enabled = true, maxResponders = 15, repeatMax = 2.5 },
+
+        -- Ambushers near these points wait there: { x = 0.0, y = 0.0, z = 0.0, radius = 40 }
+        ambushPoints = {},
+        -- A noise near a building sends zombies to its way in first:
+        -- { x = 0.0, y = 0.0, z = 0.0, radius = 15, entry = { x = 0.0, y = 0.0, z = 0.0 } }
+        entryPoints = {},
+    },
 }

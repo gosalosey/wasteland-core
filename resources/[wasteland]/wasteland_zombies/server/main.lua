@@ -247,7 +247,8 @@ local function hit(src, netId, victim)
         return
     end
     local t = now()
-    if z.lastHit and t - z.lastHit < M.config.attack.cooldownMs then return end
+    local sp = WLZ.ServerAI and WLZ.ServerAI.specialOf(z) -- special infected (zombies.lua `ai`)
+    if z.lastHit and t - z.lastHit < M.config.attack.cooldownMs * ((sp and sp.cooldownMult) or 1) then return end
     local ped = GetPlayerPed(victim)
     if not ped or ped == 0 or not DoesEntityExist(ped) or survival('IsDead', victim) then return end
     -- The game reports a hit only when the swing landed within reach; allow
@@ -258,6 +259,7 @@ local function hit(src, netId, victim)
     local r = Rules.hit(M.config.kinds[z.kind], {
         damage = math.random(), infection = math.random(), infectionAmount = math.random(), bleeding = math.random(),
     })
+    if sp and sp.damageMult then r.damage = math.floor(r.damage * sp.damageMult + 0.5) end
     -- An armor plate (survival) takes the damage; then the hit cannot cut.
     local _, absorbed = survival('Damage', victim, r.damage)
     r.absorbed = absorbed == true
@@ -266,9 +268,11 @@ local function hit(src, netId, victim)
     TriggerEvent('wasteland:zombies:hit', victim, z.netId, r)
 end
 
--- Noise: zombies that hear it go and look.
-local function noise(coords, radius)
+-- Noise: zombies that hear it go and look. With zombies.lua `ai` on, the
+-- horde layer (server/ai.lua) decides who answers and where each one goes.
+local function noise(coords, radius, kind)
     if not (M and M.active) or type(coords) ~= 'table' or type(coords.x) ~= 'number' then return end
+    if WLZ.ServerAI and WLZ.ServerAI.enabled() then return WLZ.ServerAI.alert(coords, tonumber(radius), kind or 'other') end
     local list = {}
     for _, z in pairs(zombies) do
         if not z.dead and DoesEntityExist(z.handle) then list[#list + 1] = { id = z.handle, coords = coordsOf(z.handle) } end
@@ -280,8 +284,8 @@ local function noise(coords, radius)
 end
 
 -- Gunshots and hits (weapons), and any other noise (lock picking, alarms).
-AddEventHandler('wasteland:weapons:used', function(_, _, _, radius, coords) noise(coords, radius) end)
-AddEventHandler('wasteland:noise', function(coords, radius) noise(coords, radius) end)
+AddEventHandler('wasteland:weapons:used', function(_, _, _, radius, coords) noise(coords, radius, 'gunshot') end)
+AddEventHandler('wasteland:noise', function(coords, radius) noise(coords, radius, 'other') end)
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
@@ -439,6 +443,8 @@ M = Wasteland.DefineModule({
                 } } },
             } },
             adminCommand = { type = 'string', default = 'zombies', pattern = '^[a-z][a-z0-9_]*$' },
+            -- The zombie AI upgrade (shared/ai.lua has every setting and its default).
+            ai = { type = 'table', allowUnknown = true, fields = { enabled = { type = 'boolean', default = true } } },
         } },
     },
     onInit = function(mod)
@@ -455,6 +461,7 @@ M = Wasteland.DefineModule({
             RegisterCommand(M.config.adminCommand, function(source, args) adminCommand(tonumber(source) or 0, args) end, false)
             commandRegistered = true
         end
+        if WLZ.ServerAI then WLZ.ServerAI.init() end
         local token = {}
         runToken = token
         Citizen.CreateThread(function() loop(token) end)
@@ -474,7 +481,8 @@ local function clientConfig()
     local function add(list) for _, m in ipairs(list or {}) do if not seen[m] then seen[m] = true; all[#all + 1] = m end end end
     add(M.config.models)
     for _, k in pairs(M.config.kinds) do add(k.models) end
-    return { detection = M.config.detection, attack = M.config.attack, kinds = M.config.kinds, models = all }
+    return { detection = M.config.detection, attack = M.config.attack, kinds = M.config.kinds, models = all,
+        ai = WLZ.AI.settings(M.config.ai) }
 end
 
 -- A client lists the zombie models its game does not have (custom models
@@ -543,6 +551,16 @@ M.netEvent('wasteland:zombies:server:died', {
     end
     markDead(z, 'reported', killer)
 end)
+
+-- What the AI upgrade (server/ai.lua) uses from here.
+WLZ.Server = {
+    module = function() return M end,
+    zombies = function() return zombies end,
+    byNet = zombieByNet,
+    coordsOf = coordsOf,
+    inSafeZone = inSafeZone,
+    survival = survival,
+}
 
 -------------------------------------------------------------------------------
 -- Exports (zombies api 0.1)

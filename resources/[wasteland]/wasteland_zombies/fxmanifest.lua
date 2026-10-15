@@ -14,13 +14,16 @@ dependencies {
 
 shared_scripts {
     'shared/rules.lua',
+    'shared/ai.lua',
 }
 
 server_scripts {
     '@wasteland_core/sdk/module.lua',
     'server/main.lua',
+    'server/ai.lua',
 }
 
 client_scripts {
     'client/main.lua',
+    'client/ai.lua',
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## Zombie AI upgrade (zombies.lua `ai`; `ai.enabled = false` restores the old zombies)
+* Personalities (share by day / night, configurable): wanderers, stalkers (follow from a distance, circle round, charge later, may back off and come again), ambushers (wait still, jump anyone close; optional `ambushPoints`), sprinters (slow until alerted, then sprint bursts with cooldowns), sleepers (lie down until you come close or make noise), pack hunters (surround you from different sides, no stacking).
+* Senses: a view cone (less to the sides), still players are harder to see and runners easier, nothing through walls, engines heard (idling less), a short reaction time per personality. Memory: zombies go to where they last saw you and search around, then go back to what they were doing; a chase ends after 2 minutes or 160 m.
+* Special infected (they keep their normal model): screamer, brute, howler, spitter (telegraphed, checked by the server), hunter (goes for players on their own), crawler (off). Bosses juggernaut, alpha, butcher and night terror are off until given a chance.
+* Horde layer: the nearest zombies answer a noise (max 15), each to its own spot around it; repeated gunfire in one place brings more from further out; explosions and car crashes are noises; a cooldown per sound and spot; optional building `entryPoints`. Only existing zombies: nothing new spawns.
+* Day / night: dawn, day, dusk and night change sight, chase speed, horde size and the personality mix; zombies change gradually, only when calm.
+* Nothing else changed: spawning, population, models, loot, safe zones and every other system are as they were; no database change. In-game checks: docs/IN_GAME_TESTS.md R43.
+
 ## Smaller backpacks (they covered most of the screen)
 * Small backpack: 8 x 8 (was 10 x 10). Hiking backpack: 12 x 10 (was 15 x 15). Weight limits unchanged (100 and 175 kg).
 * A bag that holds more than fits in its new size keeps everything: stacks move into the smaller grid, and a bag that really cannot fit them stays just big enough until it is emptied a bit.

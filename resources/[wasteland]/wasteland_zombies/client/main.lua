@@ -191,7 +191,42 @@ local function playAttack(ped)
     end
 end
 
-local function think(ped, b, kind, investigate, night)
+-- Chasing within reach: the swing (it hits only if the target is still in
+-- reach, in front, with nothing in between, when it lands) or keep after
+-- them. mods (special infected): { windupMult, cooldownMult }.
+local function chaseStep(ped, b, dist, speed, mods)
+    local t = GetGameTimer()
+    mods = mods or {}
+    if b.swing and t >= b.swing.at then
+        -- The swing lands now: it hits only if the player is still within
+        -- reach, in front of the zombie, with nothing in between.
+        local target = b.swing.target
+        b.swing = nil
+        if landed(ped, target) then
+            local player = NetworkGetPlayerIndexFromPed(target)
+            if player ~= -1 then
+                TriggerServerEvent('wasteland:zombies:server:hit', NetworkGetNetworkIdFromEntity(ped), GetPlayerServerId(player))
+            end
+        end
+    end
+    if dist <= cfg.attack.range then
+        if t >= (b.nextAttack or 0) and not b.swing then
+            -- Start a swing; whether it hits is decided when it lands.
+            b.nextAttack = t + cfg.attack.cooldownMs * (mods.cooldownMult or 1)
+            TaskTurnPedToFaceEntity(ped, b.target, 300)
+            playAttack(ped)
+            b.swing = { target = b.target, at = t + (cfg.attack.windupMs or 450) * (mods.windupMult or 1) }
+        end
+    elseif t >= (b.nextTask or 0) then
+        b.nextTask = t + 1000
+        TaskGoToEntity(ped, b.target, -1, cfg.attack.range * 0.6, speed, 1073741824, 0)
+    end
+end
+
+local function think(ped, b, info, investigate, night)
+    -- The upgraded AI (client/ai.lua), when zombies.lua `ai.enabled` is on.
+    if cfg.ai and cfg.ai.enabled and WLZ.Brain then return WLZ.Brain.think(ped, b, info, investigate, night) end
+    local kind = info.kind
     local t = GetGameTimer()
     local k = cfg.kinds[kind] or cfg.kinds.walker
     local target, dist = sense(ped, night)
@@ -223,30 +258,7 @@ local function think(ped, b, kind, investigate, night)
 
     if b.mode == 'chase' and b.target then
         dist = dist or #(GetEntityCoords(b.target) - GetEntityCoords(ped))
-        if b.swing and t >= b.swing.at then
-            -- The swing lands now: it hits only if the player is still within
-            -- reach, in front of the zombie, with nothing in between.
-            local target = b.swing.target
-            b.swing = nil
-            if landed(ped, target) then
-                local player = NetworkGetPlayerIndexFromPed(target)
-                if player ~= -1 then
-                    TriggerServerEvent('wasteland:zombies:server:hit', NetworkGetNetworkIdFromEntity(ped), GetPlayerServerId(player))
-                end
-            end
-        end
-        if dist <= cfg.attack.range then
-            if t >= (b.nextAttack or 0) and not b.swing then
-                -- Start a swing; whether it hits is decided when it lands.
-                b.nextAttack = t + cfg.attack.cooldownMs
-                TaskTurnPedToFaceEntity(ped, b.target, 300)
-                playAttack(ped)
-                b.swing = { target = b.target, at = t + (cfg.attack.windupMs or 450) }
-            end
-        elseif t >= (b.nextTask or 0) then
-            b.nextTask = t + 1000
-            TaskGoToEntity(ped, b.target, -1, cfg.attack.range * 0.6, k.speed, 1073741824, 0)
-        end
+        chaseStep(ped, b, dist, k.speed)
     elseif b.mode == 'investigate' then
         local i = b.investigate
         if t > b.investigateUntil or #(vector3(i.x, i.y, i.z) - GetEntityCoords(ped)) < 4.0 then
@@ -276,7 +288,11 @@ Citizen.CreateThread(function()
                         seen[ped] = true
                         local b = brains[ped]
                         if not b then b = { mode = 'idle' }; brains[ped] = b end
-                        if not b.dressed then b.dressed = true; dressUp(ped, info.kind) end
+                        if not b.dressed then
+                            b.dressed = true
+                            dressUp(ped, info.kind)
+                            if WLZ.Brain then WLZ.Brain.dress(ped, info) end
+                        end
                         if IsPedDeadOrDying(ped, true) then
                             if not b.reported and NetworkGetEntityIsNetworked(ped) and NetworkHasControlOfEntity(ped) then
                                 b.reported = true
@@ -293,8 +309,9 @@ Citizen.CreateThread(function()
                             if not b.configured then
                                 b.configured = true
                                 configure(ped, info.kind)
+                                if cfg.ai and cfg.ai.enabled and WLZ.Brain then WLZ.Brain.configure(ped, info) end
                             end
-                            think(ped, b, info.kind, investigate, night)
+                            think(ped, b, info, investigate, night)
                         else
                             b.configured = false -- another client runs it; configure again if it comes back
                         end
@@ -306,7 +323,15 @@ Citizen.CreateThread(function()
     end
 end)
 
---- GetZombieMode(ped) -> 'idle' | 'chase' | 'investigate' | nil   (admin overlay;
+-- What the upgraded brain (client/ai.lua) uses from here.
+WLZ.Client = {
+    brains = brains,
+    cfg = function() return cfg end,
+    safe = safe,
+    chaseStep = chaseStep,
+}
+
+--- GetZombieMode(ped) -> 'idle' | 'chase' | 'investigate' | (with ai) 'stalk' | 'search' | 'sleep' | 'ambush' | 'return' | nil   (admin overlay;
 --- only for zombies this client runs, others return nil)
 exports('GetZombieMode', function(ped)
     local b = brains[ped]

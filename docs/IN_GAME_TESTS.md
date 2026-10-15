@@ -618,3 +618,28 @@ The sinor-buildingProps-v2 pack must be running. Give yourself: building_plan, 6
 | R42.11 | Put wood planks in Supplies; wait | The planks go down slowly (1 a day per wood piece) |
 | R42.12 | Restart the server | Everything is still there |
 
+
+## R43 Zombie AI upgrade (zombies.lua `ai`)
+
+Tip: an admin overlay with zombie modes helps (`GetZombieMode`: idle, chase, stalk, search, sleep, ambush, investigate, return). Raise one personality's weight (or a special's chance to 100) to test it on its own, and put it back afterwards.
+
+| # | Do | Expect |
+|---|---|---|
+| R43.1 | `ai.enabled = false`, restart | Zombies behave exactly as before the upgrade |
+| R43.2 | Walk past a wandering zombie, then break line of sight behind a wall | It chases, goes to where it last saw you, searches around for ~20 s, then wanders again |
+| R43.3 | Stand still behind a zombie; then sprint in front of one | Standing still behind it: not noticed; sprinting in front: noticed from further away |
+| R43.4 | Stalkers (stalker weight 100) | It follows 12-22 m away, circles to the side, charges after a while or when you turn your back; sometimes backs off and comes again; never through walls |
+| R43.5 | Ambushers (ambusher 100) | They stand still and jump you when you come within ~9 m |
+| R43.6 | Sprinters (sprinter 100) | Slow until they spot you, then bursts of sprinting with slower pauses |
+| R43.7 | Sleepers (sleeper 100) | Lying on the ground; wake when you come close (crouching gets you closer) or fire a gun; after giving up they lie down again |
+| R43.8 | Pack hunters (pack 100), 3+ near you | They come from different sides instead of all in a line, and do not stack on top of each other |
+| R43.9 | Fire one shot, then keep firing in the same place | One shot: the nearest few come (max 15), spread around the spot; keep firing: more come from further away |
+| R43.10 | Throw a grenade / blow up a car | Zombies within ~120 m come; sleepers wake |
+| R43.11 | Crash a car hard | Zombies within ~45 m come |
+| R43.12 | Screamer (chance 100) | When it spots you it stops, screams (animation + sound) and the zombies around come |
+| R43.13 | Brute (chance 100) | Takes about 3x the shots, walks slower, swings slower but hits much harder |
+| R43.14 | Spitter (chance 100) | Stops 4-14 m away, retches, spits; you take 8 damage and a little infection unless you broke line of sight |
+| R43.15 | Hunter (chance 100), alone and then with a friend | Alone: it stalks and charges; with a friend nearby it keeps stalking longer |
+| R43.16 | Night (/time 23) | More stalkers; zombies a bit faster; hordes bigger. Day: back to normal, zombies change gradually (not all at once) |
+| R43.17 | Two players, one leaves while zombies chase the other | The zombies keep working (the other game takes them over); no duplicates (`/zombies sync` OK) |
+| R43.18 | Camps and tool cupboard zones | Zombies still stop at safe zones exactly as before |
