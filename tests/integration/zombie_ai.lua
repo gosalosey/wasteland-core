@@ -10,6 +10,7 @@ local BASE = [[
         loot = { chance = 0, lifetimeMinutes = 5, items = {} },
 ]]
 
+-- (only: one special at 100 %, the others 0, so every zombie is that one)
 local function world(ai)
     local server = newServer({ config = {
         ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 1000, healthCheckSeconds = 2 }',
@@ -111,7 +112,7 @@ describe('zombie ai: other noises', function()
 end)
 
 describe('zombie ai: special infected', function()
-    local server = world('{ specials = { spitter = { chance = 100 } } }')
+    local server = world('{ specials = { brute = { chance = 0 }, howler = { chance = 0 }, hunter = { chance = 0 }, screamer = { chance = 0 }, spitter = { chance = 100 } } }')
     local id = player(server, 'spit')
     local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 8.0, y = 0.0, z = 30.0 })
     local z = server:entityList('wlZombie')[1]
@@ -152,7 +153,7 @@ describe('zombie ai: special infected', function()
 end)
 
 describe('zombie ai: screamers and brutes', function()
-    local server = world('{ specials = { screamer = { chance = 100 } } }')
+    local server = world('{ specials = { brute = { chance = 0 }, howler = { chance = 0 }, hunter = { chance = 0 }, spitter = { chance = 0 }, screamer = { chance = 100 } } }')
     local id = player(server, 'scream')
     local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 5.0, y = 0.0, z = 30.0 })
     local other = server:export('wasteland_zombies', 'SpawnZombie', { x = 50.0, y = 0.0, z = 30.0 })
@@ -170,7 +171,7 @@ describe('zombie ai: screamers and brutes', function()
 end)
 
 describe('zombie ai: brutes', function()
-    local s2 = world('{ specials = { brute = { chance = 100, damageMult = 3 } } }')
+    local s2 = world('{ specials = { howler = { chance = 0 }, hunter = { chance = 0 }, screamer = { chance = 0 }, spitter = { chance = 0 }, brute = { chance = 100, damageMult = 3 } } }')
     local p = player(s2, 'brute')
     local n = s2:export('wasteland_zombies', 'SpawnZombie', { x = 1.0, y = 0.0, z = 30.0 }, 'walker')
     s2:entityList('wlZombie')[1].owner = p

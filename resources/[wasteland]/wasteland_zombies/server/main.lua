@@ -445,6 +445,8 @@ M = Wasteland.DefineModule({
             adminCommand = { type = 'string', default = 'zombies', pattern = '^[a-z][a-z0-9_]*$' },
             -- The zombie AI upgrade (shared/ai.lua has every setting and its default).
             ai = { type = 'table', allowUnknown = true, fields = { enabled = { type = 'boolean', default = true } } },
+            -- Zombie sounds (client/sounds.lua has every setting and its default).
+            sounds = { type = 'table', allowUnknown = true, fields = { enabled = { type = 'boolean', default = true } } },
         } },
     },
     onInit = function(mod)
@@ -482,7 +484,7 @@ local function clientConfig()
     add(M.config.models)
     for _, k in pairs(M.config.kinds) do add(k.models) end
     return { detection = M.config.detection, attack = M.config.attack, kinds = M.config.kinds, models = all,
-        ai = WLZ.AI.settings(M.config.ai) }
+        ai = WLZ.AI.settings(M.config.ai), sounds = M.config.sounds }
 end
 
 -- A client lists the zombie models its game does not have (custom models

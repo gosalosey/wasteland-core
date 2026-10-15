@@ -1,5 +1,11 @@
 # Changelog
 
+## Zombie sounds
+* Zombies groan (now and then when calm, more often when coming at you), make a sound when they swing, when they are hit (with a thud) and when they fall dead; screamers and howlers call (heard up to 90 m). Sleepers are quiet.
+* Every player hears the zombies near them, louder when closer and from the side they are on.
+* The sound files are a separate resource, `resources/wasteland_zombiesounds` (Zombie Sound Pack, Free Version, by Catastic, plus the zombey clips), kept on the server and not in the public repository: copy the folder to another server yourself and add `ensure wasteland_zombiesounds` to its server.cfg. Without it zombies are silent as before.
+* zombies.lua `sounds`: on/off, volume, range, how often they groan (every file list: wasteland_zombies/client/sounds.lua).
+
 ## Zombies break through base walls, doors and gates
 * A zombie whose target hides behind base walls (it stops getting closer), or inside a base's safe zone, attacks the nearest wall, doorway, window frame, half wall, door, gate or garage door in the way instead of giving up. When the piece breaks it goes after the player again; after 60 s it gives up.
 * Damage per hit: wood 4, stone 2, metal 1 (basebuilding.lua `raid.zombies`; 0 = zombies cannot hurt that material). Open doors are left alone. Repairs work as usual.

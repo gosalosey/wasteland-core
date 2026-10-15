@@ -76,6 +76,21 @@ return {
 
     adminCommand = 'zombies',      -- /zombies count | clear | spawn <n>
 
+    -- Zombie sounds: groans, swings, being hurt, dying, screams. The sound
+    -- files are in their own resource (pack), kept on the server and not in
+    -- the public repository: resources/wasteland_zombiesounds (ensure it in
+    -- server.cfg). Without it zombies are silent as before.
+    -- Every setting and the file lists: wasteland_zombies/client/sounds.lua.
+    sounds = {
+        enabled = true,
+        pack = 'wasteland_zombiesounds',
+        volume = 0.7,          -- 0 - 1, right next to you
+        range = 35,            -- metres: heard no further
+        callRange = 90,        -- screamer / howler calls
+        idleEvery = { 7, 18 }, -- seconds between groans (calm)
+        chaseEvery = { 3, 7 }, -- ... (coming at you)
+    },
+
     -- Zombie AI upgrade: personalities, better senses and memory, special
     -- infected, horde responses, day/night behaviour. enabled = false puts
     -- every zombie back to the original behaviour. Anything left out here

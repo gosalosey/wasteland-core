@@ -153,8 +153,11 @@ local function shout(ped, b, t, kind, cooldownSeconds)
     b.busyUntil = t + 2200
     ClearPedTasks(ped)
     if loadDict(SCREAM_DICT) then TaskPlayAnim(ped, SCREAM_DICT, SCREAM_ANIM, 8.0, -8.0, 2000, 0, 0.0, false, false, false) end
-    DisablePedPainAudio(ped, false)
-    PlayPain(ped, kind == 'howl' and 8 or 7, 0.0)
+    -- without the sound pack (client/sounds.lua plays the call), the game's own scream
+    if GetResourceState('wasteland_zombiesounds') ~= 'started' then
+        DisablePedPainAudio(ped, false)
+        PlayPain(ped, kind == 'howl' and 8 or 7, 0.0)
+    end
     TriggerServerEvent('wasteland:zombies:server:shout', NetworkGetNetworkIdFromEntity(ped), kind)
 end
 
