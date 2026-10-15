@@ -1,5 +1,14 @@
 # Changelog
 
+## Survivor's guide (F2 or /guide)
+* Progress: 22 milestones that tick off by themselves as you play (search a container, eat, first kill, craft, treat a wound, trade, blueprint, campfire, hunt, cook, group, vehicle, 25 kills, a camp job, tool cupboard, supply drop, a player trade, skill level 5, two hours without dying, a world event, 250 kills, a maxed skill). Counted milestones show progress (7 / 25). A message and a sound when one is done.
+* "Try next": the next three unfinished milestones, each with a hint on how.
+* Stats: time alive this life, longest life, best skill level, zombies killed, places searched, things crafted, animals harvested, meat cooked, wounds treated, trades, jobs, supply drops, blueprints, deaths.
+* How to: pages on controls, staying alive, the dead, looting and crafting, camps and groups, vehicles, hunting, building, skills.
+* guide.lua: the key, every milestone (label, hint, stat, count) and every page - edit them freely. Saved with the character; no tables of its own.
+* New events other scripts can use: wasteland:basebuilding:cupboardPlaced, wasteland:hunting:fireLit, wasteland:hunting:cooked, wasteland:survival:consumed. Export AddStat(source, stat, amount) for your own milestones.
+* Tests: the old zombie hit tests now use plain zombies (a random special infected made them fail now and then).
+
 ## Skills: level up by doing (/skills or F9)
 * Six skills, levels 1 - 10, saved with the character: Scavenging (searching), Crafting, Medicine (bandages, medkits, antibiotics), Hunting (harvesting), Fitness (sprinting), Combat (zombie kills).
 * Each level makes you a little better; level 1 has no bonus, level 10 the full one: searches 30 % faster and a 25 % chance of an extra find; crafting 30 % faster and a 20 % chance to get a material back; healing items heal 50 % more; 50 % more meat; stamina lasts longer; 20 % more melee damage and weapons wear 30 % slower.

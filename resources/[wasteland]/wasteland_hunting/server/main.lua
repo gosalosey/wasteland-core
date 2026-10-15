@@ -280,6 +280,7 @@ local function placeFire(src, x, y, z)
     end
     fires[f.id] = f
     TriggerClientEvent('wasteland:hunting:client:fires', -1, { [f.netId] = true })
+    TriggerEvent('wasteland:hunting:fireLit', src)
     notice(src, string.format('The fire is burning. It keeps going while someone is near it (it goes out after %d minutes with nobody around). '
         .. 'Hold Left Alt on it to cook, or to put it out and pick it up.', cf.idleMinutes))
 end
@@ -395,6 +396,7 @@ local function cookTick()
                 stopCook(src, 'No room for the ' .. label(out):lower() .. '.')
             else
                 c.left, c.done = c.left - 1, c.done + 1
+                TriggerEvent('wasteland:hunting:cooked', src, out)
                 if c.left <= 0 then
                     cooking[src] = nil
                     TriggerClientEvent('wasteland:hunting:client:cooking', src, { finished = true, message = string.format('Cooked %d x %s.', c.done, label(out)) })

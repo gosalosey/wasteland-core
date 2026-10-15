@@ -311,6 +311,7 @@ local function placeProp(src, key, x, y, z, heading)
         TriggerClientEvent('wasteland:basebuilding:client:cupboardAdded', -1, cupboardInfo(c))
         sendMineAll()
         M.log:info('player %d (character %d) placed tool cupboard %d', src, cid, id)
+        TriggerEvent('wasteland:basebuilding:cupboardPlaced', src, id)
         notice(src, 'Tool cupboard placed. You control building and access within ' .. math.floor(c.radius) .. ' m.')
         return
     end

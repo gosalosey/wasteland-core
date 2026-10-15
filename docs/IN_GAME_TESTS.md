@@ -657,3 +657,15 @@ Tip: an admin overlay with zombie modes helps (`GetZombieMode`: idle, chase, sta
 | R44.5 | Set `xpMultiplier = 100` in skills.lua, restart skills, harvest a couple of animals | Hunting climbs fast; at level 10 the full bonus (50 % more meat). Put it back to 1 afterwards |
 | R44.6 | Die | "Dying cost you some skill progress"; no level lost |
 | R44.7 | Reconnect / restart the server | Skills are the same |
+
+## R45 Survivor's guide (F2)
+
+| # | Do | Expect |
+|---|---|---|
+| R45.1 | New character: F2 | Progress tab: 0 of 22, "Try next" starts with Search a container |
+| R45.2 | Search a container | "Milestone: Search a container" with a sound; it is ticked; Try next moves on |
+| R45.3 | Kill a few zombies | Kill your first zombie ticked; Kill 25 zombies shows 3 / 25 |
+| R45.4 | Stats tab | Your counts; time alive goes up a minute at a time |
+| R45.5 | How to tab | Pages open and close; Controls lists the keys |
+| R45.6 | Die, F2 | Deaths 1, time alive back to 0, longest life kept |
+| R45.7 | Edit a hint in guide.lua, restart guide | The new text shows |

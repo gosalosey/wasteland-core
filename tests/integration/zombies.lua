@@ -9,6 +9,8 @@ local CFG = {
         population = { perPlayer = 4, nightMultiplier = 1, maxTotal = 6, spawnBatch = 3, spawnIntervalSeconds = 2,
             despawnDistance = 230, despawnAfterSeconds = 5, corpseSeconds = 10 },
         loot = { chance = 1, lifetimeMinutes = 5, items = { { name = 'cash', min = 10, max = 10, weight = 1 } } },
+        -- plain zombies here (special infected hit harder: tests/integration/zombie_ai.lua)
+        ai = { specials = { enabled = false } },
     }]],
 }
 

@@ -186,6 +186,7 @@ local function useConsumable(src, stack)
     if not effect then return false, 'Nothing happens.' end
     if not Model.useful(s, effect) then return false, 'You do not need that right now.' end
     local heal = Model.consume(s, effect)
+    TriggerEvent('wasteland:survival:consumed', src, stack.name, (effect.hunger or 0) > 0 or (effect.thirst or 0) > 0)
     -- medicine: treating wounds (healing, bleeding, infection) is a skill
     local medical = (effect.health or 0) > 0 or (effect.stopBleeding or 0) > 0 or (effect.infection or 0) < 0
         or (effect.treatmentMinutes or 0) > 0

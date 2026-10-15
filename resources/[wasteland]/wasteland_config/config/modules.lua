@@ -68,6 +68,9 @@ return {
         -- fitness, combat). /skills or F9.
         skills     = true,
 
+        -- Survivor's guide: milestones, stats, what to try next, how-to (F2).
+        guide      = true,
+
         -- Base building: tool cupboards, snapping walls, doors, storage,
         -- upkeep, raids. Needs the sinor-buildingProps-v2 props pack.
         basebuilding = true,

@@ -41,6 +41,7 @@ return {
     'integration/zombies.lua',
     'integration/zombie_ai.lua',
     'integration/skills.lua',
+    'integration/guide.lua',
     'integration/loot.lua',
     'integration/camps.lua',
     'integration/crafting.lua',
