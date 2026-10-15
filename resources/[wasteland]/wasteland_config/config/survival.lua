@@ -29,11 +29,11 @@ return {
         minToGo = 20,
         -- Where the pee stream starts, from the hips: offset { right, forward,
         -- up } in metres, rotation, size. Find good numbers in-game with
-        -- /peetest x y z rx ry rz scale (e.g. /peetest 0.05 0.25 -0.35 -140 0 0 2),
+        -- /peetest x y z rx ry rz scale (e.g. /peetest 0.2 0.2 0 -110 0 0 2),
         -- then put them here.
         pee = {
-            male = { offset = { 0.05, 0.25, -0.35 }, rotation = { -140.0, 0.0, 0.0 }, scale = 2.0 },
-            female = { offset = { 0.0, 0.0, -0.2 }, rotation = { -140.0, 0.0, 0.0 }, scale = 1.2 },
+            male = { offset = { 0.2, 0.2, 0.0 }, rotation = { -110.0, 0.0, 0.0 }, scale = 2.0 },
+            female = { offset = { 0.2, 0.2, 0.0 }, rotation = { -110.0, 0.0, 0.0 }, scale = 1.2 },
         },
     },
 
