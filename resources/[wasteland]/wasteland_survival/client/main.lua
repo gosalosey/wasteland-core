@@ -289,7 +289,7 @@ local function peeStream(ped, male, stream)
         r[1] + 0.0, r[2] + 0.0, r[3] + 0.0, GetPedBoneIndex(ped, 11816), s.scale + 0.0, false, false, false)
 end
 
--- /peetest x y z [rx] [scale]: shows the stream on you for 5 s at that
+-- /peetest x y z [rx ry rz] [scale]: shows the stream on you for 5 s at that
 -- spot (only you see it), to find the numbers for survival.lua toilet.pee.
 RegisterCommand('peetest', function(_, args)
     local ped = PlayerPedId()
@@ -297,15 +297,15 @@ RegisterCommand('peetest', function(_, args)
     local d = STREAM_DEFAULT[male and 'male' or 'female']
     local s = {
         offset = { tonumber(args[1]) or d.offset[1], tonumber(args[2]) or d.offset[2], tonumber(args[3]) or d.offset[3] },
-        rotation = { tonumber(args[4]) or d.rotation[1], d.rotation[2], d.rotation[3] },
-        scale = tonumber(args[5]) or d.scale,
+        rotation = { tonumber(args[4]) or d.rotation[1], tonumber(args[5]) or d.rotation[2], tonumber(args[6]) or d.rotation[3] },
+        scale = tonumber(args[7]) or d.scale,
     }
     RequestNamedPtfxAsset('scr_amb_chop')
     local untilT = GetGameTimer() + 3000
     while not HasNamedPtfxAssetLoaded('scr_amb_chop') and GetGameTimer() < untilT do Citizen.Wait(0) end
     local fx = peeStream(ped, male, { [male and 'male' or 'female'] = s })
-    notice(string.format('peetest (%s): offset = { %.2f, %.2f, %.2f }, rotation = { %.0f, 0.0, 0.0 }, scale = %.1f',
-        male and 'male' or 'female', s.offset[1], s.offset[2], s.offset[3], s.rotation[1], s.scale))
+    notice(string.format('peetest (%s): offset = { %.2f, %.2f, %.2f }, rotation = { %.1f, %.1f, %.1f }, scale = %.1f',
+        male and 'male' or 'female', s.offset[1], s.offset[2], s.offset[3], s.rotation[1], s.rotation[2], s.rotation[3], s.scale))
     SetTimeout(5000, function() StopParticleFxLooped(fx, false) end)
 end, false)
 
