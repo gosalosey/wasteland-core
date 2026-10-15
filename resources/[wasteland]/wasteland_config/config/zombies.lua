@@ -37,9 +37,11 @@ return {
 
     -- What zombies look like (ambient GTA models; the first is GTA's zombie).
     models = {
-        'u_m_y_zombie_01', 'a_m_m_skidrow_01', 'a_m_y_methhead_01', 'a_f_m_skidrow_01', 'a_m_m_tramp_01',
-        'a_m_o_tramp_01', 'a_f_m_tramp_01', 'a_m_m_hillbilly_01', 'a_m_y_salton_01', 'a_f_y_rurmeth_01',
-        'a_m_m_rurmeth_01', 'a_m_m_salton_02', 'a_m_y_hippy_01', 'a_f_m_fatcult_01',
+        'a_f_y_juggalo_01', 'a_m_m_eastsa_02', 'a_m_m_farmer_01', 'a_m_m_fatlatin_01', 'a_m_m_hillbilly_01',
+        'a_m_m_malibu_01', 'a_m_m_mexlabor_01', 'a_m_m_og_boss_01', 'a_m_m_polynesian_01', 'a_m_m_rurmeth_01',
+        'a_m_m_salton_02', 'a_m_m_skater_01', 'a_m_m_skidrow_01', 'a_m_m_soucent_04', 'a_m_o_acult_02',
+        'a_m_y_genstreet_01', 'a_m_y_genstreet_02', 'a_m_y_methhead_01', 'a_m_y_salton_01', 'a_m_m_tennis_01',
+        'a_m_y_stlat_01', 's_m_y_cop_01', 's_m_y_prismuscl_01', 's_m_y_prisoner_01',
     },
 
     -- How zombies notice players (metres). Sight needs a clear line.

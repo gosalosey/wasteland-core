@@ -43,9 +43,9 @@ describe('pockets grow with clothing', function()
     server:command(id, 'character create Pat Pocket'); server:advance(300)
     server:command(id, 'character select 1'); server:advance(500)
 
-    it('bare: 3 x 3 pockets holding 55 kg', function()
+    it('bare: 3 x 3 pockets holding 100 kg', function()
         local p = inv(id, 'player:1')
-        expect(size(id)).toBe('3x3'); expect(p.maxWeight).toBe(55.0)
+        expect(size(id)).toBe('3x3'); expect(p.maxWeight).toBe(100.0)
     end)
 
     it('the starting outfit (a top and pants) makes them 7 x 7', function()
@@ -138,11 +138,11 @@ describe('pockets grow with clothing', function()
         expect(snap.width .. 'x' .. snap.height .. ' ' .. snap.maxWeight).toBe('15x12 300')
     end)
 
-    it('backpacks: small 8 x 8 / 100 kg, hiking 12 x 10 / 175 kg', function()
+    it('backpacks: small 8 x 8 / 200 kg, hiking 12 x 10 / 375 kg', function()
         local small = server:export('wasteland_inventory', 'GetItemDefinition', 'backpack_small').container
         local large = server:export('wasteland_inventory', 'GetItemDefinition', 'backpack_large').container
-        expect(small.width .. 'x' .. small.height .. ' ' .. small.maxWeight).toBe('8x8 100')
-        expect(large.width .. 'x' .. large.height .. ' ' .. large.maxWeight).toBe('12x10 175')
+        expect(small.width .. 'x' .. small.height .. ' ' .. small.maxWeight).toBe('8x8 200')
+        expect(large.width .. 'x' .. large.height .. ' ' .. large.maxWeight).toBe('12x10 375')
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)

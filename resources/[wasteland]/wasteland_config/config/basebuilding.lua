@@ -31,7 +31,7 @@ return {
     -- radius: the claim (building, access). safeRadius: zombies stay out of
     -- this many metres around the cupboard (no spawning, chasing or hits; ones
     -- that wander in are removed) - so you can build in peace. 0 = off.
-    cupboard = { piece = 'toolcupboard', radius = 40.0, minGap = 10.0, safeRadius = 12.0 },
+    cupboard = { piece = 'toolcupboard', radius = 40.0, minGap = 10.0, safeRadius = 20.0 },
 
     lockpick = {
         enabled = true,
@@ -45,7 +45,7 @@ return {
         tickMinutes = 5,
         perPieceCostPerDay = { wood = 1, stone = 1, metal = 1 },
         decayPerTick = 2,             -- health lost per tick by every piece of a material that is short
-        supplyGrid = { width = 8, height = 6, maxWeight = 300 },
+        supplyGrid = { width = 10, height = 10, maxWeight = 1000 },
         -- which item pays for which material
         items = { wood = 'wood_planks', stone = 'stone', metal = 'metal_sheet' },
     },

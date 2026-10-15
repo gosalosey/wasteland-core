@@ -11,6 +11,6 @@ return {
     shops = {
         { label = 'Paleto Bay Tailor', coords = { x = -447.98, y = 6008.49, z = 31.72, heading = 316.33 } },
         { label = 'Sandy Shores Tailor', coords = { x = 1853.56, y = 3689.56, z = 34.27, heading = 90.33 } },
-        { label = 'Legion Square Tailor', coords = { x = 194.83, y = -925.53, z = 30.69, heading = 182.58 } },
+        { label = 'Legion Square Tailor', coords = { x = 305.29, y = -590.87, z = 43.29, heading = 36.02 } },
     },
 }

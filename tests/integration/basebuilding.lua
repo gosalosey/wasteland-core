@@ -82,11 +82,11 @@ describe('base building', function()
         expect(#last(c, 'wasteland:basebuilding:client:mine').args[1]).toBe(0)
     end)
 
-    it('a tool cupboard keeps zombies out of 12 m around it (a safe zone for building)', function()
+    it('a tool cupboard keeps zombies out of 20 m around it (a safe zone for building)', function()
         local BB = function(...) return server:export('wasteland_basebuilding', 'IsInBaseZone', ...) end
         expect(BB({ x = 1.0, y = 1.0, z = 30.0 })).toBe(true)
-        expect(BB({ x = 11.0, y = 1.0, z = 30.0 })).toBe(true)
-        expect(BB({ x = 16.0, y = 1.0, z = 30.0 })).toBe(false)
+        expect(BB({ x = 19.0, y = 1.0, z = 30.0 })).toBe(true)
+        expect(BB({ x = 24.0, y = 1.0, z = 30.0 })).toBe(false)
     end)
 
     local foundation, door, box
