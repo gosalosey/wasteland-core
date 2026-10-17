@@ -114,6 +114,12 @@ local function register()
         { label = 'Check vehicle', icon = '?', distance = 3.0, canInteract = when(function() return true end),
             onSelect = function(data) local s = stateOf(data.entity); if s then notice(describe(s, data.entity)) end end },
         { label = 'Open trunk', icon = '▤', distance = 3.0, canInteract = when(function() return true end), onSelect = act('trunk') },
+        -- the one-use kit new survivors get (the server checks they have it)
+        { label = 'Full vehicle repair', icon = '★', distance = 3.0, onSelect = act('fullRepair'),
+            canInteract = when(function(s, veh)
+                return not s.parts.battery or not s.parts.engine or (s.parts.wheels or 0) < 4 or (s.fuel or 0) < (s.tank or 50) * 0.5 - 0.5
+                    or GetVehicleEngineHealth(veh) < 990 or GetVehicleBodyHealth(veh) < 990
+            end) },
         { label = 'Install battery', icon = '+', distance = 3.0, canInteract = when(function(s) return not s.parts.battery end), onSelect = act('battery') },
         { label = 'Fit engine parts', icon = '+', distance = 3.0, canInteract = when(function(s) return not s.parts.engine end), onSelect = act('engine') },
         { label = 'Mount a wheel', icon = '+', distance = 3.0, canInteract = when(function(s) return (s.parts.wheels or 0) < 4 end), onSelect = act('wheel') },

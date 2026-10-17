@@ -300,6 +300,30 @@ end
 -------------------------------------------------------------------------------
 
 --- Move a stack (from a grid or a worn slot) to a grid position.
+-- Items with a `limit`: how many more of `name` this character may carry
+-- (math.huge when the item has no limit).
+function Inv.limitLeft(c, name)
+    local d = WLI.defs[name]
+    if not d or not d.limit then return math.huge end
+    local n = 0
+    for _, id in ipairs(Inv.ownInventories(c)) do
+        local inv = WLI.invs[id]
+        if inv then for _, s in pairs(inv.items) do if s.name == name then n = n + s.count end end end
+    end
+    return d.limit - n
+end
+
+local function limitText(name)
+    local d = WLI.defs[name]
+    return string.format('you can only carry %d %s', d.limit, d.label)
+end
+
+-- Is `id` one of this character's own inventories?
+local function isOwn(c, id)
+    for _, own in ipairs(Inv.ownInventories(c)) do if own == id then return true end end
+    return false
+end
+
 function Inv.move(src, uid, fromId, toId, x, y, rotated)
     return Inv.run(src, 'move', function()
         local from, e1 = Inv.access(src, fromId); if not from then return nil, e1 end
@@ -307,6 +331,10 @@ function Inv.move(src, uid, fromId, toId, x, y, rotated)
         local s = from.items[uid]
         if not s then return nil, 'that item is no longer there' end
         local d = WLI.defs[s.name]
+        local mc = Inv.characterOf(src)
+        if d and d.limit and mc and isOwn(mc, toId) and not isOwn(mc, fromId) and Inv.limitLeft(mc, s.name) < s.count then
+            return nil, limitText(s.name)
+        end
         local bad = needsGrid(to) or bagCheck(d, to, uid)
         if bad then return nil, bad end
         local ok = Grid.fits(to, WLI.defs, d, x, y, rotated == true, from == to and uid or nil)
@@ -614,6 +642,10 @@ function Inv.addItem(target, name, count, metadata)
     if not accepting then return false, 'inventory changes are paused: ' .. why end
     local targets = Inv.targetsFor(target)
     if not targets then return false, 'that inventory is not loaded' end
+    if type(target) ~= 'string' then
+        local lc = Inv.characterOf(target)
+        if lc and Inv.limitLeft(lc, name) < count then return false, limitText(name) end
+    end
     local plan, err = planAdd(targets, name, count, metadata)
     if not plan then return false, err end
     local statements, changed = {}, {}
@@ -885,6 +917,17 @@ function Inv.trade(a, offerA, b, offerB)
     end
     local la, e1 = locate(ta, offerA, 'the other player'); if not la then return false, e1 end
     local lb, e2 = locate(tb, offerB, 'the other player'); if not lb then return false, e2 end
+    -- items with a limit: nobody ends up carrying more than allowed
+    local function overLimit(receiver, giving, getting)
+        local net = {}
+        for _, x in ipairs(getting) do net[x.stack.name] = (net[x.stack.name] or 0) + x.count end
+        for _, x in ipairs(giving) do net[x.stack.name] = (net[x.stack.name] or 0) - x.count end
+        for name, n in pairs(net) do
+            if n > 0 and Inv.limitLeft(receiver, name) < n then return limitText(name) end
+        end
+    end
+    local over = overLimit(ca, la, lb) or overLimit(cb, lb, la)
+    if over then return false, over end
 
     -- remember everything so a failed placement can be undone
     local before, beforeSize = {}, {}
@@ -1044,7 +1087,7 @@ function Inv.takeAll(src, fromId)
         local statements, changed = {}, changedSet(from.id)
         for _, s in ipairs(list) do
             local d = WLI.defs[s.name]
-            local plan = d and planAdd(targets, s.name, s.count, s.metadata)
+            local plan = d and Inv.limitLeft(c, s.name) >= s.count and planAdd(targets, s.name, s.count, s.metadata) or nil
             if plan and d.stack <= 1 then
                 -- one of a kind: the same stack moves (condition, bag contents)
                 local cr = plan.creates[1]

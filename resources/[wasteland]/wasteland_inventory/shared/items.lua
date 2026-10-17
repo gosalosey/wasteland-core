@@ -38,6 +38,7 @@ WLI.ITEM_SCHEMA = {
         width = { type = 'integer', default = 1, min = 1, max = 10, description = 'Grid cells wide' },
         height = { type = 'integer', default = 1, min = 1, max = 10, description = 'Grid cells high' },
         weight = { type = 'number', default = 0.1, min = 0, max = 1000, description = 'Kilograms per unit' },
+        limit = { type = 'integer', min = 1, max = 1000000, description = 'A player can carry at most this many' },
         stack = { type = 'integer', min = 1, max = 1000000, description = 'Units per stack (1 = not stackable; default 50, or 1 for items that cannot stack)' },
         durability = { type = 'integer', default = 0, min = 0, max = 100000, description = '0 = no durability' },
         equip = { type = 'enum', values = WLI.EQUIP_SLOTS, description = 'Equipment slot this item can be worn in' },

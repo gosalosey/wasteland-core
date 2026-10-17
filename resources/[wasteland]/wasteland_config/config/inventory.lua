@@ -48,6 +48,8 @@ return {
         { name = 'water_bottle', count = 1 },
         { name = 'canned_beans', count = 2 },
         { name = 'bandage', count = 2 },
+        { name = 'weapon_knife', count = 1 },
+        { name = 'full_vehicle_repair', count = 1 },
     },
 
     -- Item used for each clothing slot. A character's starting outfit from
@@ -223,6 +225,10 @@ return {
             description = 'A car needs four.' },
         jerry_can = { label = 'Jerry can', category = 'tool', width = 2, height = 3, weight = 2, stack = 1,
             description = 'Holds 20 L of fuel. Fill it at a gas pump.' },
+        -- limit: a player can carry at most this many (one at a time).
+        full_vehicle_repair = { label = 'Full vehicle repair', image = 'repairkit3', category = 'tool', width = 2, height = 2, weight = 3,
+            stack = 1, limit = 1,
+            description = 'Use it on any wreck (Left Alt on the vehicle: Full vehicle repair): every part fitted, fully repaired and half a tank of fuel. One use; you can only carry one.' },
         vehicle_repair_kit = { label = 'Toolkit', image = 'repairkit', category = 'tool', width = 3, height = 2, weight = 4, stack = 1,
             description = 'Repairs a damaged vehicle (engine and body).' },
         vehicle_lock = { label = 'Car lock', image = 'elock', category = 'tool', width = 1, height = 1, weight = 0.5,

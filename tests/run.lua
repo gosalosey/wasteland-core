@@ -106,6 +106,9 @@ function _G.newServer(opts)
             text = text:sub(1, a) .. '    pockets = { width = 6, height = 4, maxWeight = 35.0 },\n' .. text:sub(b + 8)
             text = text:gsub('container = { width = 8, height = 8, maxWeight = 200 }', 'container = { width = 5, height = 4, maxWeight = 35 }')
             text = text:gsub('container = { width = 12, height = 10, maxWeight = 375 }', 'container = { width = 7, height = 6, maxWeight = 60 }')
+            -- ... and the old starting items (no knife, no full vehicle repair)
+            text = text:gsub("\n%s*{ name = 'weapon_knife', count = 1 },", '')
+            text = text:gsub("\n%s*{ name = 'full_vehicle_repair', count = 1 },", '')
             server:setFile('wasteland_config', 'config/inventory.lua', text)
         end
     end

@@ -20,6 +20,8 @@ local function appearanceOf(characterId)
 end
 
 --- Load a character's inventories (thread only).
+local giveStarting -- below
+
 function Inv.loadCharacter(src, cid)
     local c = { id = cid, source = src, pockets = 'player:' .. cid, equip = 'equip:' .. cid, loaded = false,
         hotbar = { false, false, false, false, false } }
@@ -57,17 +59,25 @@ function Inv.loadCharacter(src, cid)
     end
     -- pocket size from what is worn (nothing is lost: they stay big enough)
     Inv.fitPockets(c)
-    if not meta.startingItemsGiven then
-        for _, entry in ipairs(WLI.cfg.startingItems) do
-            local ok, err = Inv.addItem(src, entry.name, entry.count)
-            if not ok then WLI.M.log:warn('starting item %s for character %d: %s', entry.name, cid, tostring(err)) end
-        end
-        meta.startingItemsGiven = true
+    -- Starting items once the outfit is on (worn clothes make the pockets
+    -- bigger): a brand-new character gets them after the creator.
+    if meta.clothingInitialized or GetResourceState('wasteland_appearance') ~= 'started' then
+        giveStarting(src, cid, meta)
     end
     exports.wasteland_players:SetCharacterData(cid, 'inventory', meta)
     WLI.M.log:debug('loaded inventory of character %d', cid)
     Interface.sendDefinitions(src)
     Sync.player(src)
+end
+
+-- What a new character starts with (once).
+giveStarting = function(src, cid, meta)
+    if meta.startingItemsGiven then return end
+    for _, entry in ipairs(WLI.cfg.startingItems) do
+        local ok, err = Inv.addItem(src, entry.name, entry.count)
+        if not ok then WLI.M.log:warn('starting item %s for character %d: %s', entry.name, cid, tostring(err)) end
+    end
+    meta.startingItemsGiven = true
 end
 
 function Inv.unloadCharacter(cid)
@@ -102,6 +112,8 @@ AddEventHandler('wasteland:appearance:saved', function(src, characterId, appeara
     if not meta.clothingInitialized then
         Clothing.init(c, appearance)
         meta.clothingInitialized = true
+        Inv.fitPockets(c)
+        giveStarting(src, characterId, meta)
         exports.wasteland_players:SetCharacterData(characterId, 'inventory', meta)
         Sync.player(src)
     end

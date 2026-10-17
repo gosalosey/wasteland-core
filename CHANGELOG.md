@@ -1,5 +1,10 @@
 # Changelog
 
+## New survivors start with a knife and a Full vehicle repair (owner)
+* Starting items now include a knife and a Full vehicle repair. Hold Left Alt on any wreck and choose "Full vehicle repair": after 15 s every part is fitted (battery, engine, four wheels), engine and body are like new and the tank has at least half its fuel. One use.
+* Items can now have a `limit` (inventory.lua): the Full vehicle repair has limit 1, so a player can only carry one - picking up, being given, Take all and trading a second one are refused.
+* Fix: new characters got their starting items while their pockets were still the bare 3 x 3 (before the creator's clothes were on), so bigger starting items could be lost. They now get them right after the creator, once the outfit (and the bigger pockets) is on.
+
 ## Fix: zombie kills often not counted; other guide milestones (owner report)
 * Kill credit was lost in a race: the server noticed a zombie at 0 health (its once-a-second check) before the kill report from the game running it arrived, and marked it dead with no killer. It now waits up to 3 s for that report. Fixes "Kill your first zombie" / kill milestones, combat XP and quest kill counts.
 * Running a zombie over now counts for the driver; when the game names no killer, the nearest player who hurt it gets the kill.

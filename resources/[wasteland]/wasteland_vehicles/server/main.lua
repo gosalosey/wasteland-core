@@ -278,7 +278,7 @@ end
 -- Actions
 -------------------------------------------------------------------------------
 
-local LABELS = { battery = 'Installing the battery', engine = 'Fitting engine parts', wheel = 'Mounting a wheel',
+local LABELS = { fullRepair = 'Fully repairing the vehicle', battery = 'Installing the battery', engine = 'Fitting engine parts', wheel = 'Mounting a wheel',
     refuel = 'Refuelling', siphon = 'Siphoning fuel', repair = 'Repairing', fitLock = 'Fitting a lock', toggleLock = 'Turning the key',
     pickLock = 'Picking the lock', removeLock = 'Taking the lock off', fillCan = 'Filling the jerry can', pumpRefuel = 'Refuelling at the pump' }
 
@@ -443,7 +443,15 @@ local function finish(src)
     if not item then notice(src, reason); return end
 
     local cfg = M.config
-    if a.action == 'battery' or a.action == 'engine' or a.action == 'wheel' then
+    if a.action == 'fullRepair' then
+        -- every part, full health, at least half a tank: a working car at once
+        if not inv():RemoveItem(src, item, 1) then notice(src, 'The repair kit is gone.'); return end
+        v.parts.battery, v.parts.engine, v.parts.wheels = true, true, 4
+        v.engine, v.body = 1000, 1000
+        v.fuel = math.max(v.fuel, cfg.tankLitres * 0.5)
+        notice(src, string.format('Fully repaired: every part fitted, engine and body like new, %.0f of %d L of fuel.', v.fuel, cfg.tankLitres))
+        M.log:info('player %d used a full vehicle repair on vehicle %s', src, v.id)
+    elseif a.action == 'battery' or a.action == 'engine' or a.action == 'wheel' then
         if not inv():RemoveItem(src, item, 1) then notice(src, 'The part is gone.'); return end
         if a.action == 'battery' then v.parts.battery = true
         elseif a.action == 'engine' then v.parts.engine = true
@@ -490,7 +498,7 @@ local function finish(src)
         notice(src, 'You took the lock off. The old key no longer fits anything.')
         M.log:info('player %d took the lock off vehicle %s', src, v.id)
     end
-    publish(v, a.action == 'repair' or a.action == 'battery' or a.action == 'engine' or a.action == 'wheel')
+    publish(v, a.action == 'repair' or a.action == 'fullRepair' or a.action == 'battery' or a.action == 'engine' or a.action == 'wheel')
     save(v)
     TriggerEvent('wasteland:vehicles:action', src, a.action, v.id)
 end
@@ -537,7 +545,7 @@ M = Wasteland.DefineModule({
             repair = { type = 'table', fields = { engine = { type = 'number', default = 400, min = 0, max = 1000 },
                 body = { type = 'number', default = 400, min = 0, max = 1000 } } },
             seconds = { type = 'table', fields = {
-                battery = SECONDS, engine = SECONDS, wheel = SECONDS, refuel = SECONDS, siphon = SECONDS, repair = SECONDS,
+                fullRepair = SECONDS, battery = SECONDS, engine = SECONDS, wheel = SECONDS, refuel = SECONDS, siphon = SECONDS, repair = SECONDS,
                 fitLock = SECONDS, toggleLock = SECONDS, pickLock = SECONDS, removeLock = SECONDS, fillCan = SECONDS,
             } },
             pump = { type = 'table', fields = {
@@ -577,7 +585,7 @@ M = Wasteland.DefineModule({
     },
     onInit = function(mod)
         M = mod -- DefineModule may run onInit before it returns
-        for action, s in pairs({ battery = 6, engine = 10, wheel = 6, refuel = 8, siphon = 10, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8,
+        for action, s in pairs({ fullRepair = 15, battery = 6, engine = 10, wheel = 6, refuel = 8, siphon = 10, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8,
             removeLock = 6, fillCan = 8 }) do
             if not M.config.seconds[action] then M.config.seconds[action] = s end
         end
@@ -641,7 +649,7 @@ M = Wasteland.DefineModule({
 })
 
 local RATE = { burst = 6, perSecond = 2 }
-local ACTIONS = { 'battery', 'engine', 'wheel', 'refuel', 'siphon', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'removeLock', 'trunk' }
+local ACTIONS = { 'fullRepair', 'battery', 'engine', 'wheel', 'refuel', 'siphon', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'removeLock', 'trunk' }
 
 M.netEvent('wasteland:vehicles:server:act', {
     args = { { type = 'integer', required = true, min = 1 }, { type = 'enum', required = true, values = ACTIONS } },
