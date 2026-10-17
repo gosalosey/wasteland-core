@@ -1,5 +1,11 @@
 # Changelog
 
+## Fix: zombie kills often not counted; other guide milestones (owner report)
+* Kill credit was lost in a race: the server noticed a zombie at 0 health (its once-a-second check) before the kill report from the game running it arrived, and marked it dead with no killer. It now waits up to 3 s for that report. Fixes "Kill your first zombie" / kill milestones, combat XP and quest kill counts.
+* Running a zombie over now counts for the driver; when the game names no killer, the nearest player who hurt it gets the kill.
+* A finished search that found nothing now counts as a search (guide, scavenging XP).
+* Characters older than the guide get credit from their skills: kills (combat XP), searches, crafts, harvests, wounds treated and their best skill level - checked when they log in.
+
 ## Cheaper traders, cheaper upkeep, Take all (owner)
 * Trader prices lowered: food and basics about 40 % less, gear about half, big-ticket items about a third (pistol 1500 -> 520, pump shotgun 3000 -> 1050, engine parts 600 -> 210, armor plate 750 -> 260, small backpack 400 -> 140). Traders never pay more than half their own price, so nothing can be bought and sold back at a profit.
 * Base upkeep is a quarter of before: 0.25 of a material per piece per day (a 40-piece base: 10 planks a day). basebuilding.lua `upkeep.perPieceCostPerDay`.

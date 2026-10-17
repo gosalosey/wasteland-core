@@ -298,10 +298,24 @@ Citizen.CreateThread(function()
                                 b.reported = true
                                 -- Who killed it (a player), for quests.
                                 local source = GetPedSourceOfDeath(ped)
+                                -- run over: the driver killed it
+                                if source and source ~= 0 and IsEntityAVehicle(source) then source = GetPedInVehicleSeat(source, -1) end
                                 local killer = 0
                                 if source and source ~= 0 and IsEntityAPed(source) and IsPedAPlayer(source) then
                                     local pl = NetworkGetPlayerIndexFromPed(source)
                                     if pl ~= -1 then killer = GetPlayerServerId(pl) end
+                                end
+                                if killer == 0 then
+                                    -- the game did not say: the nearest player who hurt it
+                                    local best, bestD = nil, 60.0
+                                    for _, pl in ipairs(GetActivePlayers()) do
+                                        local pp = GetPlayerPed(pl)
+                                        if pp ~= 0 and HasEntityBeenDamagedByEntity(ped, pp, true) then
+                                            local d = #(GetEntityCoords(pp) - GetEntityCoords(ped))
+                                            if d < bestD then best, bestD = pl, d end
+                                        end
+                                    end
+                                    if best then killer = GetPlayerServerId(best) end
                                 end
                                 TriggerServerEvent('wasteland:zombies:server:died', NetworkGetNetworkIdFromEntity(ped), killer)
                             end

@@ -15,7 +15,8 @@ end
 
 describe("survivor's guide", function()
     local server = newServer({ config = CFG })
-    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival', 'wasteland_skills', 'wasteland_guide' })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival', 'wasteland_skills', 'wasteland_guide',
+        'wasteland_weapons', 'wasteland_zombies' })
     local function join(license, first)
         local id = server:connectAndJoin({ name = 'P-' .. license, license = license })
         server:advance(200)
@@ -86,11 +87,30 @@ describe("survivor's guide", function()
         expect(m(id, 'skill5').done).toBe(true)
     end)
 
+    it('a real zombie kill counts even when the server sees it dead before the kill report arrives', function()
+        local before = G().stats.kills or 0
+        local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 5.0, y = 0.0, z = 30.0 })
+        local z
+        for _, e in ipairs(server:entityList('wlZombie')) do if e.netId == netId then z = e end end
+        z.owner = id
+        z.health = 0
+        server:advance(1500)                     -- the server's own check sees it at 0 health first
+        server:clientEvent(id, 'wasteland:zombies:server:died', netId, id); server:advance(200)
+        expect(G().stats.kills).toBe(before + 1)
+    end)
+
+    it('a character older than the guide gets credit for what its skills show (kills from combat XP)', function()
+        server:export('wasteland_skills', 'AddXP', other, 'combat', 80) -- 10 kills worth
+        server:restart('wasteland_guide'); server:advance(4000)
+        expect(server:export('wasteland_guide', 'GetGuide', other).stats.kills >= 10).toBe(true)
+        expect(m(other, 'kill1').done).toBe(true)
+    end)
+
     it('is kept across a restart', function()
         server:restart('wasteland_guide'); server:advance(2500)
         expect(states(server).guide).toBe('running')
         expect(m(id, 'search').done).toBe(true)
-        expect(G().stats.kills).toBe(3)
+        expect(G().stats.kills >= 4).toBe(true) -- 4 real kills, more from combat XP (backfill)
         expect(#server.scriptErrors).toBe(0)
     end)
 end)

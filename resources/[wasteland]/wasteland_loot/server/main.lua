@@ -110,7 +110,11 @@ local function finish(src)
         end
         empty = isEmpty(s.id)
     end
-    if empty then notice(src, 'You found nothing.'); return end
+    if empty then
+        notice(src, 'You found nothing.')
+        TriggerEvent('wasteland:loot:searched', src, s.type, s.name, false) -- still a search (guide, skills)
+        return
+    end
     searches = searches + 1
     inv():OpenStash(src, s.name, stashOpts(c, s.coords, true, s.label))
     TriggerEvent('wasteland:loot:searched', src, s.type, s.name)

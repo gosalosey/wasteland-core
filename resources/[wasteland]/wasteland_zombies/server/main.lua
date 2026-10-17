@@ -189,7 +189,13 @@ local function maintain()
         elseif z.dead then
             if t - z.deadAt >= pop.corpseSeconds * 1000 then remove(z) end
         else
-            if GetEntityHealth(z.handle) <= 0 then markDead(z, 'health') end
+            -- Dead: the game running it reports who killed it (kill credit for
+            -- quests, skills, the guide). Wait a moment for that report before
+            -- marking it dead without a killer.
+            if GetEntityHealth(z.handle) <= 0 then
+                z.dyingAt = z.dyingAt or t
+                if t - z.dyingAt >= 3000 then markDead(z, 'health') end
+            end
             local c = coordsOf(z.handle)
             if inSafeZone(c) then
                 remove(z) -- wandered into a camp

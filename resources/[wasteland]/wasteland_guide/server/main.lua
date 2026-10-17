@@ -86,6 +86,25 @@ end
 -- Loading
 -------------------------------------------------------------------------------
 
+-- Characters older than the guide: what their skills show they did
+-- already counts (never lowers a count).
+local function backfill(src, cid)
+    local d = data[cid]
+    if not d or GetResourceState('wasteland_skills') ~= 'started' then return end
+    local ok, sk = pcall(function() return exports.wasteland_skills:GetSkills(src) end)
+    if not ok or type(sk) ~= 'table' then return end
+    local per = { combat = { 'kills', 8 }, scavenging = { 'searches', 10 }, crafting = { 'crafts', 15 },
+        hunting = { 'harvests', 25 }, medicine = { 'treated', 15 } }
+    for _, s in ipairs(sk.skills or {}) do
+        local p = per[s.name]
+        if p then
+            local done = math.floor((s.xp or 0) / p[2])
+            if done > (d.stats[p[1]] or 0) then d.stats[p[1]] = done end
+        end
+        if (s.level or 1) > (d.stats.bestSkill or 1) then d.stats.bestSkill = s.level end
+    end
+end
+
 local function load(src, cid)
     local stored = players():GetCharacterData(cid, DATA_KEY)
     local d = { stats = {}, done = {}, life = 0 }
@@ -95,6 +114,9 @@ local function load(src, cid)
         d.life = tonumber(stored.life) or 0
     end
     data[cid] = d
+    backfill(src, cid)
+    -- skills may load a moment after us: look again
+    Citizen.SetTimeout(3000, function() if data[cid] then backfill(src, cid); if check(src, cid) then save(cid) end; send(src, cid) end end)
     check(src, cid) -- milestones added to guide.lua since: already earned?
     send(src, cid)
 end
