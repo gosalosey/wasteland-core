@@ -624,7 +624,7 @@ StartPlacement = function(pieceKey)
 
     Citizen.CreateThread(function()
         while isPlacing do
-            for _, c in ipairs({ 14, 15, 16, 17, 24, 25, 36, 37, 38, 44, 45, 140, 141, 142, 174, 175, 177, 194, 199, 200 }) do DisableControlAction(0, c, true) end
+            for _, c in ipairs({ 14, 15, 16, 17, 24, 25, 36, 37, 38, 44, 45, 140, 141, 142, 172, 173, 174, 175, 177, 194, 199, 200 }) do DisableControlAction(0, c, true) end
             local camCoord = GetGameplayCamCoord()
             local destination = camCoord + RotationToDirection(GetGameplayCamRot(2)) * P.maxPlaceDistance
             local ray = StartExpensiveSynchronousShapeTestLosProbe(camCoord.x, camCoord.y, camCoord.z, destination.x, destination.y, destination.z, 1 + 16, ped, 7)
@@ -672,6 +672,10 @@ StartPlacement = function(pieceKey)
             local fine = P.fineRotateSpeed * GetFrameTime()
             if IsDisabledControlPressed(0, 174) then heading = (heading - fine) % 360.0 end
             if IsDisabledControlPressed(0, 175) then heading = (heading + fine) % 360.0 end
+            -- Up / Down arrows: raise / lower slowly (fine height)
+            local lift = (P.fineHeightSpeed or 0.15) * GetFrameTime()
+            if IsDisabledControlPressed(0, 172) then heightOffset = heightOffset + lift end
+            if IsDisabledControlPressed(0, 173) then heightOffset = heightOffset - lift end
 
             local didSnap = false
             if snapEnabled and candidates then
@@ -699,7 +703,7 @@ StartPlacement = function(pieceKey)
             SetEntityHeading(ghost, heading)
             local rampHelp = pieceKey == 'ramp' and ('~n~R: %s   Q: %s'):format(rampOpts.rampFlip and 'facing down' or 'facing up',
                 rampOpts.rampLevel == 'top' and 'on top of the foundation' or 'up onto the foundation') or ''
-            help(('%s%s~n~~INPUT_CONTEXT~ place   ~INPUT_FRONTEND_RRIGHT~ cancel~n~Wheel: turn 45   Arrows: turn freely~n~Shift+wheel: height   Tab: snapping %s~n~Ctrl+wheel: close gaps (%.2f)%s'):format(
+            help(('%s%s~n~~INPUT_CONTEXT~ place   ~INPUT_FRONTEND_RRIGHT~ cancel~n~Wheel: turn 45   Left/Right: turn freely~n~Up/Down: raise/lower   Shift+wheel: height   Tab: snapping %s~n~Ctrl+wheel: close gaps (%.2f)%s'):format(
                 piece.label, didSnap and ' (snapped)' or '', snapEnabled and 'on' or 'off', overlap, rampHelp))
 
             if IsDisabledControlJustReleased(0, KEY_E) then
