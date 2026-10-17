@@ -47,7 +47,7 @@ return {
     upkeep = {
         enabled = true,
         tickMinutes = 5,
-        perPieceCostPerDay = { wood = 1, stone = 1, metal = 1 },
+        perPieceCostPerDay = { wood = 0.25, stone = 0.25, metal = 0.25 }, -- per piece per day (a 40-piece base: 10 a day)
         decayPerTick = 2,             -- health lost per tick by every piece of a material that is short
         supplyGrid = { width = 10, height = 10, maxWeight = 1000 },
         -- which item pays for which material

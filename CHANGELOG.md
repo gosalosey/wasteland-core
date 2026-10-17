@@ -1,5 +1,10 @@
 # Changelog
 
+## Cheaper traders, cheaper upkeep, Take all (owner)
+* Trader prices lowered: food and basics about 40 % less, gear about half, big-ticket items about a third (pistol 1500 -> 520, pump shotgun 3000 -> 1050, engine parts 600 -> 210, armor plate 750 -> 260, small backpack 400 -> 140). Traders never pay more than half their own price, so nothing can be bought and sold back at a profit.
+* Base upkeep is a quarter of before: 0.25 of a material per piece per day (a 40-piece base: 10 planks a day). basebuilding.lua `upkeep.perPieceCostPerDay`.
+* Looting: a Take all button on whatever you are looting (bodies, containers, trunks, stashes, the ground), or press E. Everything goes into your pockets, then your backpack; stackable items join stacks you already have, everything else keeps its condition. What does not fit stays, and you are told how many.
+
 ## Fix: supply drops were often empty (owner report)
 * They used the ordinary crate loot table, which is empty half the time. They now have their own table (loot.lua `supplydrop`): never empty, 4 - 6 good finds (ammo, medical, food, armor, repair kits, gun parts, cash, sometimes a gun, a hiking backpack or a blueprint).
 * A crate that still rolled nothing falls back to supplydrops.lua `items`; the crate is bigger (10 x 8) so a full drop always fits.

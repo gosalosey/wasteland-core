@@ -20,7 +20,7 @@ local CFG = {
     ['database.lua'] = 'return { connectTimeoutSeconds = 2, queryTimeoutMs = 1000, healthCheckSeconds = 2 }',
     ['players.lua'] = 'return { restoreDelayMs = 200 }',
     -- upkeep every minute, 1 unit a minute per piece (so a test minute shows it)
-    ['basebuilding.lua'] = shipped('basebuilding.lua', { 'tickMinutes = 5,', 'perPieceCostPerDay = { wood = 1, stone = 1, metal = 1 },' },
+    ['basebuilding.lua'] = shipped('basebuilding.lua', { 'tickMinutes = 5,', 'perPieceCostPerDay = { wood = 0.25, stone = 0.25, metal = 0.25 },' },
         { 'tickMinutes = 1,', 'perPieceCostPerDay = { wood = 1440, stone = 1440, metal = 1440 },' }),
 }
 

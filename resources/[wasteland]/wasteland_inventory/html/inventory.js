@@ -355,7 +355,7 @@
         return el;
     }
 
-    function gridPanel(inv, title) {
+    function gridPanel(inv, title, looted) {
         const grid = h('div', { class: 'wli-grid' });
         // + 2: the 1 px border sits outside the cells (box-sizing is border-box)
         grid.style.width = (inv.width * CELL + 2) + 'px';
@@ -366,12 +366,14 @@
         const heavy = inv.weight > inv.maxWeight * 0.9;
         const sortBtn = inv.items.length > 1 ? UI.button('Sort', () => st.api.post('sort', { inv: inv.id })) : null;
         if (sortBtn) sortBtn.title = 'Merge stacks and pack everything neatly';
+        const takeBtn = looted && inv.items.length > 0 ? UI.button('Take all (E)', () => st.api.post('takeAll', { inv: inv.id }), 'primary') : null;
+        if (takeBtn) takeBtn.title = 'Move everything into your pockets and backpack';
         return h('div', { class: 'wli-section' },
             h('div', { class: 'wli-section__head' },
                 h('span', { class: 'wl-section-title', text: title || inv.label }),
                 inv.maxWeight < 100000 ? h('span', { class: 'wli-weight' + (heavy ? ' is-heavy' : ''),
                     text: formatKg(inv.weight) + ' / ' + formatKg(inv.maxWeight) + ' kg' }) : null,
-                sortBtn),
+                takeBtn, sortBtn),
             grid);
     }
 
@@ -513,7 +515,7 @@
             st.middle.appendChild(h('div', { class: 'wl-hint wli-baghint', text: 'Right-click your backpack (Back slot) and choose Open backpack to use it.' }));
         }
         // Health under what is being looted (that comes first).
-        (st.snap.secondary || []).forEach((id) => { const inv = invById(id); if (inv) st.right.appendChild(gridPanel(inv)); });
+        (st.snap.secondary || []).forEach((id) => { const inv = invById(id); if (inv) st.right.appendChild(gridPanel(inv, null, true)); });
         st.right.appendChild(st.vitalsEl);
         renderVitals();
         const ground = h('div', { class: 'wli-ground', text: 'Drop here to put items on the ground' });
@@ -742,6 +744,12 @@
             st.drag.rotated = !st.drag.rotated;
             const g = st.drag.grabX; st.drag.grabX = st.drag.grabY; st.drag.grabY = g;
             if (st.drag.lastEvent) moveGhost(st.drag.lastEvent);
+            return;
+        }
+        // E: take everything from what you are looting
+        if ((e.key === 'e' || e.key === 'E') && !st.drag && !(e.target && e.target.tagName === 'INPUT')) {
+            const from = (st.snap.secondary || []).map(invById).find((i) => i && i.items.length > 0);
+            if (from) { e.preventDefault(); st.api.post('takeAll', { inv: from.id }); }
             return;
         }
         if (e.key === 'Escape' || e.key === 'i' || e.key === 'I' || e.key === 'Tab') {

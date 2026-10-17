@@ -1017,6 +1017,67 @@ function Inv.sort(src, invId)
     end)
 end
 
+--- Take everything from a container (stash, trunk, body, drop) into the
+--- pockets, then the worn bag: stackable items top up stacks, the rest
+--- keep their condition. What does not fit stays. -> ok, err, taken, left
+function Inv.takeAll(src, fromId)
+    local taken, left = 0, 0
+    local ok, err = Inv.run(src, 'take all', function()
+        local from, e = Inv.access(src, fromId); if not from then return nil, e end
+        local c = Inv.characterOf(src)
+        local bag = Inv.backpack(c)
+        if fromId == c.pockets or fromId == c.equip or (bag and fromId == 'item:' .. bag.uid) then
+            return nil, 'that is already yours'
+        end
+        if from.kind ~= 'grid' then return nil, 'there is nothing to take' end
+        local targets = Inv.targetsFor(src)
+        if not targets then return nil, 'your inventory is still loading' end
+        local list = {}
+        for _, s in pairs(from.items) do if s.x ~= nil then list[#list + 1] = s end end
+        -- biggest first, so they find room before small things fill it
+        table.sort(list, function(a, b)
+            local da, db = WLI.defs[a.name] or {}, WLI.defs[b.name] or {}
+            local aa, ab = (da.width or 1) * (da.height or 1), (db.width or 1) * (db.height or 1)
+            if aa ~= ab then return aa > ab end
+            return a.uid < b.uid
+        end)
+        local statements, changed = {}, changedSet(from.id)
+        for _, s in ipairs(list) do
+            local d = WLI.defs[s.name]
+            local plan = d and planAdd(targets, s.name, s.count, s.metadata)
+            if plan and d.stack <= 1 then
+                -- one of a kind: the same stack moves (condition, bag contents)
+                local cr = plan.creates[1]
+                from.items[s.uid] = nil
+                s.x, s.y, s.rotated, s.slot = cr.stack.x, cr.stack.y, cr.stack.rotated, nil
+                cr.inv.items[s.uid] = s
+                statements[#statements + 1] = Store.upsert(s, cr.inv.id)
+                changed[cr.inv.id] = true
+                taken = taken + 1
+            elseif plan then
+                for _, m in ipairs(plan.merges) do
+                    m.stack.count = m.stack.count + m.n
+                    statements[#statements + 1] = Store.upsert(m.stack, m.inv.id)
+                    changed[m.inv.id] = true
+                end
+                for _, cr in ipairs(plan.creates) do
+                    cr.inv.items[cr.stack.uid] = cr.stack
+                    statements[#statements + 1] = Store.upsert(cr.stack, cr.inv.id)
+                    changed[cr.inv.id] = true
+                end
+                from.items[s.uid] = nil
+                statements[#statements + 1] = Store.delete(s.uid)
+                taken = taken + 1
+            else
+                left = left + 1
+            end
+        end
+        if taken == 0 then return nil, left > 0 and 'there is no room for any of it' or 'there is nothing to take' end
+        return { statements = statements, changed = changed }
+    end)
+    return ok, err, taken, left
+end
+
 --- A stack the player carries (pockets, worn, worn bag): stack, inventoryId | nil
 function Inv.findOwn(src, uid)
     local c = Inv.characterOf(src)

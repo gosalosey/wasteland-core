@@ -189,6 +189,7 @@ local OPS = {
     merge = function(p) return 'merge', p.uid, p.from, p.target, p.to, p.count end,
     split = function(p) return 'split', p.uid, p.from, p.count end,
     sort = function(p) return 'sort', p.inv end,
+    takeAll = function(p) return 'takeAll', p.inv end,
     equip = function(p) return 'equip', p.uid, p.from, p.slot end,
     unequip = function(p) return 'unequip', p.slot, p.to, p.x, p.y, p.rotated == true end,
     drop = function(p) return 'drop', p.uid, p.from, p.count end,
