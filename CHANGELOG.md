@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: supply drops were often empty (owner report)
+* They used the ordinary crate loot table, which is empty half the time. They now have their own table (loot.lua `supplydrop`): never empty, 4 - 6 good finds (ammo, medical, food, armor, repair kits, gun parts, cash, sometimes a gun, a hiking backpack or a blueprint).
+* A crate that still rolled nothing falls back to supplydrops.lua `items`; the crate is bigger (10 x 8) so a full drop always fits.
+
 ## Bases: a one-hour safe zone, window bars, barbed wire, spikes, sandbags (owner)
 * The zombie-free zone round a tool cupboard now lasts one real hour after the cupboard is placed (basebuilding.lua `cupboard.safeMinutes`, 0 = for ever). Placing one shows a pop-up; a green ring marks the protected area and a countdown shows how long is left while you are near. When it drops the owner is told, and zombies can come in and attack walls, doors, gates, bars and sandbags. Cupboards placed before this update have had their hour.
 * Window bars (wood, upgrade to metal) snap into window frames; zombies can break them.

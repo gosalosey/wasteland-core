@@ -16,7 +16,8 @@ return {
     minGap = 300,          -- metres between two drops that are out at once
 
     -- What is inside: a loot.lua table, or "" to use `items` and `rolls`.
-    lootTable = 'crate',
+    lootTable = 'supplydrop',
+    grid = { 10, 8 },      -- the crate's size (cells), room for a full drop
     rolls = { 3, 5 },
     items = {
         { name = 'ammo_9mm', min = 10, max = 25, weight = 10 },

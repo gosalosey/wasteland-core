@@ -82,10 +82,17 @@ local function fill(stashId)
         local ok, rolled = pcall(function() return exports.wasteland_loot:RollTable(M.config.lootTable) end)
         if ok and type(rolled) == 'table' then items = rolled end
     end
-    items = items or Rules.rollItems(M.config.items, M.config.rolls, math.random)
+    -- never empty: a table that rolled nothing (or does not exist) falls back to our own list
+    if not items or #items == 0 then items = Rules.rollItems(M.config.items, M.config.rolls, math.random) end
+    local added = 0
     for _, it in ipairs(items) do
         local ok, err = inv():AddItem(stashId, it.name, it.count)
-        if not ok then M.log:warn('supply crate: %s x %d: %s', it.name, it.count, tostring(err)) end
+        if ok then added = added + 1 else M.log:warn('supply crate: %s x %d: %s', it.name, it.count, tostring(err)) end
+    end
+    if added == 0 then
+        for _, it in ipairs(Rules.rollItems(M.config.items, { math.max(1, M.config.rolls[1]), math.max(1, M.config.rolls[2]) }, math.random)) do
+            inv():AddItem(stashId, it.name, it.count)
+        end
     end
 end
 
@@ -166,7 +173,7 @@ M = Wasteland.DefineModule({
             minGap = { type = 'number', default = 300, min = 0, max = 10000, description = 'Metres between two active drops' },
             reach = { type = 'number', default = 3.5, min = 1, max = 20 },
             grid = { type = 'array', default = { 6, 5 }, minItems = 2, maxItems = 2, items = { type = 'integer', min = 1, max = 12 } },
-            lootTable = { type = 'string', default = 'crate', maxLength = 48, description = 'loot.lua table ("" = use items below)' },
+            lootTable = { type = 'string', default = 'supplydrop', maxLength = 48, description = 'loot.lua table ("" = use items below)' },
             rolls = { type = 'array', default = { 3, 5 }, minItems = 2, maxItems = 2, items = { type = 'integer', min = 0, max = 30 } },
             items = { type = 'array', default = {}, items = { type = 'table', fields = {
                 name = { type = 'string', required = true, pattern = '^[%w_]+$' },
