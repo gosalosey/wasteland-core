@@ -28,6 +28,7 @@ function Rules.snapRules()
     r.door = { { anchor = 'doorway', mode = 'exact' } }
     r.gatedoor = { { anchor = 'gateframe', mode = 'exact' } }
     r.garagedoor = { { anchor = 'frame', mode = 'exact' } }
+    r.windowbar = { { anchor = 'windowframe', mode = 'exact' } }
     return r
 end
 

@@ -132,7 +132,8 @@ local function clientConfig()
     for key, p in pairs(c.pieces) do
         pieces[key] = { label = p.label, model = p.model, category = p.category, family = p.family, hidden = p.hidden,
             openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material,
-            interactDistance = p.interactDistance, passThrough = p.passThrough }
+            interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
+            contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -147,8 +148,18 @@ local function clientConfig()
     }
 end
 
+-- The zombie-free zone round a cupboard: seconds left (-1 = never ends,
+-- 0 = over).
+local function safeLeft(c)
+    local cfgc = M.config.cupboard
+    if not cfgc.safeRadius or cfgc.safeRadius <= 0 then return 0 end
+    if not cfgc.safeMinutes or cfgc.safeMinutes <= 0 then return -1 end
+    return math.max(0, (c.created or 0) + cfgc.safeMinutes * 60 - os.time())
+end
+
 local function cupboardInfo(c)
-    return { id = c.id, coords = c.coords, heading = c.heading, radius = c.radius, health = c.health, max_health = c.max_health }
+    return { id = c.id, coords = c.coords, heading = c.heading, radius = c.radius, health = c.health, max_health = c.max_health,
+        safeLeft = safeLeft(c), owner = c.owner }
 end
 
 local function propInfo(p)
@@ -299,7 +310,7 @@ local function placeProp(src, key, x, y, z, heading)
         local id, err = WDB.insert(SQL.insertCupboard, { cid, x, y, z, heading, M.config.cupboard.radius, piece.health, piece.health, os.time() })
         if not id then give(src, piece.cost); notice(src, 'The cupboard could not be saved. Try again.'); M.log:warn('cupboard: %s', tostring(err)); return end
         local c = { id = id, owner = cid, coords = coords, heading = heading, radius = M.config.cupboard.radius,
-            health = piece.health, max_health = piece.health, auth = {} }
+            health = piece.health, max_health = piece.health, auth = {}, created = os.time() }
         cupboards[id] = c
         -- pieces left from an earlier cupboard here belong to this one now
         for _, p in pairs(props) do
@@ -313,6 +324,11 @@ local function placeProp(src, key, x, y, z, heading)
         M.log:info('player %d (character %d) placed tool cupboard %d', src, cid, id)
         TriggerEvent('wasteland:basebuilding:cupboardPlaced', src, id)
         notice(src, 'Tool cupboard placed. You control building and access within ' .. math.floor(c.radius) .. ' m.')
+        local left = safeLeft(c)
+        if left ~= 0 then
+            TriggerClientEvent('wasteland:basebuilding:client:safeZoneStarted', src, left > 0 and math.floor(left / 60) or -1,
+                M.config.cupboard.safeRadius)
+        end
         return
     end
 
@@ -731,6 +747,8 @@ M = Wasteland.DefineModule({
                 minGap = { type = 'number', default = 10.0, min = 0, max = 200 },
                 safeRadius = { type = 'number', default = 12.0, min = 0, max = 100,
                     description = 'Zombies stay out of this many metres around a tool cupboard (0 = off)' },
+                safeMinutes = { type = 'number', default = 60, min = 0, max = 100000,
+                    description = 'How long (real minutes) after placing the zone lasts (0 = for ever)' },
             } },
             lockpick = { type = 'table', fields = {
                 enabled = { type = 'boolean', default = true },
@@ -765,7 +783,7 @@ M = Wasteland.DefineModule({
             pieces = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'table', allowUnknown = true, fields = {
                 label = { type = 'string', required = true },
                 model = { type = 'string', required = true },
-                category = { type = 'enum', values = { 'cupboard', 'structure', 'door', 'garage', 'stash' }, required = true },
+                category = { type = 'enum', values = { 'cupboard', 'structure', 'door', 'garage', 'stash', 'defense' }, required = true },
                 cost = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'integer', min = 1, max = 100000 } },
                 health = { type = 'integer', default = 500, min = 1, max = 100000 },
                 material = { type = 'enum', values = { 'wood', 'stone', 'metal' }, default = 'wood' },
@@ -773,6 +791,12 @@ M = Wasteland.DefineModule({
                 hidden = { type = 'boolean', default = false },
                 openAngleOffset = { type = 'number' },
                 openLift = { type = 'number', min = 0.1, max = 20, description = 'Garage doors: metres they roll up' },
+                altModels = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' },
+                    description = 'Models tried in order when the game lacks `model`' },
+                contactDamage = { type = 'number', min = 0, max = 1000, description = 'Defenses: damage a second to zombies touching it' },
+                slow = { type = 'number', min = 0.05, max = 1, description = 'Defenses: speed share of zombies touching it' },
+                wearPerTouch = { type = 'number', min = 0, max = 10000, description = 'Defenses: durability lost per zombie touch' },
+                touchRadius = { type = 'number', min = 0.3, max = 10, description = 'Defenses: how close counts as touching' },
                 interactDistance = { type = 'number', min = 1, max = 20, description = 'Doors: E works from this far (also from a vehicle)' },
                 passThrough = { type = 'boolean', description = 'Doors: swing through players and vehicles' },
                 grid = { type = 'table', nullable = true, fields = {
@@ -839,7 +863,8 @@ M = Wasteland.DefineModule({
             if not cr or not ar or not pr then return M.fail('could not load bases: ' .. tostring(e1 or e2 or e3)) end
             for _, r in ipairs(cr) do
                 cupboards[r.id] = { id = r.id, owner = r.owner_id, coords = { x = r.x, y = r.y, z = r.z }, heading = r.heading + 0.0,
-                    radius = r.radius + 0.0, health = r.health, max_health = r.max_health, auth = {} }
+                    radius = r.radius + 0.0, health = r.health, max_health = r.max_health, auth = {}, created = tonumber(r.created_unix) or 0 }
+                cupboards[r.id].safeEnded = safeLeft(cupboards[r.id]) == 0
             end
             for _, r in ipairs(ar) do if cupboards[r.cupboard_id] then cupboards[r.cupboard_id].auth[r.character_id] = r.name end end
             local skipped = 0
@@ -904,6 +929,24 @@ M.netEvent('wasteland:basebuilding:server:explosion', { args = { ID, { type = 'i
     rateLimit = { burst = 20, perSecond = 10 } }, function(src, id, kind, at, isCupboard) explosion(src, id, kind, at, isCupboard) end)
 M.netEvent('wasteland:basebuilding:server:melee', { args = { ID }, rateLimit = { burst = 6, perSecond = 3 } }, function(src, id) melee(src, id) end)
 
+-- A cupboard's zombie-free zone dropped: tell the owner (once).
+local function checkSafeZones()
+    for _, c in pairs(cupboards) do
+        if not c.safeEnded and safeLeft(c) == 0 then
+            c.safeEnded = true
+            local s = sourceOf(c.owner)
+            if s then notice(s, 'The zombie-free zone round your base has dropped. Zombies can come in now - defend it!') end
+            TriggerClientEvent('wasteland:basebuilding:client:safeZoneEnded', -1, c.id)
+        end
+    end
+end
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(15000)
+        if M and M.active then pcall(checkSafeZones) end
+    end
+end)
+
 --- ZombieHit(pieceId, zombieCoords) -> health left | nil   (wasteland_zombies:
 --- a zombie that stands at a wall, door or gate hits it; open doors, other
 --- pieces and materials that take no zombie damage are left alone)
@@ -936,9 +979,22 @@ exports('IsInBaseZone', function(coords)
     if not r or r <= 0 then return false end
     local p = { x = coords.x, y = coords.y, z = coords.z or 0 }
     for _, c in pairs(cupboards) do
-        if Rules.dist(p, c.coords) <= r then return true end
+        if Rules.dist(p, c.coords) <= r and safeLeft(c) ~= 0 then return true end
     end
     return false
+end)
+
+--- ZombieTouch(pieceId, zombieCoords) -> health left | nil   (wasteland_zombies:
+--- a zombie walked into barbed wire or spikes; the piece wears)
+exports('ZombieTouch', function(id, at)
+    if not (M and M.active) or type(at) ~= 'table' then return nil end
+    local p = props[tonumber(id)]
+    local piece = p and M.config.pieces[p.piece]
+    if not piece or not piece.wearPerTouch then return nil end
+    local reach = (piece.touchRadius or 1.8) + 1.5
+    if Rules.dist({ x = at.x, y = at.y, z = at.z or p.coords.z }, p.coords) > reach + 1.0 then return nil end
+    damage(p.id, piece.wearPerTouch)
+    return props[p.id] and props[p.id].health or 0
 end)
 
 --- GetCupboardAt(coords) -> { id, owner } | nil

@@ -12,7 +12,7 @@ WLZ.ServerAI = SAI
 
 local cooldowns, gunHistory = {}, {}
 local lastPrune = 0
-local shouts, spits, pieceHits = {}, {}, {}   -- zombie handle -> next allowed / last time
+local shouts, spits, pieceHits, touches = {}, {}, {}, {}   -- zombie handle -> next allowed / last time
 
 local function Srv() return WLZ.Server end
 local function M() return Srv() and Srv().module() end
@@ -27,7 +27,7 @@ function SAI.enabled()
 end
 
 function SAI.init()
-    cooldowns, gunHistory, shouts, spits, pieceHits = {}, {}, {}, {}, {}
+    cooldowns, gunHistory, shouts, spits, pieceHits, touches = {}, {}, {}, {}, {}, {}
     local m = M()
     if not m then return end
     local warnings = {}
@@ -66,6 +66,7 @@ function SAI.alert(coords, radius, kind)
         for h in pairs(shouts) do if not live[h] then shouts[h] = nil end end
         for h in pairs(spits) do if not live[h] then spits[h] = nil end end
         for h in pairs(pieceHits) do if not live[h] then pieceHits[h] = nil end end
+        for h in pairs(touches) do if not live[h] then touches[h] = nil end end
     end
     local key = AI.cooldownKey(kind, coords)
     if cooldowns[key] and t < cooldowns[key] then return 0 end
@@ -187,6 +188,20 @@ local function hitPiece(src, netId, pieceId)
     if ok and left then m.log:debug('zombie %d hit base piece %d (%s left)', z.netId, pieceId, tostring(left)) end
 end
 
+-- A zombie walked into barbed wire or spikes (its game says so): it runs
+-- the zombie, not more than once a second; base building checks the piece
+-- and the distance and wears it. (With or without the upgraded AI.)
+local function touchPiece(src, netId, pieceId)
+    if GetResourceState('wasteland_basebuilding') ~= 'started' then return end
+    local z = Srv().byNet(netId)
+    if not z or z.dead or NetworkGetEntityOwner(z.handle) ~= src then return end
+    local t = GetGameTimer()
+    if touches[z.handle] and t - touches[z.handle] < 900 then return end
+    touches[z.handle] = t
+    local at = Srv().coordsOf(z.handle)
+    pcall(function() return exports.wasteland_basebuilding:ZombieTouch(pieceId, at) end)
+end
+
 local function register()
     local m = M()
     if not m then return end
@@ -195,6 +210,10 @@ local function register()
         args = { { type = 'integer', required = true, min = 1 }, { type = 'string', required = true, pattern = '^%a+$', maxLength = 8 } },
         rateLimit = { burst = 3, perSecond = 0.5 },
     }, function(src, netId, kind) shout(src, netId, kind) end)
+    m.netEvent('wasteland:zombies:server:touchPiece', {
+        args = { { type = 'integer', required = true, min = 1 }, { type = 'integer', required = true, min = 1 } },
+        rateLimit = { burst = 6, perSecond = 4 },
+    }, function(src, netId, pieceId) touchPiece(src, netId, pieceId) end)
     m.netEvent('wasteland:zombies:server:hitPiece', {
         args = { { type = 'integer', required = true, min = 1 }, { type = 'integer', required = true, min = 1 } },
         rateLimit = { burst = 3, perSecond = 1 },

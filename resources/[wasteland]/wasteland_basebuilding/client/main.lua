@@ -379,8 +379,23 @@ end
 -- From the server
 -------------------------------------------------------------------------------
 
-local function storeCupboard(c) c.coords = vec(c.coords); cupboardCache[c.id] = c end
-local function storeProp(p) p.coords = vec(p.coords); propCache[p.id] = p end
+local function storeCupboard(c)
+    c.coords = vec(c.coords)
+    -- the zombie-free zone: when it ends on this game's clock (nil = over, -1 = never)
+    if c.safeLeft and c.safeLeft > 0 then c.safeEndsAt = GetGameTimer() + c.safeLeft * 1000
+    elseif c.safeLeft == -1 then c.safeEndsAt = -1 end
+    cupboardCache[c.id] = c
+end
+
+local function safeActive(c)
+    return c.safeEndsAt == -1 or (c.safeEndsAt ~= nil and GetGameTimer() < c.safeEndsAt)
+end
+local function storeProp(p)
+    p.coords = vec(p.coords)
+    local piece = cfg and cfg.pieces[p.piece]
+    if piece then p.model = piece.model end -- the model this game has (altModels)
+    propCache[p.id] = p
+end
 
 RegisterNetEvent('wasteland:basebuilding:client:sync', function(data)
     if type(data) ~= 'table' then return end
@@ -388,7 +403,17 @@ RegisterNetEvent('wasteland:basebuilding:client:sync', function(data)
     for id in pairs(spawnedProps) do DespawnProp(id) end
     cupboardCache, propCache = {}, {}
     local first = cfg == nil and data.config ~= nil
-    if data.config then cfg = data.config end
+    if data.config then
+        cfg = data.config
+        -- a piece whose model this game lacks uses the first of its altModels it has
+        for _, piece in pairs(cfg.pieces) do
+            if piece.altModels and #piece.altModels > 0 and not IsModelInCdimage(GetHashKey(piece.model)) then
+                for _, m in ipairs(piece.altModels) do
+                    if IsModelInCdimage(GetHashKey(m)) then piece.model = m; break end
+                end
+            end
+        end
+    end
     for _, c in ipairs(data.cupboards or {}) do storeCupboard(c) end
     for _, p in ipairs(data.props or {}) do storeProp(p) end
     if data.mine then setMine(data.mine) end
@@ -822,9 +847,86 @@ exports('IsInBaseZone', function(coords)
     if not r or r <= 0 or not coords then return false end
     local p = vector3(coords.x + 0.0, coords.y + 0.0, coords.z + 0.0)
     for _, c in pairs(cupboardCache) do
-        if #(p - c.coords) <= r then return true end
+        if #(p - c.coords) <= r and safeActive(c) then return true end
     end
     return false
+end)
+
+--- GetDefensesNear(coords, radius) -> list of { id, x, y, z, damage, slow, touch }
+--- (wasteland_zombies: barbed wire and spikes hurt zombies that walk into them)
+exports('GetDefensesNear', function(coords, radius)
+    local out = {}
+    if not cfg or not coords then return out end
+    local at = vector3(coords.x + 0.0, coords.y + 0.0, coords.z + 0.0)
+    for id, d in pairs(propCache) do
+        local piece = cfg.pieces[d.piece]
+        if piece and piece.contactDamage and #(d.coords - at) <= (radius or 10.0) then
+            out[#out + 1] = { id = id, x = d.coords.x, y = d.coords.y, z = d.coords.z, damage = piece.contactDamage,
+                slow = piece.slow or 1.0, touch = piece.touchRadius or 1.8 }
+        end
+    end
+    return out
+end)
+
+-------------------------------------------------------------------------------
+-- The zombie-free zone round a new cupboard: a green ring and a countdown
+-------------------------------------------------------------------------------
+
+local function feed(msg)
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName(msg)
+    EndTextCommandThefeedPostTicker(true, true)
+end
+
+RegisterNetEvent('wasteland:basebuilding:client:safeZoneStarted', function(minutes, radius)
+    PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', true)
+    if minutes and minutes > 0 then
+        feed(string.format('~g~Safe zone active~s~: zombies stay out of %d m round your cupboard for ~g~%d minutes~s~. '
+            .. 'After that they can come in and attack - build your defenses!', math.floor(radius or 0), minutes))
+    else
+        feed(string.format('~g~Safe zone active~s~: zombies stay out of %d m round your cupboard.', math.floor(radius or 0)))
+    end
+end)
+
+RegisterNetEvent('wasteland:basebuilding:client:safeZoneEnded', function(id)
+    local c = cupboardCache[id]
+    if c then c.safeEndsAt = nil end
+end)
+
+local function drawTimer(text)
+    SetTextFont(4); SetTextScale(0.0, 0.5); SetTextColour(120, 230, 140, 230)
+    SetTextOutline(); SetTextCentre(true)
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(0.5, 0.04)
+end
+
+Citizen.CreateThread(function()
+    while true do
+        local sleep = 1000
+        local r = cfg and cfg.safeRadius
+        if r and r > 0 then
+            local me = GetEntityCoords(PlayerPedId())
+            local shown = false
+            for _, c in pairs(cupboardCache) do
+                if safeActive(c) then
+                    local d = #(me - c.coords)
+                    if d <= r + 60.0 then
+                        sleep = 0
+                        -- the protected area, on the ground
+                        DrawMarker(1, c.coords.x, c.coords.y, c.coords.z - 1.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            r * 2.0, r * 2.0, 1.6, 60, 210, 90, 45, false, false, 2, false, nil, nil, false)
+                        if d <= r + 15.0 and not shown and c.safeEndsAt ~= -1 then
+                            shown = true
+                            local left = math.max(0, math.floor((c.safeEndsAt - GetGameTimer()) / 1000))
+                            drawTimer(string.format('Base safe zone: %02d:%02d left', math.floor(left / 60), left % 60))
+                        end
+                    end
+                end
+            end
+        end
+        Wait(sleep)
+    end
 end)
 
 AddEventHandler('onResourceStop', function(res)

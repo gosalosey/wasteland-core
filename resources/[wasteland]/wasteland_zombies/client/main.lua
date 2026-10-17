@@ -312,6 +312,7 @@ Citizen.CreateThread(function()
                                 if cfg.ai and cfg.ai.enabled and WLZ.Brain then WLZ.Brain.configure(ped, info) end
                             end
                             think(ped, b, info, investigate, night)
+                            if WLZ.Brain then WLZ.Brain.defense(ped, b) end -- barbed wire, spikes
                         else
                             b.configured = false -- another client runs it; configure again if it comes back
                         end

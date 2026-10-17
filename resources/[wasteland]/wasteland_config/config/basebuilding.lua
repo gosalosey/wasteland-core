@@ -31,7 +31,11 @@ return {
     -- radius: the claim (building, access). safeRadius: zombies stay out of
     -- this many metres around the cupboard (no spawning, chasing or hits; ones
     -- that wander in are removed) - so you can build in peace. 0 = off.
-    cupboard = { piece = 'toolcupboard', radius = 40.0, minGap = 10.0, safeRadius = 20.0 },
+    -- safeRadius: zombies stay out of this many metres round a new tool
+    -- cupboard, for safeMinutes (real time) after it is placed - time to build.
+    -- After that the zone drops and zombies can come in and attack. 0 minutes
+    -- = the zone never drops.
+    cupboard = { piece = 'toolcupboard', radius = 40.0, minGap = 10.0, safeRadius = 20.0, safeMinutes = 60 },
 
     lockpick = {
         enabled = true,
@@ -68,8 +72,8 @@ return {
         wallsInset = true,
     },
 
-    categoryOrder = { 'structure', 'door', 'garage', 'stash', 'cupboard' },
-    categoryLabels = { structure = 'Structures', door = 'Doors', garage = 'Garage', stash = 'Storage', cupboard = 'Tool Cupboard' },
+    categoryOrder = { 'structure', 'door', 'garage', 'defense', 'stash', 'cupboard' },
+    categoryLabels = { structure = 'Structures', door = 'Doors', garage = 'Garage', defense = 'Defenses', stash = 'Storage', cupboard = 'Tool Cupboard' },
 
     pieces = {
         toolcupboard = { label = 'Tool Cupboard', model = 'sinor_prop_toolcupboard', category = 'cupboard',
@@ -95,6 +99,26 @@ return {
         -- Garage doors roll up when opened (openLift: metres; leave it out to use the door's own height).
         garagedoor = { label = 'Garage Door', model = 'sinor_prop_garage_wood', category = 'garage', cost = { wood_planks = 20 }, health = 600,
             material = 'wood' },
+        -- Window bars snap into a window frame (wood upgrades to metal).
+        windowbar = { label = 'Window Bars', model = 'sinor_prop_windowbar_wood', category = 'structure', cost = { wood_planks = 4 },
+            health = 400, material = 'wood' },
+        windowbar_metal = { label = 'Metal Window Bars', model = 'sinor_prop_windowbar_metal', category = 'structure', health = 1200,
+            material = 'metal', family = 'windowbar', hidden = true },
+
+        -- Defenses (placed anywhere on your land). Zombies that walk into
+        -- barbed wire or spikes are hurt (contactDamage a second) and slowed
+        -- (slow: their speed share); every touch wears the piece
+        -- (wearPerTouch). Sandbags are a tough wall zombies must break.
+        -- altModels: tried in order when the game lacks `model`.
+        barbedwire = { label = 'Barbed Wire', model = 'ss1_13_barbedwire01', altModels = { 'cs4_10_fnc_wire', 'id1_25_razorwire', 'prop_fnclink_09e' },
+            category = 'defense', cost = { scrap_metal = 4, wood_planks = 2 }, health = 300, material = 'metal',
+            contactDamage = 12, slow = 0.4, wearPerTouch = 4, touchRadius = 1.8 },
+        spikes = { label = 'Wooden Spikes', model = 'xs_prop_arena_spikes_01a', altModels = { 'prop_mp_spike_01', 'p_ld_stinger_s' },
+            category = 'defense', cost = { wood_planks = 8 }, health = 250, material = 'wood',
+            contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 1.5 },
+        sandbags = { label = 'Sandbag Wall', model = 'prop_mb_sandblock_02', altModels = { 'prop_conc_sacks_02a', 'prop_mb_sandblock_05' },
+            category = 'defense', cost = { stone = 10, rag = 4 }, health = 1500, material = 'stone' },
+
         stash_small = { label = 'Small Storage Box', model = 'prop_cs_lester_crate', category = 'stash', cost = { wood_planks = 6, scrap_metal = 2 },
             health = 400, material = 'wood', grid = { width = 8, height = 6, maxWeight = 100 } },
         stash_large = { label = 'Large Storage Container', model = 'v_res_tre_storagebox', category = 'stash', cost = { wood_planks = 15, metal_sheet = 4 },
@@ -120,6 +144,7 @@ return {
     },
 
     upgrades = {
+        windowbar = { next = 'windowbar_metal', cost = { metal_sheet = 3 } },
         foundation = { next = 'foundation_stone', cost = { stone = 10 } },
         foundation_stone = { next = 'foundation_metal', cost = { metal_sheet = 6 } },
         wall = { next = 'wall_stone', cost = { stone = 8 } },
@@ -152,7 +177,7 @@ return {
         -- material (0 = they cannot hurt it); the owner is told at most every
         -- noticeMinutes. pieces: the kinds of pieces they attack.
         zombies = { enabled = true, damage = { wood = 4, stone = 2, metal = 1 }, noticeMinutes = 3,
-            pieces = { 'wall', 'doorway', 'windowframe', 'halfwall', 'door', 'gateframe', 'gatedoor', 'garagedoor' } },
+            pieces = { 'wall', 'doorway', 'windowframe', 'halfwall', 'door', 'gateframe', 'gatedoor', 'garagedoor', 'windowbar', 'sandbags' } },
         repair = {
             amount = { wood = 250, stone = 300, metal = 350 },
             cost = { wood = { item = 'wood_planks', count = 3 }, stone = { item = 'stone', count = 2 }, metal = { item = 'metal_sheet', count = 1 } },

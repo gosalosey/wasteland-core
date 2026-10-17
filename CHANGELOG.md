@@ -1,5 +1,11 @@
 # Changelog
 
+## Bases: a one-hour safe zone, window bars, barbed wire, spikes, sandbags (owner)
+* The zombie-free zone round a tool cupboard now lasts one real hour after the cupboard is placed (basebuilding.lua `cupboard.safeMinutes`, 0 = for ever). Placing one shows a pop-up; a green ring marks the protected area and a countdown shows how long is left while you are near. When it drops the owner is told, and zombies can come in and attack walls, doors, gates, bars and sandbags. Cupboards placed before this update have had their hour.
+* Window bars (wood, upgrade to metal) snap into window frames; zombies can break them.
+* New Defenses category: Barbed Wire (hurts and slows zombies that walk into it), Wooden Spikes (hurt more), Sandbag Wall (a tough wall they must break). Wire and spikes wear down with every zombie that touches them; repair them like other pieces.
+* Defense models are GTA's own; each has fallbacks (`altModels`) used when a game lacks the first - check in-game which one shows (R46.x).
+
 ## Zombie sounds included; Chiliad camp; respawn at the safe zones (owner)
 * The zombie sound files are now part of Wasteland Core: `resources/[wasteland]/wasteland_zombiesounds` (Zombie Sound Pack, Free Version, by Catastic, plus a few extra clips). The recipe and the updater install them; `ensure wasteland_zombiesounds` is in the txAdmin server.cfg (the updater offers to add it). A server that had the folder outside `[wasteland]` should delete that copy.
 * New camp: Chiliad Mountain Camp (general trader, medic, gunsmith).

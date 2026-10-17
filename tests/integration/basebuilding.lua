@@ -198,4 +198,36 @@ describe('base building', function()
         expect(note(b)).toBe('Only the owner can remove this tool cupboard.')
         expect(#server:lines('raised:')).toBe(0)
     end)
+
+    it('window bars and defenses (barbed wire, sandbags) can be built', function()
+        I('ClearInventory', a); server:advance(100)
+        I('AddItem', a, 'wood_planks', 6); I('AddItem', a, 'scrap_metal', 4); I('AddItem', a, 'stone', 10)
+        I('AddItem', a, 'rag', 4); server:advance(100)
+        place(a, 'windowbar', 3.0, 2.0)
+        expect(lastProp(a).piece).toBe('windowbar')
+        place(a, 'barbedwire', 6.0, 0.0)
+        local wire = lastProp(a)
+        expect(wire.piece).toBe('barbedwire'); expect(wire.category).toBe('defense')
+        place(a, 'sandbags', 7.0, 3.0)
+        expect(lastProp(a).piece).toBe('sandbags')
+        -- a zombie walking into the wire wears it; one far away does not
+        local BB = function(...) return server:export('wasteland_basebuilding', ...) end
+        expect(BB('ZombieTouch', wire.id, { x = 6.5, y = 0.0, z = 30.0 })).toBe(296)
+        expect(BB('ZombieTouch', wire.id, { x = 20.0, y = 0.0, z = 30.0 })).toBe(nil)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+
+    it('the zombie-free zone lasts an hour after the cupboard is placed, then drops (the owner is told)', function()
+        local BB = function(...) return server:export('wasteland_basebuilding', ...) end
+        expect(BB('IsInBaseZone', { x = 1.0, y = 1.0, z = 30.0 })).toBe(true)
+        local realTime = os.time
+        os.time = function(t) if t then return realTime(t) end return realTime() + 3601 end
+        local ok, err = pcall(function()
+            expect(BB('IsInBaseZone', { x = 1.0, y = 1.0, z = 30.0 })).toBe(false)
+            server:advance(16000)
+            expect(note(a)).toContain('zombie-free zone round your base has dropped')
+        end)
+        os.time = realTime
+        if not ok then error(err, 0) end
+    end)
 end)

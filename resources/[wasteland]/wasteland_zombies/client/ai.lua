@@ -501,6 +501,55 @@ function Brain.think(ped, b, info, investigate, night)
 end
 
 -------------------------------------------------------------------------------
+-- Base defenses: barbed wire and spikes hurt zombies that walk into them and
+-- slow them down; every touch wears the piece (checked by the server).
+-- Runs for every zombie this game runs, with or without the upgraded AI.
+-------------------------------------------------------------------------------
+
+local slowed = {}   -- ped -> { rate, untilT }
+
+function Brain.defense(ped, b)
+    local t = GetGameTimer()
+    if t < (b.nextDefense or 0) or GetResourceState('wasteland_basebuilding') ~= 'started' then return end
+    b.nextDefense = t + 500
+    local here = GetEntityCoords(ped)
+    local ok, list = pcall(function() return exports.wasteland_basebuilding:GetDefensesNear(tbl(here), 6.0) end)
+    if not ok or type(list) ~= 'table' then return end
+    for _, d in ipairs(list) do
+        local dx, dy = d.x - here.x, d.y - here.y
+        if math.sqrt(dx * dx + dy * dy) <= d.touch and math.abs(d.z - here.z) < 2.5 then
+            ApplyDamageToPed(ped, math.max(1, math.floor(d.damage * 0.5 + 0.5)), false)
+            if (d.slow or 1) < 1 then slowed[ped] = { rate = d.slow, untilT = t + 700 } end
+            if t >= (b.nextTouch or 0) then
+                b.nextTouch = t + 1000
+                TriggerServerEvent('wasteland:zombies:server:touchPiece', NetworkGetNetworkIdFromEntity(ped), d.id)
+            end
+            return
+        end
+    end
+end
+
+-- Slowed zombies (the move rate has to be set every frame).
+Citizen.CreateThread(function()
+    while true do
+        if next(slowed) then
+            local t = GetGameTimer()
+            for ped, s in pairs(slowed) do
+                if t > s.untilT or not DoesEntityExist(ped) then
+                    if DoesEntityExist(ped) then SetPedMoveRateOverride(ped, 1.0) end
+                    slowed[ped] = nil
+                else
+                    SetPedMoveRateOverride(ped, s.rate)
+                end
+            end
+            Citizen.Wait(0)
+        else
+            Citizen.Wait(250)
+        end
+    end
+end)
+
+-------------------------------------------------------------------------------
 -- Vehicle crashes are loud (the driver's game reports its own crash; the
 -- server uses the player's real position).
 -------------------------------------------------------------------------------

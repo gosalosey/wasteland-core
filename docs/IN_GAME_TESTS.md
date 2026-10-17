@@ -669,3 +669,14 @@ Tip: an admin overlay with zombie modes helps (`GetZombieMode`: idle, chase, sta
 | R45.5 | How to tab | Pages open and close; Controls lists the keys |
 | R45.6 | Die, F2 | Deaths 1, time alive back to 0, longest life kept |
 | R45.7 | Edit a hint in guide.lua, restart guide | The new text shows |
+
+## R46 Base safe-zone timer and defenses
+
+| # | Do | Expect |
+|---|---|---|
+| R46.1 | Place a tool cupboard | Pop-up: safe zone active for 60 minutes; a green ring on the ground (20 m); "Base safe zone: 59:59 left" at the top while you are near |
+| R46.2 | Set `cupboard.safeMinutes = 2`, restart basebuilding, place a cupboard, wait 2 min | Ring and timer go; "The zombie-free zone round your base has dropped"; zombies can walk in (put it back to 60) |
+| R46.3 | Window frame, then Window Bars | The bars snap into the frame; Left Alt: Upgrade to metal |
+| R46.4 | Place Barbed Wire, Wooden Spikes, Sandbag Wall (Defenses) | Each shows a model (note which one - the first that exists is used) |
+| R46.5 | Lead zombies across barbed wire / spikes | They are hurt and slowed by the wire, hurt more by spikes; the piece's health goes down (Left Alt: Check health) |
+| R46.6 | Hide behind sandbags / window bars after the zone dropped | Zombies attack them; the owner gets "Zombies are attacking your base!" |
