@@ -78,6 +78,18 @@ return {
 
     adminCommand = 'zombies',      -- /zombies count | clear | spawn <n>
 
+    -- Melee hit reactions: every melee hit stuns a zombie for stunMs (it
+    -- stops, and the swing it was winding up never lands); a hit may knock it
+    -- off balance for ragdollMs - more often with heavy weapons.
+    hitReaction = {
+        enabled = true,
+        stunMs = 600,
+        staggerChance = 0.15,       -- fists, knives
+        heavyStaggerChance = 0.5,   -- the heavy weapons below
+        ragdollMs = 900,
+        heavyWeapons = { 'WEAPON_BAT', 'WEAPON_HATCHET', 'WEAPON_BATTLEAXE', 'WEAPON_HAMMER', 'WEAPON_WRENCH', 'WEAPON_CROWBAR', 'WEAPON_MACHETE' },
+    },
+
     -- Zombie sounds: groans, swings, being hurt, dying, screams. The sound
     -- files are in their own resource (pack = wasteland_zombiesounds; ensure
     -- it before wasteland_zombies). Without it zombies are silent as before.

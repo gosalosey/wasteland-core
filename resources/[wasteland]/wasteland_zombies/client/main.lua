@@ -197,6 +197,7 @@ end
 local function chaseStep(ped, b, dist, speed, mods)
     local t = GetGameTimer()
     mods = mods or {}
+    if b.stunUntil and t < b.stunUntil then return end -- just got hit (hit reactions)
     if b.swing and t >= b.swing.at then
         -- The swing lands now: it hits only if the player is still within
         -- reach, in front of the zombie, with nothing in between.
@@ -221,6 +222,69 @@ local function chaseStep(ped, b, dist, speed, mods)
         b.nextTask = t + 1000
         TaskGoToEntity(ped, b.target, -1, cfg.attack.range * 0.6, speed, 1073741824, 0)
     end
+end
+
+-------------------------------------------------------------------------------
+-- Hit reactions (zombies.lua `hitReaction`): a melee hit stuns the zombie for
+-- a moment and cancels the swing it was winding up; heavy weapons can knock
+-- it off balance (a short stagger). Done by the game that runs the zombie.
+-------------------------------------------------------------------------------
+
+local HIT_DEFAULTS = { enabled = true, stunMs = 600, staggerChance = 0.15, heavyStaggerChance = 0.5, ragdollMs = 900,
+    heavyWeapons = { 'WEAPON_BAT', 'WEAPON_HATCHET', 'WEAPON_BATTLEAXE', 'WEAPON_HAMMER', 'WEAPON_WRENCH', 'WEAPON_CROWBAR', 'WEAPON_MACHETE' } }
+local heavyHashes, heavyFrom = {}, nil
+
+local function hitSettings()
+    local hr = (cfg and cfg.hitReaction) or {}
+    local out = {}
+    for k, v in pairs(HIT_DEFAULTS) do out[k] = hr[k] == nil and v or hr[k] end
+    if heavyFrom ~= out.heavyWeapons then
+        heavyFrom, heavyHashes = out.heavyWeapons, {}
+        for _, n in ipairs(out.heavyWeapons or {}) do heavyHashes[GetHashKey(n)] = true end
+    end
+    return out
+end
+
+local function react(ped, b, weapon)
+    local hr = hitSettings()
+    if not hr.enabled or IsPedDeadOrDying(ped, true) then return end
+    local t = GetGameTimer()
+    b.reactedAt = t
+    b.swing = nil                                           -- the swing it was winding up never lands
+    b.stunUntil = t + hr.stunMs
+    b.nextAttack = math.max(b.nextAttack or 0, t + hr.stunMs + 200)
+    local heavy = weapon and heavyHashes[weapon]
+    if math.random() < (heavy and hr.heavyStaggerChance or hr.staggerChance) and not IsPedRagdoll(ped) then
+        SetPedToRagdoll(ped, hr.ragdollMs, hr.ragdollMs, 0, false, false, false)
+    else
+        ClearPedTasks(ped)                                  -- a flinch: it stops in its tracks
+    end
+end
+
+local function isMelee(weapon) return weapon and weapon ~= 0 and GetWeaponDamageType(weapon) == 2 end
+
+-- The game reports the hit at once (on the game that runs the zombie, when
+-- that is this one).
+AddEventHandler('gameEventTriggered', function(name, args)
+    if name ~= 'CEventNetworkEntityDamage' or not cfg then return end
+    local victim, weapon = args[1], args[7]
+    local b = brains[victim]
+    if not b or not b.configured or not NetworkHasControlOfEntity(victim) or not isMelee(weapon) then return end
+    react(victim, b, weapon)
+    b.hp = GetEntityHealth(victim)
+end)
+
+-- A hit the event did not bring here (another game reported it): noticed
+-- from the health on the next think.
+local function hitCheck(ped, b)
+    local hp = GetEntityHealth(ped)
+    if b.hp and hp < b.hp and hp > 0 and GetGameTimer() - (b.reactedAt or 0) > 400 and HasEntityBeenDamagedByWeapon(ped, 0, 1) then
+        local weapon
+        for hash in pairs(heavyHashes) do if HasEntityBeenDamagedByWeapon(ped, hash, 0) then weapon = hash; break end end
+        react(ped, b, weapon)
+        ClearEntityLastWeaponDamage(ped)
+    end
+    b.hp = hp
 end
 
 local function think(ped, b, info, investigate, night)
@@ -325,6 +389,7 @@ Citizen.CreateThread(function()
                                 configure(ped, info.kind)
                                 if cfg.ai and cfg.ai.enabled and WLZ.Brain then WLZ.Brain.configure(ped, info) end
                             end
+                            hitCheck(ped, b)
                             think(ped, b, info, investigate, night)
                             if WLZ.Brain then WLZ.Brain.defense(ped, b) end -- barbed wire, spikes
                         else

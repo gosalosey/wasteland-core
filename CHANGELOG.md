@@ -1,5 +1,10 @@
 # Changelog
 
+## Melee feels better: zombies react to hits (owner)
+* Every melee hit (fists or a weapon) stuns the zombie for a moment: it stops in its tracks and the swing it was winding up never lands, so you can beat it back instead of trading blows.
+* A hit can knock it off balance (a short stagger): sometimes with fists and knives, half the time with heavy weapons (bat, hatchet, battle axe, hammer, wrench, crowbar, machete).
+* zombies.lua `hitReaction`: stun time, stagger chances and length, which weapons count as heavy; `enabled = false` turns it off.
+
 ## New survivors start with a knife and a Full vehicle repair (owner)
 * Starting items now include a knife and a Full vehicle repair. Hold Left Alt on any wreck and choose "Full vehicle repair": after 15 s every part is fitted (battery, engine, four wheels), engine and body are like new and the tank has at least half its fuel. One use.
 * Items can now have a `limit` (inventory.lua): the Full vehicle repair has limit 1, so a player can only carry one - picking up, being given, Take all and trading a second one are refused.
