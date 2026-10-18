@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: /hud edit toolbar flashing (owner)
+* Removed the fade-in on opening screens: pieces that redraw often (the /hud edit toolbar) replayed it and flashed.
+
 ## Noise meter (owner)
 * A new meter on screen shows how far zombies can hear you right now, using the zombies' own hearing rules (crouched, walking, running, engine) and, for gunshots, the exact reach the server used (suppressor, night, repeated fire). It shows a level from Quiet to Deafening, the reach in feet, what is making the noise, and how many zombies are within earshot. Move and resize it in /hud; /noise hides or shows it.
 
