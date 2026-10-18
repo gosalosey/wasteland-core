@@ -1,5 +1,8 @@
 # Changelog
 
+## Survival HUD: a zombie-survival look (owner)
+* Health is a blood-red bar on a riveted, rusted plate (armour a steel bar under it); food, drink, temperature, pee and poop are round iron dials with a ring that drains, each in its own colour. Low glows amber, critical pulses red. Bleeding and infection tags restyled. Same data, modes and /hud layout as before.
+
 ## Fix: /hud edit toolbar flashing (owner)
 * Removed the fade-in on opening screens: pieces that redraw often (the /hud edit toolbar) replayed it and flashed.
 

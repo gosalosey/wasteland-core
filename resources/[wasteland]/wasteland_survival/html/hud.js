@@ -1,7 +1,7 @@
 // wasteland_survival :: html/hud.js
-// Survival HUD (runs inside wasteland_ui, no input focus): four outlined
-// icons that drain like a liquid level - health (drop), food (tray), drink
-// (bottle), temperature (thermometer) - plus small badges for bleeding and
+// Survival HUD (runs inside wasteland_ui, no input focus): health (and
+// armour) as bars on a riveted plate, and food, drink, temperature, pee and
+// poop as round iron dials whose ring drains; tags for bleeding and
 // infection. Modes:
 //   compact    - every icon, always
 //   immersive  - an icon only while it matters (low, cold, hot)
@@ -151,57 +151,53 @@
         return el;
     }
 
-    // Shapes in a 40 x 48 box: outline, the liquid shape inside it, and
-    // details drawn over the liquid (cut-outs in the background colour).
-    const SHAPES = {
-        health: {
-            outline: 'M20 3 C20 3 5 21 5 31 A15 15 0 0 0 35 31 C35 21 20 3 20 3 Z',
-            inner: 'M20 9 C20 9 9 23 9 31 A11 11 0 0 0 31 31 C31 23 20 9 20 9 Z',
-        },
-        food: {
-            outline: 'M11 3 H29 A6 6 0 0 1 35 9 V39 A6 6 0 0 1 29 45 H11 A6 6 0 0 1 5 39 V9 A6 6 0 0 1 11 3 Z',
-            inner: 'M12 7 H28 A3 3 0 0 1 31 10 V38 A3 3 0 0 1 28 41 H12 A3 3 0 0 1 9 38 V10 A3 3 0 0 1 12 7 Z',
-            // fork (left) and knife (right)
-            detail: 'M13 11 V19 M15.5 11 V19 M18 11 V19 M13 19 Q15.5 23 18 19 M15.5 21 V37 M24 11 Q28 15 26 24 H24 Z M25 24 V37',
-        },
-        drink: {
-            outline: 'M15 3 H25 V9 C25 12 34 15 34 24 V39 A6 6 0 0 1 28 45 H12 A6 6 0 0 1 6 39 V24 C6 15 15 12 15 9 Z',
-            inner: 'M17.5 7 H22.5 V10 C22.5 14 30 17 30 24 V38 A3 3 0 0 1 27 41 H13 A3 3 0 0 1 10 38 V24 C10 17 17.5 14 17.5 10 Z',
-        },
-        armor: {
-            outline: 'M20 3 L35 9 V22 C35 33 28 41 20 45 C12 41 5 33 5 22 V9 Z',
-            inner: 'M20 7 L31 11.5 V22 C31 30.5 26 37 20 40.5 C14 37 9 30.5 9 22 V11.5 Z',
-        },
-        // a droplet with a "P"
-        pee: {
-            outline: 'M20 3 C20 3 6 20 6 30 A14 14 0 0 0 34 30 C34 20 20 3 20 3 Z',
-            inner: 'M20 9 C20 9 10 22 10 30 A10 10 0 0 0 30 30 C30 22 20 9 20 9 Z',
-            detail: 'M16.5 38 V24 H21.5 A3.5 3.5 0 0 1 21.5 31 H16.5',
-        },
-        // a swirl pile
-        poop: {
-            outline: 'M20 4 C25 6 25 11 22 13 C29 13 31 18 28 21 C35 22 37 28 34 32 C39 34 39 44 32 45 H8 C1 44 1 34 6 32 C3 28 5 22 12 21 C9 18 11 13 18 13 C15 10 16 6 20 4 Z',
-            inner: 'M20 8 C22 10 21 13 18 16 C25 16 28 18 26 22 C32 23 34 28 31 32 C36 34 36 41 31 42 H9 C4 41 4 34 9 32 C6 28 8 23 14 22 C12 18 14 16 18 16 Z',
-        },
-        temp: {
-            outline: 'M15 8 A5 5 0 0 1 25 8 V28 A10 10 0 1 1 15 28 Z',
-            inner: 'M18 9 A2 2 0 0 1 22 9 V30.5 A6.5 6.5 0 1 1 18 30.5 Z',
-        },
+    // Glyphs in a 24 x 24 box (filled shapes and strokes).
+    const GLYPHS = {
+        health: { fill: 'M12 20.5s-7.2-4.4-9.4-8.8A5.1 5.1 0 0 1 12 6.4a5.1 5.1 0 0 1 9.4 5.3c-2.2 4.4-9.4 8.8-9.4 8.8z' },
+        armor: { fill: 'M12 2.8l7.6 2.9v5.9c0 5-3.3 8.3-7.6 9.6-4.3-1.3-7.6-4.6-7.6-9.6V5.7z' },
+        food: { stroke: 'M7 3v7.5a2 2 0 0 0 4 0V3M9 12.5V21M16.5 21V3c-2.2 1-3.5 4-3.5 7.5 0 1.6.9 2.5 2.2 2.5h1.3' },
+        drink: { fill: 'M12 2.8s-6.2 7.3-6.2 11.5a6.2 6.2 0 0 0 12.4 0C18.2 10.1 12 2.8 12 2.8z' },
+        temp: { stroke: 'M10 13.6V5a2 2 0 0 1 4 0v8.6a4.2 4.2 0 1 1-4 0zM12 9v7.5', dot: true },
+        pee: { fill: 'M12 2.8s-6 7-6 11.2a6 6 0 0 0 12 0C18 9.8 12 2.8 12 2.8z', text: 'P' },
+        poop: { fill: 'M12 3.5c2 .8 2.2 2.8 1.2 3.8 2.8 0 3.8 1.8 3 3 2.8.2 3.8 2.8 2.8 4.5 2 .9 1.4 4.7-1 4.7H6c-2.4 0-3-3.8-1-4.7-1-1.7 0-4.3 2.8-4.5-.8-1.2.2-3 3-3-1-1-.6-3 1.2-3.8z' },
     };
 
-    function iconSvg(icon) {
-        const shape = SHAPES[icon.key];
-        const id = 'wlh-clip-' + (++uid);
-        // Liquid from the bottom of the inner shapes (y 44) up to the level (y 7 = full).
-        const top = 44 - (37 * icon.fill / 100);
-        const clip = svg('clipPath', { id: id }, [svg('rect', { x: '0', y: String(top), width: '40', height: String(48 - top) })]);
-        const kids = [
-            svg('defs', {}, [clip]),
-            svg('path', { d: shape.outline, class: 'wlh-outline' }),
-            svg('path', { d: shape.inner, class: 'wlh-liquid', 'clip-path': 'url(#' + id + ')' }),
-        ];
-        if (shape.detail) kids.push(svg('path', { d: shape.detail, class: 'wlh-detail', 'clip-path': 'url(#' + id + ')' }));
-        return svg('svg', { viewBox: '0 0 40 48', class: 'wlh-svg' }, kids);
+    function glyph(key) {
+        const g = GLYPHS[key] || GLYPHS.health;
+        const kids = [];
+        if (g.fill) kids.push(svg('path', { d: g.fill, class: 'wlh-g-fill' }));
+        if (g.stroke) kids.push(svg('path', { d: g.stroke, class: 'wlh-g-stroke' }));
+        if (g.dot) kids.push(svg('circle', { cx: '12', cy: '17.2', r: '2.2', class: 'wlh-g-fill' }));
+        if (g.text) {
+            const t = svg('text', { x: '12', y: '17.6', 'text-anchor': 'middle', class: 'wlh-g-text' });
+            t.textContent = g.text;
+            kids.push(t);
+        }
+        return svg('svg', { viewBox: '0 0 24 24', class: 'wlh-glyph' }, kids);
+    }
+
+    // A round iron badge: a ring that drains around the glyph.
+    const RING = 2 * Math.PI * 19;
+    function badgeEl(icon) {
+        const ring = svg('svg', { viewBox: '0 0 48 48', class: 'wlh-ring' }, [
+            svg('circle', { cx: '24', cy: '24', r: '19', class: 'wlh-ring__track' }),
+            svg('circle', { cx: '24', cy: '24', r: '19', class: 'wlh-ring__fill',
+                'stroke-dasharray': RING.toFixed(2), 'stroke-dashoffset': (RING * (1 - icon.fill / 100)).toFixed(2) }),
+        ]);
+        const el = h('div', { class: 'wlh-dial wlh-dial--' + icon.key + (icon.hot ? ' is-hot' : '') + ' is-' + icon.level,
+            attrs: { title: icon.label + ' ' + icon.fill + '%' } },
+            ring, h('div', { class: 'wlh-dial__face' }, glyph(icon.key)));
+        return el;
+    }
+
+    // The long bar on a riveted plate (health, armour under it).
+    function barEl(icon, thin) {
+        const fill = h('div', { class: 'wlh-bar__fill' });
+        fill.style.width = icon.fill + '%';
+        return h('div', { class: 'wlh-plate wlh-plate--' + icon.key + ' is-' + icon.level + (thin ? ' is-thin' : '') },
+            h('div', { class: 'wlh-plate__icon' }, glyph(icon.key)),
+            h('div', { class: 'wlh-bar' }, fill, h('div', { class: 'wlh-bar__grime' })),
+            h('span', { class: 'wlh-plate__value', text: String(icon.fill) }));
     }
 
     // ------------------------------------------------------------------
@@ -290,18 +286,22 @@
                 stats: Object.assign({}, DEMO, data.stats || {}, { dead: false }),
             })
             : data;
-        const row = h('div', { class: 'wlh-row' });
-        icons(shown).forEach((i) => {
-            const el = h('div', { class: 'wlh-icon is-' + i.level });
-            el.appendChild(iconSvg(i));
-            row.appendChild(el);
-        });
-        root.appendChild(row);
+        const list = icons(shown);
+        const bars = list.filter((i) => i.key === 'health' || i.key === 'armor');
+        const dials = list.filter((i) => i.key !== 'health' && i.key !== 'armor');
+        const panel = h('div', { class: 'wlh-panel' });
+        bars.forEach((i) => panel.appendChild(barEl(i, i.key === 'armor')));
+        if (dials.length) {
+            const row = h('div', { class: 'wlh-row' });
+            dials.forEach((i) => row.appendChild(badgeEl(i)));
+            panel.appendChild(row);
+        }
+        if (bars.length || dials.length) root.appendChild(panel);
         const b = badges(shown);
         if (b.length) {
-            const list = h('div', { class: 'wlh-badges' });
-            b.forEach((x) => list.appendChild(h('span', { class: 'wlh-badge wlh-badge--' + x.key, text: x.text })));
-            root.appendChild(list);
+            const tags = h('div', { class: 'wlh-badges' });
+            b.forEach((x) => tags.appendChild(h('span', { class: 'wlh-badge wlh-badge--' + x.key, text: x.text })));
+            root.appendChild(tags);
         }
         place(editing ? draft : normalizeLayout(data.layout));
 
@@ -356,36 +356,85 @@
 
     const CSS = [
         '.wlh-root { position: absolute; right: 1.6vw; bottom: 3vh; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none;',
-        '  --wlh-ok: #7fc75a; --wlh-low: #d6b23c; --wlh-critical: #e0533f; --wlh-cut: #0b0f0a; --wlh-scale: 1; }',
+        '  --wlh-ok: #8fbf5f; --wlh-low: #d99a2b; --wlh-critical: #d2261c; --wlh-scale: 1; font-family: var(--wl-font-display); }',
         '.wlh-root.is-editing { pointer-events: auto; cursor: move; outline: 2px dashed rgba(127,199,90,0.85); outline-offset: 8px;',
-        '  border-radius: 6px; background: rgba(10,14,9,0.35); }',
-        '.wlh-row { display: flex; gap: calc(14px * var(--wlh-scale)); }',
-        '.wlh-root.is-vertical .wlh-row { flex-direction: column; }',
+        '  border-radius: 8px; background: rgba(10,14,9,0.35); }',
+        // the panel: everything sized from --wlh-scale
+        '.wlh-panel { display: flex; flex-direction: column; align-items: stretch; gap: calc(5px * var(--wlh-scale)); }',
+        // plate with a bar (health / armour)
+        '.wlh-plate { position: relative; display: flex; align-items: center; gap: calc(7px * var(--wlh-scale));',
+        '  width: calc(282px * var(--wlh-scale)); height: calc(30px * var(--wlh-scale)); padding: 0 calc(10px * var(--wlh-scale)) 0 calc(4px * var(--wlh-scale));',
+        '  border-radius: calc(6px * var(--wlh-scale)); border: 1px solid #4a3d2e;',
+        '  background: radial-gradient(3px 3px at 6px 50%, #8a7a62 40%, transparent 60%), radial-gradient(3px 3px at calc(100% - 6px) 50%, #8a7a62 40%, transparent 60%),',
+        '    linear-gradient(180deg, #2c2620, #15120f 70%, #1d1914);',
+        '  box-shadow: 0 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,230,190,0.08), inset 0 -2px 4px rgba(0,0,0,0.5); }',
+        '.wlh-plate.is-thin { height: calc(20px * var(--wlh-scale)); width: calc(230px * var(--wlh-scale)); align-self: flex-start; }',
+        '.wlh-plate__icon { flex: none; display: grid; place-items: center; width: calc(24px * var(--wlh-scale)); height: calc(24px * var(--wlh-scale));',
+        '  border-radius: calc(5px * var(--wlh-scale)); background: linear-gradient(180deg, #3a3129, #1a1612); border: 1px solid #55463a;',
+        '  box-shadow: inset 0 1px 0 rgba(255,230,190,0.1); color: #d2261c; }',
+        '.is-thin .wlh-plate__icon { width: calc(16px * var(--wlh-scale)); height: calc(16px * var(--wlh-scale)); }',
+        '.wlh-plate--armor .wlh-plate__icon { color: #8fa8b8; }',
+        '.wlh-plate__icon .wlh-glyph { width: 72%; height: 72%; filter: drop-shadow(0 0 3px currentColor); }',
+        '.wlh-bar { position: relative; flex: 1; height: 58%; border-radius: 3px; overflow: hidden; background: #0a0807;',
+        '  box-shadow: inset 0 2px 4px rgba(0,0,0,0.9), 0 1px 0 rgba(255,230,190,0.06); }',
+        '.wlh-bar__fill { position: absolute; left: 0; top: 0; bottom: 0; transition: width 0.4s ease;',
+        '  background: linear-gradient(180deg, #e2453a 0%, #a3160f 55%, #5e0805 100%); box-shadow: 0 0 10px rgba(210,38,28,0.55); }',
+        '.wlh-plate--armor .wlh-bar__fill { background: linear-gradient(180deg, #b9cfdc, #6c8797 55%, #3b4e5a); box-shadow: 0 0 8px rgba(143,168,184,0.45); }',
+        // scratches and dirt over the bar
+        '.wlh-bar__grime { position: absolute; inset: 0; pointer-events: none;',
+        '  background: repeating-linear-gradient(115deg, rgba(0,0,0,0.22) 0 2px, transparent 2px 9px),',
+        '    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%); }',
+        '.wlh-plate__value { flex: none; min-width: calc(24px * var(--wlh-scale)); text-align: right; font-size: calc(13px * var(--wlh-scale)); font-weight: 700;',
+        '  color: #e9dfcc; text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; }',
+        '.is-thin .wlh-plate__value { font-size: calc(10px * var(--wlh-scale)); }',
+        '.wlh-plate.is-critical { border-color: #7a1a12; box-shadow: 0 0 14px rgba(210,38,28,0.45), 0 4px 12px rgba(0,0,0,0.6); }',
+        '.wlh-plate--health.is-critical .wlh-bar__fill { animation: wlhPulse 0.9s ease-in-out infinite; }',
+        // round iron dials
+        '.wlh-row { display: flex; gap: calc(7px * var(--wlh-scale)); justify-content: flex-start; }',
+        '.wlh-root.is-vertical .wlh-row { flex-direction: column; align-items: flex-end; }',
         '.wlh-root.is-vertical .wlh-badges { flex-direction: column; align-items: flex-end; }',
-        '.wlh-icon { width: calc(36px * var(--wlh-scale)); height: calc(43px * var(--wlh-scale)); color: var(--wlh-ok);',
-        '  filter: drop-shadow(0 0 4px rgba(127,199,90,0.55)) drop-shadow(0 1px 1px #000); }',
-        '.wlh-icon.is-low { color: var(--wlh-low); filter: drop-shadow(0 0 4px rgba(214,178,60,0.55)) drop-shadow(0 1px 1px #000); }',
-        '.wlh-icon.is-critical { color: var(--wlh-critical); filter: drop-shadow(0 0 5px rgba(224,83,63,0.7)) drop-shadow(0 1px 1px #000);',
-        '  animation: wlhPulse 1.1s ease-in-out infinite; }',
-        '.wlh-svg { width: 100%; height: 100%; overflow: visible; }',
-        '.wlh-outline { fill: rgba(10,14,9,0.6); stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; }',
-        '.wlh-liquid { fill: currentColor; opacity: 0.85; }',
-        '.wlh-detail { fill: var(--wlh-cut); stroke: var(--wlh-cut); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }',
-        '@keyframes wlhPulse { 50% { opacity: 0.45; } }',
+        '.wlh-dial { position: relative; width: calc(46px * var(--wlh-scale)); height: calc(46px * var(--wlh-scale)); border-radius: 50%; --c: var(--wlh-ok);',
+        '  background: radial-gradient(circle at 35% 30%, #4a4036, #1d1915 62%, #0f0d0b);',
+        '  border: 2px solid #4f4133; box-shadow: 0 4px 10px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,230,190,0.15), inset 0 -3px 6px rgba(0,0,0,0.6); }',
+        // four rivets around the rim
+        '.wlh-dial::before { content: ""; position: absolute; inset: -1px; border-radius: 50%; pointer-events: none;',
+        '  background: radial-gradient(circle at 50% 4%, #a08c70 0 1.6px, transparent 2.2px), radial-gradient(circle at 50% 96%, #a08c70 0 1.6px, transparent 2.2px),',
+        '    radial-gradient(circle at 4% 50%, #a08c70 0 1.6px, transparent 2.2px), radial-gradient(circle at 96% 50%, #a08c70 0 1.6px, transparent 2.2px); }',
+        '.wlh-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }',
+        '.wlh-ring__track { fill: none; stroke: rgba(0,0,0,0.55); stroke-width: 4; }',
+        '.wlh-ring__fill { fill: none; stroke: var(--c); stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 2px var(--c));',
+        '  transition: stroke-dashoffset 0.5s ease, stroke 0.3s; }',
+        '.wlh-dial__face { position: absolute; inset: 22%; display: grid; place-items: center; border-radius: 50%; color: var(--c);',
+        '  background: radial-gradient(circle at 40% 35%, #2a241e, #0e0c0a); box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); }',
+        '.wlh-glyph { width: 78%; height: 78%; overflow: visible; filter: drop-shadow(0 0 3px var(--c, currentColor)); }',
+        '.wlh-g-fill { fill: currentColor; }',
+        '.wlh-g-stroke { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }',
+        '.wlh-g-text { fill: #120f0c; font-size: 8px; font-weight: 800; font-family: Arial, sans-serif; }',
+        // colours per stat
+        '.wlh-dial--food { --c: #e0912f; } .wlh-dial--drink { --c: #3fb5c9; } .wlh-dial--temp { --c: #cfe3ea; } .wlh-dial--temp.is-hot { --c: #ff7a3c; }',
+        '.wlh-dial--pee { --c: #d8c63a; } .wlh-dial--poop { --c: #a0703e; }',
+        '.wlh-dial.is-low { --c: var(--wlh-low); border-color: #6b4f22; }',
+        '.wlh-dial.is-critical { --c: var(--wlh-critical); border-color: #7a1a12; animation: wlhGlow 1s ease-in-out infinite; }',
+        '@keyframes wlhPulse { 50% { opacity: 0.55; } }',
+        '@keyframes wlhGlow { 50% { box-shadow: 0 0 16px rgba(210,38,28,0.75), 0 4px 10px rgba(0,0,0,0.65), inset 0 -3px 6px rgba(0,0,0,0.6); } }',
+        // bleeding / infection tags
         '.wlh-badges { display: flex; gap: 6px; }',
-        '.wlh-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(10,14,9,0.7); text-shadow: 0 1px 2px #000; }',
-        '.wlh-badge--bleeding { color: #ff8a80; border: 1px solid var(--wlh-critical); }',
-        '.wlh-badge--infection { color: #b6e39a; border: 1px solid var(--wlh-ok); }',
-        '.wlh-info { display: flex; gap: 10px; align-items: baseline; font-size: calc(12px * var(--wlh-scale)); color: #cfe8c0;',
-        '  text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,0.6); white-space: nowrap; }',
-        '.wlh-info__id { color: var(--wlh-ok); font-weight: 600; }',
-        '.wlh-info__cash { color: #9be27a; font-weight: 600; font-variant-numeric: tabular-nums; }',
-        '.wlh-stamina { position: absolute; left: 50%; bottom: 2.2vh; width: 180px; height: 5px; transform: translateX(-50%);',
-        '  background: rgba(10,14,9,0.6); border: 1px solid rgba(127,199,90,0.35); border-radius: 3px; overflow: hidden;',
+        '.wlh-badge { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 4px;',
+        '  background: linear-gradient(180deg, #2a231d, #120f0c); text-shadow: 0 1px 2px #000; box-shadow: 0 3px 8px rgba(0,0,0,0.5); }',
+        '.wlh-badge--bleeding { color: #ff6b5e; border: 1px solid #8a1d14; }',
+        '.wlh-badge--bleeding::before { content: "\\25CF  "; color: #d2261c; }',
+        '.wlh-badge--infection { color: #a6e06a; border: 1px solid #4f7a2a; }',
+        '.wlh-badge--infection::before { content: "\\2623  "; }',
+        '.wlh-info { display: flex; gap: 10px; align-items: baseline; font-size: calc(12px * var(--wlh-scale)); color: #e2d8c4;',
+        '  text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,0.6); white-space: nowrap; letter-spacing: 0.03em; }',
+        '.wlh-info__id { color: #d99a2b; font-weight: 700; }',
+        '.wlh-info__cash { color: #9be27a; font-weight: 700; font-variant-numeric: tabular-nums; }',
+        '.wlh-stamina { position: absolute; left: 50%; bottom: 2.2vh; width: 200px; height: 6px; transform: translateX(-50%);',
+        '  background: #0a0807; border: 1px solid #4a3d2e; border-radius: 3px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.6);',
         '  opacity: 0; transition: opacity 0.6s ease 0.8s; pointer-events: none; }',
         '.wlh-stamina.is-visible { opacity: 1; transition: opacity 0.15s ease; }',
-        '.wlh-stamina__fill { height: 100%; width: 100%; background: #d8e6c8; box-shadow: 0 0 6px rgba(216,230,200,0.6); transition: width 0.15s linear; }',
-        '.wlh-stamina.is-low .wlh-stamina__fill { background: #d6b23c; }',
+        '.wlh-stamina__fill { height: 100%; width: 100%; background: linear-gradient(180deg, #efe6d2, #a89c84); box-shadow: 0 0 6px rgba(239,230,210,0.4); transition: width 0.15s linear; }',
+        '.wlh-stamina.is-low .wlh-stamina__fill { background: linear-gradient(180deg, #f0b44a, #b06e14); }',
         '.wlh-tb { position: absolute; top: 3vh; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center;',
         '  gap: 10px 16px; max-width: 92vw; padding: 10px 14px; background: var(--wl-bg); border: 1px solid var(--wl-border);',
         '  border-radius: var(--wl-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; }',
