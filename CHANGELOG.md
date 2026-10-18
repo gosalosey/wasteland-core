@@ -1,5 +1,8 @@
 # Changelog
 
+## Total Apocalypse is the standard map (owner)
+* The txAdmin recipe now downloads the free Total Apocalypse map pack (SparksScripts, GPL-3.0) into resources/[maps], and server.cfg ensures pack1, pack2, pack3 and postapo-interior. It is downloaded from its own repository, not bundled (about 470 MB). Comment the four ensure lines out to use the normal GTA map.
+
 ## A cleaner, more finished look for every screen (owner)
 * The shared design system (wasteland_ui/html/style.css) was refined, so every screen gets it: glass-like panels with soft depth, rounded corners and a thin glowing accent line along the top; buttons with depth that lift on hover and press on click (main buttons glow); inputs and tabs with clear focus and active states; slim dark scrollbars everywhere; section titles with an accent marker; screens fade in when they open.
 * Inventory: a soft dark backdrop; panels, grids, slots, the hotbar, menus and the hover box restyled; item tiles with a sheen and a glow on hover; item pictures with a shadow; smoother health bars. The body figure's column is wider so it no longer crowds the bars.

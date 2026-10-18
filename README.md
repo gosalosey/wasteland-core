@@ -108,6 +108,10 @@ Stop the server, double-click **`update_wasteland.bat`** in your server folder, 
 
 The updater backs up your database and files first. It keeps your settings and your custom zombie models. When a new version changes a settings file you've edited, it saves the new version next to yours (`name.lua.new`) so you can compare. The server console tells admins when GitHub has a newer version.
 
+### The map
+
+Wasteland uses the **[Total Apocalypse](https://github.com/SparksScripts/Total-Apocalypse)** map pack by SparksScripts (free, GPL-3.0) as its standard world: wrecked roads, barricades and ruined towns. The txAdmin recipe downloads it for you (about 470 MB, so the first install takes longer). Installing by hand: put `pack1`, `pack2`, `pack3` and `postapo-interior` in `resources/[maps]` and add `ensure` lines for them after `pma-voice` (see `server.cfg.example`). To play on the normal GTA map, comment those four lines out.
+
 ### Optional extras
 
 * **Base building props (paid, required for base building):** **sinor-buildingProps-v2** by SinorSystem. It is not free and not included. Get it from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/). Install steps: [docs/INSTALL.md](docs/INSTALL.md#base-building-props-optional).
@@ -165,6 +169,6 @@ txadmin/    txAdmin recipe and server.cfg
 
 **Zombie sounds** (`wasteland_zombiesounds`) are from the free **Zombie Sound Pack** by Catastic, plus a few extra zombie clips.
 
-**Other software** used and not included: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (MIT, by AvarianKnight). Base building uses the **sinor-buildingProps-v2** props pack by SinorSystem, a paid pack you buy yourself from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/).
+**Other software** used and not included: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (MIT, by AvarianKnight). The standard map is [Total Apocalypse](https://github.com/SparksScripts/Total-Apocalypse) (GPL-3.0) by SparksScripts and the mappers credited in its README. Base building uses the **sinor-buildingProps-v2** props pack by SinorSystem, a paid pack you buy yourself from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/).
 
 If you are an author of any of these pictures or sounds and want them credited differently or removed, please open an issue.

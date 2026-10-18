@@ -1,7 +1,7 @@
 $engine: 3
 $onesync: on
 name: Wasteland Core
-version: 1.0.4
+version: 1.0.5
 author: gosalosey
 description: |
   Zombie survival framework for FiveM: zombies, looting, crafting, survival,
@@ -44,6 +44,21 @@ tasks:
   - action: move_path
     src: ./tmp/pma-voice/pma-voice-6.6.2
     dest: ./resources/[standalone]/pma-voice
+
+  # 2c. Total Apocalypse map pack (GPL-3.0, github.com/SparksScripts/Total-Apocalypse):
+  #     the post-apocalyptic world. Large (about 470 MB), so it is downloaded
+  #     from its own repository, not bundled with Wasteland Core.
+  - action: download_file
+    url: https://codeload.github.com/SparksScripts/Total-Apocalypse/zip/refs/heads/main
+    path: ./tmp/apoc.zip
+    timeoutSeconds: 3600
+  - action: unzip
+    src: ./tmp/apoc.zip
+    dest: ./tmp/apoc
+    timeoutSeconds: 3600
+  - action: move_path
+    src: ./tmp/apoc/Total-Apocalypse-main
+    dest: ./resources/[maps]
 
   # 3. Wasteland Core: the main branch as one zip file (about 22 MB). A
   #    plain file download: faster and more reliable for a repository this

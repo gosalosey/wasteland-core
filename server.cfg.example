@@ -18,6 +18,14 @@ setr voice_defaultRadio "CAPITAL"
 setr voice_enableRadioAnim 1
 ensure pma-voice
 
+# --- map (standard; install from github.com/SparksScripts/Total-Apocalypse) ---
+## Map: Total Apocalypse (GPL-3.0, github.com/SparksScripts/Total-Apocalypse).
+## Comment these four lines out to play on the normal GTA map.
+ensure pack1
+ensure pack2
+ensure pack3
+ensure postapo-interior
+
 # --- framework (order matters) ---
 ensure wasteland_loadscreen
 ensure wasteland_config
