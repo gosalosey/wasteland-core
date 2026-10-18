@@ -66,6 +66,7 @@ return {
             'Caps Lock - talk on the radio.  1 - 5 - hotbar slots.',
             '/hud - change the HUD.  /pee, /poop - when you need to go.',
             '/stuck - stuck somewhere? Stand still 10 seconds and you are taken to the nearest safe camp (once every 30 minutes).',
+            '/help [what is wrong] - call everyone for help. /accepthelp - get a route to whoever called. /cancelhelp - you are safe again.',
         } },
         { title = 'Staying alive', lines = {
             'Hunger, thirst, bleeding, infection and body temperature all matter. Watch the HUD.',

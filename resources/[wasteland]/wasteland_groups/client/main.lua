@@ -117,3 +117,71 @@ Citizen.CreateThread(function()
     Citizen.Wait(2000)
     TriggerEvent('chat:addSuggestion', '/group', 'Your group: create, invite, members (also F6)')
 end)
+
+-------------------------------------------------------------------------------
+-- Calls for help: /help [what is wrong], /accepthelp [id], /cancelhelp
+-------------------------------------------------------------------------------
+
+RegisterCommand('help', function(_, args) TriggerServerEvent('wasteland:groups:server:help', table.concat(args or {}, ' ')) end, false)
+RegisterCommand('accepthelp', function(_, args) TriggerServerEvent('wasteland:groups:server:acceptHelp', math.tointeger(tonumber(args and args[1])) or nil) end, false)
+RegisterCommand('cancelhelp', function() TriggerServerEvent('wasteland:groups:server:cancelHelp') end, false)
+
+local function areaName(c)
+    local zone = GetNameOfZone(c.x + 0.0, c.y + 0.0, c.z + 0.0)
+    local label = zone and GetLabelText(zone) or nil
+    if not label or label == 'NULL' then return 'somewhere out there' end
+    return label
+end
+
+-- Everyone: an announcement (the caller only gets their own confirmation).
+RegisterNetEvent('wasteland:groups:client:helpCall', function(c)
+    if type(c) ~= 'table' or c.from == GetPlayerServerId(PlayerId()) then return end
+    local where = areaName(c.coords)
+    local what = (c.message and c.message ~= '') and (': "' .. c.message .. '"') or ''
+    PlaySoundFrontend(-1, 'Event_Message_Purple', 'GTAO_FM_Events_Soundset', true)
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName(string.format('~r~HELP!~s~ %s needs help near ~y~%s~s~%s~n~Type ~g~/accepthelp~s~ to get a route to them.',
+        tostring(c.name), where, what))
+    EndTextCommandThefeedPostTicker(true, true)
+    if GetResourceState('chat') == 'started' then
+        TriggerEvent('chat:addMessage', { color = { 220, 60, 60 }, args = { 'HELP', string.format('%s needs help near %s%s - /accepthelp',
+            tostring(c.name), where, what) } })
+    end
+end)
+
+-- A helper: a red blip with a GPS route that follows the caller.
+local helpBlip, helpId = nil, nil
+RegisterNetEvent('wasteland:groups:client:helpRoute', function(r)
+    if type(r) ~= 'table' or type(r.coords) ~= 'table' then return end
+    if helpBlip and DoesBlipExist(helpBlip) then RemoveBlip(helpBlip) end
+    helpBlip = AddBlipForCoord(r.coords.x + 0.0, r.coords.y + 0.0, r.coords.z + 0.0)
+    SetBlipSprite(helpBlip, 280)
+    SetBlipColour(helpBlip, 1)
+    SetBlipScale(helpBlip, 1.0)
+    SetBlipRoute(helpBlip, true)
+    SetBlipRouteColour(helpBlip, 1)
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentSubstringPlayerName('Needs help: ' .. tostring(r.name))
+    EndTextCommandSetBlipName(helpBlip)
+    helpId = r.id
+    if not r.update then notice(string.format('Route set to %s (red on the map). It follows them while they call.', tostring(r.name))) end
+end)
+
+RegisterNetEvent('wasteland:groups:client:helpEnded', function(id, why)
+    if id ~= helpId then return end
+    if helpBlip and DoesBlipExist(helpBlip) then RemoveBlip(helpBlip) end
+    helpBlip, helpId = nil, nil
+    notice(why == 'cancelled' and 'They are safe now: the call for help was called off.' or 'The call for help ended.')
+end)
+
+-- Arrived: the route goes when you are close.
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1000)
+        if helpBlip and DoesBlipExist(helpBlip) and #(GetEntityCoords(PlayerPedId()) - GetBlipCoords(helpBlip)) < 15.0 then
+            RemoveBlip(helpBlip)
+            helpBlip, helpId = nil, nil
+            notice('You reached them.')
+        end
+    end
+end)

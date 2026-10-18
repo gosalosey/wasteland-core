@@ -18,4 +18,10 @@ return {
         channelBase = 1000,
         keyName = 'Caps Lock',
     },
+
+    -- Calls for help (any player): /help [what is wrong] tells everyone that
+    -- this player needs help and roughly where; /accepthelp gives a GPS route
+    -- to them (it follows them while the call is open); /cancelhelp ends it.
+    -- One call per cooldownMinutes; a call ends after expireMinutes.
+    help = { enabled = true, cooldownMinutes = 3, expireMinutes = 10 },
 }

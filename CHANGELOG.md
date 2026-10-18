@@ -1,5 +1,11 @@
 # Changelog
 
+## Calls for help: /help, /accepthelp, /cancelhelp (owner)
+* /help [what is wrong] sends an announcement to everyone (a pop-up with a sound, and the chat): who needs help, roughly where (the area name) and the message.
+* /accepthelp puts a red blip with a GPS route on your map to whoever called (or /accepthelp <id> for a particular player); it follows them every 10 s while the call is open and goes when you reach them. The caller is told who is coming.
+* /cancelhelp ends the call (helpers are told); a call ends after 10 minutes or when the caller leaves. One call every 3 minutes.
+* groups.lua `help`: on/off, cooldown, how long a call lasts.
+
 ## Fix: "Awaiting scripts" and a hazy, unloaded world after choosing a character (owner report)
 * Blocking spawnmanager's random spawns (the previous fix) also blocked its first spawn when joining - and that first spawn is what ends GTA's loading screen. The game stayed at "Awaiting scripts" behind the character screen, so the world never finished loading. Wasteland now does that first spawn itself, at a fixed holding spot (the default spawn), ends the loading screen, and then the character screen opens.
 

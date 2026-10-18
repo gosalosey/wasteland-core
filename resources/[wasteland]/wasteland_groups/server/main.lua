@@ -352,6 +352,11 @@ M = Wasteland.DefineModule({
             inviteSeconds = { type = 'integer', default = 120, min = 10, max = 3600 },
             markerSeconds = { type = 'number', default = 2, min = 0.5, max = 30, description = 'How often member markers move' },
             command = { type = 'string', default = 'group', pattern = '^[a-z][a-z0-9_]*$' },
+            help = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = true },
+                cooldownMinutes = { type = 'number', default = 3, min = 0, max = 1440 },
+                expireMinutes = { type = 'number', default = 10, min = 1, max = 1440 },
+            } },
             radio = { type = 'table', fields = {
                 enabled = { type = 'boolean', default = true, description = 'Group radio through pma-voice (if it runs)' },
                 channelBase = { type = 'integer', default = 1000, min = 1, max = 100000,
@@ -444,3 +449,104 @@ end)
 
 -- Server events: wasteland:groups:created(groupId, characterId), :joined(groupId, characterId),
 -- :left(groupId, characterId, why), :disbanded(groupId)
+
+-------------------------------------------------------------------------------
+-- Calls for help: /help, /accepthelp, /cancelhelp (groups.lua `help`)
+-------------------------------------------------------------------------------
+
+local calls = {}       -- requester source -> { id, name, at, coords, message, helpers = { [src] = true } }
+local lastCall = {}    -- characterId -> os.time() of the last call
+local callSeq = 0
+
+local function helpCoords(src)
+    local ped = GetPlayerPed(tostring(src))
+    if not ped or ped == 0 or not DoesEntityExist(ped) then return nil end
+    local c = GetEntityCoords(ped)
+    return { x = c.x, y = c.y, z = c.z }
+end
+
+local function endCall(src, why)
+    local c = calls[src]
+    if not c then return end
+    calls[src] = nil
+    for helper in pairs(c.helpers) do TriggerClientEvent('wasteland:groups:client:helpEnded', helper, c.id, why) end
+end
+
+local function callHelp(src, message)
+    local h = M.config.help
+    if not h.enabled then return end
+    local cid = characterOf(src)
+    local at = helpCoords(src)
+    if not cid or not at then return end
+    local t = os.time()
+    if lastCall[cid] and t - lastCall[cid] < h.cooldownMinutes * 60 then
+        notice(src, string.format('You called for help a moment ago. Wait %d s.', h.cooldownMinutes * 60 - (t - lastCall[cid])))
+        return
+    end
+    lastCall[cid] = t
+    endCall(src, 'replaced')
+    callSeq = callSeq + 1
+    message = type(message) == 'string' and message:gsub('[%c<>]', ''):sub(1, 80) or ''
+    calls[src] = { id = callSeq, name = nameOf(src), at = GetGameTimer(), coords = at, message = message, helpers = {} }
+    M.log:info('player %d called for help', src)
+    TriggerClientEvent('wasteland:groups:client:helpCall', -1, { id = callSeq, from = src, name = calls[src].name,
+        coords = at, message = message })
+    notice(src, 'Your call for help went out to everyone. /cancelhelp when you are safe.')
+end
+
+local function acceptHelp(src, target)
+    local h = M.config.help
+    if not h.enabled then return end
+    -- the given player's call, else the newest call that is not your own
+    local c, from
+    if target and calls[target] then c, from = calls[target], target
+    else
+        for s, call in pairs(calls) do
+            if s ~= src and (not c or call.at > c.at) then c, from = call, s end
+        end
+    end
+    if not c then notice(src, 'Nobody is calling for help right now.'); return end
+    if from == src then notice(src, 'That is your own call.'); return end
+    c.helpers[src] = true
+    TriggerClientEvent('wasteland:groups:client:helpRoute', src, { id = c.id, name = c.name, coords = helpCoords(from) or c.coords })
+    notice(from, nameOf(src) .. ' is coming to help you.')
+end
+
+local function helpTick()
+    local h = M.config.help
+    local t = GetGameTimer()
+    for src, c in pairs(calls) do
+        if t - c.at > h.expireMinutes * 60000 then
+            endCall(src, 'expired')
+            notice(src, 'Your call for help ended.')
+        else
+            local at = helpCoords(src)
+            if at then
+                c.coords = at
+                for helper in pairs(c.helpers) do TriggerClientEvent('wasteland:groups:client:helpRoute', helper, { id = c.id, name = c.name, coords = at, update = true }) end
+            end
+        end
+    end
+end
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(10000)
+        if M and M.active then pcall(helpTick) end
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    local src = tonumber(source)
+    if not src then return end
+    endCall(src, 'left')
+    for _, c in pairs(calls) do c.helpers[src] = nil end
+end)
+
+M.netEvent('wasteland:groups:server:help', { args = { { type = 'string', maxLength = 120 } }, rateLimit = { burst = 2, perSecond = 0.2 } },
+    function(src, message) callHelp(src, message) end)
+M.netEvent('wasteland:groups:server:acceptHelp', { args = { { type = 'integer', min = 1, max = 65535 } }, rateLimit = { burst = 3, perSecond = 0.5 } },
+    function(src, target) acceptHelp(src, target) end)
+M.netEvent('wasteland:groups:server:cancelHelp', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
+    if calls[src] then endCall(src, 'cancelled'); notice(src, 'You called off your call for help.') end
+end)
