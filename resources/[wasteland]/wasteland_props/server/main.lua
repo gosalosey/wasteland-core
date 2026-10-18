@@ -15,7 +15,9 @@ local ANGLE = { type = 'number', required = true, min = -720, max = 720 }
 local MODEL = { type = 'string', required = true, pattern = '^[%w_%-]+$', minLength = 2, maxLength = 64 }
 
 local function isAdmin(src)
-    return src and src > 0 and IsPlayerAceAllowed(tostring(src), M.config.adminAce) == true
+    if not src or src <= 0 then return false end
+    local allowed = IsPlayerAceAllowed(tostring(src), M.config.adminAce)
+    return allowed == true or allowed == 1 -- FXServer answers true or 1
 end
 
 local function list()
