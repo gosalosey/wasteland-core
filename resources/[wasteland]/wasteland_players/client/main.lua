@@ -257,3 +257,40 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() and not loaded then setHeld(false) end
 end)
+
+-- Fell through the map (any time, not only after logging in): the ground
+-- (or a big map pack's collision) did not load in time and the ped drops
+-- below the world. Remember the last spot where the ped stood on ground;
+-- when it is falling and is under the ground there (or has been falling a
+-- long way with no ground found), put it back on that spot.
+Citizen.CreateThread(function()
+    local lastGood, fallingSince, fallStartZ = nil, nil, nil
+    while true do
+        Citizen.Wait(500)
+        local ped = PlayerPedId()
+        if loaded and not placing and not IsEntityDead(ped) and not IsPedInAnyVehicle(ped, false) then
+            local c = GetEntityCoords(ped)
+            local skydiving = GetPedParachuteState(ped) >= 0 or IsPedInParachuteFreeFall(ped)
+            if not IsPedFalling(ped) and not IsPedRagdoll(ped) and not IsEntityInAir(ped) and not IsPedSwimming(ped) and not skydiving then
+                fallingSince, fallStartZ = nil, nil
+                lastGood = { x = c.x, y = c.y, z = c.z, heading = GetEntityHeading(ped) }
+            elseif (IsPedFalling(ped) or IsEntityInAir(ped)) and not skydiving then
+                fallingSince = fallingSince or GetGameTimer()
+                fallStartZ = fallStartZ or c.z
+                -- under the world: ground above us, none below us
+                local below = GetGroundZFor_3dCoord(c.x, c.y, c.z + 1.5, false)
+                local above, ground = GetGroundZFor_3dCoord(c.x, c.y, c.z + 500.0, false)
+                local under = not below and above and c.z < ground - 4.0
+                local lost = not below and not above and GetGameTimer() - fallingSince > 4000 and fallStartZ - c.z > 60.0
+                if (under or lost) and lastGood then
+                    print(('[wasteland] fell through the map at %.1f %.1f %.1f: back to the last ground'):format(c.x, c.y, c.z))
+                    local back = lastGood
+                    fallingSince, fallStartZ = nil, nil
+                    SetEntityVelocity(ped, 0.0, 0.0, 0.0)
+                    teleport(back)
+                    setHeld(false)
+                end
+            end
+        end
+    end
+end)

@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: falling through the map (owner)
+* A safety net any time, not only after logging in: when you fall and there is ground above you but none below (the world or a map pack's collision did not load in time), you are put back on the last spot where you stood on ground (the screen fades while it loads).
+
 ## Fix: /propplacer refused admins (owner)
 * The admin check only accepted true; FXServer answers 1 on some servers (the admin panel already accepted both).
 
