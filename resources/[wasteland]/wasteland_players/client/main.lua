@@ -111,35 +111,70 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     end
 end)
 
+-- Put the ped at `pos` without anyone dropping through an unloaded world:
+-- the screen stays dark and the ped held (frozen, no collision) while the
+-- game loads the world there (a load scene - streaming otherwise follows
+-- wherever the camera was) and the ground under the spot. Returns true when
+-- it stands on ground, false when the ground never loaded.
 local function teleport(pos)
     local ped = PlayerPedId()
     local x, y, z = pos.x + 0.0, pos.y + 0.0, pos.z + 0.0
     DoScreenFadeOut(250)
     while not IsScreenFadedOut() do Citizen.Wait(0) end
-    -- held in the air until the world (and any building) under them is loaded,
-    -- so nobody drops through the map
     FreezeEntityPosition(ped, true)
+    SetEntityCollision(ped, false, false)
     SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
     SetEntityHeading(ped, (pos.heading or 0.0) + 0.0)
+    -- 1. the world around the spot
+    NewLoadSceneStartSphere(x, y, z, 120.0, 0)
+    local sceneUntil = GetGameTimer() + 15000
+    while not IsNewLoadSceneLoaded() and GetGameTimer() < sceneUntil do Citizen.Wait(0) end
+    NewLoadSceneStop()
+    -- 2. the building, if it is inside one
     local interior = GetInteriorAtCoords(x, y, z)
-    if interior ~= 0 then PinInteriorInMemory(interior) end
-    local deadline = GetGameTimer() + 10000
+    if interior ~= 0 then
+        PinInteriorInMemory(interior)
+        local untilT = GetGameTimer() + 5000
+        while not IsInteriorReady(interior) and GetGameTimer() < untilT do Citizen.Wait(0) end
+    end
+    -- 3. the floor right under where they logged out (looked for from just
+    -- above their feet, so a roof is never picked)
     local ground
+    local deadline = GetGameTimer() + 10000
     while GetGameTimer() < deadline do
         RequestCollisionAtCoord(x, y, z)
-        if HasCollisionLoadedAroundEntity(ped) and (interior == 0 or IsInteriorReady(interior)) then
-            -- the floor right under where they logged out (from just above
-            -- their feet, so a roof is never picked)
-            local found, gz = GetGroundZFor_3dCoord(x, y, z + 1.0, false)
-            if found and math.abs(gz - z) < 3.0 then ground = gz; break end
-        end
+        local found, gz = GetGroundZFor_3dCoord(x, y, z + 1.0, false)
+        if found and math.abs(gz - z) < 3.0 then ground = gz; break end
         Citizen.Wait(50)
     end
-    if ground then SetEntityCoordsNoOffset(ped, x, y, ground + 0.05, false, false, false)
-    else SetEntityCoordsNoOffset(ped, x, y, z, false, false, false) end
-    FreezeEntityPosition(ped, false)
+    if not ground then
+        -- not right under them: the highest ground there (outside, most likely)
+        local found, gz = GetGroundZFor_3dCoord(x, y, z + 150.0, false)
+        if found then ground = gz end
+    end
+    if ground then SetEntityCoordsNoOffset(ped, x, y, ground + 0.05, false, false, false) end
     DoScreenFadeIn(500)
+    return ground ~= nil
 end
+
+-- Sent to a safe camp (the server picks it) when the spot could not be used.
+local rescued = false
+local function rescue(why)
+    if rescued then return end
+    rescued = true
+    print('[wasteland] placing the character failed (' .. tostring(why) .. '): asking for a safe camp')
+    TriggerServerEvent('wasteland:players:server:rescue')
+end
+
+RegisterNetEvent('wasteland:players:client:rescue', function(pos)
+    if type(pos) ~= 'table' or type(pos.x) ~= 'number' then return end
+    Citizen.CreateThread(function()
+        setHeld(true)
+        teleport(pos)
+        setHeld(false)
+        placedPos, placedUntil = pos, GetGameTimer() + 60000
+    end)
+end)
 
 RegisterNetEvent('wasteland:players:client:characterLoaded', function(info)
     if type(info) ~= 'table' then return end
@@ -156,13 +191,27 @@ RegisterNetEvent('wasteland:players:client:characterLoaded', function(info)
         local pos = info.position
         -- spawnmanager (base server) must not respawn us at a map spawn point.
         if GetResourceState('spawnmanager') == 'started' then pcall(function() exports.spawnmanager:setAutoSpawn(false) end) end
+        local placedOk = true
         if type(pos) == 'table' and type(pos.x) == 'number' and type(pos.y) == 'number' and type(pos.z) == 'number' then
-            teleport(pos)
+            placedOk = teleport(pos)
             placedPos, placedUntil = pos, GetGameTimer() + 60000
         end
         setHeld(false)
         placing = false
         TriggerServerEvent('wasteland:players:server:placed')
+        if not placedOk then rescue('no ground at the saved spot'); return end
+        -- Watch the first seconds: falling far below where they were put
+        -- (through an unloaded world) or still hidden -> a safe camp.
+        local startZ = GetEntityCoords(PlayerPedId()).z
+        local untilT = GetGameTimer() + 15000
+        while GetGameTimer() < untilT and not rescued do
+            Citizen.Wait(500)
+            local me = PlayerPedId()
+            if not IsEntityVisible(me) then setHeld(false) end
+            if not IsPedInAnyVehicle(me, false) and GetEntityCoords(me).z < startZ - 25.0 then
+                rescue('fell through the map')
+            end
+        end
     end)
 end)
 

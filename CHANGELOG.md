@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: after choosing a character, stuck in the air over a half-loaded world (owner report)
+* Placing the character now makes the game load the world at the saved spot first (a load scene - otherwise streaming follows wherever the camera was), then the building, then the ground under the spot, while the screen stays dark and the character is held. Up to about 30 s on a slow PC.
+* No ground there: the highest ground at that spot is used; still none, or the character falls more than 25 m in the first 15 s, or is still hidden: the server sends them to a safe camp.
+
 ## Fix: a random spawn after waiting at character select (owner report)
 * The base server's basic-gamemode turns spawnmanager's auto spawn back on and forces a spawn at a random map spawn point when the map has loaded - which could be after Wasteland had turned it off (for example while a player sat at character select), and that random spot could then be saved as the last position. Auto spawn is now kept off (also right after the map loads, and every few seconds).
 * A returning character with no usable last position (none, or the map origin) wakes up at a random safe camp instead of wherever the game put them.

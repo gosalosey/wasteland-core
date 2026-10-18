@@ -35,14 +35,20 @@ function Characters.spawnPosition(char)
         local ok, look = pcall(function() return exports.wasteland_appearance:GetAppearance(char.id) end)
         hasLook = ok and look ~= nil
     end
-    if not hasLook or GetResourceState('wasteland_camps') ~= 'started' then return nil end
+    if not hasLook then return nil end
+    return Characters.safeCamp(char)
+end
+
+--- A random safe camp to put a character at, or nil (camps not running).
+function Characters.safeCamp(char)
+    if GetResourceState('wasteland_camps') ~= 'started' then return nil end
     local ok, camps = pcall(function() return exports.wasteland_camps:GetCamps() end)
     if not ok or type(camps) ~= 'table' then return nil end
     local safe = {}
     for _, c in ipairs(camps) do if c.safe and c.coords then safe[#safe + 1] = c end end
     if #safe == 0 then return nil end
     local c = safe[math.random(1, #safe)]
-    log():info('character %d has no usable last position: sent to %s', char.id, tostring(c.label))
+    log():info('character %d sent to %s (no usable position)', char.id, tostring(c.label))
     return { x = c.coords.x, y = c.coords.y, z = c.coords.z, heading = 0.0 }
 end
 

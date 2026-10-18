@@ -243,6 +243,15 @@ function Interface.registerNetEvents(M)
     M.netEvent('wasteland:players:server:selectCharacter', { args = { slotNode }, rateLimit = strict }, function(src, slot)
         run(src, 'select', function(session) Interface.selectCharacter(session, slot) end)
     end)
+    -- The client could not place the character (no ground there, or it fell
+    -- through the map): a safe camp instead. Once in a while only.
+    M.netEvent('wasteland:players:server:rescue', { rateLimit = { burst = 1, perSecond = 0.05 } }, function(src)
+        local session = WLP.sessions and WLP.sessions[src]
+        local char = session and session.character
+        if not char then return end
+        local pos = Characters.safeCamp(char)
+        if pos then TriggerClientEvent('wasteland:players:client:rescue', src, pos) end
+    end)
     -- The client put the ped at the saved position: positions count from now.
     M.netEvent('wasteland:players:server:placed', { rateLimit = { burst = 3, perSecond = 1 } }, function(src)
         local session = WLP.sessions and WLP.sessions[src]
