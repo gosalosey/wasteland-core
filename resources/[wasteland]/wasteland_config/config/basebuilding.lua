@@ -110,14 +110,13 @@ return {
         -- barbed wire or spikes are hurt (contactDamage a second) and slowed
         -- (slow: their speed share); every touch wears the piece
         -- (wearPerTouch). Sandbags are a tough wall zombies must break.
-        -- altModels: tried in order when the game lacks `model`.
-        barbedwire = { label = 'Barbed Wire', model = 'ss1_13_barbedwire01', altModels = { 'cs4_10_fnc_wire', 'id1_25_razorwire', 'prop_fnclink_09e' },
+        barbedwire = { label = 'Barbed Wire', model = 'cs4_10_fnc_wire',
             category = 'defense', cost = { scrap_metal = 4, wood_planks = 2 }, health = 300, material = 'metal',
             contactDamage = 12, slow = 0.4, wearPerTouch = 4, touchRadius = 1.8 },
-        spikes = { label = 'Wooden Spikes', model = 'xs_prop_arena_spikes_01a', altModels = { 'prop_mp_spike_01', 'p_ld_stinger_s' },
+        spikes = { label = 'Wooden Spikes', model = 'p_stinger_piece_01',
             category = 'defense', cost = { wood_planks = 8 }, health = 250, material = 'wood',
             contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 1.5 },
-        sandbags = { label = 'Sandbag Wall', model = 'prop_mb_sandblock_02', altModels = { 'prop_conc_sacks_02a', 'prop_mb_sandblock_05' },
+        sandbags = { label = 'Sandbag Wall', model = 'v_ind_cf_flour',
             category = 'defense', cost = { stone = 10, rag = 4 }, health = 1500, material = 'stone' },
 
         stash_small = { label = 'Small Storage Box', model = 'prop_cs_lester_crate', category = 'stash', cost = { wood_planks = 6, scrap_metal = 2 },
