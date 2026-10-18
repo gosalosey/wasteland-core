@@ -283,19 +283,31 @@ local function noise(coords, radius, kind)
     for _, z in pairs(zombies) do
         if not z.dead and DoesEntityExist(z.handle) then list[#list + 1] = { id = z.handle, coords = coordsOf(z.handle) } end
     end
-    for _, handle in ipairs(Rules.hearers(list, coords, tonumber(radius) or 0)) do
+    local ids = Rules.hearers(list, coords, tonumber(radius) or 0)
+    for _, handle in ipairs(ids) do
         Entity(handle).state:set('wlInvestigate', { x = coords.x, y = coords.y, z = coords.z,
             untilMs = M.config.noise.investigateSeconds * 1000, at = now() }, true)
     end
+    return #ids, tonumber(radius)
 end
 
 -- Gunshots and hits (weapons), and any other noise (lock picking, alarms).
-AddEventHandler('wasteland:weapons:used', function(_, _, _, radius, coords) noise(coords, radius, 'gunshot') end)
+local lastReach = {} -- source -> last gunshot reach (noise meter)
+AddEventHandler('wasteland:weapons:used', function(src, _, _, radius, coords)
+    local _, reach = noise(coords, radius, 'gunshot')
+    -- The shooter's noise meter shows how far that shot carried (a shot
+    -- inside the same-spot cooldown carried as far as the one before).
+    src = tonumber(src)
+    if src and (tonumber(radius) or 0) > 0 then
+        if reach and reach > 0 then lastReach[src] = reach else reach = lastReach[src] end
+    end
+    if reach and reach > 0 and tonumber(src) then TriggerClientEvent('wasteland:zombies:client:noiseMade', src, reach) end
+end)
 AddEventHandler('wasteland:noise', function(coords, radius) noise(coords, radius, 'other') end)
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
-    if src then pending[src] = nil end
+    if src then pending[src] = nil; lastReach[src] = nil end
 end)
 
 -------------------------------------------------------------------------------

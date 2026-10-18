@@ -408,6 +408,7 @@ WLZ.Client = {
     brains = brains,
     cfg = function() return cfg end,
     safe = safe,
+    isZombie = function(ped) return zombieInfo(ped) ~= nil end,
     chaseStep = chaseStep,
     playAttack = playAttack,
 }

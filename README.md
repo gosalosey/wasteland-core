@@ -62,6 +62,7 @@ Players can change any key in GTA's **Settings → Key Bindings → FiveM**.
 | `/help [what's wrong]` | Call every player for help. `/accepthelp` gets a GPS route to them, and `/cancelhelp` calls it off. |
 | `/stuck` | Stuck somewhere? Stand still for 10 seconds and you're taken to the nearest safe camp (once every 30 minutes). |
 | `/backpack` | Show or hide the backpack on your back (your bag still works either way). |
+| `/noise` | Show or hide the noise meter. Move or resize it with `/hud`. |
 | `/hud` | Change the HUD: compact, only when it matters, or off |
 | `/pee`, `/poop` | When you need to go |
 | `/guide`, `/skills` | Same as F2 and F9 |

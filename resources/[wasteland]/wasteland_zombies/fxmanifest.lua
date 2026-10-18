@@ -27,6 +27,7 @@ client_scripts {
     'client/main.lua',
     'client/ai.lua',
     'client/sounds.lua',
+    'client/noise.lua',
 }
 
 -- Zombie sounds: a hidden page plays the files of the sound pack resource.
@@ -34,4 +35,5 @@ ui_page 'html/sounds.html'
 
 files {
     'html/sounds.html',
+    'html/noise.js',
 }

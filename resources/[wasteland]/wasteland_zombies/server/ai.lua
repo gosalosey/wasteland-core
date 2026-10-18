@@ -103,7 +103,7 @@ function SAI.alert(coords, radius, kind)
             untilMs = m.config.noise.investigateSeconds * 1000, at = t,
             kind = kind, intensity = snd.intensity or 1, via = via }, true)
     end
-    return #ids
+    return #ids, r
 end
 
 -------------------------------------------------------------------------------

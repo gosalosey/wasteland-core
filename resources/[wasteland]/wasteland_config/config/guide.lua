@@ -64,7 +64,7 @@ return {
             'Tab - inventory.  Left Alt (hold) - look at something and interact: search, trade, repair, open.',
             'K - crafting.  F2 - this guide.  F4 - emotes.  F6 - group.  F9 - skills.  X - hands up.',
             'Caps Lock - talk on the radio.  1 - 8 - hotbar slots.',
-            '/hud - change the HUD.  /pee, /poop - when you need to go.',
+            '/hud - change and move the HUD.  /noise - the noise meter.  /pee, /poop - when you need to go.',
             '/stuck - stuck somewhere? Stand still 10 seconds and you are taken to the nearest safe camp (once every 30 minutes).',
             '/help [what is wrong] - call everyone for help. /accepthelp - get a route to whoever called. /cancelhelp - you are safe again.',
         } },
