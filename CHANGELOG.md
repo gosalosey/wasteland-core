@@ -1,5 +1,8 @@
 # Changelog
 
+## Inventory shows the vicinity (owner)
+* Opening the inventory (TAB) now shows what lies on the ground within reach: dropped items, loot and body bags, nearest first (up to vicinityMax = 4, within reachDistance, in config/inventory.lua). Drag items straight in or out. Something dropped while the inventory is open shows there too.
+
 ## Backpacks show on the body (owner)
 * A worn backpack now shows on your character (the bag clothing slot), for everyone to see. /backpack hides or shows it (remembered on your computer). The look per backpack is bagLooks in config/inventory.lua.
 

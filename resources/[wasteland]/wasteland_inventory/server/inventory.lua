@@ -520,6 +520,14 @@ function Inv.drop(src, uid, fromId, count)
             statements = statements, changed = changed,
             after = function()
                 if wasWorn then WLI.Sync.clothing(src) end
+                -- The screen is open: the pile it went to shows in the vicinity.
+                if WLI.vicinity and WLI.vicinity[src] then
+                    WLI.views[src] = WLI.views[src] or {}
+                    if not WLI.views[src][placed.inventoryId] then
+                        WLI.views[src][placed.inventoryId] = true
+                        WLI.Sync.player(src)
+                    end
+                end
                 WLI.Drops.broadcast()
             end,
         }
@@ -806,6 +814,7 @@ function Inv.deathDrop(src, label)
     end
     Inv.fitPockets(c, statements, changed)
     WLI.views[src] = nil
+    if WLI.vicinity then WLI.vicinity[src] = nil end
     Store.enqueue(statements, string.format('death of character %d', c.id))
     WLI.Sync.changed(changed, src)
     WLI.Drops.broadcast()

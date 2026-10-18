@@ -10,6 +10,7 @@ local snapshot = nil      -- last sync payload
 local drops = {}          -- { { id, x, y, z } }
 local dropProps = {}      -- id -> local object handle
 local lastEquipKey = nil  -- detects changes to worn items
+local syncCount = 0       -- counts snapshots (waiting for the vicinity)
 
 local function uiRunning() return GetResourceState('wasteland_ui') == 'started' end
 local function isOpen() return uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) end
@@ -113,6 +114,7 @@ end)
 RegisterNetEvent('wasteland:inventory:client:sync', function(payload)
     if type(payload) ~= 'table' then return end
     snapshot = payload
+    syncCount = syncCount + 1
     if isOpen() then exports.wasteland_ui:Update(SCREEN, { snapshot = snapshot }) end
     local key = equipKey()
     if key ~= lastEquipKey then
@@ -156,9 +158,7 @@ end
 local function closeScreen()
     if not isOpen() then return end
     exports.wasteland_ui:Close(SCREEN)
-    for _, id in ipairs((snapshot and snapshot.secondary) or {}) do
-        TriggerServerEvent('wasteland:inventory:server:close', id)
-    end
+    TriggerServerEvent('wasteland:inventory:server:closeAll')
 end
 
 -- The server opened something for us (admin view, stash): show the screen.
@@ -178,8 +178,19 @@ end
 
 -- Default key TAB. (The command name changed from wl_inventory so players
 -- who already had the old I binding get the new default.)
+-- Opening shows the vicinity: whatever lies on the ground within reach.
+local function openWithVicinity()
+    local before = syncCount
+    TriggerServerEvent('wasteland:inventory:server:openNearby')
+    Citizen.CreateThread(function()
+        local waitUntil = GetGameTimer() + 600
+        while syncCount == before and GetGameTimer() < waitUntil do Citizen.Wait(20) end
+        if canOpen() then openScreen() end
+    end)
+end
+
 RegisterCommand('wl_inventory_tab', function()
-    if isOpen() then closeScreen() elseif canOpen() then openScreen() end
+    if isOpen() then closeScreen() elseif canOpen() then openWithVicinity() end
 end, false)
 RegisterKeyMapping('wl_inventory_tab', 'Inventory: open / close', 'keyboard', 'TAB')
 

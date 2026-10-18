@@ -191,6 +191,34 @@ function Drops.open(src, id)
     return true
 end
 
+--- The vicinity: the inventory screen opened, so every drop within reach
+--- (dropped items, loot, body bags) is shown, nearest first, up to
+--- vicinityMax of them. Drops placed while the screen is open join it.
+WLI.vicinity = {} -- source -> true while the screen is open
+function Drops.openNearby(src)
+    local p = Drops.playerCoords(src)
+    WLI.vicinity[src] = true
+    WLI.views[src] = WLI.views[src] or {}
+    if p then
+        local near = {}
+        for id, info in pairs(WLI.dropList) do
+            local d = distance(p, info)
+            if d <= WLI.cfg.reachDistance and WLI.invs['drop:' .. id] then near[#near + 1] = { id = 'drop:' .. id, d = d } end
+        end
+        table.sort(near, function(a, b) return a.d < b.d end)
+        for i = 1, math.min(#near, WLI.cfg.vicinityMax or 4) do WLI.views[src][near[i].id] = true end
+    end
+    WLI.Sync.player(src)
+    return true
+end
+
+--- The screen closed: stop showing everything that was open.
+function Drops.closeAll(src)
+    WLI.vicinity[src] = nil
+    WLI.views[src] = nil
+    WLI.Sync.player(src)
+end
+
 --- Load (or create) a stash in memory. Thread only: it may read the
 --- database. Returns the inventory or nil, err.
 --- opts = { label, width, height, maxWeight, coords }

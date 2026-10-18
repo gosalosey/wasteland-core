@@ -120,6 +120,10 @@ function Interface.registerNetEvents(M)
         end)
     M.netEvent('wasteland:inventory:server:openDrop', { args = { { type = 'string', required = true, pattern = '^%x+$', maxLength = 16 } }, rateLimit = { burst = 5, perSecond = 2 } },
         function(src, id) answer(src, Drops.open(src, id)) end)
+    M.netEvent('wasteland:inventory:server:openNearby', { rateLimit = { burst = 4, perSecond = 2 } },
+        function(src) Drops.openNearby(src) end)
+    M.netEvent('wasteland:inventory:server:closeAll', { rateLimit = { burst = 4, perSecond = 2 } },
+        function(src) Drops.closeAll(src) end)
     M.netEvent('wasteland:inventory:server:close', { args = { INV_ID }, rateLimit = OPS_RATE },
         function(src, id) Drops.close(src, id) end)
 end

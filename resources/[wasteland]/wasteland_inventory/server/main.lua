@@ -121,7 +121,7 @@ end)
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
-    if src then WLI.views[src] = nil end
+    if src then WLI.views[src] = nil; if WLI.vicinity then WLI.vicinity[src] = nil end end
 end)
 
 local function maintenance(token)
@@ -200,6 +200,8 @@ WLI.M = Wasteland.DefineModule({
                 bagLooks = { type = 'map', default = {}, keys = { type = 'string', pattern = WLI.NAME_PATTERN, maxLength = 48 },
                     values = { type = 'map', keys = { type = 'enum', values = { 'mp_m_freemode_01', 'mp_f_freemode_01' } }, values = PART },
                     description = 'How a worn backpack looks (ped component 5), per item and model.' },
+                vicinityMax = { type = 'integer', default = 4, min = 0, max = 10,
+                    description = 'Piles on the ground shown when the inventory opens (within reachDistance)' },
                 items = { type = 'map', default = {}, keys = { type = 'string', pattern = WLI.NAME_PATTERN, maxLength = 48 },
                     values = { type = 'any' }, description = 'Item definitions (see the comments in the file).' },
             },

@@ -325,6 +325,38 @@ describe('dropping and picking up', function()
     end)
 end)
 
+describe('the vicinity (ground within reach shows when the inventory opens)', function()
+    local server = world()
+    local a = player(server, 'gina', { x = 0.0, y = 0.0, z = 30.0 })
+    local b = player(server, 'hank', { x = 1.0, y = 0.0, z = 30.0 })
+
+    it('opening shows piles within reach, not far ones; closing hides them', function()
+        local beans = find(snap(server, a), 'canned_beans')
+        op(server, a, 'drop', beans.uid, 'player:1', 1)
+        op(server, b, 'openNearby')
+        local s = snap(server, b)
+        expect(#s.secondary).toBe(1)
+        expect(s.secondary[1]:sub(1, 5)).toBe('drop:')
+        op(server, b, 'closeAll')
+        expect(#snap(server, b).secondary).toBe(0)
+        server.players[b].coords = { x = 50.0, y = 0.0, z = 30.0 }
+        op(server, b, 'openNearby')
+        expect(#snap(server, b).secondary).toBe(0)
+        server.players[b].coords = { x = 1.0, y = 0.0, z = 30.0 }
+    end)
+
+    it('an item dropped while the screen is open shows in the vicinity', function()
+        op(server, a, 'closeAll')
+        server.players[a].coords = { x = 30.0, y = 0.0, z = 30.0 }
+        op(server, a, 'openNearby')
+        expect(#snap(server, a).secondary).toBe(0)
+        local bottle = find(snap(server, a), 'water_bottle')
+        op(server, a, 'drop', bottle.uid, 'player:1')
+        expect(#snap(server, a).secondary).toBe(1)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+
 describe('abuse: duplication and forged requests', function()
     local server = world()
     local a = player(server, 'frank')

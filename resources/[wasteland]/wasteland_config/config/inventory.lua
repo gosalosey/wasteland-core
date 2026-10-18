@@ -22,6 +22,7 @@ return {
 
     -- Metres a player may be from a drop or stash to use it.
     reachDistance = 3.0,
+    vicinityMax = 4,  -- piles on the ground shown when the inventory opens (within reachDistance)
 
     -- Items dropped this close to an existing pile join it.
     dropMergeDistance = 1.5,
