@@ -1,5 +1,11 @@
 # Changelog
 
+## A cleaner, more finished look for every screen (owner)
+* The shared design system (wasteland_ui/html/style.css) was refined, so every screen gets it: glass-like panels with soft depth, rounded corners and a thin glowing accent line along the top; buttons with depth that lift on hover and press on click (main buttons glow); inputs and tabs with clear focus and active states; slim dark scrollbars everywhere; section titles with an accent marker; screens fade in when they open.
+* Inventory: a soft dark backdrop; panels, grids, slots, the hotbar, menus and the hover box restyled; item tiles with a sheen and a glow on hover; item pictures with a shadow; smoother health bars. The body figure's column is wider so it no longer crowds the bars.
+* Skills, Survivor's guide, traders, crafting and the camp jobs board: rows and cards with depth, glowing progress bars.
+* Looks only: no screen's layout, behaviour or code paths changed.
+
 ## Base building with your own props (owner)
 * Base building no longer has to use the paid sinor-buildingProps-v2 pack: basebuilding.lua `propsResource` names the resource with your props ('' for GTA's own props), and each piece's `model` can be any model. Snapping measures each model, so any sensible sizes work. How-to: docs/INSTALL.md "Using your own building props".
 * The start-up warning and the "model is not in the game" message no longer assume the sinor pack.

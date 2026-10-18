@@ -4,18 +4,23 @@
    No external fonts or assets: everything works offline. */
 
 :root {
-    --wl-bg: rgba(14, 13, 11, 0.94);
-    --wl-bg-raised: rgba(30, 27, 23, 0.96);
-    --wl-bg-sunken: rgba(8, 8, 7, 0.9);
-    --wl-border: rgba(214, 186, 140, 0.16);
-    --wl-text: #e9e2d4;
-    --wl-text-dim: #a49b8a;
+    --wl-bg: rgba(16, 15, 13, 0.92);
+    --wl-bg-raised: rgba(36, 32, 27, 0.96);
+    --wl-bg-sunken: rgba(7, 7, 6, 0.72);
+    --wl-border: rgba(214, 186, 140, 0.14);
+    --wl-border-strong: rgba(214, 186, 140, 0.28);
+    --wl-text: #ece6d9;
+    --wl-text-dim: #a59c8b;
     --wl-accent: #d9822b;          /* rust orange */
     --wl-accent-strong: #f0973a;
+    --wl-accent-soft: rgba(217, 130, 43, 0.16);
+    --wl-accent-glow: rgba(240, 151, 58, 0.45);
     --wl-danger: #c4453a;
     --wl-ok: #7fae5a;
-    --wl-radius: 6px;
+    --wl-radius: 8px;
+    --wl-radius-lg: 12px;
     --wl-gap: 12px;
+    --wl-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
     --wl-font: "Segoe UI", "Bahnschrift", Roboto, Arial, sans-serif;
     --wl-font-display: "Bahnschrift", "Segoe UI", Arial, sans-serif;
 }
@@ -32,6 +37,8 @@ html, body {
     font-size: 15px;
     color: var(--wl-text);
     user-select: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
 #wl-root, .wl-screen {
@@ -42,59 +49,107 @@ html, body {
 
 .wl-screen > * { pointer-events: auto; }
 
+/* A screen fades in when it opens (opacity only: never moves anything). */
+@keyframes wl-in { from { opacity: 0; } to { opacity: 1; } }
+.wl-screen > * { animation: wl-in 0.16s ease-out; }
+
+/* Scrollbars: slim and dark everywhere. */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(214, 186, 140, 0.18); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(214, 186, 140, 0.32); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
 /* Panels ------------------------------------------------------------ */
 
 .wl-panel {
-    background: var(--wl-bg);
+    position: relative;
+    background:
+        linear-gradient(180deg, rgba(255, 240, 210, 0.035), rgba(255, 240, 210, 0) 120px),
+        var(--wl-bg);
     border: 1px solid var(--wl-border);
-    border-radius: var(--wl-radius);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    border-radius: var(--wl-radius-lg);
+    box-shadow: var(--wl-shadow), inset 0 1px 0 rgba(255, 240, 210, 0.06);
+    backdrop-filter: blur(8px);
     padding: 20px;
+}
+/* a thin accent line along the top edge */
+.wl-panel::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 24px; right: 24px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--wl-accent) 25%, var(--wl-accent-strong) 50%, var(--wl-accent) 75%, transparent);
+    opacity: 0.75;
+    pointer-events: none;
 }
 
 .wl-title {
     font-family: var(--wl-font-display);
     font-size: 26px;
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     margin: 0 0 4px;
+    color: #f4eee2;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 .wl-subtitle { color: var(--wl-text-dim); margin: 0 0 18px; }
 
 .wl-section-title {
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--wl-accent);
+    color: var(--wl-accent-strong);
     margin: 18px 0 8px;
+}
+.wl-section-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 10px;
+    margin-right: 7px;
+    border-radius: 2px;
+    background: var(--wl-accent);
+    box-shadow: 0 0 6px var(--wl-accent-glow);
+    vertical-align: -1px;
 }
 
 .wl-backdrop {
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at center, rgba(20, 16, 12, 0.55) 0%, rgba(5, 5, 4, 0.92) 100%);
+    background: radial-gradient(ellipse at center, rgba(20, 16, 12, 0.5) 0%, rgba(5, 5, 4, 0.9) 100%);
 }
 
 /* Buttons ----------------------------------------------------------- */
 
 .wl-btn {
     font: inherit;
+    font-weight: 500;
     color: var(--wl-text);
-    background: var(--wl-bg-raised);
-    border: 1px solid var(--wl-border);
+    background: linear-gradient(180deg, rgba(52, 46, 39, 0.96), rgba(32, 29, 25, 0.96));
+    border: 1px solid var(--wl-border-strong);
     border-radius: var(--wl-radius);
     padding: 9px 16px;
     cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 240, 210, 0.07);
+    transition: background 0.14s, border-color 0.14s, box-shadow 0.14s, transform 0.08s, color 0.14s;
 }
-.wl-btn:hover { border-color: var(--wl-accent); }
-.wl-btn:disabled { opacity: 0.45; cursor: default; }
-.wl-btn--primary { background: var(--wl-accent); border-color: var(--wl-accent); color: #1b120a; font-weight: 600; }
-.wl-btn--primary:hover { background: var(--wl-accent-strong); }
-.wl-btn--danger:hover { border-color: var(--wl-danger); color: #ffb3aa; }
+.wl-btn:hover { border-color: var(--wl-accent); color: #fff6e8; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--wl-accent-soft); transform: translateY(-1px); }
+.wl-btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+.wl-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--wl-accent-glow); }
+.wl-btn:disabled { opacity: 0.45; cursor: default; transform: none; box-shadow: none; }
+.wl-btn--primary {
+    background: linear-gradient(180deg, var(--wl-accent-strong), var(--wl-accent));
+    border-color: var(--wl-accent-strong);
+    color: #1b120a;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(217, 130, 43, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.wl-btn--primary:hover { background: linear-gradient(180deg, #ffab55, var(--wl-accent-strong)); color: #1b120a; box-shadow: 0 6px 18px rgba(240, 151, 58, 0.4); }
+.wl-btn--danger:hover { border-color: var(--wl-danger); color: #ffb3aa; box-shadow: 0 0 0 1px rgba(196, 69, 58, 0.25); }
 .wl-btn--icon { padding: 4px 12px; font-size: 18px; line-height: 1; }
 
 /* Fields ------------------------------------------------------------ */
@@ -114,13 +169,16 @@ html, body {
     font: inherit;
     color: var(--wl-text);
     background: var(--wl-bg-sunken);
-    border: 1px solid var(--wl-border);
+    border: 1px solid var(--wl-border-strong);
     border-radius: var(--wl-radius);
     padding: 9px 12px;
     width: 100%;
     user-select: text;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.14s, box-shadow 0.14s;
 }
-.wl-input:focus { outline: none; border-color: var(--wl-accent); }
+.wl-input::placeholder { color: rgba(165, 156, 139, 0.6); }
+.wl-input:focus { outline: none; border-color: var(--wl-accent); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), 0 0 0 3px var(--wl-accent-soft); }
 
 .wl-slider { width: 100%; accent-color: var(--wl-accent); }
 
@@ -137,11 +195,12 @@ html, body {
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--wl-radius);
-    padding: 6px 10px;
+    padding: 6px 12px;
     cursor: pointer;
+    transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
-.wl-tab:hover { color: var(--wl-text); }
-.wl-tab.is-active { color: var(--wl-text); border-color: var(--wl-accent); }
+.wl-tab:hover { color: var(--wl-text); background: rgba(255, 240, 210, 0.04); }
+.wl-tab.is-active { color: #fff6e8; background: var(--wl-accent-soft); border-color: rgba(217, 130, 43, 0.55); }
 
 /* Messages ---------------------------------------------------------- */
 
@@ -149,4 +208,4 @@ html, body {
 .wl-message.is-error { color: #ff9c90; }
 .wl-message.is-ok { color: var(--wl-ok); }
 
-.wl-hint { font-size: 12px; color: var(--wl-text-dim); }
+.wl-hint { font-size: 12px; color: var(--wl-text-dim); line-height: 1.45; }

@@ -112,5 +112,10 @@
         '.wcr-need.is-missing { color: #ff8a80; }',
         '.wcr-needimg { width: 20px; height: 20px; object-fit: contain; }',
         '.wcr-foot { text-align: right; }',
+        // ---- polish ----
+        '.wcr-panel { position: relative; border-radius: 12px; border-color: rgba(214,186,140,0.14); background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(255,240,210,0) 120px), var(--wl-bg); box-shadow: var(--wl-shadow), inset 0 1px 0 rgba(255,240,210,0.06); backdrop-filter: blur(8px); }',
+        '.wcr-panel::before { content: ""; position: absolute; top: -1px; left: 24px; right: 24px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--wl-accent) 25%, var(--wl-accent-strong) 50%, var(--wl-accent) 75%, transparent); opacity: 0.75; pointer-events: none; }',
+        '.wcr-row { border-radius: 8px; background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(0,0,0,0.18)), rgba(10,10,9,0.55); border: 1px solid rgba(214,186,140,0.10); transition: border-color 0.14s; }',
+        '.wcr-row:hover { border-color: rgba(217,130,43,0.35); }',
     ].join('\n');
 })();

@@ -73,6 +73,13 @@
         '.wsk-sub { display: flex; justify-content: space-between; gap: 10px; margin-top: 6px; font-size: 12.5px; color: var(--wl-text-dim, #9fa894); }',
         '.wsk-xp { white-space: nowrap; font-variant-numeric: tabular-nums; }',
         '.wsk-hint { font-size: 12px; color: var(--wl-text-dim, #9fa894); }',
+        // ---- polish ----
+        '.wsk-row { border-radius: 10px; background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(0,0,0,0.18)), rgba(10,10,9,0.55); border-color: rgba(214,186,140,0.12); box-shadow: inset 0 1px 0 rgba(255,240,210,0.04); transition: border-color 0.14s; }',
+        '.wsk-row:hover { border-color: rgba(217,130,43,0.35); }',
+        '.wsk-bar { height: 8px; border-radius: 5px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); }',
+        '.wsk-fill { border-radius: 5px; background: linear-gradient(90deg, var(--wl-accent), var(--wl-accent-strong)); box-shadow: 0 0 8px rgba(240,151,58,0.45); }',
+        '.wsk-fill.is-top { background: linear-gradient(90deg, #c99a3a, #f1cd6a); box-shadow: 0 0 10px rgba(241,205,106,0.5); }',
+        '.wsk-level { text-shadow: 0 0 10px rgba(240,151,58,0.35); }',
     ].join('\n');
 
     UI.registerScreen('skillsScreen', {

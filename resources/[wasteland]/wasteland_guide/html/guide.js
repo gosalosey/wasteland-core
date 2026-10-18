@@ -139,6 +139,18 @@
         '.wgd-page-head { width: 100%; text-align: left; padding: 9px 12px; background: none; border: 0; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }',
         '.wgd-page-head.is-open { color: var(--wl-accent); }',
         '.wgd-page-body { padding: 0 12px 8px; } .wgd-page-body p { margin: 6px 0; line-height: 1.45; }',
+        // ---- polish ----
+        '.wgd-tab { border-radius: 8px; transition: color 0.14s, background 0.14s, border-color 0.14s; }',
+        '.wgd-tab:hover { color: var(--wl-text); background: rgba(255,240,210,0.04); }',
+        '.wgd-tab.is-active { background: var(--wl-accent-soft); border-color: rgba(217,130,43,0.6); color: #fff6e8; }',
+        '.wgd-bar { height: 9px; border-radius: 5px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); }',
+        '.wgd-fill { border-radius: 5px; background: linear-gradient(90deg, var(--wl-accent), var(--wl-accent-strong)); box-shadow: 0 0 8px rgba(240,151,58,0.45); }',
+        '.wgd-next { border-radius: 10px; border-color: rgba(217,130,43,0.55); background: linear-gradient(135deg, rgba(217,130,43,0.10), rgba(0,0,0,0.2)); box-shadow: 0 0 18px rgba(217,130,43,0.10); }',
+        '.wgd-m, .wgd-stat, .wgd-page { border-radius: 10px; background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(0,0,0,0.18)), rgba(10,10,9,0.55); border-color: rgba(214,186,140,0.12); transition: border-color 0.14s; }',
+        '.wgd-m:hover, .wgd-page:hover { border-color: rgba(217,130,43,0.3); }',
+        '.wgd-check { border-radius: 6px; }',
+        '.wgd-m.is-done .wgd-check { background: rgba(217,130,43,0.15); box-shadow: 0 0 6px rgba(240,151,58,0.35); }',
+        '.wgd-stat-value { text-shadow: 0 0 12px rgba(240,151,58,0.3); }',
     ].join('\n');
 
     UI.registerScreen('guideScreen', {
