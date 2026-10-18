@@ -64,9 +64,11 @@ add_principal identifier.fivem:12345678 group.admin
 
 ## Base building props (optional)
 
-`wasteland_basebuilding` shows its pieces with the **sinor-buildingProps-v2** props pack. It is not part of Wasteland Core: it is a licensed Cfx asset pack (escrow), which works only on servers whose licence key belongs to the account that owns it. To use base building:
+> **Base building needs this pack, and it is not free.** `wasteland_basebuilding` shows its pieces with the **sinor-buildingProps-v2** props pack by SinorSystem. It is not part of Wasteland Core: it is a paid, licensed Cfx asset pack (escrow), which works only on servers whose licence key belongs to the account that bought it. Buy it from the **[SinorSystem Tebex store](https://sinorsystem.tebex.io/)**.
 
-1. Get the pack on your Cfx account (Keymaster) and download it.
+To use base building:
+
+1. Buy the pack from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/), then download it from your Cfx account (Keymaster).
 2. Put the `sinor-buildingProps-v2` folder in your server's `resources` folder (for example `resources/[standalone]/`).
 3. In `server.cfg`, `ensure sinor-buildingProps-v2` before `ensure wasteland_basebuilding` (the txAdmin server.cfg has the line ready, commented out).
 

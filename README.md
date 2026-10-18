@@ -1,148 +1,170 @@
 # Wasteland Core
 
-A standalone zombie-survival framework for FiveM. Everything is written from scratch: no QBCore, Qbox, ESX or ox_* gameplay resources. Each feature is its own module that can be switched on or off, and all settings live in one config folder that updates never overwrite.
+**A complete zombie-survival server for FiveM.** Install it, start it, and you have smart zombie hordes, looting, crafting, hunting, base building, skills, trading and voice chat, all made from scratch. No QBCore, Qbox, ESX or ox_* gameplay scripts are needed.
 
-**Install with txAdmin:** paste this recipe URL in the txAdmin setup (Popular Recipes → Remote URL):
+* **For server owners:** one-click install with txAdmin, every setting in plain, commented files, and an updater that keeps your settings.
+* **For players:** press **F2** in game for the Survivor's guide. It shows what to do next and explains everything.
 
-```
-https://raw.githubusercontent.com/gosalosey/wasteland-core/main/txadmin/recipe.yaml
-```
+---
 
-Full steps, a manual install and updating: [docs/INSTALL.md](docs/INSTALL.md).
+## Quick start (about 10 minutes)
 
-## Features
+**You need:** a FiveM server with txAdmin, a MySQL or MariaDB database, and a free [Cfx.re licence key](https://portal.cfx.re).
 
-**The dead**
-* Walkers and runners spawn around players, with more of them at night. The server controls the population and checks every hit.
-* Six personalities: wanderers, stalkers that follow you from a distance, ambushers that wait still, sprinters, sleepers lying in the road, and pack hunters that surround you.
-* They see and hear you. They can't see through walls, standing still is quiet and running is loud. They remember where they last saw you and search there.
-* Special infected: screamers call the horde, brutes are tough and hit hard, howlers call from far away, spitters attack from range, and hunters go after lone players. Boss types are included but off by default.
-* Horde behaviour: gunshots draw the nearest zombies, and repeated gunfire pulls them in from further away. Explosions and car crashes are loud too.
-* They break through wooden walls, doors and gates to reach players hiding behind them.
-* Zombie sounds (groans, attacks, pain, death), positioned around the player.
+1. In txAdmin's setup, choose **Popular Recipes → Remote URL** and paste:
+   ```
+   https://raw.githubusercontent.com/gosalosey/wasteland-core/main/txadmin/recipe.yaml
+   ```
+2. Follow the steps. Give it your database login and licence key when asked.
+3. Start the server. In the console, every Wasteland module should say **running**.
+4. Join, make a character, and press **F2**.
 
-**Survival**
-* Hunger, thirst, bleeding, infection, body temperature and the need to pee or poop (`/pee`, `/poop`).
-* Death drops everything except your hotbar into a body bag where you fell.
-* A HUD with three modes: compact, only when it matters, and off.
+That's it. Wasteland creates its own database tables. The recipe also installs the database driver (oxmysql), voice chat (pma-voice), the zombie sounds and a ready `server.cfg`.
 
-**Inventory and loot**
-* A grid ("Tetris") inventory with item sizes, weight and durability, plus a hotbar and an auto-sort button.
-* Pockets grow with the clothes you wear. Backpacks have their own grid and open with a right-click.
-* Searchable containers all over the map, plus zombie bodies. Loot is scarce, containers are shared between players and refill over time.
-* Supply drops by plane, and world events: helicopter crashes, convoys, bandit hideouts and hordes.
+> **Base building needs a paid props pack.** The building pieces (walls, doors, gates, foundations and so on) come from **sinor-buildingProps-v2** by SinorSystem. It is **not free** and **not included**. Buy it from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/), then install it on your server (see [docs/INSTALL.md](docs/INSTALL.md#base-building-props-optional)). Without it, everything else works, but base pieces are invisible. To switch base building off, set `basebuilding = false` in `modules.lua`.
 
-**Crafting, hunting and trading**
-* Crafting: rags from old clothes, bandages, and blueprints for melee weapons, guns, gun parts and ammo.
-* Hunting: deer and boar, harvesting with a blade, campfires and cooking.
-* Safe camps with traders (who buy anything you loot), a medic and jobs.
-* Trading face to face with other players.
+Installing by hand, adding admins, or updating: see **[docs/INSTALL.md](docs/INSTALL.md)**.
 
-**Progression**
-* Skills that grow by doing (F9): scavenging, crafting, medicine, hunting, fitness and combat, each giving small bonuses.
-* A survivor's guide (F2): milestones that tick off as you play, what to try next, your stats, and how-to pages.
+---
 
-**Vehicles, bases and groups**
-* Wrecks you repair with batteries, wheels, engine parts and fuel. Big trunks, locks with keys, lockpicking.
-* Base building (needs a separate props pack): tool cupboards claim the land, and walls, doors, gates and storage snap together. Pieces upgrade from wood to stone to metal, need upkeep, and can be raided. A small area around each cupboard is kept free of zombies.
-* Groups: shared map markers and a group radio channel. Proximity voice chat via pma-voice.
+## What players can do
 
-**Server**
-* An admin panel (F10): players, items, bans, world tools, a live view and debug overlays.
-* A custom loading screen, emotes, a character creator and a tailor.
-* An update notice in the console when GitHub has a newer version, and an updater that keeps your settings.
-
-## Keys
-
-| Key | What |
+| | |
 |---|---|
-| Tab | Inventory |
-| Left Alt (hold) | Look and interact: search, trade, repair, open |
-| K | Crafting |
-| F2 | Survivor's guide |
-| F4 | Emotes |
-| F6 | Group |
-| F9 | Skills |
-| F10 | Admin panel (admins) |
-| X | Hands up |
-| Caps Lock | Radio (voice) |
-| 1 - 5 | Hotbar |
+| **Survive** | Hunger, thirst, bleeding, infection, cold and heat, and the need to use the toilet. Die and everything except your hotbar drops in a body bag where you fell. |
+| **Fight the dead** | Walkers, runners, stalkers that follow you, sleepers lying in the road, packs that surround you, screamers that call the horde, brutes, spitters and more. They hear gunshots (use a suppressor), see you in the open, and break through wooden walls. |
+| **Loot** | Search dumpsters, fridges, cars, bodies and supply drops. Press **E** to take everything at once. |
+| **Craft** | Rags from old clothes, bandages, and blueprints for weapons, gun parts and ammo. Weapon attachments: suppressor, scope, flashlight, grip, extended magazine. |
+| **Hunt** | Deer and boar. Harvest them with a knife and cook the meat on a campfire. |
+| **Trade** | Safe camps with traders (who buy anything), a medic and jobs. Trade face to face with other players. |
+| **Drive** | Fix up wrecks with batteries, wheels, engine parts and fuel. New players start with a **Full vehicle repair** for a quick first car. |
+| **Build** | Claim land with a tool cupboard. Build walls, doors, gates, window bars, storage, barbed wire, spike strips and sandbags. Or barricade an old building for the night without a cupboard. |
+| **Team up** | Groups with a shared radio channel and map markers, proximity voice chat, and **/help** to call everyone for help. |
+| **Grow** | Six skills that level up as you play (F9), and 22 milestones to tick off in the Survivor's guide (F2). |
 
-Chat commands: `/hud`, `/pee`, `/poop`, `/guide`, `/skills`.
+### Keys
 
-## Requirements
+| Key | | Key | |
+|---|---|---|---|
+| **Tab** | Inventory | **F2** | Survivor's guide |
+| **Left Alt** (hold) | Look at something and interact | **F4** | Emotes |
+| **E** | Open doors and gates, take all when looting | **F6** | Group |
+| **K** | Crafting | **F9** | Skills |
+| **1 - 5** | Hotbar | **X** | Hands up |
+| **Caps Lock** | Talk on the radio | **F10** | Admin panel (admins) |
 
-* FXServer with **OneSync** on (game build 3570 is set on purpose, see [docs/INSTALL.md](docs/INSTALL.md)).
-* **MySQL or MariaDB** with [oxmysql](https://github.com/overextended/oxmysql). Wasteland creates its own tables on first start.
-* [pma-voice](https://github.com/AvarianKnight/pma-voice) for voice chat. The recipe installs it.
-* Optional: the **sinor-buildingProps-v2** props pack for base building (licensed, not included).
+Players can change any key in GTA's **Settings → Key Bindings → FiveM**.
 
-## Configuration
+### Chat commands
 
-Every setting is in `resources/[wasteland]/wasteland_config/config/`, one file per module: `zombies.lua`, `inventory.lua`, `loot.lua`, `camps.lua`, `skills.lua`, `guide.lua`, `basebuilding.lua` and so on. Each file explains its settings. `modules.lua` switches whole modules on or off. The updater keeps your files, and saves the new version of any file you've changed next to it as `<name>.lua.new`.
+| Command | |
+|---|---|
+| `/help [what's wrong]` | Call every player for help. `/accepthelp` gets a GPS route to them, and `/cancelhelp` calls it off. |
+| `/stuck` | Stuck somewhere? Stand still for 10 seconds and you're taken to the nearest safe camp (once every 30 minutes). |
+| `/hud` | Change the HUD: compact, only when it matters, or off |
+| `/pee`, `/poop` | When you need to go |
+| `/guide`, `/skills` | Same as F2 and F9 |
 
-## Repository layout
+More detail for players: **[docs/PLAYER_GUIDE.md](docs/PLAYER_GUIDE.md)**.
+
+---
+
+## For server owners
+
+### Changing things
+
+Every setting is in **`resources/[wasteland]/wasteland_config/config/`**, one file per feature. Each file explains its settings in plain words. Change a value, save, and restart the server.
+
+| I want to change... | File | Setting |
+|---|---|---|
+| How many zombies, how tough, how fast | `zombies.lua` | `population`, `kinds` |
+| Zombie behaviour, special infected, hordes | `zombies.lua` | `ai` (`ai.enabled = false` turns the new AI off) |
+| Zombie sounds (volume, range) | `zombies.lua` | `sounds` |
+| Trader prices and what they sell | `camps.lua` | `shops` |
+| Camps (safe zones) and trader positions | `camps.lua` | `camps` |
+| What's in containers and supply drops | `loot.lua` | `tables` |
+| Items: weight, size, what they do | `inventory.lua` | `items` |
+| Pocket and backpack size | `inventory.lua` | `pockets`, `backpack_small`, `backpack_large` |
+| What new players start with | `inventory.lua` | `startingItems` |
+| Hunger, thirst, infection speed | `survival.lua` | `hunger`, `thirst`, `infection` |
+| Respawn points after death | `survival.lua` | `respawn.points` |
+| Crafting recipes | `crafting.lua` | `recipes` |
+| Base safe-zone time, upkeep, building pieces | `basebuilding.lua` | `cupboard`, `upkeep`, `pieces` |
+| Skill speed and bonuses, death penalty | `skills.lua` | `skills`, `deathPenalty`, `xpMultiplier` |
+| Guide milestones and how-to pages | `guide.lua` | `milestones`, `pages` |
+| `/stuck` and `/help` | `camps.lua` / `groups.lua` | `stuck` / `help` |
+| Turn a whole feature off | `modules.lua` | set it to `false` |
+
+### Admin tools
+
+* **F10**: the admin panel, with players (spectate, give items, send to a camp), bans, world tools (time, weather), a live view and debug overlays.
+* `/give <id> <item> [count]`, `/zombies count | clear | spawn <n> | sync`, `/survival <id> <stat> <value>`, `/event`, `/supplydrop [here]`, `/appearance <id>`.
+* In the server console, `wasteland status` shows every module and whether it's running.
+* Make someone an admin in `server.cfg`: `add_principal identifier.fivem:12345678 group.admin`
+
+### Updating
+
+Stop the server, double-click **`update_wasteland.bat`** in your server folder, then start the server.
+
+The updater backs up your database and files first. It keeps your settings and your custom zombie models. When a new version changes a settings file you've edited, it saves the new version next to yours (`name.lua.new`) so you can compare. The server console tells admins when GitHub has a newer version.
+
+### Optional extras
+
+* **Base building props (paid, required for base building):** **sinor-buildingProps-v2** by SinorSystem. It is not free and not included. Get it from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/). Install steps: [docs/INSTALL.md](docs/INSTALL.md#base-building-props-optional).
+* **Your own zombie models:** put them in `resources/[wasteland]/wasteland_zombiemodels/stream` and list them in `zombies.lua`.
+
+### Something not working?
+
+See **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**. It covers common problems and fixes, such as the loading screen hanging on "Awaiting scripts", invisible base pieces, zombies not spawning and players not being able to connect.
+
+---
+
+## For developers
+
+* **Add content without code:** items, loot, recipes, traders, jobs, zombie kinds and vehicles are all in the config files.
+* **Write your own module:** copy `resources/[wasteland]/wasteland_template` and follow **[docs/SDK_GUIDE.md](docs/SDK_GUIDE.md)**, which walks through the supply drop module. The full API is in **[docs/MODULE_API.md](docs/MODULE_API.md)**, and the design is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+* **Tests:** about 900 automated tests run against a simulated FiveM server: `tools\run_tests.bat` (Windows) or `./tools/run_tests.sh` (needs Lua 5.4). Things only the game can show are listed as in-game checks in [docs/IN_GAME_TESTS.md](docs/IN_GAME_TESTS.md). See [docs/TESTING.md](docs/TESTING.md).
+* **What changed:** [CHANGELOG.md](CHANGELOG.md) (newest first). Known limitations are in [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+
+<details>
+<summary>Repository layout</summary>
 
 ```
 resources/[wasteland]/
   wasteland_config/       your settings (config/*.lua)
-  wasteland_core/         kernel: module registry, config validation, lifecycle, Module SDK, net-event guard
-  wasteland_database/     database adapter, migrations, health checks (oxmysql)
-  wasteland_players/      accounts, sessions, characters
-  wasteland_ui/           NUI shell and design system   wasteland_target: Left Alt interaction
-  wasteland_appearance/   character creator             wasteland_tailor: clothing shops
-  wasteland_inventory/    grid inventory and item API   wasteland_images: item pictures
-  wasteland_survival/     needs, health, death, HUD     wasteland_world: clock, weather, empty world
-  wasteland_weapons/      weapons, ammo, durability
-  wasteland_zombies/      population, AI, horde, sounds wasteland_zombiemodels: your own zombie models
-  wasteland_zombiesounds/ the zombie sound files
-  wasteland_loot/         searchable containers         wasteland_supplydrops: supply drops (SDK example)
-  wasteland_camps/        safe zones and traders        wasteland_quests: camp jobs
-  wasteland_crafting/     crafting and blueprints       wasteland_hunting: animals, campfires, cooking
-  wasteland_vehicles/     wrecks, parts, fuel, locks    wasteland_events: world events
-  wasteland_groups/       groups                        wasteland_trade: player trading
-  wasteland_basebuilding/ base building                 wasteland_bases: older base building (off)
-  wasteland_skills/       skills                        wasteland_guide: survivor's guide
-  wasteland_admin/        admin panel                   wasteland_emotes: emotes and hands up
-  wasteland_loadscreen/   loading screen                wasteland_template: example module to copy
-docs/                     install, architecture, SDK guide, API, database, testing, in-game tests, known issues
-tests/                    automated tests and a simulated FiveM server
-tools/                    updater, test runners, database backup, image tools
-txadmin/                  txAdmin recipe and server.cfg
+  wasteland_core/         kernel: modules, config validation, lifecycle, SDK, net-event guard
+  wasteland_database/     database adapter and migrations (oxmysql)
+  wasteland_players/      accounts, sessions, characters, spawning
+  wasteland_ui/           screens and design system      wasteland_target: Left Alt interaction
+  wasteland_appearance/   character creator              wasteland_tailor: clothing shops
+  wasteland_inventory/    grid inventory and item API    wasteland_images: item pictures
+  wasteland_survival/     needs, health, death, HUD      wasteland_world: clock, weather, empty world
+  wasteland_weapons/      weapons, ammo, attachments
+  wasteland_zombies/      population, AI, horde, sounds  wasteland_zombiesounds: the sound files
+  wasteland_zombiemodels/ your own zombie models         wasteland_loot: searchable containers
+  wasteland_camps/        safe zones, traders, /stuck    wasteland_quests: camp jobs
+  wasteland_crafting/     crafting and blueprints        wasteland_hunting: animals, campfires
+  wasteland_vehicles/     wrecks, parts, fuel, locks     wasteland_events: world events
+  wasteland_groups/       groups, radio, /help           wasteland_trade: player trading
+  wasteland_basebuilding/ base building                  wasteland_supplydrops: supply drops
+  wasteland_skills/       skills                         wasteland_guide: survivor's guide
+  wasteland_admin/        admin panel                    wasteland_emotes: emotes, hands up
+  wasteland_loadscreen/   loading screen                 wasteland_template: example module
+docs/       install, player guide, troubleshooting, SDK, API, architecture, database, testing
+tests/      automated tests and a simulated FiveM server
+tools/      updater, test runners, database backup, image tools
+txadmin/    txAdmin recipe and server.cfg
 ```
+</details>
 
-## Making your own content
-
-Items, loot, recipes, traders, jobs, zombie kinds and vehicles are all set in the config files. To write a whole new module, copy `wasteland_template` and follow [docs/SDK_GUIDE.md](docs/SDK_GUIDE.md), which walks through the supply drop module as an example. The full API is in [docs/MODULE_API.md](docs/MODULE_API.md).
-
-## Tests
-
-About 880 automated tests run against a simulated FiveM server: `tools\run_tests.bat` on Windows, `./tools/run_tests.sh` elsewhere (needs Lua 5.4). A suite against a real MariaDB database also runs when `tests/db.env` is set up. Anything only the game can show (animations, sounds, camera) is listed as a step-by-step check in [docs/IN_GAME_TESTS.md](docs/IN_GAME_TESTS.md). See [docs/TESTING.md](docs/TESTING.md).
-
-## Documentation
-
-* [docs/INSTALL.md](docs/INSTALL.md): install, admins, updating, optional packs
-* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): design, resource map, lifecycle, security
-* [docs/SDK_GUIDE.md](docs/SDK_GUIDE.md): adding content and writing modules
-* [docs/MODULE_API.md](docs/MODULE_API.md): SDK, config schema, exports and events
-* [docs/DATABASE.md](docs/DATABASE.md): database setup, backups, restore
-* [docs/CONVENTIONS.md](docs/CONVENTIONS.md), [docs/TESTING.md](docs/TESTING.md), [docs/IN_GAME_TESTS.md](docs/IN_GAME_TESTS.md), [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)
-* [CHANGELOG.md](CHANGELOG.md): what changed, newest first
-* [PROJECT_STATUS.md](PROJECT_STATUS.md): milestones and what is checked
+---
 
 ## Credits
 
-**Item pictures** (`resources/[wasteland]/wasteland_images`) come from **MK-Items** by [McKleans-Scripts](https://mckleans-scripts.tebex.io/), a free community pack of FiveM item images, converted to WebP. All credit for those pictures goes to their authors, including, as credited by MK-Items:
+**Item pictures** (`wasteland_images`) come from **MK-Items** by [McKleans-Scripts](https://mckleans-scripts.tebex.io/), a free community pack of FiveM item images, converted to WebP. All credit for those pictures goes to their authors, including, as credited by MK-Items: Jim and the [JixelPatterns](https://discord.gg/JixelPatterns) community, MrFurox from [Project Boosted](https://discord.gg/TrvAhGvDs3), [NatasWillDoIt](https://github.com/NatasWillDoIt), the [Project Sloth](https://github.com/Project-Sloth) community, [googleoblivion](https://github.com/googleoblivion), [oosayeroo](https://github.com/oosayeroo), and everyone who contributed images to MK-Items. The pictures `cap`, `jeans`, `sunglasses`, `siphon_hose` and `matches` were made for Wasteland Core.
 
-* Jim and the [JixelPatterns](https://discord.gg/JixelPatterns) community
-* MrFurox from [Project Boosted](https://discord.gg/TrvAhGvDs3)
-* [NatasWillDoIt](https://github.com/NatasWillDoIt)
-* the [Project Sloth](https://github.com/Project-Sloth) community
-* [googleoblivion](https://github.com/googleoblivion) and [oosayeroo](https://github.com/oosayeroo)
-* and everyone who contributed images to MK-Items
+**Zombie sounds** (`wasteland_zombiesounds`) are from the free **Zombie Sound Pack** by Catastic, plus a few extra zombie clips.
 
-The pictures `cap`, `jeans`, `sunglasses`, `siphon_hose` (`tools/images`) and `matches` were made for Wasteland Core.
+**Other software** used and not included: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (MIT, by AvarianKnight). Base building uses the **sinor-buildingProps-v2** props pack by SinorSystem, a paid pack you buy yourself from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/).
 
-If you are an author of one of these pictures and want it credited differently or removed, please open an issue.
-
-**Other software** used by Wasteland Core and not included here: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) (database driver) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (voice chat, MIT licence, by AvarianKnight). Base building needs the **sinor-buildingProps-v2** props pack by sinorsystem, a licensed Cfx asset pack that you get and install yourself. **Zombie sounds** (`wasteland_zombiesounds`) are from the free **Zombie Sound Pack** by Catastic, plus a few extra zombie clips. If you are the author of one of these sounds and want it credited differently or removed, please open an issue.
+If you are an author of any of these pictures or sounds and want them credited differently or removed, please open an issue.

@@ -1,6 +1,6 @@
 -- Skills: get better at what you do. Every skill levels 1 - 10 by doing it;
 -- each level makes it a little better (level 1 = no bonus, 10 = the full
--- bonus below). /skills (or F7) shows your levels.
+-- bonus below). /skills (or F9) shows your levels.
 return {
     maxLevel = 10,
 
