@@ -179,7 +179,8 @@ local function teleport(pos)
         local found, gz = GetGroundZFor_3dCoord(x, y, z + 150.0, false)
         if found then ground = gz end
     end
-    if ground then SetEntityCoordsNoOffset(ped, x, y, ground + 0.05, false, false, false) end
+    -- the ped stands on its feet: its position is about 1 m above them
+    if ground then SetEntityCoordsNoOffset(ped, x, y, ground + 1.0, false, false, false) end
     DoScreenFadeIn(500)
     return ground ~= nil
 end

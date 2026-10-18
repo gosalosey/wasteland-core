@@ -223,7 +223,7 @@ RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label, exact)
         if not exact then
             -- look from just above the point: from higher up the first thing found can be a roof
             local found, ground = GetGroundZFor_3dCoord(x, y, z + 1.0, false)
-            if found and math.abs(ground - z) < 3.0 then SetEntityCoordsNoOffset(ped, x, y, ground + 0.1, false, false, false) end
+            if found and math.abs(ground - z) < 3.0 then SetEntityCoordsNoOffset(ped, x, y, ground + 1.0, false, false, false) end -- feet on the ground (the position is about 1 m up)
         else
             -- inside a building: wait for its interior so the floor is there
             local interior = GetInteriorAtCoords(x, y, z)
