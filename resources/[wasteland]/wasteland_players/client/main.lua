@@ -181,6 +181,9 @@ local function teleport(pos)
     end
     -- the ped stands on its feet: its position is about 1 m above them
     if ground then SetEntityCoordsNoOffset(ped, x, y, ground + 1.0, false, false, false) end
+    -- always let go of the ped again (callers that hide it call setHeld after)
+    FreezeEntityPosition(ped, false)
+    SetEntityCollision(ped, true, true)
     DoScreenFadeIn(500)
     return ground ~= nil
 end
@@ -251,6 +254,7 @@ AddEventHandler('playerSpawned', function()
     Citizen.CreateThread(function()
         Citizen.Wait(0)
         teleport(placedPos)
+        setHeld(false)
     end)
 end)
 
@@ -264,16 +268,24 @@ end)
 -- when it is falling and is under the ground there (or has been falling a
 -- long way with no ground found), put it back on that spot.
 Citizen.CreateThread(function()
-    local lastGood, fallingSince, fallStartZ = nil, nil, nil
+    local lastGood, fallingSince, fallStartZ, lastRescue = nil, nil, nil, -60000
     while true do
         Citizen.Wait(500)
         local ped = PlayerPedId()
         if loaded and not placing and not IsEntityDead(ped) and not IsPedInAnyVehicle(ped, false) then
             local c = GetEntityCoords(ped)
             local skydiving = GetPedParachuteState(ped) >= 0 or IsPedInParachuteFreeFall(ped)
-            if not IsPedFalling(ped) and not IsPedRagdoll(ped) and not IsEntityInAir(ped) and not IsPedSwimming(ped) and not skydiving then
+            local free = not IsEntityPositionFrozen(ped) and not GetEntityCollisionDisabled(ped)
+            if not free then
+                -- frozen or flying (noclip, an admin freeze, being placed): not a spot to go back to
                 fallingSince, fallStartZ = nil, nil
-                lastGood = { x = c.x, y = c.y, z = c.z, heading = GetEntityHeading(ped) }
+            elseif not IsPedFalling(ped) and not IsPedRagdoll(ped) and not IsEntityInAir(ped) and not IsPedSwimming(ped) and not skydiving then
+                fallingSince, fallStartZ = nil, nil
+                -- standing on real ground (found just under the feet)
+                local onGround, gz = GetGroundZFor_3dCoord(c.x, c.y, c.z + 1.0, false)
+                if onGround and c.z - gz < 2.5 and c.z - gz > -0.5 then
+                    lastGood = { x = c.x, y = c.y, z = gz, heading = GetEntityHeading(ped) }
+                end
             elseif (IsPedFalling(ped) or IsEntityInAir(ped)) and not skydiving then
                 fallingSince = fallingSince or GetGameTimer()
                 fallStartZ = fallStartZ or c.z
@@ -282,13 +294,22 @@ Citizen.CreateThread(function()
                 local above, ground = GetGroundZFor_3dCoord(c.x, c.y, c.z + 500.0, false)
                 local under = not below and above and c.z < ground - 4.0
                 local lost = not below and not above and GetGameTimer() - fallingSince > 4000 and fallStartZ - c.z > 60.0
-                if (under or lost) and lastGood then
-                    print(('[wasteland] fell through the map at %.1f %.1f %.1f: back to the last ground'):format(c.x, c.y, c.z))
-                    local back = lastGood
+                if under or lost then
                     fallingSince, fallStartZ = nil, nil
                     SetEntityVelocity(ped, 0.0, 0.0, 0.0)
-                    teleport(back)
-                    setHeld(false)
+                    local now = GetGameTimer()
+                    if lastGood and now - lastRescue > 30000 then
+                        print(('[wasteland] fell through the map at %.1f %.1f %.1f: back to the last ground'):format(c.x, c.y, c.z))
+                        lastRescue = now
+                        teleport(lastGood)
+                        setHeld(false)
+                    else
+                        -- no good spot, or it happened again right away: a safe camp
+                        print(('[wasteland] fell through the map again at %.1f %.1f %.1f: to a safe camp'):format(c.x, c.y, c.z))
+                        lastRescue, lastGood = now, nil
+                        TriggerServerEvent('wasteland:players:server:rescue')
+                        Citizen.Wait(5000)
+                    end
                 end
             end
         end

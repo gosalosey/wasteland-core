@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: frozen after logging in, then falling through the map again and again (owner)
+* Putting a character back on its spot after the base server's own spawn left it frozen with no collision; placing now always lets go of the ped.
+* The fall-through safety net only remembers spots where you really stood on ground (never while frozen or in noclip), and if it happens again within 30 seconds you are sent to a safe camp instead of looping.
+
 ## Fix: falling through the map (owner)
 * A safety net any time, not only after logging in: when you fall and there is ground above you but none below (the world or a map pack's collision did not load in time), you are put back on the last spot where you stood on ground (the screen fades while it loads).
 
