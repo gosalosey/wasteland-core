@@ -1,5 +1,9 @@
 # Changelog
 
+## /stuck: back to the nearest safe camp (owner)
+* Any player can type /stuck: a window shows the nearest safe camp and how far it is. Press Teleport and stand still for 10 seconds (moving, getting hurt or getting into a vehicle cancels it) and you are taken there. Once every 30 minutes, so it is no free fast travel or escape from a fight.
+* Checked by the server (the wait, that you stood still, the cooldown). camps.lua `stuck`: on/off, the command, the wait, the cooldown.
+
 ## Fix: after choosing a character, stuck in the air over a half-loaded world (owner report)
 * Placing the character now makes the game load the world at the saved spot first (a load scene - otherwise streaming follows wherever the camera was), then the building, then the ground under the spot, while the screen stays dark and the character is held. Up to about 30 s on a slow PC.
 * No ground there: the highest ground at that spot is used; still none, or the character falls more than 25 m in the first 15 s, or is still hidden: the server sends them to a safe camp.

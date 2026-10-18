@@ -245,3 +245,91 @@ RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label, exact)
     end)
 end)
 
+
+-------------------------------------------------------------------------------
+-- /stuck: the nearest safe camp, after standing still
+-------------------------------------------------------------------------------
+
+local STUCK = 'stuckScreen'
+local stuckCommand = nil
+local counting = nil   -- { untilT, coords, health } while counting down
+
+local function stuckOpen() return GetResourceState('wasteland_ui') == 'started' and exports.wasteland_ui:IsOpen(STUCK) end
+local function stuckUpdate(data) if stuckOpen() then exports.wasteland_ui:Update(STUCK, data) end end
+local function stuckClose()
+    counting = nil
+    if stuckOpen() then exports.wasteland_ui:Close(STUCK) end
+end
+
+local function registerStuck(c)
+    if stuckCommand or not c or not c.enabled or type(c.command) ~= 'string' then return end
+    stuckCommand = c.command
+    RegisterCommand(stuckCommand, function()
+        if GetResourceState('wasteland_ui') ~= 'started' then return end
+        TriggerServerEvent('wasteland:camps:server:stuckInfo')
+    end, false)
+end
+
+RegisterNetEvent('wasteland:camps:client:config', function(c) if type(c) == 'table' then registerStuck(c.stuck) end end)
+
+RegisterNetEvent('wasteland:camps:client:stuckInfo', function(info)
+    if type(info) ~= 'table' then return end
+    if stuckOpen() then stuckUpdate({ info = info }) return end
+    exports.wasteland_ui:Open(STUCK, { script = 'html/stuck.js', data = { info = info } })
+end)
+
+RegisterNetEvent('wasteland:camps:client:stuckCount', function(seconds)
+    local ped = PlayerPedId()
+    counting = { untilT = GetGameTimer() + (tonumber(seconds) or 10) * 1000, coords = GetEntityCoords(ped), health = GetEntityHealth(ped) }
+    stuckUpdate({ counting = math.ceil(tonumber(seconds) or 10), message = '' })
+end)
+
+RegisterNetEvent('wasteland:camps:client:stuckFailed', function(msg)
+    counting = nil
+    stuckUpdate({ counting = false, message = tostring(msg) })
+end)
+
+RegisterNetEvent('wasteland:camps:client:stuckDone', function() stuckClose() end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action)
+    if screen ~= STUCK then return end
+    if action == 'start' then TriggerServerEvent('wasteland:camps:server:stuckStart')
+    elseif action == 'cancel' then
+        counting = nil
+        TriggerServerEvent('wasteland:camps:server:stuckCancel')
+        stuckUpdate({ counting = false, message = 'Cancelled.' })
+    elseif action == 'close' then
+        if counting then TriggerServerEvent('wasteland:camps:server:stuckCancel') end
+        stuckClose()
+    end
+end)
+
+-- The countdown: cancelled by moving, getting hurt or getting in a vehicle.
+Citizen.CreateThread(function()
+    while true do
+        if counting then
+            Citizen.Wait(200)
+            local ped = PlayerPedId()
+            local why
+            if #(GetEntityCoords(ped) - counting.coords) > 1.5 then why = 'You moved. Stand still to be taken to the camp.'
+            elseif GetEntityHealth(ped) < counting.health then why = 'You got hurt. Try again when it is safe.'
+            elseif IsPedInAnyVehicle(ped, false) then why = 'Get out of the vehicle first.' end
+            if why and counting then
+                counting = nil
+                TriggerServerEvent('wasteland:camps:server:stuckCancel')
+                stuckUpdate({ counting = false, message = why })
+            elseif counting then
+                local left = math.ceil((counting.untilT - GetGameTimer()) / 1000)
+                if left <= 0 then
+                    counting = nil
+                    TriggerServerEvent('wasteland:camps:server:stuckFinish')
+                    stuckUpdate({ counting = 0 })
+                else
+                    stuckUpdate({ counting = left })
+                end
+            end
+        else
+            Citizen.Wait(500)
+        end
+    end
+end)

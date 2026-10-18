@@ -189,6 +189,11 @@ local XYZ = { type = 'table', required = true, fields = {
     heading = { type = 'number', default = 0 },
 } }
 
+local function clientConfig_stuck()
+    local s = M.config.stuck
+    return { enabled = s.enabled, command = s.command }
+end
+
 local function clientConfig()
     local out = {}
     for _, c in ipairs(camps) do
@@ -198,7 +203,8 @@ local function clientConfig()
         end
         out[#out + 1] = { id = c.id, label = c.label, coords = c.coords, radius = c.radius, safe = c.safe, blip = c.blip, traders = traders }
     end
-    return { camps = out }
+    local stuck = clientConfig_stuck()
+    return { stuck = stuck, camps = out }
 end
 
 M = Wasteland.DefineModule({
@@ -212,6 +218,12 @@ M = Wasteland.DefineModule({
         optional = true,
         schema = { type = 'table', fields = {
             restockMinutes = { type = 'integer', default = 10, min = 1, max = 1440 },
+            stuck = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = true },
+                command = { type = 'string', default = 'stuck', pattern = '^[a-z][a-z0-9_]*$' },
+                waitSeconds = { type = 'number', default = 10, min = 0, max = 120 },
+                cooldownMinutes = { type = 'number', default = 30, min = 0, max = 10080 },
+            } },
             chooseSpawnOnLogin = { type = 'boolean', default = true,
                 description = 'Returning characters choose: last known position or a safe camp' },
             tradeDistance = { type = 'number', default = 4.0, min = 1, max = 20 },
@@ -376,6 +388,92 @@ M.netEvent('wasteland:camps:server:chooseSpawn', {
     -- Protected a little longer, until they have arrived and the ground loaded.
     Citizen.SetTimeout(8000, function() if not choosing[src] then protect(src, false) end end)
     TriggerEvent('wasteland:camps:spawnChosen', src, camp.id)
+end)
+
+-------------------------------------------------------------------------------
+-- /stuck: the nearest safe camp, after standing still (checked here)
+-------------------------------------------------------------------------------
+
+local stuckUsed = {}    -- characterId -> os.time() of the last use
+local stuckOpen = {}    -- source -> { at, coords, camp }
+
+local function characterOf(src)
+    local ok, id = pcall(function() return exports.wasteland_players:GetCharacterId(src) end)
+    return ok and id or nil
+end
+
+local function inVehicle(src)
+    local veh = GetVehiclePedIsIn(GetPlayerPed(src), false)
+    return veh ~= nil and veh ~= 0
+end
+
+local function nearestSafe(p)
+    local best, bestD
+    for _, c in ipairs(camps) do
+        if c.safe then
+            local d = Zones.dist3d(p, c.coords)
+            if not bestD or d < bestD then best, bestD = c, d end
+        end
+    end
+    return best, bestD
+end
+
+local function stuckInfo(src)
+    local s = M.config.stuck
+    local p = playerCoords(src)
+    local cid = characterOf(src)
+    if not s.enabled or not p or not cid then return nil end
+    local camp, d = nearestSafe(p)
+    local left = 0
+    if stuckUsed[cid] then left = math.max(0, stuckUsed[cid] + s.cooldownMinutes * 60 - os.time()) end
+    return { camp = camp and camp.label or nil, distance = d or 0, wait = s.waitSeconds, every = s.cooldownMinutes * 60,
+        cooldown = left }, camp, p, cid
+end
+
+M.netEvent('wasteland:camps:server:stuckInfo', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
+    local info = stuckInfo(src)
+    if info then TriggerClientEvent('wasteland:camps:client:stuckInfo', src, info) end
+end)
+
+M.netEvent('wasteland:camps:server:stuckStart', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
+    local info, camp, p = stuckInfo(src)
+    if not info or not camp or info.cooldown > 0 then return end
+    if GetResourceState('wasteland_survival') == 'started' then
+        local ok, dead = pcall(function() return exports.wasteland_survival:IsDead(src) end)
+        if ok and dead then return end
+    end
+    if inVehicle(src) then return end
+    stuckOpen[src] = { at = GetGameTimer(), coords = p, camp = camp }
+    TriggerClientEvent('wasteland:camps:client:stuckCount', src, M.config.stuck.waitSeconds)
+end)
+
+M.netEvent('wasteland:camps:server:stuckCancel', { rateLimit = { burst = 5, perSecond = 2 } }, function(src) stuckOpen[src] = nil end)
+
+M.netEvent('wasteland:camps:server:stuckFinish', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
+    local o = stuckOpen[src]
+    stuckOpen[src] = nil
+    if not o then return end
+    local s = M.config.stuck
+    local cid = characterOf(src)
+    local p = playerCoords(src)
+    if not cid or not p then return end
+    if GetGameTimer() - o.at < s.waitSeconds * 1000 - 500 then return end   -- too early
+    if Zones.dist3d(p, o.coords) > 3.0 then                               -- moved
+        TriggerClientEvent('wasteland:camps:client:stuckFailed', src, 'You moved. Stand still to be taken to the camp.')
+        return
+    end
+    if inVehicle(src) then return end
+    stuckUsed[cid] = os.time()
+    local camp = o.camp
+    local at = camp.spawn or { x = camp.coords.x, y = camp.coords.y, z = camp.coords.z, heading = 0.0 }
+    M.log:info('player %d used /stuck: sent to %s', src, camp.label)
+    TriggerClientEvent('wasteland:camps:client:stuckDone', src)
+    TriggerClientEvent('wasteland:camps:client:spawnAt', src, at, camp.label)
+end)
+
+AddEventHandler('playerDropped', function()
+    local src = tonumber(source)
+    if src then stuckOpen[src] = nil end
 end)
 
 M.netEvent('wasteland:camps:server:config', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)

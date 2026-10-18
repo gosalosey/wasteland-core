@@ -694,6 +694,11 @@ function Mock:buildEnv(r)
         if not p or not p.coords then return 0 end
         return p.id * 100
     end
+    -- A player's vehicle (tests set players[id].vehicle to a handle); 0 = on foot.
+    env.GetVehiclePedIsIn = function(ped)
+        local p = mock:getPlayer(math.floor((tonumber(ped) or 0) / 100))
+        return p and p.vehicle or 0
+    end
     env.DoesEntityExist = function(ent)
         if mock:entity(ent) then return true end
         return mock:getPlayer(math.floor((tonumber(ent) or 0) / 100)) ~= nil

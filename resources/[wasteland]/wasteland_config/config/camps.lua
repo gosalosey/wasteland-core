@@ -17,6 +17,11 @@
 return {
     restockMinutes = 10,
 
+    -- /stuck (any player): go to the nearest safe camp after standing still
+    -- for waitSeconds (moving, getting hurt or getting in a vehicle cancels
+    -- it); once every cooldownMinutes.
+    stuck = { enabled = true, command = 'stuck', waitSeconds = 10, cooldownMinutes = 30 },
+
     -- Returning characters choose where they wake up: their last known
     -- position or one of the safe camps (new characters always pick a camp).
     chooseSpawnOnLogin = false,
