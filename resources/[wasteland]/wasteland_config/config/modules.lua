@@ -71,6 +71,9 @@ return {
         -- Survivor's guide: milestones, stats, what to try next, how-to (F2).
         guide      = true,
 
+        -- Prop placer: admins place saved props anywhere (/propplacer).
+        props      = true,
+
         -- Base building: tool cupboards, snapping walls, doors, storage,
         -- upkeep, raids. Needs the sinor-buildingProps-v2 props pack.
         basebuilding = true,

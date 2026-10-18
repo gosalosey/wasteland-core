@@ -1,5 +1,9 @@
 # Changelog
 
+## Prop placer for admins (owner)
+* New module wasteland_props: /propplacer (admins, wasteland.admin) opens a panel to search presets (barricades, wrecks, junk, camp gear, structures) or type any prop model. A see-through copy follows where you look: mouse wheel turns (Shift fine), Up/Down raise and lower, Left/Right tilt, Z/X roll, R resets, G snaps to the ground, F toggles collision, Enter or left click places (keep placing copies), Delete removes the prop you aim at, Backspace or right click stops.
+* Every prop is saved (wl_props, migration 1) and comes back after restarts; players' games spawn them nearby only (not networked, no entity cost). The panel lists nearby props to move, visit or delete. Settings: config/props.lua (presets, maxProps, streamDistance, maxPlaceDistance). The server checks admin rights, the model name and the distance for every change.
+
 ## Survival HUD: a zombie-survival look (owner)
 * Health is a blood-red bar on a riveted, rusted plate (armour a steel bar under it); food, drink, temperature, pee and poop are round iron dials with a ring that drains, each in its own colour. Low glows amber, critical pulses red. Bleeding and infection tags restyled. Same data, modes and /hud layout as before.
 

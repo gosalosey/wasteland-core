@@ -55,6 +55,7 @@ return {
     'integration/vehicles.lua',
     'integration/tailor.lua',
     'integration/supplydrops.lua',
+    'integration/props.lua',
     'integration/events.lua',
     'integration/groups.lua',
     'integration/pockets.lua',

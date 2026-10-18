@@ -101,6 +101,7 @@ Every setting is in **`resources/[wasteland]/wasteland_config/config/`**, one fi
 
 * **F10**: the admin panel, with players (spectate, give items, send to a camp), bans, world tools (time, weather), a live view and debug overlays.
 * `/give <id> <item> [count]`, `/zombies count | clear | spawn <n> | sync`, `/survival <id> <stat> <value>`, `/event`, `/supplydrop [here]`, `/appearance <id>`.
+* **`/propplacer`**: place props anywhere (barricades, wrecks, camp gear, or any GTA prop by name). A see-through copy follows where you look: mouse wheel turns it, arrows raise, lower and tilt it, Enter or left click places it, Delete removes the prop you aim at, Backspace stops. Every prop is saved and comes back after restarts. The panel also lists nearby props to move, visit or delete. Presets and limits: `wasteland_config/config/props.lua`.
 * In the server console, `wasteland status` shows every module and whether it's running.
 * Make someone an admin in `server.cfg`: `add_principal identifier.fivem:12345678 group.admin`
 
