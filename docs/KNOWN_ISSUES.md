@@ -24,7 +24,7 @@
 | K-20 | Appearance | `spawnmanager` replaces the model on every respawn; the look is re-applied on `playerSpawned`. | Mitigated |
 | K-21 | Inventory | Weapons were not items. | Fixed (weapons 0.1.0) |
 | K-22 | Inventory | The `naked` component values (what an empty clothing slot shows) differ between game builds; the shipped values are the common freemode ones and must be checked in-game (R4.9). | Verify at runtime |
-| K-23 | Inventory | Hotbar keys 1-5 are also GTA's weapon-category keys. Harmless while there are no weapons; rebind in Key Bindings if needed. | By design for now |
+| K-23 | Inventory | Hotbar keys 1-8 are also GTA's weapon-category keys. Harmless while there are no weapons; rebind in Key Bindings if needed. | By design for now |
 | K-24 | Inventory | If the database keeps refusing one queued change while it is reachable (a permanent error, not an outage), that change is dropped after 10 attempts with an error so later changes are not blocked forever. | By design; investigate any such log line |
 | K-25 | Inventory | Drops and stash distance checks use server-side positions (OneSync). Without OneSync, dropping and searching are refused with a message. | Platform requirement |
 | K-26 | Inventory | Runtime finding (R4.4, 2026-10-10): releasing a dragged item threw `Cannot read properties of null (reading 'grabX')`, so no drag ever completed. The drop target was computed after the drag state was cleared. Fixed. The inventory opens with TAB (owner's request); GTA's weapon wheel on TAB is disabled every frame. | Fixed; re-run R4.4 |

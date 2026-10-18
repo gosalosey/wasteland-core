@@ -486,7 +486,7 @@
 
     function hotbarPanel() {
         const row = h('div', { class: 'wli-hotbar' });
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 8; i++) {
             const uid = st.snap.hotbar && st.snap.hotbar[i];
             const found = uid ? findStack(uid) : null;
             const cell = h('div', { class: 'wli-hot' }, h('span', { class: 'wli-hot__key', text: String(i + 1) }));
@@ -499,7 +499,7 @@
             row.appendChild(cell);
         }
         return h('div', { class: 'wli-section' },
-            h('div', { class: 'wli-section__head' }, h('span', { class: 'wl-section-title', text: 'Hotbar (keys 1-5, right-click to clear)' })), row);
+            h('div', { class: 'wli-section__head' }, h('span', { class: 'wl-section-title', text: 'Hotbar (keys 1-8, right-click to clear)' })), row);
     }
 
     function render() {
@@ -713,7 +713,7 @@
         if (def.equip && !worn) items.push(['Wear', () => st.api.post('equip', { uid: stack.uid, from: fromId, slot: def.equip })]);
         if (worn) items.push(['Take off', () => st.api.post('unequip', { slot: stack.slot, to: st.snap.pockets })]);
         if (!worn && stack.count > 1) items.push(['Split…', () => openSplit(e, stack, fromId)]);
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 8; i++) {
             if (!worn) items.push(['Hotbar ' + i, () => st.api.post('setHotbar', { index: i, uid: stack.uid })]);
         }
         items.push(['Drop', () => st.api.post('drop', { uid: stack.uid, from: fromId, count: stack.count })]);
@@ -919,7 +919,7 @@
         '.wli-slot .wli-item { position: relative; }',
         '.wli-slot__label { font-size: 11px; color: var(--wl-text-dim); }',
         '.wli-slot.is-target, .wli-hot.is-target, .wli-ground.is-target { border-color: var(--wl-ok); border-style: solid; }',
-        '.wli-hotbar { display: flex; gap: 6px; }',
+        '.wli-hotbar { display: grid; grid-template-columns: repeat(4, 52px); gap: 6px; }',
         '.wli-hot { position: relative; width: 52px; height: 52px; background: var(--wl-bg-sunken); border: 1px solid var(--wl-border);',
         '  border-radius: 4px; display: flex; align-items: center; justify-content: center; text-align: center; }',
         '.wli-hot__key { position: absolute; left: 4px; top: 2px; font-size: 10px; color: var(--wl-accent); }',

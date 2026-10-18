@@ -1,5 +1,5 @@
 -- wasteland_inventory :: client/main.lua
--- Inventory screen (key TAB by default), hotbar keys 1-5, items on the
+-- Inventory screen (key TAB by default), hotbar keys 1-8, items on the
 -- ground (props + "press E"), and worn clothing applied to the ped.
 -- The server decides every change; this script shows its snapshots and
 -- forwards requests.
@@ -176,7 +176,7 @@ Citizen.CreateThread(function()
     end
 end)
 
-for i = 1, 5 do
+for i = 1, 8 do
     RegisterCommand('wl_hotbar_' .. i, function()
         if canOpen() and not isOpen() then TriggerServerEvent('wasteland:inventory:server:useHotbar', i) end
     end, false)
@@ -391,7 +391,7 @@ local function hotbarData()
         for _, s in ipairs(inv.items or {}) do byUid[s.uid] = s end
     end
     local slots = {}
-    for i = 1, 5 do
+    for i = 1, 8 do
         local uid = snapshot.hotbar[i]
         local s = uid and byUid[uid]
         local d = s and defs.items and defs.items[s.name]

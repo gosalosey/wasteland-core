@@ -50,7 +50,7 @@ Installing by hand, adding admins, or updating: see **[docs/INSTALL.md](docs/INS
 | **Left Alt** (hold) | Look at something and interact | **F4** | Emotes |
 | **E** | Open doors and gates, take all when looting | **F6** | Group |
 | **K** | Crafting | **F9** | Skills |
-| **1 - 5** | Hotbar | **X** | Hands up |
+| **1 - 8** | Hotbar | **X** | Hands up |
 | **Caps Lock** | Talk on the radio | **F10** | Admin panel (admins) |
 
 Players can change any key in GTA's **Settings → Key Bindings → FiveM**.

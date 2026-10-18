@@ -1,5 +1,8 @@
 # Changelog
 
+## Hotbar: 8 slots (owner)
+* The hotbar has 8 slots on keys 1 - 8 (was 5). In the inventory they sit in two rows of four; the bar on screen is one row. Saved hotbars carry over.
+
 ## UI: removed the black box behind screens (owner)
 * The background blur drew a solid black box in FiveM (the game cannot be blurred from a screen), so it is gone; the dark backdrop behind the inventory is gone too.
 

@@ -92,4 +92,4 @@ The sound files are in `resources/[wasteland]/wasteland_zombiesounds` (installed
 
 ## Keys for players
 
-Tab inventory · Left Alt (hold) interact · K crafting · F2 survivor's guide · F4 emotes · F6 group · F9 skills · F10 admin panel · X hands up · Caps Lock radio · 1-5 hotbar. Players can change them in GTA's Settings → Key Bindings → FiveM.
+Tab inventory · Left Alt (hold) interact · K crafting · F2 survivor's guide · F4 emotes · F6 group · F9 skills · F10 admin panel · X hands up · Caps Lock radio · 1-8 hotbar. Players can change them in GTA's Settings → Key Bindings → FiveM.

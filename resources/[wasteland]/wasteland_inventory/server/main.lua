@@ -47,7 +47,7 @@ function Inv.loadCharacter(src, cid)
     end
     local hotbar = exports.wasteland_players:GetCharacterData(cid, 'hotbar')
     if type(hotbar) == 'table' then
-        for i = 1, 5 do c.hotbar[i] = type(hotbar[i]) == 'string' and hotbar[i] or false end
+        for i = 1, 8 do c.hotbar[i] = type(hotbar[i]) == 'string' and hotbar[i] or false end
     end
     local meta = exports.wasteland_players:GetCharacterData(cid, 'inventory') or {}
     local appearance = appearanceOf(cid)

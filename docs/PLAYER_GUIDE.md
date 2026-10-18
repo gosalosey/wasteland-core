@@ -17,7 +17,7 @@ Welcome to the wasteland. This page covers the basics. In game, press **F2** for
 * **Infection** comes from zombie bites. It grows slowly, then fast. Antibiotics slow it down.
 * **Temperature:** cold kills too. Wear warm clothes at night, stay out of the rain, or sit by a campfire.
 * **Toilet:** the two drop icons on the HUD fill up. Type `/pee` or `/poop` when they get high.
-* **Death:** everything except your hotbar (keys 1 - 5) goes into a body bag where you fell, marked on your map. Go back for it, carefully.
+* **Death:** everything except your hotbar (keys 1 - 8) goes into a body bag where you fell, marked on your map. Go back for it, carefully.
 
 ## The dead
 

@@ -725,7 +725,7 @@ function Inv.deathDrop(src, label)
     local p = WLI.Drops.playerCoords(src)
     if not p then return nil, 'position unknown (OneSync is required)' end
     local keep = {}
-    for i = 1, 5 do if c.hotbar[i] then keep[c.hotbar[i]] = true end end
+    for i = 1, 8 do if c.hotbar[i] then keep[c.hotbar[i]] = true end end
 
     local pockets, equip = WLI.invs[c.pockets], WLI.invs[c.equip]
     local bag = Inv.backpack(c)
@@ -834,7 +834,7 @@ function Inv.clear(src)
         end
     end
     Inv.fitPockets(c, statements, changed)
-    for i = 1, 5 do c.hotbar[i] = false end
+    for i = 1, 8 do c.hotbar[i] = false end
     exports.wasteland_players:SetCharacterData(c.id, 'hotbar', c.hotbar)
     Store.enqueue(statements, string.format('clear inventory of character %d', c.id))
     WLI.Sync.changed(changed, src)
@@ -854,7 +854,7 @@ function Inv.setHotbar(src, index, uid)
             if WLI.invs[id] and WLI.invs[id].items[uid] then found = true end
         end
         if not found then return false, 'that item is not in your inventory' end
-        for i = 1, 5 do if c.hotbar[i] == uid then c.hotbar[i] = false end end
+        for i = 1, 8 do if c.hotbar[i] == uid then c.hotbar[i] = false end end
     end
     c.hotbar[index] = uid or false
     exports.wasteland_players:SetCharacterData(c.id, 'hotbar', c.hotbar)
@@ -1014,7 +1014,7 @@ function Inv.trade(a, offerA, b, offerB)
     -- traded stacks leave the giver's hotbar
     for _, c in ipairs({ ca, cb }) do
         local cleared = false
-        for i = 1, 5 do
+        for i = 1, 8 do
             local uid = c.hotbar[i]
             if uid and not Inv.findOwn(c.source, uid) then c.hotbar[i] = false; cleared = true end
         end
@@ -1050,7 +1050,7 @@ function Inv.sort(src, invId)
         local c = Inv.characterOf(src)
         if c and #plan.remove > 0 then
             local moved = false
-            for i = 1, 5 do
+            for i = 1, 8 do
                 local to = c.hotbar[i] and plan.into[c.hotbar[i]]
                 if to then c.hotbar[i] = to; moved = true end
             end

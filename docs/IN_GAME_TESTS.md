@@ -476,7 +476,7 @@ Open the panel with F10 (you need the `wasteland.admin` ACE).
 
 | # | Do | Expect |
 |---|---|---|
-| R31.1 | Put items on the hotbar (inventory, right-click, Hotbar 1-5) | They show bottom middle with pictures and counts |
+| R31.1 | Put items on the hotbar (inventory, right-click, Hotbar 1-8) | They show bottom middle with pictures and counts |
 | R31.2 | /hotbar, then /hotbar again; reconnect | Hidden, shown; the choice is kept |
 | R31.3 | Press X, try to shoot; X again | Hands up (others see it), no shooting; hands down |
 | R31.4 | F4 | Emote menu; search "sit", click it; you sit; walk: you get up |

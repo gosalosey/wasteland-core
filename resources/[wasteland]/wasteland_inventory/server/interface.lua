@@ -110,10 +110,10 @@ function Interface.registerNetEvents(M)
             if ok and msg then TriggerClientEvent('wasteland:inventory:client:notice', src, msg) end
         end)
     M.netEvent('wasteland:inventory:server:setHotbar', {
-        args = { { type = 'integer', required = true, min = 1, max = 5 }, { type = 'string', pattern = '^%x+$', maxLength = 16 } },
+        args = { { type = 'integer', required = true, min = 1, max = 8 }, { type = 'string', pattern = '^%x+$', maxLength = 16 } },
         rateLimit = OPS_RATE,
     }, function(src, index, uid) answer(src, Inv.setHotbar(src, index, uid)) end)
-    M.netEvent('wasteland:inventory:server:useHotbar', { args = { { type = 'integer', required = true, min = 1, max = 5 } }, rateLimit = { burst = 5, perSecond = 2 } },
+    M.netEvent('wasteland:inventory:server:useHotbar', { args = { { type = 'integer', required = true, min = 1, max = 8 } }, rateLimit = { burst = 5, perSecond = 2 } },
         function(src, index)
             local ok, msg = Inv.useHotbar(src, index)
             if not ok then Sync.error(src, msg) elseif msg then TriggerClientEvent('wasteland:inventory:client:notice', src, msg) end
