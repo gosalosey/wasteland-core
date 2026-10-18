@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: "Awaiting scripts" and a hazy, unloaded world after choosing a character (owner report)
+* Blocking spawnmanager's random spawns (the previous fix) also blocked its first spawn when joining - and that first spawn is what ends GTA's loading screen. The game stayed at "Awaiting scripts" behind the character screen, so the world never finished loading. Wasteland now does that first spawn itself, at a fixed holding spot (the default spawn), ends the loading screen, and then the character screen opens.
+
 ## /stuck: back to the nearest safe camp (owner)
 * Any player can type /stuck: a window shows the nearest safe camp and how far it is. Press Teleport and stand still for 10 seconds (moving, getting hurt or getting into a vehicle cancels it) and you are taken there. Once every 30 minutes, so it is no free fast travel or escape from a fight.
 * Checked by the server (the wait, that you stood still, the cooldown). camps.lua `stuck`: on/off, the command, the wait, the cooldown.

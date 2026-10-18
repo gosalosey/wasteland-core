@@ -58,10 +58,37 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- The first spawn when joining. spawnmanager normally does it (and it is
+-- what ends GTA's loading screen - without it the game sits at "Awaiting
+-- scripts" behind the character screen), but at a random map spawn point.
+-- We do it ourselves, at a fixed holding spot (the character is placed at
+-- its own position after it is chosen).
+local HOLD = { x = 1734.0, y = 3297.0, z = 41.2, heading = 0.0 }
+local function firstSpawn()
+    if GetResourceState('spawnmanager') == 'started' then
+        local done = false
+        local ok = pcall(function()
+            exports.spawnmanager:spawnPlayer({ x = HOLD.x, y = HOLD.y, z = HOLD.z, heading = HOLD.heading, model = 'mp_m_freemode_01' },
+                function() done = true end)
+        end)
+        local untilT = GetGameTimer() + 15000
+        while ok and not done and GetGameTimer() < untilT do Citizen.Wait(100) end
+    else
+        local ped = PlayerPedId()
+        SetEntityCoordsNoOffset(ped, HOLD.x, HOLD.y, HOLD.z, false, false, false)
+        NetworkResurrectLocalPlayer(HOLD.x, HOLD.y, HOLD.z, HOLD.heading, true, false)
+    end
+    noAutoSpawn()
+    ShutdownLoadingScreen()
+    ShutdownLoadingScreenNui()
+    if IsScreenFadedOut() or IsScreenFadingOut() then DoScreenFadeIn(500) end
+end
+
 Citizen.CreateThread(function()
     while not NetworkIsPlayerActive(PlayerId()) do Citizen.Wait(100) end
     noAutoSpawn()
     if LocalPlayer.state.wlCharacterId then return end -- restore in progress
+    firstSpawn()
     local lastRequest = 0
     while not loaded do
         setHeld(true) -- spawnmanager may respawn the ped; keep holding it
