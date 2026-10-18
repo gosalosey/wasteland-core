@@ -385,34 +385,47 @@
         Object.keys(attrs).forEach((k) => e.setAttribute(k, attrs[k]));
         return e;
     }
-    // A simple human outline (front), 60 x 120.
-    const BODY = 'M30 4 a9 9 0 1 1 0 18 a9 9 0 1 1 0 -18 Z ' +
-        'M19 25 H41 Q48 25 50 32 L56 60 Q57 64 53 65 Q50 65 49 61 L44 40 V64 L46 112 Q46 117 41 117 Q37 117 36 112 L31 72 H29 L24 112 ' +
-        'Q23 117 19 117 Q14 117 14 112 L16 64 V40 L11 61 Q10 65 7 65 Q3 64 4 60 L10 32 Q12 25 19 25 Z';
-
     function healthColor(p) {
         if (p <= 25) return '#e0533f';
         if (p <= 60) return '#d6b23c';
         return '#7fc75a';
     }
 
+    // The body: a glowing outline (green; amber, then red as health drops),
+    // brighter at the hands and feet. Overlays: armor plate, infection tint,
+    // cold / heat edge, bleeding drops.
+    const OUTLINE = 'M26 18 L26 21 Q17 22 15 27 L11 52 Q10 56 12 58 L13 58 Q15 56 15 52 L19 32 L19 58 L18 112 Q18 116 22 116 L24 116 ' +
+        'Q26 115 26 111 L28 66 L30 64 L32 66 L34 111 Q34 115 36 116 L38 116 Q42 116 42 112 L41 58 L41 32 L45 52 Q45 56 47 58 L48 58 ' +
+        'Q50 56 49 52 L45 27 Q43 22 34 21 L34 18 Z';
+    function glowColor(hp) { return hp > 50 ? '#8dff5a' : hp > 25 ? '#ffc43d' : '#ff4a3d'; }
     function bodyFigure(v) {
         const svg = svgEl('svg', { viewBox: '0 0 60 120', class: 'wli-body' });
         const hp = typeof v.health === 'number' ? v.health : 100;
-        svg.appendChild(svgEl('path', { d: BODY, fill: healthColor(hp), 'fill-opacity': String(0.25 + 0.55 * hp / 100), stroke: '#cfe8c0', 'stroke-width': '1.2' }));
+        const c = glowColor(hp);
+        svg.style.setProperty('--glow', c);
+        const g = svgEl('g', { class: 'wli-body__glow' });
+        // infection: a sickly tint inside the outline
         if (v.infection > 0) {
-            svg.appendChild(svgEl('path', { d: BODY, fill: '#6fbf3a', 'fill-opacity': String(Math.min(0.7, v.infection / 100)), class: 'wli-body__infect' }));
+            g.appendChild(svgEl('path', { d: OUTLINE, fill: '#6fbf3a', 'fill-opacity': String(Math.min(0.45, v.infection / 160)), class: 'wli-body__infect' }));
+            g.appendChild(svgEl('circle', { cx: '30', cy: '10', r: '7', fill: '#6fbf3a', 'fill-opacity': String(Math.min(0.45, v.infection / 160)) }));
+        }
+        if (typeof v.armor === 'number' && v.armor > 0) {
+            g.appendChild(svgEl('rect', { x: '21', y: '29', width: '18', height: '22', rx: '3', fill: 'none', stroke: c, 'stroke-width': '0.8',
+                'stroke-opacity': String(0.25 + 0.5 * v.armor / 100) }));
         }
         const t = v.temperature;
-        if (typeof t === 'number' && (t <= 35.5 || t >= 38.5)) {
-            svg.appendChild(svgEl('path', { d: BODY, fill: 'none', stroke: t <= 35.5 ? '#6db7ff' : '#ff9a3c', 'stroke-width': '2.4', 'stroke-opacity': '0.9' }));
-        }
-        if (typeof v.armor === 'number') {
-            svg.appendChild(svgEl('rect', { x: '19', y: '29', width: '22', height: '24', rx: '3', fill: v.armor > 0 ? '#8a9aa8' : '#5a5a5a',
-                'fill-opacity': v.armor > 0 ? '0.75' : '0.45', stroke: '#1d242b', 'stroke-width': '1' }));
-        }
+        const edge = (typeof t === 'number' && (t <= 35.5 || t >= 38.5)) ? (t <= 35.5 ? '#6db7ff' : '#ff9a3c') : null;
+        if (edge) g.appendChild(svgEl('path', { d: OUTLINE, fill: 'none', stroke: edge, 'stroke-width': '3', 'stroke-opacity': '0.45' }));
+        // the outline itself (and the head)
+        g.appendChild(svgEl('path', { d: OUTLINE, fill: 'rgba(0,0,0,0.35)', stroke: c, 'stroke-width': '1.3', 'stroke-linejoin': 'round' }));
+        g.appendChild(svgEl('circle', { cx: '30', cy: '10', r: '7', fill: 'rgba(0,0,0,0.35)', stroke: c, 'stroke-width': '1.3' }));
+        // brighter at the hands and feet
+        [[12.5, 57], [47.5, 57], [22, 115.5], [38, 115.5]].forEach((pt) => {
+            g.appendChild(svgEl('circle', { cx: String(pt[0]), cy: String(pt[1]), r: '2.6', fill: c, 'fill-opacity': '0.55', class: 'wli-body__spot' }));
+        });
+        svg.appendChild(g);
         for (let i = 0; i < Math.min(3, v.bleeding || 0); i++) {
-            svg.appendChild(svgEl('path', { d: 'M' + (24 + i * 6) + ' 44 q-2.5 4 0 6 q2.5 -2 0 -6 Z', fill: '#d1202a', class: 'wli-body__drop' }));
+            svg.appendChild(svgEl('path', { d: 'M' + (24 + i * 6) + ' 44 q-2.5 4 0 6 q2.5 -2 0 -6 Z', fill: '#ff2a2a', class: 'wli-body__drop' }));
         }
         return svg;
     }
@@ -881,7 +894,9 @@
         '.wli-preview.is-bad { background: rgba(196,69,58,0.25); border-color: var(--wl-danger); }',
         '.wli-health { margin-bottom: 4px; min-width: 300px; max-width: 440px; }',
         '.wli-vitals { display: grid; grid-template-columns: 80px 1fr; gap: 12px; align-items: center; }',
-        '.wli-body { width: 80px; height: 160px; }',
+        '.wli-body { width: 105px; height: 210px; overflow: visible; }',
+        '.wli-body__glow { filter: drop-shadow(0 0 1.5px var(--glow)) drop-shadow(0 0 4px var(--glow)) drop-shadow(0 0 9px var(--glow)); }',
+        '.wli-body__spot { filter: blur(1.2px); }',
         '.wli-body__drop { animation: wli-drip 1.4s ease-in infinite; }',
         '@keyframes wli-drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(10px); opacity: 0; } }',
         '.wli-vbars { display: flex; flex-direction: column; gap: 5px; }',
