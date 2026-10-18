@@ -267,6 +267,16 @@ end
 -- Spawning near the player
 -------------------------------------------------------------------------------
 
+-- Draw a prop `s` times bigger: its matrix vectors stretched (the look only;
+-- collision stays the model's own).
+local function scaleEntity(obj, s)
+    if not s or s == 1.0 or not DoesEntityExist(obj) then return end
+    -- read and written back in the same order (forward, right, up, position)
+    local forward, right, up, at = GetEntityMatrix(obj)
+    SetEntityMatrix(obj, forward.x * s, forward.y * s, forward.z * s, right.x * s, right.y * s, right.z * s,
+        up.x * s, up.y * s, up.z * s, at.x, at.y, at.z)
+end
+
 local function spawnObject(model, coords, heading)
     local hash = GetHashKey(model)
     if not RequestModelHash(hash) then return nil end
@@ -319,6 +329,8 @@ local function SpawnProp(id)
     end
     local obj = spawnObject(data.model, at, heading)
     if not obj then return end
+    local scaled = cfg.pieces[data.piece] and cfg.pieces[data.piece].scale
+    if scaled then scaleEntity(obj, scaled) end
     spawnedProps[id] = { obj = obj, targets = addTargets(obj, id, false) }
 end
 
@@ -701,6 +713,7 @@ StartPlacement = function(pieceKey)
             end
             SetEntityCoordsNoOffset(ghost, placeCoords.x, placeCoords.y, placeCoords.z, false, false, false)
             SetEntityHeading(ghost, heading)
+            if piece.scale then scaleEntity(ghost, piece.scale) end
             local rampHelp = pieceKey == 'ramp' and ('~n~R: %s   Q: %s'):format(rampOpts.rampFlip and 'facing down' or 'facing up',
                 rampOpts.rampLevel == 'top' and 'on top of the foundation' or 'up onto the foundation') or ''
             help(('%s%s~n~~INPUT_CONTEXT~ place   ~INPUT_FRONTEND_RRIGHT~ cancel~n~Wheel: turn 45   Left/Right: turn freely~n~Up/Down: raise/lower   Shift+wheel: height   Tab: snapping %s~n~Ctrl+wheel: close gaps (%.2f)%s'):format(

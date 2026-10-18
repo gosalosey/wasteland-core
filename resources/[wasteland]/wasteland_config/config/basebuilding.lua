@@ -116,9 +116,10 @@ return {
         barbedwire = { label = 'Barbed Wire Fence', model = 'prop_fnclink_04g', altModels = { 'prop_fnclink_09e', 'prop_fnclink_10a', 'prop_fnclink_05c' },
             category = 'defense', cost = { scrap_metal = 4, wood_planks = 2 }, health = 300, material = 'metal',
             contactDamage = 12, slow = 0.4, wearPerTouch = 4, touchRadius = 2.5 },
-        spikes = { label = 'Wooden Spikes', model = 'p_stinger_piece_01',
-            category = 'defense', cost = { wood_planks = 8 }, health = 250, material = 'wood',
-            contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 1.5 },
+        -- scale: drawn this many times bigger (the look only)
+        spikes = { label = 'Spike Strip', model = 'p_stinger_piece_01', scale = 2.0,
+            category = 'defense', cost = { scrap_metal = 6 }, health = 400, material = 'metal',
+            contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 2.5 },
         sandbags = { label = 'Sandbag Wall', model = 'v_ind_cf_flour', altModels = { 'prop_mb_sandblock_02', 'prop_conc_sacks_02a' },
             category = 'defense', cost = { stone = 10, rag = 4 }, health = 1500, material = 'stone' },
 

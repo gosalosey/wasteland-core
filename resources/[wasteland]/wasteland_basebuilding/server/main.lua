@@ -133,7 +133,7 @@ local function clientConfig()
         pieces[key] = { label = p.label, model = p.model, category = p.category, family = p.family, hidden = p.hidden,
             openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material,
             interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
-            contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius }
+            contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -797,6 +797,7 @@ M = Wasteland.DefineModule({
                 slow = { type = 'number', min = 0.05, max = 1, description = 'Defenses: speed share of zombies touching it' },
                 wearPerTouch = { type = 'number', min = 0, max = 10000, description = 'Defenses: durability lost per zombie touch' },
                 touchRadius = { type = 'number', min = 0.3, max = 10, description = 'Defenses: how close counts as touching' },
+                scale = { type = 'number', min = 0.2, max = 5, description = 'Drawn this many times bigger (the look only)' },
                 interactDistance = { type = 'number', min = 1, max = 20, description = 'Doors: E works from this far (also from a vehicle)' },
                 passThrough = { type = 'boolean', description = 'Doors: swing through players and vehicles' },
                 grid = { type = 'table', nullable = true, fields = {
