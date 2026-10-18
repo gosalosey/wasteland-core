@@ -53,7 +53,7 @@ local function RequestModelHash(model)
     if not IsModelInCdimage(model) then
         if not warnedModels[model] then
             warnedModels[model] = true
-            print(('[wasteland_basebuilding] model %s is not in the game: is the props pack (sinor-buildingProps-v2) running?'):format(tostring(model)))
+            print(("[wasteland_basebuilding] model %s is not in the game: is the building props pack running? (basebuilding.lua: propsResource and the pieces' model names)"):format(tostring(model)))
         end
         return false
     end

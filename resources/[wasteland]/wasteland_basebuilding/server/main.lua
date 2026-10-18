@@ -4,7 +4,8 @@
 -- repairs, upkeep with decay, raiding (explosions, melee on wood, lockpicks).
 -- Access: the cupboard's owner, players they authorize, and the owner's
 -- group. Every rule is checked here; clients only show and ask.
--- The props come from the "sinor-buildingProps-v2" asset pack (not part of
+-- The props come from the "sinor-buildingProps-v2" asset pack by default, or
+-- your own props (basebuilding.lua propsResource and each piece's model) (not part of
 -- Wasteland Core; see basebuilding.lua).
 
 local Rules = WLBB.Rules
@@ -755,7 +756,8 @@ M = Wasteland.DefineModule({
         optional = true,
         schema = { type = 'table', fields = {
             buildItem = { type = 'string', default = 'building_plan', pattern = '^[%w_]+$' },
-            propsResource = { type = 'string', default = 'sinor-buildingProps-v2', description = 'The props pack this module needs' },
+            propsResource = { type = 'string', default = 'sinor-buildingProps-v2', maxLength = 64,
+                description = "The resource with the building props ('' = none to check)" },
             cupboard = { type = 'table', fields = {
                 piece = { type = 'string', default = 'toolcupboard' },
                 radius = { type = 'number', default = 40.0, min = 5, max = 200 },
@@ -867,9 +869,9 @@ M = Wasteland.DefineModule({
             if not known(item) then return false, string.format('basebuilding.lua names item "%s", which is not in inventory.lua items', tostring(item)) end
         end
         if not c.pieces[c.cupboard.piece] then return false, 'basebuilding.lua: cupboard.piece is not a piece' end
-        if GetResourceState(c.propsResource) ~= 'started' then
-            M.log:warn('the props pack "%s" is not running: the pieces will be invisible. Install it and ensure it before wasteland_basebuilding.',
-                c.propsResource)
+        if c.propsResource ~= '' and GetResourceState(c.propsResource) ~= 'started' then
+            M.log:warn('the props pack "%s" is not running: the pieces will be invisible. Install it and ensure it before wasteland_basebuilding '
+                .. "(or set basebuilding.lua propsResource to your own props resource, or to '' for GTA props).", c.propsResource)
         end
         cupboards, props, carry, meleeCooldown, lockCooldown, picking = {}, {}, {}, {}, {}, {}
         local token = {}

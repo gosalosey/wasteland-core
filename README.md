@@ -21,7 +21,7 @@
 
 That's it. Wasteland creates its own database tables. The recipe also installs the database driver (oxmysql), voice chat (pma-voice), the zombie sounds and a ready `server.cfg`.
 
-> **Base building needs a paid props pack.** The building pieces (walls, doors, gates, foundations and so on) come from **sinor-buildingProps-v2** by SinorSystem. It is **not free** and **not included**. Buy it from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/), then install it on your server (see [docs/INSTALL.md](docs/INSTALL.md#base-building-props-optional)). Without it, everything else works, but base pieces are invisible. To switch base building off, set `basebuilding = false` in `modules.lua`.
+> **Base building needs a paid props pack.** The building pieces (walls, doors, gates, foundations and so on) come from **sinor-buildingProps-v2** by SinorSystem. It is **not free** and **not included**. Buy it from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/), then install it on your server (see [docs/INSTALL.md](docs/INSTALL.md#base-building-props-optional)). Without it, everything else works, but base pieces are invisible. **Or use your own building props**, or GTA's: see [docs/INSTALL.md](docs/INSTALL.md#using-your-own-building-props-instead-of-the-paid-pack). To switch base building off, set `basebuilding = false` in `modules.lua`.
 
 Installing by hand, adding admins, or updating: see **[docs/INSTALL.md](docs/INSTALL.md)**.
 

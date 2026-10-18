@@ -74,6 +74,18 @@ To use base building:
 
 Without the pack the module still runs, but the pieces cannot be seen; the console says so when it starts.
 
+## Using your own building props (instead of the paid pack)
+
+Base building doesn't have to use the sinor pack. Any props work, including your own models or GTA's own.
+
+1. **Your own models:** make a resource (for example `my_building_props`) with an `fxmanifest.lua` and a `stream` folder holding your `.ydr` / `.ytyp` files, put it in `resources`, and `ensure` it before `wasteland_basebuilding`.
+2. In `wasteland_config/config/basebuilding.lua`:
+   * set `propsResource = 'my_building_props'` (or `''` if you only use GTA's own props, whose names start with `prop_`);
+   * change each piece's `model` to your model's name, including the upgrade tiers (`wall_stone`, `wall_metal`, `door`, `metaldoor` ...).
+3. Restart the server.
+
+Snapping measures each model, so walls, doorways and foundations of any sensible size snap together. Doors swing by `openAngleOffset`, and garage doors rise by `openLift`; set those on the piece if your models need it. You can add brand-new pieces in `pieces` (label, model, category, cost, health, material). A model that isn't in the game prints a line in F8 naming it.
+
 ## Zombie sounds
 
 The sound files are in `resources/[wasteland]/wasteland_zombiesounds` (installed and updated with everything else; `ensure wasteland_zombiesounds` before `ensure wasteland_zombies`). Which file plays for what (idle groans, chasing, attack, hurt, death, screamer calls) is listed in `wasteland_zombies/client/sounds.lua`; volume, range and how often they groan are in `zombies.lua` → `sounds`. To use your own sounds, put them in its `sounds` folder and list them in `zombies.lua` → `sounds.groups`. Without the resource zombies are silent and nothing else changes.

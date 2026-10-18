@@ -1,9 +1,15 @@
 -- Base building (module "basebuilding", resource wasteland_basebuilding).
 --
--- NEEDS the building props pack "sinor-buildingProps-v2" on the server (it is
--- not part of Wasteland Core: it is a licensed asset pack, tied to the Cfx
--- account that owns it). Put it in resources and `ensure` it before
--- wasteland_basebuilding.
+-- The building pieces need props (3D models). By default they come from the
+-- paid "sinor-buildingProps-v2" pack by SinorSystem (https://sinorsystem.tebex.io/,
+-- not included; tied to the Cfx account that bought it). Put it in resources
+-- and `ensure` it before wasteland_basebuilding.
+--
+-- YOUR OWN PROPS instead: stream them in a resource of your own (ensure it
+-- before wasteland_basebuilding), set `propsResource` below to its name, and
+-- change each piece's `model` (and the upgrade tiers') to your model names.
+-- Snapping measures each model, so any sensible sizes work. GTA's own
+-- props (names starting prop_ ...) work too: then set propsResource = ''.
 --
 -- How it works for players:
 --   * Use a Building plan (craft it, or buy it) to open the build menu.
@@ -27,6 +33,10 @@
 -- Costs: { item = count }, item names from inventory.lua.
 return {
     buildItem = 'building_plan',
+
+    -- The resource with the building props ('' = none to check, e.g. GTA's
+    -- own props). Only used to warn at start when it is not running.
+    propsResource = 'sinor-buildingProps-v2',
 
     -- radius: the claim (building, access). safeRadius: zombies stay out of
     -- this many metres around the cupboard (no spawning, chasing or hits; ones

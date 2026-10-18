@@ -1,5 +1,9 @@
 # Changelog
 
+## Base building with your own props (owner)
+* Base building no longer has to use the paid sinor-buildingProps-v2 pack: basebuilding.lua `propsResource` names the resource with your props ('' for GTA's own props), and each piece's `model` can be any model. Snapping measures each model, so any sensible sizes work. How-to: docs/INSTALL.md "Using your own building props".
+* The start-up warning and the "model is not in the game" message no longer assume the sinor pack.
+
 ## Barricade without a tool cupboard (owner)
 * Walls, doors, garage doors and defenses can now be built anywhere nobody has claimed, without a tool cupboard - to barricade an old building for a night. Storage still needs a cupboard.
 * Such pieces belong to whoever built them (and their group): only they open the doors, repair, upgrade or remove them. No upkeep, no zombie-free zone - zombies will try to break through.
