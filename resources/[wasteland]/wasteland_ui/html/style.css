@@ -70,7 +70,6 @@ html, body {
     border: 1px solid var(--wl-border);
     border-radius: var(--wl-radius-lg);
     box-shadow: var(--wl-shadow), inset 0 1px 0 rgba(255, 240, 210, 0.06);
-    backdrop-filter: blur(8px);
     padding: 20px;
 }
 /* a thin accent line along the top edge */

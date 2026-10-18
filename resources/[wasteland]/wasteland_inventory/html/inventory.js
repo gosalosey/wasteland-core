@@ -935,7 +935,6 @@
         '  border-radius: 4px; padding: 6px 8px; cursor: pointer; }',
         '.wli-menu__item:hover { background: rgba(217,130,43,0.2); }',
         // ---- polish (looks only; added last so it wins) ----
-        '.wli-root { background: radial-gradient(ellipse at 50% 35%, rgba(12,11,9,0.45) 0%, rgba(4,4,3,0.82) 100%); }',
         '.wli-header .wl-title { text-shadow: 0 2px 14px rgba(0,0,0,0.7), 0 0 18px rgba(217,130,43,0.18); }',
         '.wli-section { position: relative; border-radius: 12px; border-color: rgba(214,186,140,0.14);',
         '  background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(255,240,210,0) 90px), rgba(16,15,13,0.9);',

@@ -1,5 +1,8 @@
 # Changelog
 
+## UI: removed the black box behind screens (owner)
+* The background blur drew a solid black box in FiveM (the game cannot be blurred from a screen), so it is gone; the dark backdrop behind the inventory is gone too.
+
 ## Total Apocalypse is the standard map (owner)
 * The txAdmin recipe now downloads the free Total Apocalypse map pack (SparksScripts, GPL-3.0) into resources/[maps], and server.cfg ensures pack1, pack2, pack3 and postapo-interior. It is downloaded from its own repository, not bundled (about 470 MB). Comment the four ensure lines out to use the normal GTA map.
 

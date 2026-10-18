@@ -85,7 +85,7 @@
         '.wqb-bottom { display: flex; align-items: center; gap: 10px; } .wqb-rewards { flex: 1; font-size: 13px; color: #e6d39a; }',
         '.wqb-foot { text-align: right; }',
         // ---- polish ----
-        '.wqb-panel { position: relative; border-radius: 12px; border-color: rgba(214,186,140,0.14); background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(255,240,210,0) 120px), var(--wl-bg); box-shadow: var(--wl-shadow), inset 0 1px 0 rgba(255,240,210,0.06); backdrop-filter: blur(8px); }',
+        '.wqb-panel { position: relative; border-radius: 12px; border-color: rgba(214,186,140,0.14); background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(255,240,210,0) 120px), var(--wl-bg); box-shadow: var(--wl-shadow), inset 0 1px 0 rgba(255,240,210,0.06); }',
         '.wqb-panel::before { content: ""; position: absolute; top: -1px; left: 24px; right: 24px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--wl-accent) 25%, var(--wl-accent-strong) 50%, var(--wl-accent) 75%, transparent); opacity: 0.75; pointer-events: none; }',
         '.wqb-card { border-radius: 8px; background: linear-gradient(90deg, rgba(255,240,210,0.04), rgba(0,0,0,0.22)), rgba(10,10,9,0.55); }',
     ].join('\n');
