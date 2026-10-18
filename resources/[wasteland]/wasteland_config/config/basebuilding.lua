@@ -110,13 +110,16 @@ return {
         -- barbed wire or spikes are hurt (contactDamage a second) and slowed
         -- (slow: their speed share); every touch wears the piece
         -- (wearPerTouch). Sandbags are a tough wall zombies must break.
-        barbedwire = { label = 'Barbed Wire', model = 'cs4_10_fnc_wire',
+        -- altModels: tried in order when the game cannot spawn `model`.
+        -- (GTA has no barbed wire coil that can be spawned - the coils are part of the map -
+        -- so this is a chain-link fence with barbed wire on top.)
+        barbedwire = { label = 'Barbed Wire Fence', model = 'prop_fnclink_04g', altModels = { 'prop_fnclink_09e', 'prop_fnclink_10a', 'prop_fnclink_05c' },
             category = 'defense', cost = { scrap_metal = 4, wood_planks = 2 }, health = 300, material = 'metal',
-            contactDamage = 12, slow = 0.4, wearPerTouch = 4, touchRadius = 1.8 },
+            contactDamage = 12, slow = 0.4, wearPerTouch = 4, touchRadius = 2.5 },
         spikes = { label = 'Wooden Spikes', model = 'p_stinger_piece_01',
             category = 'defense', cost = { wood_planks = 8 }, health = 250, material = 'wood',
             contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 1.5 },
-        sandbags = { label = 'Sandbag Wall', model = 'v_ind_cf_flour',
+        sandbags = { label = 'Sandbag Wall', model = 'v_ind_cf_flour', altModels = { 'prop_mb_sandblock_02', 'prop_conc_sacks_02a' },
             category = 'defense', cost = { stone = 10, rag = 4 }, health = 1500, material = 'stone' },
 
         stash_small = { label = 'Small Storage Box', model = 'prop_cs_lester_crate', category = 'stash', cost = { wood_planks = 6, scrap_metal = 2 },
