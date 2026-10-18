@@ -80,6 +80,15 @@ return {
         mp_f_freemode_01 = { top = { 15, 0 }, undershirt = { 14, 0 }, arms = { 15, 0 }, legs = { 17, 0 }, shoes = { 35, 0 } },
     },
 
+    -- How a worn backpack looks on the body: the bag clothing slot (ped
+    -- component 5), { drawable, texture } per backpack item and model. A
+    -- backpack not listed here shows no bag. Players hide or show it with
+    -- /backpack. VERIFY IN-GAME: values differ between game builds.
+    bagLooks = {
+        backpack_small = { mp_m_freemode_01 = { 45, 0 }, mp_f_freemode_01 = { 45, 0 } },
+        backpack_large = { mp_m_freemode_01 = { 82, 0 }, mp_f_freemode_01 = { 82, 0 } },
+    },
+
     -- Item definitions. Fields (all optional except label):
     --   label, description
     --   category    food | drink | medical | material | tool | clothing | container | weapon | ammo | misc

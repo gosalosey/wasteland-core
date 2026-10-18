@@ -1,5 +1,8 @@
 # Changelog
 
+## Backpacks show on the body (owner)
+* A worn backpack now shows on your character (the bag clothing slot), for everyone to see. /backpack hides or shows it (remembered on your computer). The look per backpack is bagLooks in config/inventory.lua.
+
 ## Hotbar: 8 slots (owner)
 * The hotbar has 8 slots on keys 1 - 8 (was 5). In the inventory they sit in two rows of four; the bar on screen is one row. Saved hotbars carry over.
 

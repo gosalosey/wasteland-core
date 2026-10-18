@@ -44,6 +44,21 @@ local function wornBySlot()
     return out
 end
 
+-- The worn backpack on the body (component 5). /backpack hides or shows it;
+-- the choice is kept on this computer.
+local bagShown = true
+do
+    local ok, v = pcall(GetResourceKvpString, 'backpackShown')
+    if ok and v == 'no' then bagShown = false end
+end
+
+local function applyBag(ped, model, worn)
+    local bag = worn.back
+    local look = bagShown and bag and ((defs.bagLooks or {})[bag.name] or {})[model] or nil
+    if look then SetPedComponentVariation(ped, 5, look[1], look[2], 0)
+    else SetPedComponentVariation(ped, 5, 0, 0, 0) end
+end
+
 local function applyClothing()
     if not defs or not snapshot then return end
     if GetResourceState('wasteland_appearance') == 'started' and exports.wasteland_appearance:IsEditing() then return end
@@ -70,6 +85,7 @@ local function applyClothing()
             end
         end
     end
+    applyBag(ped, model, worn)
 end
 
 -- What is worn and how it looks: when this changes, the clothes are applied
@@ -446,6 +462,16 @@ RegisterCommand('hotbar', function()
     AddTextComponentSubstringPlayerName(hotbarShown and 'Hotbar shown. Type /hotbar to hide it.' or 'Hotbar hidden. Type /hotbar to show it.')
     EndTextCommandThefeedPostTicker(false, false)
 end, false)
+
+RegisterCommand('backpack', function()
+    bagShown = not bagShown
+    SetResourceKvp('backpackShown', bagShown and 'yes' or 'no')
+    applyClothing()
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName(bagShown and 'Backpack shown. Type /backpack to hide it.' or 'Backpack hidden. Type /backpack to show it.')
+    EndTextCommandThefeedPostTicker(false, false)
+end, false)
+TriggerEvent('chat:addSuggestion', '/backpack', 'Show or hide your worn backpack on your character')
 
 --- ApplyClothing() - put the worn items' looks on the ped again (after a preview).
 exports('ApplyClothing', function() applyClothing() end)
