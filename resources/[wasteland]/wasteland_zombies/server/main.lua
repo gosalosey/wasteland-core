@@ -553,7 +553,13 @@ M.netEvent('wasteland:zombies:server:died', {
     if not z or z.dead then return end
     -- Only the client running it, and only when it really is hurt.
     if NetworkGetEntityOwner(z.handle) ~= src then return end
-    if GetEntityHealth(z.handle) >= (z.hp or 200) then return end
+    -- (the health read when it was created can be 0 - the game had not told
+    -- the server anything yet - so a full-health zombie counts as 200)
+    local full = (z.hp and z.hp > 0) and z.hp or 200
+    if GetEntityHealth(z.handle) >= full then
+        M.log:debug('death report for zombie %d refused: it is not hurt (%d)', netId, GetEntityHealth(z.handle))
+        return
+    end
     -- The killer must be a player near the body (quests count kills).
     if killer and killer > 0 then
         local ped = GetPlayerPed(killer)

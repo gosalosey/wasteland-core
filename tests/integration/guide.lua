@@ -99,6 +99,20 @@ describe("survivor's guide", function()
         expect(G().stats.kills).toBe(before + 1)
     end)
 
+    it('a kill counts when the server read 0 health as the zombie was created (as a real server does)', function()
+        local before = G().stats.kills or 0
+        server.spawnHealth = 0  -- the new ped has not been synced yet
+        local netId = server:export('wasteland_zombies', 'SpawnZombie', { x = 6.0, y = 0.0, z = 30.0 })
+        server.spawnHealth = nil
+        local z
+        for _, e in ipairs(server:entityList('wlZombie')) do if e.netId == netId then z = e end end
+        z.owner, z.health = id, 200   -- later: the game reports it at full health
+        server:advance(200)
+        z.health = 0                  -- killed
+        server:clientEvent(id, 'wasteland:zombies:server:died', netId, id); server:advance(200)
+        expect(G().stats.kills).toBe(before + 1)
+    end)
+
     it('a character older than the guide gets credit for what its skills show (kills from combat XP)', function()
         server:export('wasteland_skills', 'AddXP', other, 'combat', 80) -- 10 kills worth
         server:restart('wasteland_guide'); server:advance(4000)

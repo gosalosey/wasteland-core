@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: zombie kills were never credited (owner report)
+* The server noted a zombie's starting health the moment it created it - before any game had reported the new ped, so it read 0. Every kill report then failed the "is it really hurt?" check (0 is not below 0) and was thrown away, and the zombie was marked dead with no killer. A zombie now counts as 200 health when that first reading is 0. Kill milestones, combat XP and quest kill counts work from now on (kills before this fix were not recorded anywhere, so they cannot be counted back).
+* The test server can now behave like a real one here (spawnHealth), with a test that fails without this fix.
+
 ## Weapon attachments (owner)
 * Five attachments, found in military and heli-crash loot, supply drops, bandit stashes and (rarely) crates: Suppressor, Weapon flashlight, Scope, Grip, Extended magazine. Each fits only the guns we use that GTA has that attachment for (pistol, pump shotgun, micro SMG, SMG, carbine, assault rifle; suppressor on the hunting rifle too; the revolver and sawed-off take none).
 * Right-click an attachment -> "Attach to <gun>", or right-click a gun -> "Attach <attachment>"; one per slot. Right-click the gun -> "Remove attachments" gives them back. The gun shows its attachments in your hands (GTA components) and in its menu title.

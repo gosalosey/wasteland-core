@@ -638,7 +638,7 @@ function Mock:buildEnv(r)
             end
         end
         mock.entities[handle] = { handle = handle, netId = handle + 5000, model = model,
-            coords = { x = x, y = y, z = z }, heading = heading or 0.0, health = 200, owner = owner, state = {} }
+            coords = { x = x, y = y, z = z }, heading = heading or 0.0, health = mock.spawnHealth or 200, owner = owner, state = {} }
         return handle
     end
     env.CreateVehicleServerSetter = function(model, vtype, x, y, z, heading)
