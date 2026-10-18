@@ -145,6 +145,11 @@ return {
             { name = 'metal_sheet', min = 1, max = 1, weight = 4 },
         } },
         crate = { emptyChance = 0.5, rolls = { 1, 2 }, items = {
+            { name = 'att_suppressor', min = 1, max = 1, weight = 1 },
+            { name = 'att_flashlight', min = 1, max = 1, weight = 1 },
+            { name = 'att_scope', min = 1, max = 1, weight = 1 },
+            { name = 'att_grip', min = 1, max = 1, weight = 1 },
+            { name = 'att_extmag', min = 1, max = 1, weight = 1 },
             { name = 'sewing_kit', min = 1, max = 1, weight = 3 },
             { name = 'armor_plate', min = 1, max = 1, weight = 2 },
             { name = 'armor_repair_kit', min = 1, max = 1, weight = 3 },
@@ -199,6 +204,11 @@ return {
         } },
         -- World events (events.lua): the reward for clearing them.
         helicrash = { emptyChance = 0, rolls = { 2, 3 }, items = {
+            { name = 'att_suppressor', min = 1, max = 1, weight = 3 },
+            { name = 'att_flashlight', min = 1, max = 1, weight = 3 },
+            { name = 'att_scope', min = 1, max = 1, weight = 3 },
+            { name = 'att_grip', min = 1, max = 1, weight = 3 },
+            { name = 'att_extmag', min = 1, max = 1, weight = 3 },
             { name = 'weapon_carbine', min = 1, max = 1, weight = 3 },
             { name = 'weapon_smg', min = 1, max = 1, weight = 4 },
             { name = 'ammo_556', min = 20, max = 60, weight = 10 },
@@ -217,6 +227,11 @@ return {
             { name = 'gunpowder', min = 2, max = 5, weight = 5 },
         } },
         military = { emptyChance = 0, rolls = { 2, 3 }, items = {
+            { name = 'att_suppressor', min = 1, max = 1, weight = 3 },
+            { name = 'att_flashlight', min = 1, max = 1, weight = 3 },
+            { name = 'att_scope', min = 1, max = 1, weight = 3 },
+            { name = 'att_grip', min = 1, max = 1, weight = 3 },
+            { name = 'att_extmag', min = 1, max = 1, weight = 3 },
             { name = 'weapon_assaultrifle', min = 1, max = 1, weight = 3 },
             { name = 'weapon_pumpshotgun', min = 1, max = 1, weight = 4 },
             { name = 'ammo_762', min = 20, max = 60, weight = 10 },
@@ -236,6 +251,11 @@ return {
         } },
         -- Supply drops (supplydrops.lua lootTable): never empty, 4 - 6 good finds.
         supplydrop = { emptyChance = 0, rolls = { 4, 6 }, items = {
+            { name = 'att_suppressor', min = 1, max = 1, weight = 2 },
+            { name = 'att_flashlight', min = 1, max = 1, weight = 2 },
+            { name = 'att_scope', min = 1, max = 1, weight = 2 },
+            { name = 'att_grip', min = 1, max = 1, weight = 2 },
+            { name = 'att_extmag', min = 1, max = 1, weight = 2 },
             { name = 'ammo_9mm', min = 20, max = 50, weight = 10 },
             { name = 'ammo_12g', min = 10, max = 25, weight = 7 },
             { name = 'ammo_556', min = 20, max = 60, weight = 6 },
@@ -258,6 +278,11 @@ return {
             { name = 'blueprint_carbine', min = 1, max = 1, weight = 1 },
         } },
         bandit_stash = { emptyChance = 0, rolls = { 2, 4 }, items = {
+            { name = 'att_suppressor', min = 1, max = 1, weight = 2 },
+            { name = 'att_flashlight', min = 1, max = 1, weight = 2 },
+            { name = 'att_scope', min = 1, max = 1, weight = 2 },
+            { name = 'att_grip', min = 1, max = 1, weight = 2 },
+            { name = 'att_extmag', min = 1, max = 1, weight = 2 },
             { name = 'cash', min = 50, max = 250, weight = 12 },
             { name = 'ammo_9mm', min = 15, max = 40, weight = 10 },
             { name = 'ammo_44', min = 6, max = 18, weight = 5 },

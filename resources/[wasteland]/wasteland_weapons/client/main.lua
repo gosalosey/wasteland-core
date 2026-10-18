@@ -28,11 +28,26 @@ local function setAmmo(ped)
     lastAmmo = GetAmmoInPedWeapon(ped, hash)
 end
 
+-- The attachments the server says are on this gun (and none it does not).
+local function fitComponents(ped)
+    if not current or not hash then return end
+    local want = {}
+    for _, c in ipairs(current.components or {}) do want[GetHashKey(c)] = true end
+    for c in pairs(want) do
+        if not HasPedGotWeaponComponent(ped, hash, c) then GiveWeaponComponentToPed(ped, hash, c) end
+    end
+    for _, c in ipairs(current.removedComponents or {}) do
+        local hc = GetHashKey(c)
+        if not want[hc] and HasPedGotWeaponComponent(ped, hash, hc) then RemoveWeaponComponentFromPed(ped, hash, hc) end
+    end
+end
+
 local function give()
     local ped = PlayerPedId()
     RemoveAllPedWeapons(ped, true)
     if not current then return end
     GiveWeaponToPed(ped, hash, 0, false, true)
+    fitComponents(ped)
     setAmmo(ped)
     SetCurrentPedWeapon(ped, hash, true)
 end
@@ -54,7 +69,14 @@ end)
 
 RegisterNetEvent('wasteland:weapons:client:state', function(s)
     if type(s) ~= 'table' or not current or s.uid ~= current.uid then return end
+    -- attachments taken off since the last state come off the ped's gun too
+    local now = {}
+    for _, c in ipairs(s.components or {}) do now[c] = true end
+    local removed = {}
+    for _, c in ipairs(current.components or {}) do if not now[c] then removed[#removed + 1] = c end end
+    s.removedComponents = removed
     current = s
+    fitComponents(PlayerPedId())
     setAmmo(PlayerPedId())
 end)
 

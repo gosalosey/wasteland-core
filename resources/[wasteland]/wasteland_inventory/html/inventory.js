@@ -652,7 +652,7 @@
         // reach the "click outside closes the menu" handler and close the list.
         if (def.usable && def.repairs) items.push(['Use (choose what to repair)…',
             () => setTimeout(() => { if (st) openRepairPicker(stack, fromId, e.clientX, e.clientY); }, 0)]);
-        else if (def.usable) items.push(['Use', () => st.api.post('use', { uid: stack.uid, from: fromId })]);
+        else if (def.usable) items.push([def.attachment ? 'Attach to the gun in your hands' : 'Use', () => st.api.post('use', { uid: stack.uid, from: fromId })]);
         // Damaged: offer every carried item that repairs this category.
         const cond = condition(def, stack);
         if (cond && cond.share < 1) {
@@ -668,6 +668,34 @@
                 });
             });
         }
+        // Weapon attachments: fit a carried attachment to this gun, or take them off
+        const fitted = (stack.metadata && stack.metadata.attachments) || {};
+        if (def.attachments && Object.keys(def.attachments).length) {
+            const offered = {};
+            [st.snap.pockets, st.snap.backpack].forEach((id) => {
+                const inv = id && invById(id);
+                (inv ? inv.items : []).forEach((k) => {
+                    const kd = st.defs.items[k.name];
+                    if (kd && kd.attachment && def.attachments[kd.attachment] && !fitted[kd.attachment] && !offered[kd.attachment]) {
+                        offered[kd.attachment] = true;
+                        items.push(['Attach ' + kd.label, () => st.api.post('use', { uid: k.uid, from: inv.id, target: stack.uid })]);
+                    }
+                });
+            });
+            if (Object.keys(fitted).length) items.push(['Remove attachments', () => st.api.post('detach', { uid: stack.uid })]);
+        }
+        if (def.attachment) {
+            [st.snap.pockets, st.snap.backpack].forEach((id) => {
+                const inv = id && invById(id);
+                (inv ? inv.items : []).forEach((g) => {
+                    const gd = st.defs.items[g.name];
+                    const gf = (g.metadata && g.metadata.attachments) || {};
+                    if (gd && gd.attachments && gd.attachments[def.attachment] && !gf[def.attachment]) {
+                        items.push(['Attach to ' + gd.label, () => st.api.post('use', { uid: stack.uid, from: fromId, target: g.uid })]);
+                    }
+                });
+            });
+        }
         if (worn && def.container) items.push([st.bagOpen ? 'Close backpack' : 'Open backpack', () => toggleBag(!st.bagOpen)]);
         if (def.equip && !worn) items.push(['Wear', () => st.api.post('equip', { uid: stack.uid, from: fromId, slot: def.equip })]);
         if (worn) items.push(['Take off', () => st.api.post('unequip', { slot: stack.slot, to: st.snap.pockets })]);
@@ -677,7 +705,8 @@
         }
         items.push(['Drop', () => st.api.post('drop', { uid: stack.uid, from: fromId, count: stack.count })]);
         const menu = h('div', { class: 'wli-menu' },
-            h('div', { class: 'wli-menu__title', text: def.label + (stack.count > 1 ? ' x' + stack.count : '') + (cond ? ' · ' + cond.text : '') }));
+            h('div', { class: 'wli-menu__title', text: def.label + (stack.count > 1 ? ' x' + stack.count : '') + (cond ? ' · ' + cond.text : '') +
+                (Object.keys(fitted).length ? ' · ' + Object.keys(fitted).join(', ') : '') }));
         items.forEach(([label, fn]) => menu.appendChild(h('button', { class: 'wli-menu__item', text: label,
             onclick: () => { closeMenu(); fn(); } })));
         menu.style.left = Math.min(e.clientX, window.innerWidth - 190) + 'px';

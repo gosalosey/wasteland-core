@@ -35,6 +35,11 @@ return {
         weapon_huntingrifle = { hash = 'WEAPON_SNIPERRIFLE', ammo = 'ammo_308', noise = 300, wear = 2 },
     },
 
+    -- Attachment items (inventory.lua `attachment`), and how far a suppressed
+    -- shot is heard compared with the gun's own noise (0.5 = half as far).
+    attachmentItems = { 'att_suppressor', 'att_flashlight', 'att_scope', 'att_grip', 'att_extmag' },
+    suppressorNoise = 0.5,
+
     -- Repair items: percentage of full durability restored to the weapon
     -- in your hands.
     repairItems = {

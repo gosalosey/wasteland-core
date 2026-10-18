@@ -30,7 +30,16 @@ local function state(src, h, stack)
     local w = M.config.weapons[h.item]
     local d = inv():GetItemDefinition(h.item)
     local durability = stack.metadata.durability or (d and d.durability) or 0
+    -- fitted attachments -> GTA components
+    local components = {}
+    local fitted = stack.metadata.attachments or {}
+    for slot in pairs(fitted) do
+        local comp = d and d.attachments and d.attachments[slot]
+        if comp then components[#components + 1] = comp end
+    end
+    table.sort(components)
     return {
+        components = components,
         uid = h.uid, item = h.item, label = d and d.label or h.item, hash = w.hash,
         melee = w.ammo == nil, ammo = ammoCount(src, w),
         durability = durability, maxDurability = d and d.durability or 0,
@@ -97,11 +106,55 @@ local function useRepair(src, stack)
     return 1, string.format('Repaired your %s.', d.label)
 end
 
+-- An attachment on a gun: the one picked in the inventory (targetUid), or
+-- the gun in your hands. -> consumed, message
+local function useAttachment(src, stack, _, targetUid)
+    local ad = inv():GetItemDefinition(stack.name)
+    local slot = ad and ad.attachment
+    if not slot then return false, 'That is not an attachment.' end
+    local uid = targetUid or (held[src] and held[src].uid)
+    if not uid then return false, 'Right-click a gun and choose Attach, or hold the gun first.' end
+    local gun = inv():FindItem(src, uid)
+    if not gun then return false, 'Keep the gun in your inventory.' end
+    local gd = inv():GetItemDefinition(gun.name)
+    if not gd or not gd.attachments or not gd.attachments[slot] then
+        return false, string.format('A %s does not fit the %s.', ad.label:lower(), gd and gd.label or gun.name)
+    end
+    local fitted = {}
+    for k, v in pairs(gun.metadata.attachments or {}) do fitted[k] = v end
+    if fitted[slot] then return false, string.format('Your %s already has a %s.', gd.label, ad.label:lower()) end
+    fitted[slot] = stack.name
+    local ok, err = inv():SetItemMetadata(src, uid, { attachments = fitted })
+    if not ok then return false, err end
+    if held[src] and held[src].uid == uid then sendState(src) end
+    return 1, string.format('%s fitted to your %s.', ad.label, gd.label)
+end
+
+-- Take every attachment off a gun: back into the inventory (what does not fit stays on).
+local function detach(src, uid)
+    local gun = inv():FindItem(src, uid)
+    if not gun then return end
+    local gd = inv():GetItemDefinition(gun.name)
+    local fitted = gun.metadata.attachments or {}
+    local left, taken = {}, 0
+    for slot, item in pairs(fitted) do
+        if type(item) == 'string' and inv():AddItem(src, item, 1) then taken = taken + 1 else left[slot] = item end
+    end
+    inv():SetItemMetadata(src, uid, { attachments = left })
+    if held[src] and held[src].uid == uid then sendState(src) end
+    if taken > 0 then notice(src, string.format('Took %d attachment%s off your %s.', taken, taken == 1 and '' or 's', gd and gd.label or 'gun')) end
+    if next(left) then notice(src, 'No room for the rest: they stay on the gun.') end
+end
+
 local function registerUsables()
     if not inventoryRunning() then return end
     for item in pairs(M.config.weapons) do
         local ok, err = inv():RegisterUsable(item, useWeapon)
         if not ok then M.log:warn('weapon "%s": %s (add it to inventory.lua items)', item, tostring(err)) end
+    end
+    for _, item in ipairs(M.config.attachmentItems or {}) do
+        local ok, err = inv():RegisterUsable(item, useAttachment)
+        if not ok then M.log:warn('attachment "%s": %s (add it to inventory.lua items)', item, tostring(err)) end
     end
     for item in pairs(M.config.repairItems) do
         local ok, err = inv():RegisterUsable(item, useRepair)
@@ -155,8 +208,13 @@ local function used(src, count, coords)
         if after == 0 then notice(src, string.format('Your %s broke. Repair it with a repair kit.', d.label)) end
     end
     if n > 0 then
-        -- Zombies (and anything else) listen for noise here.
-        TriggerEvent('wasteland:weapons:used', src, h.item, n, w.noise, coords)
+        -- Zombies (and anything else) listen for noise here; a suppressor
+        -- halves how far a shot carries.
+        local noiseRange = w.noise
+        if w.ammo and stack.metadata.attachments and stack.metadata.attachments.suppressor then
+            noiseRange = noiseRange * (M.config.suppressorNoise or 0.5)
+        end
+        TriggerEvent('wasteland:weapons:used', src, h.item, n, noiseRange, coords)
     end
     sendState(src)
 end
@@ -207,6 +265,8 @@ M = Wasteland.DefineModule({
                     wear = { type = 'integer', default = 1, min = 0, max = 1000 },
                     noise = { type = 'number', default = 0, min = 0, max = 2000 },
                 } } },
+            attachmentItems = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' } },
+            suppressorNoise = { type = 'number', default = 0.5, min = 0, max = 1, description = 'Noise of a suppressed shot (share of the gun\'s)' },
             repairItems = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' },
                 values = { type = 'table', fields = { percent = { type = 'number', required = true, min = 1, max = 100 } } } },
         } },
@@ -259,3 +319,6 @@ exports('GetWeaponConfig', function(item)
     local w = M and M.config.weapons[item]
     return w and { hash = w.hash, ammo = w.ammo, wear = w.wear, noise = w.noise } or nil
 end)
+
+M.netEvent('wasteland:weapons:server:detach', { args = { { type = 'string', required = true, pattern = '^[%w_%-]+$', maxLength = 64 } },
+    rateLimit = { burst = 3, perSecond = 1 } }, function(src, uid) detach(src, uid) end)

@@ -64,6 +64,7 @@ function Interface.sendDefinitions(target)
             name = name, label = d.label, description = d.description, category = d.category,
             width = d.width, height = d.height, weight = d.weight, stack = d.stack,
             durability = d.durability, equip = d.equip, container = d.container, color = d.color, warmth = d.warmth, repairs = d.repairs, limit = d.limit,
+            attachment = d.attachment, attachments = d.attachments,
             usable = WLI.usable[name] ~= nil,
         }
     end

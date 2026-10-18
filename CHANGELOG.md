@@ -1,5 +1,11 @@
 # Changelog
 
+## Weapon attachments (owner)
+* Five attachments, found in military and heli-crash loot, supply drops, bandit stashes and (rarely) crates: Suppressor, Weapon flashlight, Scope, Grip, Extended magazine. Each fits only the guns we use that GTA has that attachment for (pistol, pump shotgun, micro SMG, SMG, carbine, assault rifle; suppressor on the hunting rifle too; the revolver and sawed-off take none).
+* Right-click an attachment -> "Attach to <gun>", or right-click a gun -> "Attach <attachment>"; one per slot. Right-click the gun -> "Remove attachments" gives them back. The gun shows its attachments in your hands (GTA components) and in its menu title.
+* A suppressed shot is heard only half as far by zombies (weapons.lua `suppressorNoise`).
+* Which GTA component each gun uses per slot: the gun's `attachments` in inventory.lua.
+
 ## Calls for help: /help, /accepthelp, /cancelhelp (owner)
 * /help [what is wrong] sends an announcement to everyone (a pop-up with a sound, and the chat): who needs help, roughly where (the area name) and the message.
 * /accepthelp puts a red blip with a GPS route on your map to whoever called (or /accepthelp <id> for a particular player); it follows them every 10 s while the call is open and goes when you reach them. The caller is told who is coming.

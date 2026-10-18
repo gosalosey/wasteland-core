@@ -206,6 +206,11 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
         if GetResourceState('wasteland_crafting') == 'started' then TriggerEvent('wasteland:crafting:client:open') end
         return
     end
+    if action == 'detach' and type(payload) == 'table' and type(payload.uid) == 'string' then
+        -- weapon attachments belong to wasteland_weapons
+        TriggerServerEvent('wasteland:weapons:server:detach', payload.uid)
+        return
+    end
     local build = OPS[action]
     if not build or type(payload) ~= 'table' then return end
     local args = table.pack(build(payload))

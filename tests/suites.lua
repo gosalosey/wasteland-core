@@ -47,6 +47,7 @@ return {
     'integration/spawnpos.lua',
     'integration/stuck.lua',
     'integration/helpcall.lua',
+    'integration/attachments.lua',
     'integration/loot.lua',
     'integration/camps.lua',
     'integration/crafting.lua',
