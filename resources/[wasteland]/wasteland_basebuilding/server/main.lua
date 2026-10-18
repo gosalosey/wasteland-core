@@ -122,6 +122,16 @@ local function accessAt(cid, coords)
     return hasAccess(cid, c), c
 end
 
+-- May this character use (open, remove, repair, upgrade) piece `p`? Under a
+-- cupboard: that cupboard's access. Without one: whoever built it, and their
+-- group.
+local function pieceAccess(cid, p)
+    if not cid then return false end
+    local c = Rules.covering(cupboards, p.coords)
+    if c then return hasAccess(cid, c) end
+    return p.owner ~= nil and (p.owner == cid or sameGroup(cid, p.owner))
+end
+
 -------------------------------------------------------------------------------
 -- What clients get
 -------------------------------------------------------------------------------
@@ -296,8 +306,15 @@ local function placeProp(src, key, x, y, z, heading)
         if covering and not hasAccess(cid, covering) then notice(src, 'This land is claimed by someone else.'); return end
     else
         local ok, c = accessAt(cid, coords)
-        if not c then notice(src, 'Place a Tool Cupboard first: you can only build within reach of one you may use.'); return end
-        if not ok then notice(src, 'You are not allowed to build here.'); return end
+        if not c then
+            local fb = M.config.freeBuild
+            local allowed = fb and fb.enabled
+            if allowed then
+                allowed = false
+                for _, cat in ipairs(fb.categories or {}) do if cat == piece.category then allowed = true end end
+            end
+            if not allowed then notice(src, 'Place a Tool Cupboard first: you can only build within reach of one you may use.'); return end
+        elseif not ok then notice(src, 'You are not allowed to build here.'); return end
         cupboard = c
     end
 
@@ -332,22 +349,24 @@ local function placeProp(src, key, x, y, z, heading)
         return
     end
 
-    local id, err = WDB.insert(SQL.insertProp, { cupboard.id, piece.category, key, piece.model, x, y, z, heading, piece.health, piece.health,
+    local cupboardId = cupboard and cupboard.id or nil
+    local id, err = WDB.insert(SQL.insertProp, { cupboardId, cid, piece.category, key, piece.model, x, y, z, heading, piece.health, piece.health,
         piece.material, os.time() })
     if not id then give(src, piece.cost); notice(src, 'The piece could not be saved. Try again.'); M.log:warn('prop: %s', tostring(err)); return end
-    local p = { id = id, cupboard_id = cupboard.id, category = piece.category, piece = key, model = piece.model, coords = coords,
-        heading = heading, is_open = false, health = piece.health, max_health = piece.health, material = piece.material }
+    local p = { id = id, cupboard_id = cupboardId, owner = cid, created = os.time(), category = piece.category, piece = key, model = piece.model,
+        coords = coords, heading = heading, is_open = false, health = piece.health, max_health = piece.health, material = piece.material }
     props[id] = p
     TriggerClientEvent('wasteland:basebuilding:client:propAdded', -1, propInfo(p))
-    notice(src, piece.label .. ' placed.')
+    if cupboard then notice(src, piece.label .. ' placed.')
+    else notice(src, string.format('%s placed without a tool cupboard: it stays for %d hours (a cupboard placed here later keeps it for good). No zombie-free zone.',
+        piece.label, M.config.freeBuild.hours)) end
 end
 
 local function removeProp(src, id)
     local cid = characterOf(src)
     local p = props[id]
     if not p or not cid or not near(src, p.coords, M.config.targetDistance + 1.0) then return end
-    local ok, c = accessAt(cid, p.coords)
-    if not ok or not c then notice(src, 'You are not allowed to remove this.'); return end
+    if not pieceAccess(cid, p) then notice(src, 'You are not allowed to remove this.'); return end
     if p.category == 'stash' then
         local stash = inv():EnsureStash(stashName(id), stashOpts(p))
         local snap = stash and inv():GetInventory(stash)
@@ -408,8 +427,7 @@ local function toggleDoor(src, id)
     local piece = M.config.pieces[p.piece]
     local reach = (piece and piece.interactDistance) or M.config.interact.distance
     if not near(src, p.coords, reach + 1.5) then return end
-    local ok, c = accessAt(cid, p.coords)
-    if not ok or not c then notice(src, 'This door is locked. (A lockpick might open it.)'); return end
+    if not pieceAccess(cid, p) then notice(src, 'This door is locked. (A lockpick might open it.)'); return end
     setDoor(p, not p.is_open)
 end
 
@@ -419,8 +437,7 @@ local function openStash(src, id, forced)
     if not p or p.category ~= 'stash' or not near(src, p.coords, M.config.targetDistance + 1.0) then return end
     -- broken storage is wreckage anyone can loot
     if p.health > 0 and not forced then
-        local ok, c = accessAt(cid, p.coords)
-        if not ok or not c then notice(src, 'This storage is locked. (A lockpick might open it.)'); return end
+        if not pieceAccess(cid, p) then notice(src, 'This storage is locked. (A lockpick might open it.)'); return end
     end
     local opts = stashOpts(p)
     opts.open = true
@@ -544,8 +561,7 @@ local function repairProp(src, id)
     local p = props[id]
     if not p or not near(src, p.coords, M.config.targetDistance + 1.0) then return end
     if p.health >= p.max_health then notice(src, 'It is not damaged.'); return end
-    local ok, c = accessAt(cid, p.coords)
-    if not ok or not c then notice(src, 'You are not allowed to repair this.'); return end
+    if not pieceAccess(cid, p) then notice(src, 'You are not allowed to repair this.'); return end
     local rc = M.config.raid.repair.cost[p.material]
     if not rc then return end
     local why = missingText({ [rc.item] = rc.count }, src)
@@ -591,8 +607,7 @@ local function upgrade(src, id)
     local u = M.config.upgrades[p.piece]
     local nxt = u and M.config.pieces[u.next]
     if not nxt then notice(src, 'This cannot be upgraded.'); return end
-    local ok, c = accessAt(cid, p.coords)
-    if not ok or not c then notice(src, 'You are not allowed to upgrade this.'); return end
+    if not pieceAccess(cid, p) then notice(src, 'You are not allowed to upgrade this.'); return end
     local why = missingText(u.cost, src)
     if why then notice(src, why); return end
     if not pay(src, u.cost) then return end
@@ -750,6 +765,12 @@ M = Wasteland.DefineModule({
                 safeMinutes = { type = 'number', default = 60, min = 0, max = 100000,
                     description = 'How long (real minutes) after placing the zone lasts (0 = for ever)' },
             } },
+            freeBuild = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = true },
+                categories = { type = 'array', default = { 'structure', 'door', 'garage', 'defense' },
+                    items = { type = 'enum', values = { 'structure', 'door', 'garage', 'stash', 'defense' } } },
+                hours = { type = 'number', default = 12, min = 0, max = 100000, description = 'How long pieces built without a cupboard last (0 = for ever)' },
+            } },
             lockpick = { type = 'table', fields = {
                 enabled = { type = 'boolean', default = true },
                 item = { type = 'string', default = 'lockpick', pattern = '^[%w_]+$' },
@@ -871,7 +892,8 @@ M = Wasteland.DefineModule({
             local skipped = 0
             for _, r in ipairs(pr) do
                 if c.pieces[r.piece] then
-                    props[r.id] = { id = r.id, cupboard_id = r.cupboard_id, category = r.category, piece = r.piece, model = r.model,
+                    props[r.id] = { id = r.id, cupboard_id = r.cupboard_id, owner = r.owner_id, created = tonumber(r.created_unix) or 0,
+                        category = r.category, piece = r.piece, model = r.model,
                         coords = { x = r.x, y = r.y, z = r.z }, heading = r.heading + 0.0, is_open = r.is_open == 1 or r.is_open == true,
                         health = r.health, max_health = r.max_health, material = r.material }
                 else
@@ -929,6 +951,27 @@ M.netEvent('wasteland:basebuilding:server:lockpickResult', { args = { { type = '
 M.netEvent('wasteland:basebuilding:server:explosion', { args = { ID, { type = 'integer', required = true, min = 0, max = 100 }, AT, { type = 'boolean', required = true } },
     rateLimit = { burst = 20, perSecond = 10 } }, function(src, id, kind, at, isCupboard) explosion(src, id, kind, at, isCupboard) end)
 M.netEvent('wasteland:basebuilding:server:melee', { args = { ID }, rateLimit = { burst = 6, perSecond = 3 } }, function(src, id) melee(src, id) end)
+
+-- Pieces built without a tool cupboard go after freeBuild.hours (unless a
+-- cupboard claimed them since).
+local function expireFree()
+    local fb = M.config.freeBuild
+    if not fb or not fb.hours or fb.hours <= 0 then return end
+    local t = os.time()
+    for id, p in pairs(props) do
+        if not p.cupboard_id and p.owner and p.category ~= 'stash' and (p.created or 0) > 0 and t - p.created > fb.hours * 3600 then
+            props[id] = nil
+            write(SQL.deleteProp, { id }, 'temporary piece gone')
+            TriggerClientEvent('wasteland:basebuilding:client:propRemoved', -1, id)
+        end
+    end
+end
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(60000)
+        if M and M.active then pcall(expireFree) end
+    end
+end)
 
 -- A cupboard's zombie-free zone dropped: tell the owner (once).
 local function checkSafeZones()

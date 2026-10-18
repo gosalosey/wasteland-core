@@ -1,5 +1,11 @@
 # Changelog
 
+## Barricade without a tool cupboard (owner)
+* Walls, doors, garage doors and defenses can now be built anywhere nobody has claimed, without a tool cupboard - to barricade an old building for a night. Storage still needs a cupboard.
+* Such pieces belong to whoever built them (and their group): only they open the doors, repair, upgrade or remove them. No upkeep, no zombie-free zone - zombies will try to break through.
+* They are gone after 12 hours, unless a tool cupboard placed later claims them (then they stay like any other piece). basebuilding.lua `freeBuild`: on/off, which categories, how many hours.
+* Database: wl_bb_props gets an owner_id column (migration 5, applied by itself on start).
+
 ## Fix: zombie kills were never credited (owner report)
 * The server noted a zombie's starting health the moment it created it - before any game had reported the new ped, so it read 0. Every kill report then failed the "is it really hurt?" check (0 is not below 0) and was thrown away, and the zombie was marked dead with no killer. A zombie now counts as 200 health when that first reading is 0. Kill milestones, combat XP and quest kill counts work from now on (kills before this fix were not recorded anywhere, so they cannot be counted back).
 * The test server can now behave like a real one here (spawnHealth), with a test that fails without this fix.

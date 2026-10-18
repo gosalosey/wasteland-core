@@ -326,8 +326,8 @@ function MemoryDB:installBasebuilding(SQL)
     end)
     self:on(SQL.insertProp, function(db, p)
         nextP = nextP + 1
-        db.data.wl_bb_props[nextP] = { id = nextP, cupboard_id = p[1], category = p[2], piece = p[3], model = p[4], x = p[5], y = p[6], z = p[7],
-            heading = p[8], is_open = 0, health = p[9], max_health = p[10], material = p[11], created_unix = p[12] }
+        db.data.wl_bb_props[nextP] = { id = nextP, cupboard_id = p[1], owner_id = p[2], category = p[3], piece = p[4], model = p[5], x = p[6],
+            y = p[7], z = p[8], heading = p[9], is_open = 0, health = p[10], max_health = p[11], material = p[12], created_unix = p[13] }
         return ins(nextP)
     end)
     self:on(SQL.deleteProp, function(db, p) db.data.wl_bb_props[p[1]] = nil; return header(1) end)

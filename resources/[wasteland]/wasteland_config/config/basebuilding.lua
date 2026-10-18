@@ -54,6 +54,13 @@ return {
         items = { wood = 'wood_planks', stone = 'stone', metal = 'metal_sheet' },
     },
 
+    -- Building without a tool cupboard (barricading an old building for a
+    -- night): pieces of these categories can go anywhere nobody has claimed.
+    -- They belong to whoever built them (and their group), have no upkeep and
+    -- no zombie-free zone, and are gone after `hours` - unless a tool
+    -- cupboard placed later claims them (then they stay like any other piece).
+    freeBuild = { enabled = true, categories = { 'structure', 'door', 'garage', 'defense' }, hours = 12 },
+
     interact = { distance = 2.5 },    -- doors open with E within this distance
     targetDistance = 4.0,             -- Left Alt options (remove, upgrade, repair...)
     streamRadius = 150.0,

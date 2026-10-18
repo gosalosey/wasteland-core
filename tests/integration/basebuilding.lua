@@ -66,9 +66,9 @@ describe('base building', function()
         expect(I('GetItemCount', a, 'building_plan')).toBe(1) -- not used up
     end)
 
-    it('nothing can be built before a tool cupboard claims the land', function()
+    it('storage cannot be built before a tool cupboard claims the land', function()
         I('AddItem', a, 'wood_planks', 40); I('AddItem', a, 'scrap_metal', 6); server:advance(100)
-        place(a, 'foundation', 4.0, 0.0)
+        place(a, 'stash_small', 4.0, 0.0)
         expect(note(a)).toContain('Place a Tool Cupboard first')
     end)
 
@@ -215,6 +215,34 @@ describe('base building', function()
         expect(BB('ZombieTouch', wire.id, { x = 6.5, y = 0.0, z = 30.0 })).toBe(296)
         expect(BB('ZombieTouch', wire.id, { x = 20.0, y = 0.0, z = 30.0 })).toBe(nil)
         expect(#server:lines('raised:')).toBe(0)
+    end)
+
+    it('without a cupboard (unclaimed land): a temporary barricade only its builder can use; gone after 12 hours', function()
+        server.players[c].coords = { x = 300.0, y = 0.0, z = 30.0 }
+        I('ClearInventory', c); server:advance(100)
+        I('AddItem', c, 'wood_planks', 12); server:advance(100)
+        place(c, 'door', 302.0, 0.0)
+        expect(note(c)).toContain('placed without a tool cupboard')
+        local barricade = lastProp(c)
+        expect(barricade.cupboard_id).toBe(nil)
+        -- its builder opens it; someone else finds it locked and cannot take it down
+        act(c, 'door', barricade.id)
+        expect(last(c, 'wasteland:basebuilding:client:door').args[2]).toBe(true)
+        server.players[a].coords = { x = 301.0, y = 0.0, z = 30.0 }
+        act(a, 'door', barricade.id)
+        expect(note(a)).toContain('This door is locked')
+        act(a, 'remove', barricade.id)
+        expect(note(a)).toBe('You are not allowed to remove this.')
+        server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
+        -- 12 hours later it is gone
+        local realTime = os.time
+        os.time = function(t) if t then return realTime(t) end return realTime() + 13 * 3600 end
+        local ok, err = pcall(function()
+            server:advance(61000)
+            expect(server.db.backend.data.wl_bb_props[barricade.id]).toBe(nil)
+        end)
+        os.time = realTime
+        if not ok then error(err, 0) end
     end)
 
     it('the zombie-free zone lasts an hour after the cupboard is placed, then drops (the owner is told)', function()

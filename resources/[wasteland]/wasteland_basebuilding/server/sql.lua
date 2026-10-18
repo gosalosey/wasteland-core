@@ -67,19 +67,24 @@ CREATE TABLE IF NOT EXISTS wl_bb_notices (
     KEY ix_wl_bb_notices_character (character_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci]],
     },
+    {
+        version = 5,
+        name = 'props_owner',
+        up = [[ALTER TABLE wl_bb_props ADD COLUMN owner_id INT UNSIGNED NULL AFTER cupboard_id]],
+    },
 }
 
 WLBB.SQL = {
     selectCupboards = 'SELECT id, owner_id, x, y, z, heading, radius, health, max_health, created_unix FROM wl_bb_cupboards',
     selectAuth = 'SELECT cupboard_id, character_id, name FROM wl_bb_auth',
-    selectProps = 'SELECT id, cupboard_id, category, piece, model, x, y, z, heading, is_open, health, max_health, material FROM wl_bb_props',
+    selectProps = 'SELECT id, cupboard_id, owner_id, category, piece, model, x, y, z, heading, is_open, health, max_health, material, created_unix FROM wl_bb_props',
     insertCupboard = 'INSERT INTO wl_bb_cupboards (owner_id, x, y, z, heading, radius, health, max_health, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     deleteCupboard = 'DELETE FROM wl_bb_cupboards WHERE id = ?',
     cupboardHealth = 'UPDATE wl_bb_cupboards SET health = ? WHERE id = ?',
     insertAuth = 'INSERT INTO wl_bb_auth (cupboard_id, character_id, name) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)',
     deleteAuth = 'DELETE FROM wl_bb_auth WHERE cupboard_id = ? AND character_id = ?',
     deleteAuthAll = 'DELETE FROM wl_bb_auth WHERE cupboard_id = ?',
-    insertProp = 'INSERT INTO wl_bb_props (cupboard_id, category, piece, model, x, y, z, heading, is_open, health, max_health, material, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)',
+    insertProp = 'INSERT INTO wl_bb_props (cupboard_id, owner_id, category, piece, model, x, y, z, heading, is_open, health, max_health, material, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)',
     deleteProp = 'DELETE FROM wl_bb_props WHERE id = ?',
     propOpen = 'UPDATE wl_bb_props SET is_open = ? WHERE id = ?',
     propHealth = 'UPDATE wl_bb_props SET health = ? WHERE id = ?',
