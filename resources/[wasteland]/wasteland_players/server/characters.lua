@@ -22,6 +22,30 @@ local function log() return WLP.M.log end
 -- Snapshots
 -------------------------------------------------------------------------------
 
+--- Where a loading character goes: its last known position, or - when it
+--- has none that can be used (and is not brand new: new characters pick a
+--- camp after the creator) - a random safe camp.
+function Characters.spawnPosition(char)
+    local p = char.position
+    local usable = type(p) == 'table' and tonumber(p.x) and tonumber(p.y) and tonumber(p.z)
+        and not (math.abs(p.x) < 1 and math.abs(p.y) < 1) and p.z > -100
+    if usable then return p end
+    local hasLook = false
+    if GetResourceState('wasteland_appearance') == 'started' then
+        local ok, look = pcall(function() return exports.wasteland_appearance:GetAppearance(char.id) end)
+        hasLook = ok and look ~= nil
+    end
+    if not hasLook or GetResourceState('wasteland_camps') ~= 'started' then return nil end
+    local ok, camps = pcall(function() return exports.wasteland_camps:GetCamps() end)
+    if not ok or type(camps) ~= 'table' then return nil end
+    local safe = {}
+    for _, c in ipairs(camps) do if c.safe and c.coords then safe[#safe + 1] = c end end
+    if #safe == 0 then return nil end
+    local c = safe[math.random(1, #safe)]
+    log():info('character %d has no usable last position: sent to %s', char.id, tostring(c.label))
+    return { x = c.coords.x, y = c.coords.y, z = c.coords.z, heading = 0.0 }
+end
+
 --- Sample the ped position into the character (only while the player is
 --- online and has a ped; a dropped player keeps the last sample).
 function Characters.samplePosition(char)
@@ -241,7 +265,7 @@ function Characters.load(session, characterId, opts)
     TriggerEvent('wasteland:players:characterLoaded', session.source, WLP.describe(char), opts.restored == true)
     TriggerClientEvent('wasteland:players:client:characterLoaded', session.source, {
         id = char.id, slot = char.slot, firstName = char.firstName, lastName = char.lastName,
-        position = char.position, restored = opts.restored == true,
+        position = Characters.spawnPosition(char), restored = opts.restored == true,
     })
     return char
 end

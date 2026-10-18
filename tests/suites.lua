@@ -44,6 +44,7 @@ return {
     'integration/guide.lua',
     'integration/takeall.lua',
     'integration/fullrepair.lua',
+    'integration/spawnpos.lua',
     'integration/loot.lua',
     'integration/camps.lua',
     'integration/crafting.lua',

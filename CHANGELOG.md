@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: a random spawn after waiting at character select (owner report)
+* The base server's basic-gamemode turns spawnmanager's auto spawn back on and forces a spawn at a random map spawn point when the map has loaded - which could be after Wasteland had turned it off (for example while a player sat at character select), and that random spot could then be saved as the last position. Auto spawn is now kept off (also right after the map loads, and every few seconds).
+* A returning character with no usable last position (none, or the map origin) wakes up at a random safe camp instead of wherever the game put them.
+
 ## Melee feels better: zombies react to hits (owner)
 * Every melee hit (fists or a weapon) stuns the zombie for a moment: it stops in its tracks and the swing it was winding up never lands, so you can beat it back instead of trading blows.
 * A hit can knock it off balance (a short stagger): sometimes with fists and knives, half the time with heavy weapons (bat, hatchet, battle axe, hammer, wrench, crowbar, machete).

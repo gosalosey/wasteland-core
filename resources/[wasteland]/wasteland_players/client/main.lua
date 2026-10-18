@@ -43,6 +43,20 @@ local function noAutoSpawn()
 end
 noAutoSpawn()
 AddEventHandler('onClientResourceStart', function(res) if res == 'spawnmanager' then noAutoSpawn() end end)
+-- basic-gamemode turns spawnmanager's auto spawn back on (and forces a spawn
+-- at a random map spawn point) when the map has loaded - which can be long
+-- after we turned it off, e.g. while the player sits at character select.
+AddEventHandler('onClientMapStart', function()
+    for _, ms in ipairs({ 0, 250, 1000, 3000 }) do SetTimeout(ms, noAutoSpawn) end
+end)
+-- ... and keep it off (Wasteland places characters and handles respawns;
+-- with wasteland_survival stopped, spawnmanager may take death over again).
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(2000)
+        if not loaded or GetResourceState('wasteland_survival') == 'started' then noAutoSpawn() end
+    end
+end)
 
 Citizen.CreateThread(function()
     while not NetworkIsPlayerActive(PlayerId()) do Citizen.Wait(100) end
