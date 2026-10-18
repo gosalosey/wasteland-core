@@ -510,6 +510,7 @@ local function acceptHelp(src, target)
     c.helpers[src] = true
     TriggerClientEvent('wasteland:groups:client:helpRoute', src, { id = c.id, name = c.name, coords = helpCoords(from) or c.coords })
     notice(from, nameOf(src) .. ' is coming to help you.')
+    TriggerClientEvent('wasteland:groups:client:helpComing', from, nameOf(src))
 end
 
 local function helpTick()

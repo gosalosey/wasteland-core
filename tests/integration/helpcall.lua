@@ -50,6 +50,7 @@ describe('calls for help', function()
         expect(r.name).toBe('Cal Help'); expect(r.coords.x).toBe(100.0)
         local n = last(caller, 'notice').args[1]
         expect(n).toBe('Hal Help is coming to help you.')
+        expect(last(caller, 'helpComing').args[1]).toBe('Hal Help')
         server.players[caller].coords = { x = 150.0, y = 10.0, z = 30.0 }
         server:advance(10100)
         r = last(helper, 'helpRoute').args[1]

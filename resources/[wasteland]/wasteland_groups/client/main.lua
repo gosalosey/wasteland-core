@@ -167,6 +167,14 @@ RegisterNetEvent('wasteland:groups:client:helpRoute', function(r)
     if not r.update then notice(string.format('Route set to %s (red on the map). It follows them while they call.', tostring(r.name))) end
 end)
 
+-- The caller: someone accepted - help is on the way.
+RegisterNetEvent('wasteland:groups:client:helpComing', function(name)
+    PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', true)
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName('~g~Help is on the way!~s~ ' .. tostring(name) .. ' accepted your call and is coming to you. Hold on.')
+    EndTextCommandThefeedPostTicker(true, true)
+end)
+
 RegisterNetEvent('wasteland:groups:client:helpEnded', function(id, why)
     if id ~= helpId then return end
     if helpBlip and DoesBlipExist(helpBlip) then RemoveBlip(helpBlip) end
