@@ -1,5 +1,8 @@
 # Changelog
 
+## Inventory: a smaller Worn panel (owner)
+* The worn-item slots are much smaller and sit three to a row, so the Worn panel takes less than half the space it did.
+
 ## Inventory shows the vicinity (owner)
 * Opening the inventory (TAB) now shows what lies on the ground within reach: dropped items, loot and body bags, nearest first (up to vicinityMax = 4, within reachDistance, in config/inventory.lua). Drag items straight in or out. Something dropped while the inventory is open shows there too.
 

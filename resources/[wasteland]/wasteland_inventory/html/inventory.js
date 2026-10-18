@@ -470,7 +470,7 @@
         st.defs.slots.forEach((slot) => {
             const cell = h('div', { class: 'wli-slot' }, h('span', { class: 'wli-slot__label', text: st.defs.slotLabels[slot] || slot }));
             cell.dataset.slot = slot;
-            if (bySlot[slot]) cell.appendChild(tile(bySlot[slot], equip, { fixed: 2 }));
+            if (bySlot[slot]) cell.appendChild(tile(bySlot[slot], equip, { fixed: 1.2 }));
             box.appendChild(cell);
         });
         return h('div', { class: 'wli-section' }, h('div', { class: 'wli-section__head' }, h('span', { class: 'wl-section-title', text: 'Worn' })), box);
@@ -913,8 +913,8 @@
         '.wli-cond.is-critical { border-left-color: #e0533f; } .wli-cond.is-critical b { color: #ff9c90; }',
         '.wli-cond.is-ok { border-left-color: #7fc75a; }',
         '.wli-cond__fix { color: var(--wl-text-dim); margin-top: 2px; line-height: 1.3; }',
-        '.wli-slots { display: grid; grid-template-columns: repeat(2, ' + (2 * CELL + 8) + 'px); gap: 8px; }',
-        '.wli-slot { position: relative; width: ' + (2 * CELL + 8) + 'px; height: ' + (2 * CELL + 22) + 'px; background: var(--wl-bg-sunken);',
+        '.wli-slots { display: grid; grid-template-columns: repeat(3, ' + Math.round(1.2 * CELL + 8) + 'px); gap: 6px; }',
+        '.wli-slot { position: relative; width: ' + Math.round(1.2 * CELL + 8) + 'px; height: ' + Math.round(1.2 * CELL + 20) + 'px; background: var(--wl-bg-sunken);',
         '  border: 1px dashed var(--wl-border); border-radius: var(--wl-radius); display: flex; flex-direction: column; align-items: center; padding-top: 2px; }',
         '.wli-slot .wli-item { position: relative; }',
         '.wli-slot__label { font-size: 11px; color: var(--wl-text-dim); }',
