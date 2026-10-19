@@ -1,5 +1,9 @@
 # Changelog
 
+## High external wall with barbed wire (owner)
+* New defense: High External Wall (8 metal sheet, 6 scrap metal; 2500 health): 4 m sections of overlapping rusty corrugated sheets on steel posts, 3.6 m tall, with three strands of barbed wire on leaning arms on top. Sections chain into a perimeter and stand on the ground.
+* The barbed wire hurts anyone who touches it (12 a second, 30% chance a player starts bleeding): only its strip along the top, so standing next to or leaning on the wall is safe; climbing over it is not. Zombies too. The server checks a player is really up at the wire. Settings: wireDamage, wireBleed, wireFrom, wireTo, wireReach in basebuilding.lua.
+
 ## Foundations reach into the ground (owner)
 * Foundations (wood, stone, metal) now extend 4 m below their base: sides, corner posts and collision. On slopes, or when snapped out from higher ground, there is no gap under them; on flat ground the extra part is buried. Snapping only uses the top and sides, so it is unchanged.
 

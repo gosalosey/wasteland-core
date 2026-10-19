@@ -517,7 +517,19 @@ function Brain.defense(ped, b)
     if not ok or type(list) ~= 'table' then return end
     for _, d in ipairs(list) do
         local dx, dy = d.x - here.x, d.y - here.y
-        if math.sqrt(dx * dx + dy * dy) <= d.touch and math.abs(d.z - here.z) < 2.5 then
+        local touching
+        if d.wire then
+            -- barbed wire along a wall's top: in the wall's own space
+            local h = math.rad(d.wire.heading)
+            local lx = -dx * math.cos(h) - dy * math.sin(h)
+            local ly = dx * math.sin(h) - dy * math.cos(h)
+            local lz = here.z - d.z
+            touching = math.abs(lx) <= d.wire.half and math.abs(ly) <= d.wire.reach
+                and lz + 0.9 >= d.wire.from and lz - 1.0 <= d.wire.to
+        else
+            touching = math.sqrt(dx * dx + dy * dy) <= d.touch and math.abs(d.z - here.z) < 2.5
+        end
+        if touching then
             ApplyDamageToPed(ped, math.max(1, math.floor(d.damage * 0.5 + 0.5)), false)
             if (d.slow or 1) < 1 then slowed[ped] = { rate = d.slow, untilT = t + 700 } end
             if t >= (b.nextTouch or 0) then

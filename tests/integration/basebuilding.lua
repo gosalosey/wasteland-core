@@ -301,4 +301,20 @@ describe('base building', function()
         server.aces[a .. '|wasteland.admin'] = nil
     end)
 
+
+    it('external wall: its barbed wire hurts only someone up at the top of it', function()
+        I('AddItem', a, 'metal_sheet', 8); I('AddItem', a, 'scrap_metal', 6); server:advance(100)
+        place(a, 'extwall', 6.0, 4.0)
+        local wall = lastProp(a)
+        expect(wall.piece).toBe('extwall')
+        local before = #server:clientEventsFor(a, 'wasteland:basebuilding:client:wireHurt')
+        server.players[a].coords = { x = 6.0, y = 3.6, z = 31.0 }       -- standing next to it
+        act(a, 'wire', wall.id); server:advance(1000)
+        expect(#server:clientEventsFor(a, 'wasteland:basebuilding:client:wireHurt')).toBe(before)
+        server.players[a].coords = { x = 6.5, y = 3.8, z = 34.0 }       -- climbing over the top
+        act(a, 'wire', wall.id)
+        expect(note(a)).toBe('Barbed wire!')
+        expect(#server:clientEventsFor(a, 'wasteland:basebuilding:client:wireHurt')).toBe(before + 1)
+        server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
+    end)
 end)

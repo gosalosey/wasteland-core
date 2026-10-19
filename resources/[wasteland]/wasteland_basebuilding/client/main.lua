@@ -218,6 +218,45 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
 end
 
 -------------------------------------------------------------------------------
+-- Barbed wire on top of external walls: touching it hurts (the server checks)
+-------------------------------------------------------------------------------
+
+local function wireLocal(data, at)
+    local d = at - data.coords
+    local h = math.rad(data.heading or 0.0)
+    return d.x * math.cos(h) + d.y * math.sin(h), -d.x * math.sin(h) + d.y * math.cos(h), d.z
+end
+
+Citizen.CreateThread(function()
+    while true do
+        local sleep = 1000
+        if cfg then
+            local ped = PlayerPedId()
+            local pos = GetEntityCoords(ped)
+            for id, data in pairs(propCache) do
+                local piece = cfg.pieces[data.piece]
+                if piece and piece.wireDamage and #(pos.xy - data.coords.xy) < 6.0 then
+                    sleep = 200
+                    local lx, ly, lz = wireLocal(data, pos)
+                    -- the ped's position is about 1 m above its feet: hands reach above
+                    if math.abs(lx) <= 2.05 and math.abs(ly) <= (piece.wireReach or 0.75)
+                        and lz + 0.9 >= (piece.wireFrom or 3.5) and lz - 1.0 <= (piece.wireTo or 4.7) then
+                        TriggerServerEvent('wasteland:basebuilding:server:wire', id)
+                        sleep = 1000
+                        break
+                    end
+                end
+            end
+        end
+        Wait(sleep)
+    end
+end)
+
+RegisterNetEvent('wasteland:basebuilding:client:wireHurt', function(amount)
+    ApplyDamageToPed(PlayerPedId(), math.floor(tonumber(amount) or 0), false)
+end)
+
+-------------------------------------------------------------------------------
 -- Ladder hatches: E at the foot of the ladder climbs up, E at the opening climbs down
 -------------------------------------------------------------------------------
 
@@ -999,6 +1038,11 @@ exports('GetDefensesNear', function(coords, radius)
         if piece and piece.contactDamage and #(d.coords - at) <= (radius or 10.0) then
             out[#out + 1] = { id = id, x = d.coords.x, y = d.coords.y, z = d.coords.z, damage = piece.contactDamage,
                 slow = piece.slow or 1.0, touch = piece.touchRadius or 1.8 }
+        elseif piece and piece.wireDamage and #(d.coords - at) <= (radius or 10.0) + 3.0 then
+            -- barbed wire on a wall: only its strip along the top hurts
+            out[#out + 1] = { id = id, x = d.coords.x, y = d.coords.y, z = d.coords.z, damage = piece.wireDamage, slow = 1.0,
+                wire = { heading = d.heading or 0.0, half = 2.05, reach = piece.wireReach or 0.75,
+                    from = piece.wireFrom or 3.5, to = piece.wireTo or 4.7 } }
         end
     end
     return out

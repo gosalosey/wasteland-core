@@ -839,6 +839,47 @@ def hatch(mat, seed):
         out += box(hx0 + 0.15, ly - 0.02, z, hx1 - 0.15, ly + 0.02, z + 0.04, DARK if mat != 'wood' else BEAM)
         z += 0.3
     return out
+
+
+# ---------------------------------------------------------------------------
+# High external wall: corrugated sheets on posts, barbed wire on top.
+# 4 m wide (chains with itself), 3.6 m of wall, wire up to about 4.4 m.
+# ---------------------------------------------------------------------------
+
+EXT_W, EXT_H, EXT_T = 4.0, 3.6, 0.25
+WIRE_FROM, WIRE_TO = 3.55, 4.45     # the band that hurts (also used by basebuilding.lua)
+
+def extwall(seed):
+    rnd = random.Random(seed)
+    out = []
+    w2, t2_ = EXT_W / 2, EXT_T / 2
+    # steel posts and two rails behind the sheets
+    for x in (-w2, 0.0, w2 - 0.12):
+        out += box(x, 0.0, 0, x + 0.12, t2_, EXT_H + 0.2, DARK)
+    for z in (0.5, EXT_H - 0.5):
+        out += box(-w2, 0.02, z, w2, t2_ - 0.01, z + 0.1, DARK)
+    # overlapping corrugated sheets on the front, a little crooked, bolted
+    sheets = 4
+    sw = EXT_W / sheets
+    for i in range(sheets):
+        cx = -w2 + sw * (i + 0.5)
+        out += rbox(cx, -0.04 + 0.012 * (i % 2), EXT_H / 2, sw + (0.06 if i < sheets - 1 else 0), 0.03, EXT_H - 0.02, METAL,
+                    ry=rnd.uniform(-0.6, 0.6))
+        for bz in (0.55, EXT_H / 2, EXT_H - 0.45):
+            out += box(cx - sw / 2 + 0.05, -0.085, bz - 0.025, cx - sw / 2 + 0.1, -0.06, bz + 0.025, DARK)
+    out += box(-w2, -0.1, EXT_H - 0.06, w2, t2_, EXT_H, DARK)   # top rail
+    # wire arms leaning out (towards -y, the outside) from each post
+    for x in (-w2 + 0.06, 0.06, w2 - 0.06):
+        out += rbox(x, -0.12, EXT_H + 0.4, 0.05, 0.05, 0.95, DARK, rx=-28)
+    # three strands with barbs along them
+    for k, (y, z) in enumerate(((-0.06, EXT_H + 0.15), (-0.2, EXT_H + 0.45), (-0.33, EXT_H + 0.75))):
+        out += box(-w2, y - 0.008, z - 0.008, w2, y + 0.008, z + 0.008, DARK)
+        x = -w2 + 0.1 + 0.05 * k
+        while x < w2 - 0.05:
+            out += rbox(x, y, z, 0.012, 0.012, 0.09, DARK, rx=45, rz=30)
+            out += rbox(x, y, z, 0.012, 0.012, 0.09, DARK, rx=-45, rz=-30)
+            x += 0.16
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -910,6 +951,9 @@ PIECES += [
     ('wl_bp_gate_frame', gate_frame(), cbox(-2.8, -0.25, 0, -2.3, 0.25, 4.5) + cbox(2.3, -0.25, 0, 2.8, 0.25, 4.5) + cbox(-2.8, -0.25, 4.0, 2.8, 0.25, 4.5), 70),
     ('wl_bp_gate_door', gate_door(), cbox(0, -0.06, 0.05, 4.56, 0.06, 3.95), 56),
     ('wl_bp_toolcupboard', toolcupboard(), cbox(-0.5, -0.3, 0, 0.5, 0.3, 1.8), 56),
+    # the wall, and a thin box over the wire (so you touch it, not slip through)
+    ('wl_bp_extwall', extwall(77), cbox(-EXT_W / 2, -0.1, 0, EXT_W / 2, EXT_T / 2, EXT_H)
+        + cbox(-EXT_W / 2, -0.4, EXT_H, EXT_W / 2, 0.05, WIRE_TO - 0.05), 56),
     ('wl_bp_stash_small', crate(), cbox(-0.5, -0.31, 0, 0.5, 0.31, 0.64), 70),
     ('wl_bp_stash_large', container(), cbox(-0.8, -0.37, 0, 0.8, 0.35, 1.14), 56),
     ('wl_bp_weaponlocker', locker(), cbox(-0.4, -0.26, 0, 0.4, 0.24, 1.9), 56),

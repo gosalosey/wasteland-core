@@ -143,6 +143,12 @@ return {
             category = 'defense', cost = { scrap_metal = 4, wood_planks = 2 }, health = 300, material = 'metal',
             contactDamage = 12, slow = 0.4, wearPerTouch = 4, touchRadius = 2.5 },
         -- scale: drawn this many times bigger (the look only)
+        -- High external wall: chains into a perimeter, stands on the ground. The
+        -- barbed wire on top hurts anyone touching it (wireDamage a second, players
+        -- and zombies; wireBleed: chance a touch makes a player bleed), only within
+        -- wireFrom..wireTo metres up and wireReach metres from the wall's line.
+        extwall = { label = 'High External Wall', model = 'wl_bp_extwall', category = 'defense', cost = { metal_sheet = 8, scrap_metal = 6 },
+            health = 2500, material = 'metal', wireDamage = 12, wireBleed = 0.3, wireFrom = 3.45, wireTo = 4.7, wireReach = 0.75 },
         spikes = { label = 'Spike Strip', model = 'p_stinger_piece_01', scale = 2.0,
             category = 'defense', cost = { scrap_metal = 6 }, health = 400, material = 'metal',
             contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 2.5 },

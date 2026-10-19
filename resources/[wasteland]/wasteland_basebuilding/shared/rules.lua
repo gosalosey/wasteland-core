@@ -31,6 +31,7 @@ function Rules.snapRules()
     r.hatch = {}
     for _, rule in ipairs(r.ceiling) do r.hatch[#r.hatch + 1] = rule end
     r.stairs = { { anchor = 'foundation', mode = 'top' }, { anchor = 'ceiling', mode = 'top' } }
+    r.extwall = { { anchor = 'extwall', mode = 'chain' } } -- external walls side by side
     r.door = { { anchor = 'doorway', mode = 'exact' } }
     r.gatedoor = { { anchor = 'gateframe', mode = 'exact' } }
     r.garagedoor = { { anchor = 'frame', mode = 'exact' } }

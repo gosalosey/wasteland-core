@@ -147,7 +147,7 @@ local function clientConfig()
             openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material,
             interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
             contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale,
-            ladder = p.ladder }
+            ladder = p.ladder, wireDamage = p.wireDamage, wireFrom = p.wireFrom, wireTo = p.wireTo, wireReach = p.wireReach }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -440,6 +440,36 @@ local function moveCupboard(src, id, x, y, z, heading)
     TriggerClientEvent('wasteland:basebuilding:client:cupboardMoved', -1, id, { coords = coords, heading = c.heading })
     sendMineAll()
     notice(src, 'Tool cupboard moved.')
+end
+
+-- Barbed wire on top of a wall: is `at` touching it? (in the piece's own space:
+-- along its width, close to its line, within the wire's height band)
+local function onWire(p, piece, at)
+    local dims = { x = at.x - p.coords.x, y = at.y - p.coords.y }
+    local h = math.rad(p.heading or 0.0)
+    local lx = dims.x * math.cos(h) + dims.y * math.sin(h)
+    local ly = -dims.x * math.sin(h) + dims.y * math.cos(h)
+    local lz = at.z - p.coords.z
+    return math.abs(lx) <= 2.1 and math.abs(ly) <= (piece.wireReach or 0.75) + 0.3
+        and lz >= (piece.wireFrom or 3.5) - 1.2 and lz <= (piece.wireTo or 4.7) + 0.5
+end
+
+local wireHurt = {} -- source -> last hurt (game timer)
+local function touchWire(src, id)
+    local p = props[id]
+    local piece = p and M.config.pieces[p.piece]
+    if not piece or not piece.wireDamage then return end
+    local at = playerCoords(src)
+    if not at or not onWire(p, piece, at) then return end
+    local t = GetGameTimer()
+    if t - (wireHurt[src] or 0) < 900 then return end
+    wireHurt[src] = t
+    local ok = pcall(function() exports.wasteland_survival:Damage(src, piece.wireDamage) end)
+    if not ok then TriggerClientEvent('wasteland:basebuilding:client:wireHurt', src, piece.wireDamage) end
+    if (piece.wireBleed or 0) > 0 and math.random() < piece.wireBleed then
+        pcall(function() exports.wasteland_survival:AddBleeding(src, 1) end)
+    end
+    TriggerClientEvent('wasteland:basebuilding:client:notice', src, 'Barbed wire!')
 end
 
 local function dropCupboard(c, why)
@@ -788,7 +818,7 @@ end
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
-    if src then meleeCooldown[src], picking[src], adminBuild[src] = nil, nil, nil end
+    if src then meleeCooldown[src], picking[src], adminBuild[src], wireHurt[src] = nil, nil, nil, nil end
 end)
 
 local function useBuildItem(src)
@@ -884,6 +914,11 @@ M = Wasteland.DefineModule({
                 interactDistance = { type = 'number', min = 1, max = 20, description = 'Doors: E works from this far (also from a vehicle)' },
                 passThrough = { type = 'boolean', description = 'Doors: swing through players and vehicles' },
                 ladder = { type = 'boolean', description = 'A ceiling with a ladder hatch: E climbs up or down' },
+                wireDamage = { type = 'number', min = 0, max = 1000, description = 'Barbed wire on top: damage a second to anyone touching it' },
+                wireBleed = { type = 'number', min = 0, max = 1, description = 'Barbed wire: chance a touch makes a player bleed' },
+                wireFrom = { type = 'number', min = 0, max = 50, description = 'Barbed wire: from this height (m above the base)' },
+                wireTo = { type = 'number', min = 0, max = 50, description = 'Barbed wire: up to this height' },
+                wireReach = { type = 'number', min = 0.1, max = 5, description = 'Barbed wire: this close to the wall line counts' },
                 grid = { type = 'table', nullable = true, fields = {
                     width = { type = 'integer', required = true, min = 1, max = 20 },
                     height = { type = 'integer', required = true, min = 1, max = 20 },
@@ -1021,6 +1056,7 @@ M.netEvent('wasteland:basebuilding:server:remove', { args = { ID }, rateLimit = 
 M.netEvent('wasteland:basebuilding:server:move', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
     function(src, id, x, y, z, heading) moveProp(src, id, x, y, z, heading) end)
 M.netEvent('wasteland:basebuilding:server:removeCupboard', { args = { ID }, rateLimit = RATE }, function(src, id) removeCupboard(src, id) end)
+M.netEvent('wasteland:basebuilding:server:wire', { args = { ID }, rateLimit = { burst = 3, perSecond = 2 } }, function(src, id) touchWire(src, id) end)
 M.netEvent('wasteland:basebuilding:server:moveCupboard', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
     function(src, id, x, y, z, heading) moveCupboard(src, id, x, y, z, heading) end)
 M.netEvent('wasteland:basebuilding:server:door', { args = { ID }, rateLimit = RATE }, function(src, id) toggleDoor(src, id) end)
