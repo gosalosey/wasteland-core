@@ -1151,17 +1151,31 @@ local function rainyWeather()
     return RAINY[a] == true or (RAINY[b] == true and (mix or 0) > 0.1)
 end
 
+-- Is a roof piece over the ped? No ray needed: inside the piece's footprint
+-- (turned with it) and above the ped's head, within a storey or two.
 local function roofAbove(ped)
-    local from = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0) -- head
-    local ray = StartShapeTestRay(from.x, from.y, from.z + 0.1, from.x, from.y, from.z + 12.0, 16, ped, 4)
-    local _, hit, _, _, entity = GetShapeTestResult(ray)
-    if hit ~= 1 or not entity or entity == 0 then return false end
-    local id = propOfEntity[entity]
-    local data = id and propCache[id]
-    local piece = data and cfg.pieces[data.piece]
-    if not piece then return false end
-    local family = piece.family or data.piece
-    return ROOF[family] == true or ROOF[data.piece] == true
+    local pos = GetEntityCoords(ped)
+    local feet = pos.z - 1.0
+    for _, data in pairs(propCache) do
+        local piece = cfg.pieces[data.piece]
+        local family = piece and (piece.family or data.piece)
+        if piece and (ROOF[family] or ROOF[data.piece]) and #(pos.xy - data.coords.xy) < 6.0 then
+            local dz = data.coords.z - feet
+            if dz > 1.6 and dz < 9.0 then
+                local hash = GetHashKey(data.model)
+                if not modelDimsCache[hash] then CacheModelDims(hash) end
+                local dims = GetModelDims(hash)
+                local d = pos - data.coords
+                local h = math.rad(data.heading or 0.0)
+                local lx = d.x * math.cos(h) + d.y * math.sin(h)
+                local ly = -d.x * math.sin(h) + d.y * math.cos(h)
+                if lx >= dims.min.x - 0.1 and lx <= dims.max.x + 0.1 and ly >= dims.min.y - 0.1 and ly <= dims.max.y + 0.1 then
+                    return true
+                end
+            end
+        end
+    end
+    return false
 end
 
 Citizen.CreateThread(function()
