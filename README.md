@@ -65,6 +65,7 @@ Players can change any key in GTA's **Settings → Key Bindings → FiveM**.
 | `/stuck` | Stuck somewhere? Stand still for 10 seconds and you're taken to the nearest safe camp (once every 30 minutes). |
 | `/backpack` | Show or hide the backpack on your back (your bag still works either way). |
 | `/noise` | Show or hide the noise meter. Move or resize it with `/hud`. |
+| `/adminbuild` | Admins: build, upgrade and repair bases for free (no materials). Type it again to turn it off. |
 | `/hud` | Change the HUD: compact, only when it matters, or off |
 | `/pee`, `/poop` | When you need to go |
 | `/guide`, `/skills` | Same as F2 and F9 |

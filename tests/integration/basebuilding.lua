@@ -281,4 +281,24 @@ describe('base building', function()
         os.time = realTime
         if not ok then error(err, 0) end
     end)
+
+    it('/adminbuild: admins build for free (no materials, no refunds); others may not', function()
+        server:command(c, 'adminbuild')
+        expect(note(c)).toBe('Only admins can use admin build.')
+        server.aces[a .. '|wasteland.admin'] = true
+        I('ClearInventory', a); server:advance(100)
+        server:command(a, 'adminbuild')
+        expect(note(a)).toContain('Admin build ON')
+        place(a, 'wall', 3.0, 2.0)
+        local wall = lastProp(a)
+        expect(wall.piece).toBe('wall')
+        act(a, 'remove', wall.id)
+        expect(I('GetItemCount', a, 'wood_planks')).toBe(0) -- no refund while on
+        server:command(a, 'adminbuild')
+        expect(note(a)).toBe('Admin build OFF.')
+        place(a, 'wall', 3.0, 2.0)
+        expect(note(a)).toContain('You need')
+        server.aces[a .. '|wasteland.admin'] = nil
+    end)
+
 end)

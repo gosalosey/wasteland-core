@@ -14,6 +14,7 @@ local cupboards = {}   -- id -> { id, owner, coords, heading, radius, health, ma
 local props = {}       -- id -> { id, cupboard_id, category, piece, model, coords, heading, is_open, health, max_health, material }
 local carry = {}       -- cupboard id -> { material = owed fraction }
 local meleeCooldown, lockCooldown, picking = {}, {}, {}
+local adminBuild = {} -- source -> true: /adminbuild (admins build, upgrade and repair for free)
 local snapRules = Rules.snapRules()
 local runToken = nil
 
@@ -67,6 +68,7 @@ end
 local function countOf(src) return function(item) return inv():GetItemCount(src, item) or 0 end end
 
 local function pay(src, cost)
+    if adminBuild[src] then return true end
     local taken = {}
     for item, n in pairs(cost or {}) do
         if not inv():RemoveItem(src, item, n) then
@@ -92,6 +94,7 @@ local function give(src, items)
 end
 
 local function missingText(cost, src)
+    if adminBuild[src] then return nil end
     local miss = Rules.missing(cost, countOf(src))
     if #miss == 0 then return nil end
     local parts = {}
@@ -240,7 +243,7 @@ local function buildView(src)
                 for item in pairs(p.cost or {}) do names[#names + 1] = item end
                 table.sort(names)
                 for _, item in ipairs(names) do cost[#cost + 1] = { label = label(item), count = p.cost[item], have = have(item), image = images[item] } end
-                list[#list + 1] = { key = key, label = p.label, cost = cost, canPay = #Rules.missing(p.cost, have) == 0 }
+                list[#list + 1] = { key = key, label = p.label, cost = cost, canPay = adminBuild[src] or #Rules.missing(p.cost, have) == 0 }
             end
         end
         table.sort(list, function(a, b) return a.label < b.label end)
@@ -375,7 +378,7 @@ local function removeProp(src, id)
         pcall(function() inv():DeleteStash(stashName(id)) end)
     end
     local piece = M.config.pieces[p.piece]
-    if piece and piece.cost then give(src, Rules.refund(piece.cost, M.config.refund)) end
+    if piece and piece.cost and not adminBuild[src] then give(src, Rules.refund(piece.cost, M.config.refund)) end
     props[id] = nil
     write(SQL.deleteProp, { id }, 'removing piece ' .. id)
     TriggerClientEvent('wasteland:basebuilding:client:propRemoved', -1, id)
@@ -462,7 +465,7 @@ local function removeCupboard(src, id)
         if snap and #(snap.items or {}) > 0 then notice(src, 'Take the supplies out of the cupboard first.'); return end
         pcall(function() inv():DeleteStash(supplyName(id)) end)
         local piece = M.config.pieces[M.config.cupboard.piece]
-        if piece and piece.cost then give(src, Rules.refund(piece.cost, M.config.refund)) end
+        if piece and piece.cost and not adminBuild[src] then give(src, Rules.refund(piece.cost, M.config.refund)) end
         dropCupboard(c, 'removed by its owner')
         notice(src, 'Tool cupboard removed. The land is no longer claimed.')
     end)
@@ -785,7 +788,7 @@ end
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
-    if src then meleeCooldown[src], picking[src] = nil, nil end
+    if src then meleeCooldown[src], picking[src], adminBuild[src] = nil, nil, nil end
 end)
 
 local function useBuildItem(src)
@@ -982,6 +985,26 @@ M = Wasteland.DefineModule({
 })
 
 local RATE = { burst = 8, perSecond = 3 }
+-- /adminbuild: admins toggle free building (no materials, no refunds while on).
+RegisterCommand('adminbuild', function(src)
+    src = tonumber(src)
+    if not src or src <= 0 then print('/adminbuild is for players in game') return end
+    local allowed = IsPlayerAceAllowed(tostring(src), 'wasteland.admin')
+    if not (allowed == true or allowed == 1) then notice(src, 'Only admins can use admin build.'); return end
+    if not (M and M.active) then return end
+    adminBuild[src] = not adminBuild[src] or nil
+    if adminBuild[src] then
+        notice(src, 'Admin build ON: everything is free (no materials, no refunds). Type /adminbuild to turn it off.')
+        if characterOf(src) then TriggerClientEvent('wasteland:basebuilding:client:build', src, buildView(src)) end
+    else
+        notice(src, 'Admin build OFF.')
+    end
+    M.log:info('player %d turned admin build %s', src, adminBuild[src] and 'on' or 'off')
+end, false)
+
+--- IsAdminBuilding(source) -> boolean
+exports('IsAdminBuilding', function(src) return adminBuild[tonumber(src) or -1] == true end)
+
 local ID = { type = 'integer', required = true, min = 1 }
 local COORD = { type = 'number', required = true, min = -20000, max = 20000 }
 local AT = { type = 'table', required = true, fields = { x = COORD, y = COORD, z = COORD } }

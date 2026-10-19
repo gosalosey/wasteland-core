@@ -23,6 +23,7 @@ for _, w in ipairs({ 'WEAPON_UNARMED', 'WEAPON_HAMMER', 'WEAPON_CROWBAR', 'WEAPO
     'WEAPON_HATCHET', 'WEAPON_BATTLEAXE', 'WEAPON_WRENCH', 'WEAPON_KNUCKLE', 'WEAPON_SWITCHBLADE' }) do meleeWeapons[GetHashKey(w)] = true end
 
 local function uiRunning() return GetResourceState('wasteland_ui') == 'started' end
+TriggerEvent('chat:addSuggestion', '/adminbuild', 'Admins: build, upgrade and repair for free (turn on / off)')
 local function targetRunning() return GetResourceState('wasteland_target') == 'started' end
 local function isOpen(s) return uiRunning() and exports.wasteland_ui:IsOpen(s) end
 
