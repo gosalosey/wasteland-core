@@ -62,13 +62,21 @@ add_principal identifier.fivem:12345678 group.admin
 
 **By hand.** Back up the database first ([DATABASE.md](DATABASE.md)), then replace `resources/[wasteland]` with the new version, keeping your own `wasteland_config/config/` files. Database changes are applied automatically on the next start.
 
-## Base building props
+## Base building props (optional)
 
-Base building uses **wasteland_buildprops**, included with Wasteland Core: free, original models (foundations, walls, doorways, window frames, half walls, ceilings, frames and ramps in wood, stone and metal; doors, a garage door, a gate, window bars and the tool cupboard). Keep `ensure wasteland_buildprops` before `ensure wasteland_basebuilding` in `server.cfg` (the txAdmin server.cfg already has it). To change their shapes or textures, see `tools/buildprops/README.md`.
+> **Base building needs this pack, and it is not free.** `wasteland_basebuilding` shows its pieces with the **sinor-buildingProps-v2** props pack by SinorSystem. It is not part of Wasteland Core: it is a paid, licensed Cfx asset pack (escrow), which works only on servers whose licence key belongs to the account that bought it. Buy it from the **[SinorSystem Tebex store](https://sinorsystem.tebex.io/)**.
 
-## Using other building props
+To use base building:
 
-Any props work: the paid **sinor-buildingProps-v2** pack by SinorSystem ([Tebex store](https://sinorsystem.tebex.io/); set `propsResource = 'sinor-buildingProps-v2'` and use its `sinor_prop_...` model names), your own models, or GTA's own.
+1. Buy the pack from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/), then download it from your Cfx account (Keymaster).
+2. Put the `sinor-buildingProps-v2` folder in your server's `resources` folder (for example `resources/[standalone]/`).
+3. In `server.cfg`, `ensure sinor-buildingProps-v2` before `ensure wasteland_basebuilding` (the txAdmin server.cfg has the line ready, commented out).
+
+Without the pack the module still runs, but the pieces cannot be seen; the console says so when it starts.
+
+## Using your own building props (instead of the paid pack)
+
+Base building doesn't have to use the sinor pack. Any props work, including your own models or GTA's own.
 
 1. **Your own models:** make a resource (for example `my_building_props`) with an `fxmanifest.lua` and a `stream` folder holding your `.ydr` / `.ytyp` files, put it in `resources`, and `ensure` it before `wasteland_basebuilding`.
 2. In `wasteland_config/config/basebuilding.lua`:

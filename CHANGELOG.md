@@ -1,5 +1,9 @@
 # Changelog
 
+## Base building back on the sinor props; generated props set aside (owner)
+* The generated wasteland_buildprops looked poor in game and had no working collision (you walked through them and could not remove them). Base building uses sinor-buildingProps-v2 again (config, server.cfg and docs as before); wasteland_buildprops stays in the repo as an experiment, not ensured.
+* Built pieces now always use the model the config sets for their piece (not the one saved when built), so switching props packs updates existing bases; the pieces placed with the generated props are sinor pieces again: solid and removable.
+
 ## Building props: a zombie-survival look (owner)
 * Every wasteland_buildprops piece was rebuilt with detail: wood walls of uneven, slightly crooked planks (some missing) on studs with a cross brace; metal walls of overlapping rusty corrugated sheets on a frame, bolted, with patch plates; stone walls with a chipped capstone row, a footing and blocks sticking out; trim posts and sills round doorways and windows. Foundations: plank decks on posts, welded floor plates on corrugated sides, or paving slabs. Braced wooden doors with iron hinges, a barred metal door with a peep hole, a strapped garage door, crossed boards or rebar window bars, a gate frame with corner braces and spikes, a braced corrugated gate, a padlocked cupboard.
 * Textures: a new dark beam wood, and old blood splatters and spray-painted marks on wood, metal and stone.
