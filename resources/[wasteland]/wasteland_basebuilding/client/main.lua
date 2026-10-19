@@ -1141,6 +1141,7 @@ end)
 -------------------------------------------------------------------------------
 
 local sheltered = false
+local rainy = false   -- the server's weather was rainy when we went under the roof
 local ROOF = { ceiling = true, hatch = true, foundation = true, stairs = true }
 local RAINY = {}
 for _, w in ipairs({ 'RAIN', 'THUNDER', 'CLEARING' }) do RAINY[GetHashKey(w)] = true end
@@ -1184,24 +1185,38 @@ Citizen.CreateThread(function()
         if cfg then
             local ped = PlayerPedId()
             local now = not IsPedInAnyVehicle(ped, false) and roofAbove(ped)
+            if now and not sheltered then
+                -- note the weather as we go in (the override hides it while inside)
+                rainy = rainyWeather()
+            end
             if now ~= sheltered then
                 sheltered = now
                 print(('[wasteland_basebuilding] %s'):format(sheltered and 'under a roof: no rain here' or 'outside: weather as normal'))
                 if not sheltered then
-                    -- back to the server's weather
+                    -- back to the server's weather (the world module re-applies it)
                     SetRainLevel(-1.0)
                     ClearOverrideWeather()
+                    if GetResourceState('wasteland_world') == 'started' then
+                        pcall(function() exports.wasteland_world:ReapplyWeather() end)
+                    end
+                end
+            end
+            if sheltered and GetResourceState('wasteland_world') == 'started' then
+                -- the server's weather now (it may start or stop raining while we are inside)
+                local ok, name = pcall(function() return exports.wasteland_world:GetWeather() end)
+                if ok and type(name) == 'string' then
+                    local was = rainy
+                    rainy = RAINY[GetHashKey(name)] == true
+                    if was and not rainy then ClearOverrideWeather(); pcall(function() exports.wasteland_world:ReapplyWeather() end) end
                 end
             end
             if sheltered then
                 -- only for this player while under the roof: an overcast sky
                 -- instead of rain (no drops, no ripples, no wet floor). Set every
                 -- tick, so a weather change from the server cannot bring rain in.
-                if rainyWeather() then
+                if rainy then
                     SetOverrideWeather('OVERCAST')
                     SetRainLevel(0.0)
-                else
-                    ClearOverrideWeather()
                 end
                 ClearPedWetness(ped)
                 SetPedWetnessHeight(ped, 0.0)

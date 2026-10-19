@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: rain stayed off after leaving the base (owner)
+* Clearing the indoor overcast did not bring the rain back. wasteland_world now re-applies the server's weather when you step out (exports ReapplyWeather, GetWeather), and the roof check follows the server's weather while you are inside (rain starting or stopping).
+
 ## Fix: the roof check for rain (owner)
 * The upward ray did not see the ceiling (its result was read before it finished). Shelter is now worked out from the pieces themselves: standing inside a roof piece's footprint, below it.
 

@@ -35,6 +35,18 @@ local function applyWeather(name, transition)
     SetForcePedFootstepsTracks(name == 'XMAS' or name == 'SNOW' or name == 'BLIZZARD')
 end
 
+--- GetWeather() -> the server's weather name (e.g. 'RAIN')
+exports('GetWeather', function() return currentWeather end)
+
+--- ReapplyWeather(): put the server's weather back at once (base building
+--- shows an overcast sky under a player's own roof while it rains).
+exports('ReapplyWeather', function()
+    local name = currentWeather
+    if not name then return end
+    currentWeather = nil
+    applyWeather(name, 0)
+end)
+
 RegisterNetEvent('wasteland:world:client:sync', function(p)
     if type(p) ~= 'table' then return end
     settings = p
