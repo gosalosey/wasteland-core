@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: stairs collision, ceilings snapping on walls (owner)
+* Stairs had no collision: a paper-thin helper box (thinner than the physics margin) made the game drop it. The flights are now tilted solid boxes (as GTA's own props), the landing and rail boxes.
+* Ceilings on walls: the snap spot was only on one side of a wall (the side assumed to be the room); walls turned the other way put it outside. There is now a spot on each side; the closer one wins.
+
 ## More floors: stairs and ladder hatches (owner)
 * Stairs: U-shaped stairs that fill one 4 m square and go one floor up (3.2 m), with a landing, steps, stringers and handrails; walkable slopes under the steps. They stand on a foundation or on a ceiling (snap), so floors stack. Leave the square above them open; the top comes out at the front edge onto the next floor.
 * Ladder hatch: a ceiling with an opening in one corner and a ladder down to the floor below; it snaps like a ceiling. E at the foot of the ladder climbs up, E at the opening climbs down.

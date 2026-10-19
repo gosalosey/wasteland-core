@@ -192,13 +192,17 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
                 candidates[#candidates + 1] = { coords = data.coords + RotateOffset(vector3(rightWidth, 0.0, 0.0), data.heading), heading = data.heading, priority = 1 }
                 candidates[#candidates + 1] = { coords = data.coords + RotateOffset(vector3(-leftWidth, 0.0, 0.0), data.heading), heading = data.heading, priority = 1 }
             elseif mode == 'top' then
-                local localOffset
                 if CEILING_LIKE[pieceKey] then
-                    localOffset = vector3(0.0, -newDims.size.y / 2.0, dims.max.z - overlap)
+                    -- on top of a wall: a spot on each side of it (which side is
+                    -- the room depends on how the wall was turned); the closer wins
+                    for _, side in ipairs({ -1.0, 1.0 }) do
+                        local localOffset = vector3(0.0, side * newDims.size.y / 2.0, dims.max.z - overlap)
+                        candidates[#candidates + 1] = { coords = data.coords + RotateOffset(localOffset, data.heading), heading = data.heading, priority = 1 }
+                    end
                 else
-                    localOffset = vector3(0.0, 0.0, dims.max.z - overlap)
+                    local localOffset = vector3(0.0, 0.0, dims.max.z - overlap)
+                    candidates[#candidates + 1] = { coords = data.coords + RotateOffset(localOffset, data.heading), heading = data.heading, priority = 1 }
                 end
-                candidates[#candidates + 1] = { coords = data.coords + RotateOffset(localOffset, data.heading), heading = data.heading, priority = 1 }
             elseif mode == 'exact' then
                 local centerOffset = vector3((newDims.min.x + newDims.max.x) / 2.0, 0.0, 0.0)
                 candidates[#candidates + 1] = { coords = data.coords - RotateOffset(centerOffset, data.heading), heading = data.heading, priority = 1 }

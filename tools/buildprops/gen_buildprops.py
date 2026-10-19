@@ -836,6 +836,21 @@ def hatch(mat, seed):
 def cbox(x0, y0, z0, x1, y1, z1):
     return [('box', (x0, y0, z0, x1, y1, z1))]
 
+def slope_box(x0, x1, y_lo, y_hi, z_lo, z_hi, thick):
+    """A solid tilted slab whose top runs from (y_lo, z_lo) to (y_hi, z_hi):
+    a box turned about x (GTA's own props use boxes like this)."""
+    dy, dz = y_hi - y_lo, z_hi - z_lo
+    length = math.hypot(dy, dz)
+    a = math.atan2(dz, dy)                      # turn of the box's y axis towards z
+    yax = (0.0, math.cos(a), math.sin(a))
+    zax = (0.0, -math.sin(a), math.cos(a))
+    if zax[2] < 0:                              # keep the top facing up (and the turn a true rotation)
+        yax = (0.0, -yax[1], -yax[2])
+        zax = (0.0, -zax[1], -zax[2])
+    mid = ((x0 + x1) / 2, (y_lo + y_hi) / 2, (z_lo + z_hi) / 2)
+    c = tuple(mid[i] - zax[i] * thick / 2 for i in range(3))
+    return [('rbox', (c, ((x1 - x0) / 2, length / 2, thick / 2), yax, zax))]
+
 def solid_wall(hole=None, height=H, width=S):
     w2 = width / 2
     if not hole:
@@ -864,11 +879,10 @@ for mat in ('wood', 'stone', 'metal'):
     PIECES.append((f'wl_bp_ramp_{mat}', ramp(mat, seed + 4), [('mesh', wedge(-h2, -h2, h2, h2, 1.0))], MATID[mat]))
     half = FLOOR / 2
     PIECES.append((f'wl_bp_stairs_{mat}', stairs(mat, seed + 5),
-        [('mesh', slope_faces(-1.95, -0.05, -1.75, 0.85, 0.0, half, 0.3, None)),
-         ('mesh', slope_faces(0.05, 1.95, 0.85, -1.95, half, FLOOR, 0.3, None))]
+        slope_box(-1.95, -0.05, -1.75, 0.85, 0.0, half, 0.3)
+        + slope_box(0.05, 1.95, 0.85, -1.95, half, FLOOR, 0.3)
         + cbox(-1.98, 0.85, half - 0.12, 1.98, 1.98, half)
-        + cbox(-1.98, 1.92, half, 1.98, 1.98, half + 0.95)
-        + cbox(-2.0, -2.0, 0, 2.0, 2.0, 0.001), MATID[mat]))
+        + cbox(-1.98, 1.92, half, 1.98, 1.98, half + 0.95), MATID[mat]))
     hx0, hy0, hx1, hy1 = HOLE
     PIECES.append((f'wl_bp_hatch_{mat}', hatch(mat, seed + 6),
         cbox(-h2, -h2, 0, hx0, h2, T) + cbox(hx1, -h2, 0, h2, h2, T) + cbox(hx0, -h2, 0, hx1, hy0, T) + cbox(hx0, hy1, 0, hx1, h2, T)
@@ -897,6 +911,12 @@ def extent_parts(parts):
         if kind == 'box':
             x0, y0, z0, x1, y1, z1 = data
             pts += [(x0, y0, z0), (x1, y1, z1)]
+        elif kind == 'rbox':
+            c, (hx, hy, hz), yax, zax = data
+            for sx in (-1, 1):
+                for sy in (-1, 1):
+                    for sz in (-1, 1):
+                        pts.append(tuple(c[i] + (hx * sx if i == 0 else 0) + yax[i] * hy * sy + zax[i] * hz * sz for i in range(3)))
         else:
             pts += [p for item in data for p in item[1]]
     return (min(p[0] for p in pts), min(p[1] for p in pts), min(p[2] for p in pts)), \
@@ -919,10 +939,15 @@ COMMON_FLAGS = '''<MaterialColourIndex value="0" />
 CFLAGS = '''<CompositeFlags1>MAP_WEAPON, MAP_DYNAMIC, MAP_ANIMAL, MAP_COVER, MAP_VEHICLE</CompositeFlags1>
       <CompositeFlags2>VEHICLE_NOT_BVH, VEHICLE_BVH, PED, RAGDOLL, ANIMAL, ANIMAL_RAGDOLL, OBJECT, PLANT, PROJECTILE, EXPLOSION, FORKLIFT_FORKS, TEST_WEAPON, TEST_CAMERA, TEST_AI, TEST_SCRIPT, TEST_VEHICLE_WHEEL, GLASS</CompositeFlags2>'''
 
-def box_child(b, mid):
-    x0, y0, z0, x1, y1, z1 = b
-    c = ((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
-    hx, hy, hz = (x1 - x0) / 2, (y1 - y0) / 2, (z1 - z0) / 2
+def box_child(b, mid, axes=None):
+    if axes is None:
+        x0, y0, z0, x1, y1, z1 = b
+        c = ((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
+        hx, hy, hz = (x1 - x0) / 2, (y1 - y0) / 2, (z1 - z0) / 2
+        yax, zax = (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)
+    else:
+        c, (hx, hy, hz) = b
+        yax, zax = axes
     r = math.sqrt(hx * hx + hy * hy + hz * hz)
     vol = 8 * hx * hy * hz
     return f'''     <Item type="Box">
@@ -939,8 +964,8 @@ def box_child(b, mid):
       <UnkType value="2" />
       <CompositeTransform>
        1 0 0 0
-       0 1 0 0
-       0 0 1 0
+       {f(yax[0])} {f(yax[1])} {f(yax[2])} 0
+       {f(zax[0])} {f(zax[1])} {f(zax[2])} 0
        {f(c[0])} {f(c[1])} {f(c[2])} 1
       </CompositeTransform>
       {CFLAGS}
@@ -1076,7 +1101,12 @@ for model, look, solid, mid in PIECES:
     </Item>''')
     children = []
     for kind, data in solid:
-        children.append(box_child(data, mid) if kind == 'box' else mesh_child(data, mid))
+        if kind == 'box':
+            children.append(box_child(data, mid))
+        elif kind == 'rbox':
+            children.append(box_child((data[0], data[1]), mid, (data[2], data[3])))
+        else:
+            children.append(mesh_child(data, mid))
     vol = (mx[0] - mn[0]) * (mx[1] - mn[1]) * (mx[2] - mn[2])
     xml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <Drawable>
