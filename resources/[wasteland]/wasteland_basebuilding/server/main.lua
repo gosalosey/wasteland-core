@@ -1078,7 +1078,7 @@ M = Wasteland.DefineModule({
                     infection = { type = 'number', default = 1.5, min = 0, max = 100, description = 'Infection taken off each tick' },
                     lie = { type = 'table', nullable = true, fields = {
                         x = { type = 'number', default = 0.0 }, y = { type = 'number', default = 0.0 },
-                        up = { type = 'number', default = 0.47 }, turn = { type = 'number', default = 90.0 },
+                        up = { type = 'number', default = 0.47 }, turn = { type = 'number', default = 270.0 },
                     } },
                 } },
                 shock = { type = 'boolean', description = 'Touching it shocks: players stagger, zombies are thrown back' },

@@ -692,11 +692,11 @@ RegisterNetEvent('wasteland:basebuilding:client:rest', function(id)
     local untilT = GetGameTimer() + 2000
     while not HasAnimDictLoaded(REST_DICT) and GetGameTimer() < untilT do Wait(0) end
     local piece = cfg.pieces[data.piece]
-    local lie = (piece and piece.bed and piece.bed.lie) or { x = 0.0, y = 0.0, up = 0.47, turn = 90.0 }
+    local lie = (piece and piece.bed and piece.bed.lie) or { x = 0.0, y = 0.0, up = 0.47, turn = 270.0 }
     -- the ped's position is about 1 m above its feet; the animation lies at the feet
     local at = data.coords + RotateOffset(vector3(lie.x or 0.0, lie.y or 0.0, 0.0), data.heading) + vector3(0.0, 0.0, (lie.up or 0.47) + 1.0)
     SetEntityCoordsNoOffset(ped, at.x, at.y, at.z, false, false, false)
-    SetEntityHeading(ped, (data.heading + (lie.turn or 90.0)) % 360.0)
+    SetEntityHeading(ped, (data.heading + (lie.turn or 270.0)) % 360.0)
     FreezeEntityPosition(ped, true) -- held on the mattress while resting
     TaskPlayAnim(ped, REST_DICT, REST_ANIM, 2.0, 2.0, -1, 1, 0, false, false, false)
     restingOn = id

@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: head at the pillow end in bed (owner)
+* bed.lie.turn is now 270 (was 90): you lie with your head on the pillow.
+
 ## Admin Generator (owner)
 * New Power piece for admins only (the same people as the F10 admin panel): free, needs no fuel (unlimited), silent, powers 60 m, very tough (100000 health). Hidden from the build menu for everyone else, and the server refuses it for them. Piece fields: adminOnly, generator.unlimited.
 
