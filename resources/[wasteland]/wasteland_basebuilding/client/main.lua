@@ -15,6 +15,7 @@ local isPlacing, picking = false, false
 local movingId = nil -- the placed piece being moved (hidden; not a snap anchor)
 local StartPlacement   -- defined below (used by the Left Alt Move option above it)
 local PoweredAt        -- (coords) -> boolean: a running generator powers this spot (set below)
+local showRange = {}   -- generator id -> true: draw its power range (Left Alt option)
 local warnedModels = {}
 local KEY_E, KEY_BACK = 38, 194
 local WALL_LIKE = { wall = true, doorway = true, windowframe = true, halfwall = true }
@@ -393,6 +394,12 @@ local function addTargets(obj, id, isCupboard)
             onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generator', id) end }
         opts[#opts + 1] = { label = 'Add fuel (jerry can)', icon = '⛽', distance = d,
             onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generatorFuel', id) end }
+        opts[#opts + 1] = { label = 'Show / hide power range', icon = '◎', distance = d,
+            onSelect = function()
+                showRange[id] = not showRange[id] or nil
+                notify(showRange[id] and ('Power range shown (%d m): lights and electric fences inside it get power.'):format(math.floor(gp.generator.powerRadius))
+                    or 'Power range hidden.')
+            end }
         opts[#opts + 1] = { label = 'Check fuel', icon = '◔', distance = d,
             onSelect = function()
                 local p = propCache[id]
@@ -653,6 +660,32 @@ Citizen.CreateThread(function()
 end)
 
 PoweredAt = powered
+
+-- The power range of generators the player chose to see: a ring on the ground
+-- (green while running, grey while off) and a label over the generator.
+Citizen.CreateThread(function()
+    while true do
+        if not cfg or not next(showRange) then Wait(500) else
+            for id in pairs(showRange) do
+                local d = propCache[id]
+                local piece = d and cfg.pieces[d.piece]
+                if not piece or not piece.generator then
+                    showRange[id] = nil
+                else
+                    local r = piece.generator.powerRadius
+                    local on = d.is_open and (d.fuel or 0) > 0
+                    local c = on and { 90, 220, 110 } or { 170, 170, 160 }
+                    DrawMarker(1, d.coords.x, d.coords.y, d.coords.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, r * 2.0, r * 2.0, 2.2,
+                        c[1], c[2], c[3], 45, false, false, 2, false, nil, nil, false)
+                    DrawMarker(25, d.coords.x, d.coords.y, d.coords.z + 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, r * 2.0, r * 2.0, 1.0,
+                        c[1], c[2], c[3], 160, false, false, 2, false, nil, nil, false)
+                    DrawText3D(d.coords + vector3(0.0, 0.0, 1.6), ('Power range %d m (%s)'):format(math.floor(r), on and 'on' or 'off'))
+                end
+            end
+            Wait(0)
+        end
+    end
+end)
 
 RegisterNetEvent('wasteland:basebuilding:client:propMoved', function(id, patch)
     local data = propCache[id]

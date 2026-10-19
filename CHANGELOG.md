@@ -1,5 +1,8 @@
 # Changelog
 
+## Generator: show its power range (owner)
+* Left Alt on a generator > Show / hide power range: a ring on the ground at its power radius (green while running, grey while off) and a label. Lights and electric fences inside it get power.
+
 ## Fix: rain stayed off after leaving the base (owner)
 * Clearing the indoor overcast did not bring the rain back. wasteland_world now re-applies the server's weather when you step out (exports ReapplyWeather, GetWeather), and the roof check follows the server's weather while you are inside (rain starting or stopping).
 
