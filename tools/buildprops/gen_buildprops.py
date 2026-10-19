@@ -462,9 +462,9 @@ def stone_panel(x0, z0, x1, z1, rnd, back=True):
     # a few blocks sticking out a little
     for _ in range(int((x1 - x0) * (z1 - z0) * 0.8)):
         bx = rnd.uniform(x0 + 0.1, x1 - 0.5); bz = rnd.uniform(z0 + 0.1, z1 - 0.4)
-        out += box(bx, -0.1, bz, bx + rnd.uniform(0.25, 0.45), -0.085, bz + 0.22, STONE)
+        out += box(bx, -0.097, bz, bx + rnd.uniform(0.25, 0.45), -0.085, bz + 0.22, STONE)
     # a footing along the bottom
-    out += box(x0, -0.1, z0, x1, 0.1, z0 + 0.12, STONE)
+    out += box(x0, -0.1, z0, x1, 0.1, z0 + 0.12, STONE)  # footing (main block is 0.085)
     return out
 
 STYLES = {'wood': wood_panel, 'metal': metal_panel, 'stone': stone_panel}
@@ -485,11 +485,11 @@ def styled_wall(mat, seed, hole=None, height=H, width=S):
     if hz1 < height: out += panel(hx0, hz1, hx1, height, rnd, back=False)
     # trim posts round the opening (inside the wall's thickness)
     tt = TRIM[mat]
-    out += box(hx0 - 0.08, -0.1, hz0, hx0, 0.1, hz1 + 0.08, tt)
-    out += box(hx1, -0.1, hz0, hx1 + 0.08, 0.1, hz1 + 0.08, tt)
-    out += box(hx0 - 0.08, -0.1, hz1, hx1 + 0.08, 0.1, hz1 + 0.1, tt)
+    out += box(hx0 - 0.08, -0.106, hz0, hx0, 0.106, hz1 + 0.08, tt)
+    out += box(hx1, -0.106, hz0, hx1 + 0.08, 0.106, hz1 + 0.08, tt)
+    out += box(hx0 - 0.084, -0.108, hz1, hx1 + 0.084, 0.108, hz1 + 0.1, tt)
     if hz0 > 0:  # a sill
-        out += box(hx0 - 0.12, -0.1, hz0 - 0.06, hx1 + 0.12, 0.1, hz0, tt)
+        out += box(hx0 - 0.12, -0.11, hz0 - 0.06, hx1 + 0.12, 0.11, hz0, tt)
     return out
 
 def foundation(mat, seed):
@@ -520,7 +520,7 @@ def foundation(mat, seed):
             for cy in (-h2, h2 - 0.14):
                 out += box(cx, cy, 0, cx + 0.14, cy + 0.14, 1.0, DARK)
         for i in range(-3, 4):  # welded seams on the plate
-            out += box(i * 0.55 - 0.015, -h2 + 0.1, 1.0, i * 0.55 + 0.015, h2 - 0.1, 1.0, DARK)
+            out += box(i * 0.55 - 0.015, -h2 + 0.1, 1.0, i * 0.55 + 0.015, h2 - 0.1, 1.006, DARK)
     else:
         out += box(-h2 + 0.04, -h2 + 0.04, 0, h2 - 0.04, h2 - 0.04, 0.9, STONE)
         for ix in range(4):  # paving slabs, slightly uneven
@@ -637,8 +637,8 @@ def gate_frame():
     out = []
     for x0 in (-2.8, 2.3):  # thick posts with braces
         out += box(x0, -0.25, 0, x0 + 0.5, 0.25, 4.5, BEAM)
-        out += box(x0 - 0.0, -0.25, 3.2, x0 + 0.5, 0.25, 3.32, DARK)
-        out += box(x0 - 0.0, -0.25, 0.6, x0 + 0.5, 0.25, 0.72, DARK)
+        out += box(x0 - 0.008, -0.258, 3.2, x0 + 0.508, 0.258, 3.32, DARK)
+        out += box(x0 - 0.008, -0.258, 0.6, x0 + 0.508, 0.258, 0.72, DARK)
     out += box(-2.8, -0.25, 4.0, 2.8, 0.25, 4.5, BEAM)
     out += box(-2.8, -0.26, 4.15, 2.8, -0.24, 4.35, DARK)
     for x, sgn in ((-2.3, 1), (2.3, -1)):  # corner braces under the beam

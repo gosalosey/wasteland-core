@@ -400,6 +400,10 @@ local function SpawnProp(id)
         RequestModelHash(GetHashKey(data.model))
         at = data.coords + vector3(0.0, 0.0, garageLift(data))
     end
+    -- A tiny fixed nudge per piece (under 1 cm, from its id): two pieces never
+    -- share a surface exactly, so overlapping faces do not flicker (z-fighting).
+    local n = tonumber(data.id) or id
+    at = at + vector3(((n * 7) % 5) * 0.002, ((n * 13) % 5) * 0.002, ((n * 3) % 5) * 0.002)
     local obj = spawnObject(data.model, at, heading)
     if not obj then return end
     local scaled = cfg.pieces[data.piece] and cfg.pieces[data.piece].scale

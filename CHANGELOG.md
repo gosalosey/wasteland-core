@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: flickering where pieces meet (owner)
+* Z-fighting: snapped pieces were pulled 0.15 m into each other (needed by the sinor models, not ours), so floors, walls and ceilings shared surfaces. snapOverlap is now 0, and every piece is drawn a tiny fixed amount off its spot (under 1 cm, from its id), so already built bases stop flickering too. Inside the models: metal floor seams, stone trim and gate bands no longer sit exactly on other faces.
+
 ## Fix: floating over ramps (owner)
 * Ramp collision was the last triangle mesh (that kind misbehaved before: bullets went through walls); it is now one tilted solid box like the stairs, with the same size for snapping.
 

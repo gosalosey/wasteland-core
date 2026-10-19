@@ -870,7 +870,7 @@ M = Wasteland.DefineModule({
         -- defaults for the free-form sections
         c.placement = c.placement or {}
         local pd = { rotateStep = 45.0, fineRotateSpeed = 30.0, fineHeightSpeed = 0.15, heightStep = 0.05, maxPlaceDistance = 15.0, snapDistance = 2.0,
-            wallFacesOutward = true, snapOverlap = 0.15 }
+            wallFacesOutward = true, snapOverlap = 0.0 }
         for k, v in pairs(pd) do if c.placement[k] == nil then c.placement[k] = v end end
         c.raid = c.raid or {}
         c.raid.explosionDamage = c.raid.explosionDamage or {}

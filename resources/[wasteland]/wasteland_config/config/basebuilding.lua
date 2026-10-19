@@ -82,7 +82,7 @@ return {
     placement = {
         rotateStep = 45.0, fineRotateSpeed = 30.0, heightStep = 0.05,
         fineHeightSpeed = 0.15,       -- metres a second with the Up / Down arrows
-        maxPlaceDistance = 15.0, snapDistance = 2.0, wallFacesOutward = true, snapOverlap = 0.15,
+        maxPlaceDistance = 15.0, snapDistance = 2.0, wallFacesOutward = true, snapOverlap = 0.0,
         -- Gaps between snapped pieces: metres each piece is pulled in, per piece
         -- (default snapOverlap). Tune in game with Ctrl+wheel while placing
         -- (remembered on that computer), then /bbsnap prints the values to copy here.
