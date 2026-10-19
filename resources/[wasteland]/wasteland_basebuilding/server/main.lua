@@ -143,7 +143,8 @@ local function clientConfig()
         pieces[key] = { label = p.label, model = p.model, category = p.category, family = p.family, hidden = p.hidden,
             openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material,
             interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
-            contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale }
+            contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale,
+            ladder = p.ladder }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -822,6 +823,7 @@ M = Wasteland.DefineModule({
                 scale = { type = 'number', min = 0.2, max = 5, description = 'Drawn this many times bigger (the look only)' },
                 interactDistance = { type = 'number', min = 1, max = 20, description = 'Doors: E works from this far (also from a vehicle)' },
                 passThrough = { type = 'boolean', description = 'Doors: swing through players and vehicles' },
+                ladder = { type = 'boolean', description = 'A ceiling with a ladder hatch: E climbs up or down' },
                 grid = { type = 'table', nullable = true, fields = {
                     width = { type = 'integer', required = true, min = 1, max = 20 },
                     height = { type = 'integer', required = true, min = 1, max = 20 },

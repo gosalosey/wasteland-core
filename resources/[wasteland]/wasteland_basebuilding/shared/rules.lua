@@ -25,6 +25,11 @@ function Rules.snapRules()
     r.ramp = { { anchor = 'foundation', mode = 'edge' } }
     r.ceiling = { { anchor = 'frame', mode = 'top' }, { anchor = 'ceiling', mode = 'edge' } }
     for _, piece in ipairs(WALL_LIKE) do r.ceiling[#r.ceiling + 1] = { anchor = piece, mode = 'top' } end
+    -- A ceiling with a ladder hatch snaps like a ceiling; stairs stand on a
+    -- foundation or on a ceiling (one floor up).
+    r.hatch = {}
+    for _, rule in ipairs(r.ceiling) do r.hatch[#r.hatch + 1] = rule end
+    r.stairs = { { anchor = 'foundation', mode = 'top' }, { anchor = 'ceiling', mode = 'top' } }
     r.door = { { anchor = 'doorway', mode = 'exact' } }
     r.gatedoor = { { anchor = 'gateframe', mode = 'exact' } }
     r.garagedoor = { { anchor = 'frame', mode = 'exact' } }

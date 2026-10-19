@@ -14,6 +14,7 @@ local isPlacing, picking = false, false
 local warnedModels = {}
 local KEY_E, KEY_BACK = 38, 194
 local WALL_LIKE = { wall = true, doorway = true, windowframe = true, halfwall = true }
+local CEILING_LIKE = { ceiling = true, hatch = true } -- placed (snapped) like a ceiling
 
 local meleeWeapons = {}
 for _, w in ipairs({ 'WEAPON_UNARMED', 'WEAPON_HAMMER', 'WEAPON_CROWBAR', 'WEAPON_BAT', 'WEAPON_MACHETE', 'WEAPON_KNIFE',
@@ -34,6 +35,10 @@ RegisterNetEvent('wasteland:basebuilding:client:notice', function(m)
 end)
 
 local function vec(c) return vector3(c.x + 0.0, c.y + 0.0, c.z + 0.0) end
+
+-- Ladder hatches (pieces with `ladder`): the opening and the foot of the
+-- ladder, in the piece's own space (its origin is the ceiling's underside).
+local LADDER = { hole = vector3(1.3, -1.3, 0.2), top = vector3(1.3, -0.35, 0.2), foot = vector3(1.3, -1.15, -3.0) }
 
 local function DrawText3D(coords, text)
     local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z)
@@ -169,7 +174,7 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
                     else
                         zOffset = dims.max.z - newDims.max.z -- its top level with the foundation's top
                     end
-                elseif pieceKey ~= 'foundation' and pieceKey ~= 'ceiling' then
+                elseif pieceKey ~= 'foundation' and not CEILING_LIKE[pieceKey] then
                     zOffset = dims.max.z + (-newDims.min.z) - overlap
                 end
                 for _, e in ipairs({
@@ -179,7 +184,7 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
                     { off = vector3(-leftDist, 0.0, zOffset), angle = 270.0 },
                 }) do
                     candidates[#candidates + 1] = { coords = data.coords + RotateOffset(e.off, data.heading),
-                        heading = (data.heading + e.angle + flip) % 360.0, priority = (pieceKey == 'ceiling') and 1 or 2 }
+                        heading = (data.heading + e.angle + flip) % 360.0, priority = CEILING_LIKE[pieceKey] and 1 or 2 }
                 end
             elseif mode == 'chain' then
                 local rightWidth = dims.max.x + (-newDims.min.x) - overlap
@@ -188,7 +193,7 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
                 candidates[#candidates + 1] = { coords = data.coords + RotateOffset(vector3(-leftWidth, 0.0, 0.0), data.heading), heading = data.heading, priority = 1 }
             elseif mode == 'top' then
                 local localOffset
-                if pieceKey == 'ceiling' then
+                if CEILING_LIKE[pieceKey] then
                     localOffset = vector3(0.0, -newDims.size.y / 2.0, dims.max.z - overlap)
                 else
                     localOffset = vector3(0.0, 0.0, dims.max.z - overlap)
@@ -202,6 +207,61 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
     end
     return candidates
 end
+
+-------------------------------------------------------------------------------
+-- Ladder hatches: E at the foot of the ladder climbs up, E at the opening climbs down
+-------------------------------------------------------------------------------
+
+local climbing = false
+local function climbTo(spot, heading)
+    climbing = true
+    Citizen.CreateThread(function()
+        local ped = PlayerPedId()
+        DoScreenFadeOut(250)
+        while not IsScreenFadedOut() do Wait(0) end
+        RequestCollisionAtCoord(spot.x, spot.y, spot.z)
+        SetEntityCoords(ped, spot.x, spot.y, spot.z, false, false, false, false)
+        SetEntityHeading(ped, heading)
+        Wait(300)
+        DoScreenFadeIn(250)
+        climbing = false
+    end)
+end
+
+Citizen.CreateThread(function()
+    while true do
+        local sleep = 700
+        if cfg and not isPlacing and not climbing then
+            local ped = PlayerPedId()
+            if not IsPedInAnyVehicle(ped, false) and not IsEntityDead(ped) then
+                local pos = GetEntityCoords(ped)
+                for _, data in pairs(propCache) do
+                    local piece = cfg.pieces[data.piece]
+                    if piece and piece.ladder and #(pos.xy - data.coords.xy) < 4.0 then
+                        sleep = 0
+                        local foot = data.coords + RotateOffset(LADDER.foot, data.heading)
+                        local hole = data.coords + RotateOffset(LADDER.hole, data.heading)
+                        local up = #(pos.xy - foot.xy) < 1.0 and math.abs((pos.z - 1.0) - foot.z) < 1.2
+                        local down = #(pos.xy - hole.xy) < 1.1 and math.abs((pos.z - 1.0) - hole.z) < 1.2
+                        if up or down then
+                            DrawText3D((up and foot or hole) + vector3(0.0, 0.0, 1.2), up and '[E] Climb up' or '[E] Climb down')
+                            if IsControlJustReleased(0, KEY_E) then
+                                if up then
+                                    local top = data.coords + RotateOffset(LADDER.top, data.heading)
+                                    climbTo(top + vector3(0.0, 0.0, 1.0), (data.heading + 180.0) % 360.0)
+                                else
+                                    climbTo(foot + vector3(0.0, 0.0, 1.0), data.heading % 360.0)
+                                end
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        Wait(sleep)
+    end
+end)
 
 -------------------------------------------------------------------------------
 -- Left Alt options on pieces and cupboards
@@ -695,7 +755,7 @@ StartPlacement = function(pieceKey)
                 local best, bestDist, bestPrio = nil, nil, nil
                 -- Ceilings: aim anywhere under (or at) the spot it would cover; the
                 -- distance is measured flat, since you look at walls or the floor.
-                local flat = pieceKey == 'ceiling' or (cfg.pieces[pieceKey] and cfg.pieces[pieceKey].family == 'ceiling')
+                local flat = CEILING_LIKE[pieceKey] or (cfg.pieces[pieceKey] and cfg.pieces[pieceKey].family == 'ceiling')
                 local reach = P.snapDistance
                 if flat then
                     local d = GetModelDims(GetHashKey(cfg.pieces[pieceKey].model))

@@ -15,6 +15,14 @@ describe('base building rules', function()
         expect(r.ceiling[1].mode).toBe('top')
     end)
 
+    it('more floors: a ladder hatch snaps like a ceiling; stairs stand on foundations and ceilings', function()
+        local r = Rules.snapRules()
+        expect(#r.hatch).toBe(#r.ceiling)
+        expect(r.hatch[1].anchor).toBe(r.ceiling[1].anchor)
+        expect(r.stairs[1].anchor).toBe('foundation'); expect(r.stairs[1].mode).toBe('top')
+        expect(r.stairs[2].anchor).toBe('ceiling'); expect(r.stairs[2].mode).toBe('top')
+    end)
+
     it('the nearest cupboard covering a point', function()
         local list = { { id = 1, coords = { x = 0, y = 0, z = 0 }, radius = 40 }, { id = 2, coords = { x = 60, y = 0, z = 0 }, radius = 40 } }
         expect(Rules.covering(list, { x = 35, y = 0, z = 0 }).id).toBe(2)

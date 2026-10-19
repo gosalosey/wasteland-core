@@ -1,5 +1,10 @@
 # Changelog
 
+## More floors: stairs and ladder hatches (owner)
+* Stairs: U-shaped stairs that fill one 4 m square and go one floor up (3.2 m), with a landing, steps, stringers and handrails; walkable slopes under the steps. They stand on a foundation or on a ceiling (snap), so floors stack. Leave the square above them open; the top comes out at the front edge onto the next floor.
+* Ladder hatch: a ceiling with an opening in one corner and a ladder down to the floor below; it snaps like a ceiling. E at the foot of the ladder climbs up, E at the opening climbs down.
+* Both in wood, upgrading to stone and metal like the other pieces (basebuilding.lua stairs, hatch and their tiers; `ladder = true` marks a hatch).
+
 ## Ceilings snap again (owner)
 * A ceiling's snap point is its middle, about 2 m from where you aim (a wall top or the floor), so it never came within the 2 m snap distance. Ceilings now snap when you aim anywhere under the spot they would cover (measured flat; the nearest storey wins).
 

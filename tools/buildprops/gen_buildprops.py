@@ -723,6 +723,111 @@ def locker():
     out += box(0.02, -0.25, 0.9, 0.05, -0.21, 1.1, DARK)
     out += box(-0.035, -0.26, 0.95, 0.035, -0.24, 1.03, METAL)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Multiple floors: stairs and a ceiling with a ladder hatch
+# Floor to floor = wall height + ceiling thickness = 3.2 m.
+# ---------------------------------------------------------------------------
+
+FLOOR = H + T  # 3.2
+
+def slope_faces(x0, x1, y_lo, y_hi, z_lo, z_hi, thick, tex):
+    """A sloped slab: its top rises from (y_lo, z_lo) to (y_hi, z_hi)."""
+    def P(y, z): return y, z
+    a = [(x0, y_lo, z_lo), (x1, y_lo, z_lo), (x1, y_hi, z_hi), (x0, y_hi, z_hi)]
+    b = [(x, y, z - thick) for x, y, z in a]
+    dy, dz = y_hi - y_lo, z_hi - z_lo
+    l = math.hypot(dy, dz)
+    sgn = 1 if dy > 0 else -1
+    n_top = (0.0, -dz / l * sgn, abs(dy) / l)
+    n_bot = (0.0, -n_top[1], -n_top[2])
+    faces = []
+    top = a if sgn > 0 else [a[1], a[0], a[3], a[2]]
+    faces.append((n_top, top, tex))
+    bot = [b[3], b[2], b[1], b[0]] if sgn > 0 else [b[2], b[3], b[0], b[1]]
+    faces.append((n_bot, bot, tex))
+    faces.append(((1, 0, 0), [b[1], b[2], a[2], a[1]] if sgn > 0 else [b[2], b[1], a[1], a[2]], tex))
+    faces.append(((-1, 0, 0), [b[3], b[0], a[0], a[3]] if sgn > 0 else [b[0], b[3], a[3], a[0]], tex))
+    return faces
+
+def stairs(mat, seed):
+    rnd = random.Random(seed)
+    tread = {'wood': WOOD, 'stone': STONE, 'metal': DARK}[mat]
+    side = {'wood': BEAM, 'stone': STONE, 'metal': DARK}[mat]
+    out = []
+    half = FLOOR / 2
+    # flight A: left half, up towards +y; landing at the back; flight B: right half, up towards -y
+    fa = (-1.95, -0.05, -1.75, 0.85, 0.0, half)
+    fb = (0.05, 1.95, 0.85, -1.95, half, FLOOR)
+    for (x0, x1, ylo, yhi, zlo, zhi) in (fa, fb):
+        steps = 10
+        run = (yhi - ylo) / steps
+        rise = (zhi - zlo) / steps
+        for i in range(steps):
+            y0 = ylo + run * i
+            z = zlo + rise * (i + 1)
+            ya, yb = sorted((y0, y0 + run))
+            out += box(x0 + 0.02, ya, z - 0.06, x1 - 0.02, yb + (0.02 if run > 0 else 0), z - rnd.uniform(0, 0.012), tread)
+            out += box(x0 + 0.04, ya, zlo if mat == 'stone' else z - 0.24, x1 - 0.04, yb, z - 0.06, side if mat != 'stone' else STONE)
+        # stringers (side beams) along the flight
+        for sx in (x0, x1 - 0.08):
+            ang = math.degrees(math.atan2(zhi - zlo, abs(yhi - ylo)))
+            cy, cz = (ylo + yhi) / 2, (zlo + zhi) / 2 - 0.12
+            out += rbox(sx + 0.04, cy, cz, 0.08, math.hypot(yhi - ylo, zhi - zlo), 0.22, side, rx=ang if yhi > ylo else -ang)
+        # handrail on the outer side
+        rx_ = x0 + 0.04 if x0 < 0 else x1 - 0.04
+        ang = math.degrees(math.atan2(zhi - zlo, abs(yhi - ylo)))
+        out += rbox(rx_, (ylo + yhi) / 2, (zlo + zhi) / 2 + 0.95, 0.06, math.hypot(yhi - ylo, zhi - zlo), 0.06, side, rx=ang if yhi > ylo else -ang)
+        for t in (0.1, 0.5, 0.9):
+            py = ylo + (yhi - ylo) * t; pz = zlo + (zhi - zlo) * t
+            out += box(rx_ - 0.03, py - 0.03, pz, rx_ + 0.03, py + 0.03, pz + 0.95, side)
+    # landing with posts
+    out += box(-1.98, 0.85, half - 0.12, 1.98, 1.98, half, tread)
+    for px in (-1.95, 1.87):
+        for py in (0.88, 1.9):
+            out += box(px, py, 0, px + 0.08, py + 0.08, half - 0.12, side)
+    out += box(-1.98, 1.92, half, 1.98, 1.98, half + 0.95, side)  # back rail
+    return out
+
+HOLE = (0.8, -1.8, 1.8, -0.8)   # x0, y0, x1, y1 of the hatch opening
+
+def hatch(mat, seed):
+    rnd = random.Random(seed)
+    top = {'wood': WOOD, 'stone': STONE, 'metal': METAL}[mat]
+    under = {'wood': BEAM, 'stone': STONE, 'metal': DARK}[mat]
+    hx0, hy0, hx1, hy1 = HOLE
+    out = []
+    regions = [(-h2, -h2, hx0, h2), (hx1, -h2, h2, h2), (hx0, -h2, hx1, hy0), (hx0, hy1, hx1, h2)]
+    for (x0, y0, x1, y1) in regions:
+        if mat == 'wood':
+            x = x0
+            while x < x1 - 0.01:
+                bw = min(rnd.uniform(0.22, 0.3), x1 - x)
+                out += box(x + 0.01, y0, 0.1, x + bw - 0.01, y1, 0.2 - rnd.uniform(0, 0.02), top)
+                x += bw
+        else:
+            out += box(x0, y0, 0.1 if mat == 'stone' else 0.14, x1, y1, 0.2, top)
+    for y in (-h2 + 0.1, -0.6, 0.6, h2 - 0.1):
+        if not (hy0 - 0.06 < y < hy1 + 0.06):
+            out += box(-h2, y - 0.06, 0, h2, y + 0.06, 0.1, under)
+        else:
+            out += box(-h2, y - 0.06, 0, hx0, y + 0.06, 0.1, under)
+            out += box(hx1, y - 0.06, 0, h2, y + 0.06, 0.1, under)
+    # trim round the opening
+    out += box(hx0 - 0.06, hy0 - 0.06, 0, hx0, hy1 + 0.06, 0.22, under)
+    out += box(hx1, hy0 - 0.06, 0, hx1 + 0.06, hy1 + 0.06, 0.22, under)
+    out += box(hx0, hy0 - 0.06, 0, hx1, hy0, 0.22, under)
+    out += box(hx0, hy1, 0, hx1, hy1 + 0.06, 0.22, under)
+    # the ladder, against the opening's -y side, down to the floor below
+    ly = hy0 + 0.08
+    for lx in (hx0 + 0.18, hx1 - 0.18):
+        out += box(lx - 0.03, ly - 0.03, -H, lx + 0.03, ly + 0.03, 0.2, DARK if mat != 'wood' else BEAM)
+    z = -H + 0.3
+    while z < 0.1:
+        out += box(hx0 + 0.15, ly - 0.02, z, hx1 - 0.15, ly + 0.02, z + 0.04, DARK if mat != 'wood' else BEAM)
+        z += 0.3
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -757,6 +862,17 @@ for mat in ('wood', 'stone', 'metal'):
         PIECES.append((f'wl_bp_{name}_{mat}', styled_wall(mat, seed + len(name), hole), solid_wall(hole), MATID[mat]))
     PIECES.append((f'wl_bp_ceiling_{mat}', ceiling(mat, seed + 3), cbox(-h2, -h2, 0, h2, h2, T), MATID[mat]))
     PIECES.append((f'wl_bp_ramp_{mat}', ramp(mat, seed + 4), [('mesh', wedge(-h2, -h2, h2, h2, 1.0))], MATID[mat]))
+    half = FLOOR / 2
+    PIECES.append((f'wl_bp_stairs_{mat}', stairs(mat, seed + 5),
+        [('mesh', slope_faces(-1.95, -0.05, -1.75, 0.85, 0.0, half, 0.3, None)),
+         ('mesh', slope_faces(0.05, 1.95, 0.85, -1.95, half, FLOOR, 0.3, None))]
+        + cbox(-1.98, 0.85, half - 0.12, 1.98, 1.98, half)
+        + cbox(-1.98, 1.92, half, 1.98, 1.98, half + 0.95)
+        + cbox(-2.0, -2.0, 0, 2.0, 2.0, 0.001), MATID[mat]))
+    hx0, hy0, hx1, hy1 = HOLE
+    PIECES.append((f'wl_bp_hatch_{mat}', hatch(mat, seed + 6),
+        cbox(-h2, -h2, 0, hx0, h2, T) + cbox(hx1, -h2, 0, h2, h2, T) + cbox(hx0, -h2, 0, hx1, hy0, T) + cbox(hx0, hy1, 0, hx1, h2, T)
+        + cbox(hx0 + 0.15, hy0 + 0.05, -H, hx0 + 0.21, hy0 + 0.11, 0.0) + cbox(hx1 - 0.21, hy0 + 0.05, -H, hx1 - 0.15, hy0 + 0.11, 0.0), MATID[mat]))
 PIECES += [
     ('wl_bp_door_wood', door('wood'), cbox(0, -0.04, 0.02, 1.16, 0.04, 2.17), 70),
     ('wl_bp_door_metal', door('metal'), cbox(0, -0.04, 0.02, 1.16, 0.04, 2.17), 56),

@@ -108,6 +108,12 @@ return {
         ceiling = { label = 'Ceiling', model = 'wl_bp_ceiling_wood', category = 'structure', cost = { wood_planks = 6 }, health = 500, material = 'wood' },
         frame = { label = 'Frame', model = 'wl_bp_frame_wood', category = 'structure', cost = { wood_planks = 5, metal_sheet = 1 }, health = 500, material = 'wood' },
         ramp = { label = 'Ramp', model = 'wl_bp_ramp_wood', category = 'structure', cost = { wood_planks = 5 }, health = 500, material = 'wood' },
+        -- More floors: stairs stand on a foundation or a ceiling and go one floor
+        -- up (leave the square above them open); a ladder hatch is a ceiling with
+        -- an opening and a ladder: E at the ladder climbs up, E at the opening down.
+        stairs = { label = 'Stairs', model = 'wl_bp_stairs_wood', category = 'structure', cost = { wood_planks = 14 }, health = 500, material = 'wood' },
+        hatch = { label = 'Ladder Hatch', model = 'wl_bp_hatch_wood', category = 'structure', cost = { wood_planks = 8 }, health = 500, material = 'wood',
+            family = 'ceiling', ladder = true },
         gateframe = { label = 'Gate Frame', model = 'wl_bp_gate_frame', category = 'structure', cost = { wood_planks = 20 }, health = 700, material = 'wood' },
         door = { label = 'Wooden Door', model = 'wl_bp_door_wood', category = 'door', cost = { wood_planks = 10 }, health = 600,
             material = 'wood', openAngleOffset = 100.0 },
@@ -165,6 +171,10 @@ return {
         ceiling_metal = { label = 'Metal Ceiling', model = 'wl_bp_ceiling_metal', category = 'structure', health = 2000, material = 'metal', family = 'ceiling', hidden = true },
         frame_metal = { label = 'Metal Frame', model = 'wl_bp_frame_metal', category = 'structure', health = 2000, material = 'metal', family = 'frame', hidden = true },
         ramp_metal = { label = 'Metal Ramp', model = 'wl_bp_ramp_metal', category = 'structure', health = 2000, material = 'metal', family = 'ramp', hidden = true },
+        stairs_stone = { label = 'Stone Stairs', model = 'wl_bp_stairs_stone', category = 'structure', health = 1000, material = 'stone', family = 'stairs', hidden = true },
+        stairs_metal = { label = 'Metal Stairs', model = 'wl_bp_stairs_metal', category = 'structure', health = 2000, material = 'metal', family = 'stairs', hidden = true },
+        hatch_stone = { label = 'Stone Ladder Hatch', model = 'wl_bp_hatch_stone', category = 'structure', health = 1000, material = 'stone', family = 'ceiling', ladder = true, hidden = true },
+        hatch_metal = { label = 'Metal Ladder Hatch', model = 'wl_bp_hatch_metal', category = 'structure', health = 2000, material = 'metal', family = 'ceiling', ladder = true, hidden = true },
     },
 
     upgrades = {
@@ -183,6 +193,10 @@ return {
         ceiling_stone = { next = 'ceiling_metal', cost = { metal_sheet = 5 } },
         frame = { next = 'frame_metal', cost = { metal_sheet = 4 } },
         ramp = { next = 'ramp_metal', cost = { metal_sheet = 4 } },
+        stairs = { next = 'stairs_stone', cost = { stone = 10 } },
+        stairs_stone = { next = 'stairs_metal', cost = { metal_sheet = 6 } },
+        hatch = { next = 'hatch_stone', cost = { stone = 7 } },
+        hatch_stone = { next = 'hatch_metal', cost = { metal_sheet = 4 } },
         door = { next = 'metaldoor', cost = { metal_sheet = 6 } },
     },
 
