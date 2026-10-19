@@ -768,8 +768,16 @@ def stairs(mat, seed):
             y0 = ylo + run * i
             z = zlo + rise * (i + 1)
             ya, yb = sorted((y0, y0 + run))
-            out += box(x0 + 0.02, ya, z - 0.06, x1 - 0.02, yb + (0.02 if run > 0 else 0), z - rnd.uniform(0, 0.012), tread)
-            out += box(x0 + 0.04, ya, zlo if mat == 'stone' else z - 0.24, x1 - 0.04, yb, z - 0.06, side if mat != 'stone' else STONE)
+            # tread on top, riser under its front edge: they meet exactly (no overlap, no flicker)
+            out += box(x0 + 0.02, ya, z - 0.06, x1 - 0.02, yb, z, tread)
+            front = (ya, ya + 0.05) if run > 0 else (yb - 0.05, yb)
+            out += box(x0 + 0.05, front[0], z - rise, x1 - 0.05, front[1], z - 0.06, side)
+        # a sloped slab under the flight (concrete-stair look for stone, a backing board otherwise)
+        ang = math.degrees(math.atan2(zhi - zlo, abs(yhi - ylo)))
+        slab = 0.22 if mat == 'stone' else 0.04
+        cy, cz = (ylo + yhi) / 2, (zlo + zhi) / 2 - rise - slab / 2
+        out += rbox((x0 + x1) / 2, cy, cz, x1 - x0 - 0.14, math.hypot(yhi - ylo, zhi - zlo), slab, side,
+                    rx=ang if yhi > ylo else -ang)
         # stringers (side beams) along the flight
         for sx in (x0, x1 - 0.08):
             ang = math.degrees(math.atan2(zhi - zlo, abs(yhi - ylo)))

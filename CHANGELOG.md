@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: stone stairs (owner)
+* Stone steps were solid blocks down to the ground (a huge mass, the upper flight a block in mid air, flickering where the blocks met). Steps are now treads on risers that meet exactly (no overlap, every material), with a sloped slab under each flight (thick concrete for stone).
+
 ## Fix: flickering where pieces meet (owner)
 * Z-fighting: snapped pieces were pulled 0.15 m into each other (needed by the sinor models, not ours), so floors, walls and ceilings shared surfaces. snapOverlap is now 0, and every piece is drawn a tiny fixed amount off its spot (under 1 cm, from its id), so already built bases stop flickering too. Inside the models: metal floor seams, stone trim and gate bands no longer sit exactly on other faces.
 
