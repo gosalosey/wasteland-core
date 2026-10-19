@@ -56,7 +56,12 @@ Kill a deer or boar, then hold **Left Alt** on it with a knife in your pockets t
 * The area around a new cupboard is **zombie-free for one hour**: a green ring and a timer show it. After that, zombies can come in.
 * Walls, doors, gates, window bars and storage snap together. Upgrade wood to stone to metal (Left Alt on a piece).
 * While placing a piece: the wheel turns it 45°, the arrows turn and raise it slowly, and Tab turns snapping on and off.
-* **Defences:** barbed wire and spike strips hurt and slow zombies, and sandbags are a tough wall.
+* **More floors:** put ceilings on your walls (aim anywhere inside the room), then build walls along the ceiling edges. **Stairs** go on a foundation or a ceiling and lead one floor up (leave the square above them open). A **ladder hatch** is a ceiling with a ladder: press **E** at the ladder to climb up, **E** at the opening to climb down.
+* **Foundations** reach down into the ground, so they look right on slopes.
+* **Move:** Left Alt on a placed piece (or your tool cupboard) and choose **Move**. Storage keeps what is inside. A cupboard can only move as far as keeps your whole base within its reach.
+* **Doors** swing through you instead of pushing you away.
+* **Defences:** barbed wire and spike strips hurt and slow zombies, and sandbags are a tough wall. The **High External Wall** builds a tall metal perimeter; the barbed wire along its top hurts anyone (player or zombie) who touches it, so climbing over costs blood.
+* **Power:** a **Generator** runs on fuel from a jerry can (Left Alt: Add fuel, Turn on / off, Check fuel; a full 20 L tank lasts 10 hours). While it runs, **Work Lights** and **Hanging Lamps** within 40 m light up. It is loud: zombies nearby come to look.
 * **Upkeep:** keep wood, stone and metal in the cupboard's supplies, or your base slowly decays.
 * **No cupboard?** You can still build walls, doors and defences to barricade an old building. They're yours only, and they disappear after 12 hours unless a cupboard claims them.
 

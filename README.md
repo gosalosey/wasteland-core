@@ -21,7 +21,7 @@
 
 That's it. Wasteland creates its own database tables. The recipe also installs the database driver (oxmysql), voice chat (pma-voice), the zombie sounds and a ready `server.cfg`.
 
-> **Base building props are included and free.** The building pieces (foundations, walls, doorways, window frames, ceilings, ramps, doors, gates, garage doors, window bars) come from **wasteland_buildprops**: original models and textures made for Wasteland, in wood, stone and metal. Nothing to buy. Own the paid sinor-buildingProps-v2 pack, or have your own props? You can still use them: see [docs/INSTALL.md](docs/INSTALL.md#using-other-building-props). To switch base building off, set `basebuilding = false` in `modules.lua`.
+> **Base building props are included and free.** The building pieces (foundations, walls, doorways, window frames, ceilings, ramps, stairs, ladder hatches, doors, gates, garage doors, window bars, storage, a high external wall, a generator and lights) come from **wasteland_buildprops**: original models and textures made for Wasteland, in wood, stone and metal. Nothing to buy. Own the paid sinor-buildingProps-v2 pack, or have your own props? You can still use them: see [docs/INSTALL.md](docs/INSTALL.md#using-other-building-props). To switch base building off, set `basebuilding = false` in `modules.lua`.
 
 ![Wasteland building props](docs/images/buildprops.png)
 
@@ -40,7 +40,7 @@ Installing by hand, adding admins, or updating: see **[docs/INSTALL.md](docs/INS
 | **Hunt** | Deer and boar. Harvest them with a knife and cook the meat on a campfire. |
 | **Trade** | Safe camps with traders (who buy anything), a medic and jobs. Trade face to face with other players. |
 | **Drive** | Fix up wrecks with batteries, wheels, engine parts and fuel. New players start with a **Full vehicle repair** for a quick first car. |
-| **Build** | Claim land with a tool cupboard. Build walls, doors, gates, window bars, storage, barbed wire, spike strips and sandbags. Or barricade an old building for the night without a cupboard. |
+| **Build** | Claim land with a tool cupboard and build in wood, stone or metal: walls, doors, gates, window bars, storage, **stairs and ladder hatches for more floors**, a **high external wall with barbed wire** that hurts anyone climbing over, and a **generator** that powers work lights and hanging lamps. Move any placed piece later (storage keeps its contents). Or barricade an old building for the night without a cupboard. |
 | **Team up** | Groups with a shared radio channel and map markers, proximity voice chat, and **/help** to call everyone for help. |
 | **Grow** | Six skills that level up as you play (F9), and 22 milestones to tick off in the Survivor's guide (F2). |
 
