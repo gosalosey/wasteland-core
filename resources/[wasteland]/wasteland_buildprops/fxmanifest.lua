@@ -11,3 +11,6 @@ version '1.0.0'
 -- wl_bp_garage_wood, wl_bp_windowbar_*, wl_bp_toolcupboard.
 -- Rebuilt with tools/buildprops (see its README).
 data_file 'DLC_ITYP_REQUEST' 'stream/wl_buildprops.ytyp'
+
+-- Collision test walls (wl_bp_test_a .. d): place them with /propplacer.
+data_file 'DLC_ITYP_REQUEST' 'stream/wl_bp_tests.ytyp'
