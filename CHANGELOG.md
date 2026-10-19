@@ -1,5 +1,8 @@
 # Changelog
 
+## Foundations reach into the ground (owner)
+* Foundations (wood, stone, metal) now extend 4 m below their base: sides, corner posts and collision. On slopes, or when snapped out from higher ground, there is no gap under them; on flat ground the extra part is buried. Snapping only uses the top and sides, so it is unchanged.
+
 ## /adminbuild (owner)
 * Admins (wasteland.admin) type /adminbuild to build, upgrade and repair for free: no materials needed, the build menu opens without a Building plan. No refunds while it is on (no farming materials). Claim rules stay. /adminbuild again turns it off; it also ends when the admin leaves.
 

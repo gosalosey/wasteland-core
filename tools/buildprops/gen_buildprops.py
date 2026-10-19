@@ -492,11 +492,13 @@ def styled_wall(mat, seed, hole=None, height=H, width=S):
         out += box(hx0 - 0.12, -0.11, hz0 - 0.06, hx1 + 0.12, 0.11, hz0, tt)
     return out
 
+DEEP = 4.0  # foundations reach this far below their base (fills the gap on slopes; buried on flat ground)
+
 def foundation(mat, seed):
     rnd = random.Random(seed)
     out = []
     if mat == 'wood':
-        out += box(-h2 + 0.05, -h2 + 0.05, 0, h2 - 0.05, h2 - 0.05, 0.88, BEAM)
+        out += box(-h2 + 0.05, -h2 + 0.05, -DEEP, h2 - 0.05, h2 - 0.05, 0.88, BEAM)
         # deck boards across the top
         x = -h2
         while x < h2 - 0.01:
@@ -505,31 +507,31 @@ def foundation(mat, seed):
             x += bw
         # skirting boards round the sides and corner posts
         for sgn in (-1, 1):
-            out += box(-h2, sgn * h2 - (0.05 if sgn > 0 else 0), 0.05, h2, sgn * h2 + (0.05 if sgn < 0 else 0), 0.85, WOOD)
-            out += box(sgn * h2 - (0.05 if sgn > 0 else 0), -h2, 0.05, sgn * h2 + (0.05 if sgn < 0 else 0), h2, 0.85, WOOD)
+            out += box(-h2, sgn * h2 - (0.05 if sgn > 0 else 0), -DEEP, h2, sgn * h2 + (0.05 if sgn < 0 else 0), 0.85, WOOD)
+            out += box(sgn * h2 - (0.05 if sgn > 0 else 0), -h2, -DEEP, sgn * h2 + (0.05 if sgn < 0 else 0), h2, 0.85, WOOD)
         for cx in (-h2, h2 - 0.18):
             for cy in (-h2, h2 - 0.18):
-                out += box(cx, cy, 0, cx + 0.18, cy + 0.18, 0.9, BEAM)
+                out += box(cx, cy, -DEEP, cx + 0.18, cy + 0.18, 0.9, BEAM)
     elif mat == 'metal':
-        out += box(-h2 + 0.06, -h2 + 0.06, 0, h2 - 0.06, h2 - 0.06, 0.92, DARK)
+        out += box(-h2 + 0.06, -h2 + 0.06, -DEEP, h2 - 0.06, h2 - 0.06, 0.92, DARK)
         out += box(-h2, -h2, 0.92, h2, h2, 1.0, DARK)  # floor plate
         for sgn in (-1, 1):
-            out += box(-h2, sgn * h2 - (0.06 if sgn > 0 else 0), 0.06, h2, sgn * h2 + (0.06 if sgn < 0 else 0), 0.9, METAL)
-            out += box(sgn * h2 - (0.06 if sgn > 0 else 0), -h2, 0.06, sgn * h2 + (0.06 if sgn < 0 else 0), h2, 0.9, METAL)
+            out += box(-h2, sgn * h2 - (0.06 if sgn > 0 else 0), -DEEP, h2, sgn * h2 + (0.06 if sgn < 0 else 0), 0.9, METAL)
+            out += box(sgn * h2 - (0.06 if sgn > 0 else 0), -h2, -DEEP, sgn * h2 + (0.06 if sgn < 0 else 0), h2, 0.9, METAL)
         for cx in (-h2, h2 - 0.14):
             for cy in (-h2, h2 - 0.14):
-                out += box(cx, cy, 0, cx + 0.14, cy + 0.14, 1.0, DARK)
+                out += box(cx, cy, -DEEP, cx + 0.14, cy + 0.14, 1.0, DARK)
         for i in range(-3, 4):  # welded seams on the plate
             out += box(i * 0.55 - 0.015, -h2 + 0.1, 1.0, i * 0.55 + 0.015, h2 - 0.1, 1.006, DARK)
     else:
-        out += box(-h2 + 0.04, -h2 + 0.04, 0, h2 - 0.04, h2 - 0.04, 0.9, STONE)
+        out += box(-h2 + 0.04, -h2 + 0.04, -DEEP, h2 - 0.04, h2 - 0.04, 0.9, STONE)
         for ix in range(4):  # paving slabs, slightly uneven
             for iy in range(4):
                 x0 = -h2 + ix; y0 = -h2 + iy
                 out += box(x0 + 0.01, y0 + 0.01, 0.9, x0 + 0.99, y0 + 0.99, 1.0 - rnd.uniform(0, 0.025), STONE)
         for sgn in (-1, 1):
-            out += box(-h2, sgn * h2 - (0.04 if sgn > 0 else 0), 0, h2, sgn * h2 + (0.04 if sgn < 0 else 0), 0.9, STONE)
-            out += box(sgn * h2 - (0.04 if sgn > 0 else 0), -h2, 0, sgn * h2 + (0.04 if sgn < 0 else 0), h2, 0.9, STONE)
+            out += box(-h2, sgn * h2 - (0.04 if sgn > 0 else 0), -DEEP, h2, sgn * h2 + (0.04 if sgn < 0 else 0), 0.9, STONE)
+            out += box(sgn * h2 - (0.04 if sgn > 0 else 0), -h2, -DEEP, sgn * h2 + (0.04 if sgn < 0 else 0), h2, 0.9, STONE)
     return out
 
 def ceiling(mat, seed):
@@ -880,7 +882,7 @@ EXTENT = {}  # model -> (min, max) when the size the game sees is not the collis
 seed = 100
 for mat in ('wood', 'stone', 'metal'):
     seed += 10
-    PIECES.append((f'wl_bp_foundation_{mat}', foundation(mat, seed), cbox(-h2, -h2, 0, h2, h2, 1.0), MATID[mat]))
+    PIECES.append((f'wl_bp_foundation_{mat}', foundation(mat, seed), cbox(-h2, -h2, -DEEP, h2, h2, 1.0), MATID[mat]))
     PIECES.append((f'wl_bp_wall_{mat}', styled_wall(mat, seed + 1), solid_wall(), MATID[mat]))
     PIECES.append((f'wl_bp_halfwall_{mat}', styled_wall(mat, seed + 2, height=H / 2), solid_wall(height=H / 2), MATID[mat]))
     for name, hole in HOLES.items():
