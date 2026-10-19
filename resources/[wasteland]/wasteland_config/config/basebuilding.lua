@@ -168,7 +168,9 @@ return {
         -- `health` health back and `infection` taken off the zombie infection.
         -- Moving, X, or being hurt gets you up.
         bed = { label = 'Bed', model = 'wl_bp_bed', category = 'furniture', cost = { wood_planks = 8, rag = 4 }, health = 300, material = 'wood',
-            bed = { tickSeconds = 10, health = 2, infection = 1.5 } },
+            -- lie: where you lie (metres from the bed's middle; up = above the floor) and
+            -- turn (degrees from the bed's heading; your head at the pillow end)
+            bed = { tickSeconds = 10, health = 2, infection = 1.5, lie = { x = 0.0, y = 0.0, up = 0.47, turn = 90.0 } } },
         spikes = { label = 'Spike Strip', model = 'p_stinger_piece_01', scale = 2.0,
             category = 'defense', cost = { scrap_metal = 6 }, health = 400, material = 'metal',
             contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 2.5 },

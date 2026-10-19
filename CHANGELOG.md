@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: lying in bed (owner)
+* The sleeping animation had its own offset (you sank into the mattress, across the bed). Now a flat lying-on-your-back animation, placed on the mattress top, held still while resting, head at the pillow end. bed.lie (x, y, up, turn) in basebuilding.lua tunes it.
+
 ## Beds (owner)
 * New Furniture section with a Bed (8 wood planks, 4 rags): two pallets, a stained mattress, a pillow and a blanket. Left Alt > Lie down and rest: your character lies on it; every 10 seconds you get 2 health back and the zombie infection drops by 1.5. Moving, X, or being hurt gets you up. Only those with access to the base can use it, one person per bed. Settings: bed.tickSeconds, health, infection in basebuilding.lua.
 

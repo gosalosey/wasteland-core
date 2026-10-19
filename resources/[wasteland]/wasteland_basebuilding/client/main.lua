@@ -669,12 +669,14 @@ PoweredAt = powered
 
 -- Lying in a bed: on top of the mattress, an idle sleeping animation; moving,
 -- X or being hurt gets you up (and tells the server).
-local REST_DICT, REST_ANIM = 'timetable@tracy@sleep@', 'idle_c'
+-- lying flat on the back, no built-in offset (the animation's root is at the floor)
+local REST_DICT, REST_ANIM = 'amb@world_human_sunbathe@male@back@base', 'base'
 local function getUp(silent)
     if not restingOn then return end
     TriggerServerEvent('wasteland:basebuilding:server:rest', restingOn, false)
     restingOn = nil
     local ped = PlayerPedId()
+    FreezeEntityPosition(ped, false)
     ClearPedTasks(ped)
     if not silent then notify('You get up.') end
 end
@@ -686,9 +688,13 @@ RegisterNetEvent('wasteland:basebuilding:client:rest', function(id)
     RequestAnimDict(REST_DICT)
     local untilT = GetGameTimer() + 2000
     while not HasAnimDictLoaded(REST_DICT) and GetGameTimer() < untilT do Wait(0) end
-    local at = data.coords + vector3(0.0, 0.0, 0.95)
-    SetEntityCoords(ped, at.x, at.y, at.z, false, false, false, false)
-    SetEntityHeading(ped, (data.heading + 270.0) % 360.0)
+    local piece = cfg.pieces[data.piece]
+    local lie = (piece and piece.bed and piece.bed.lie) or { x = 0.0, y = 0.0, up = 0.47, turn = 90.0 }
+    -- the ped's position is about 1 m above its feet; the animation lies at the feet
+    local at = data.coords + RotateOffset(vector3(lie.x or 0.0, lie.y or 0.0, 0.0), data.heading) + vector3(0.0, 0.0, (lie.up or 0.47) + 1.0)
+    SetEntityCoordsNoOffset(ped, at.x, at.y, at.z, false, false, false)
+    SetEntityHeading(ped, (data.heading + (lie.turn or 90.0)) % 360.0)
+    FreezeEntityPosition(ped, true) -- held on the mattress while resting
     TaskPlayAnim(ped, REST_DICT, REST_ANIM, 2.0, 2.0, -1, 1, 0, false, false, false)
     restingOn = id
     notify('Resting: you heal slowly and the infection eases. Move or press X to get up.')
