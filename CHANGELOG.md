@@ -1,5 +1,10 @@
 # Changelog
 
+## Building props: a zombie-survival look (owner)
+* Every wasteland_buildprops piece was rebuilt with detail: wood walls of uneven, slightly crooked planks (some missing) on studs with a cross brace; metal walls of overlapping rusty corrugated sheets on a frame, bolted, with patch plates; stone walls with a chipped capstone row, a footing and blocks sticking out; trim posts and sills round doorways and windows. Foundations: plank decks on posts, welded floor plates on corrugated sides, or paving slabs. Braced wooden doors with iron hinges, a barred metal door with a peep hole, a strapped garage door, crossed boards or rebar window bars, a gate frame with corner braces and spikes, a braced corrugated gate, a padlocked cupboard.
+* Textures: a new dark beam wood, and old blood splatters and spray-painted marks on wood, metal and stone.
+* Only the looks changed: collision and sizes are the same as before (looks and collision are now separate), so snapping and already built bases are unaffected. Preview: docs/images/buildprops.png.
+
 ## Free building props of our own: base building no longer needs a paid pack (owner)
 * New resource wasteland_buildprops: 32 original models made for Wasteland: foundation, wall, half wall, doorway, window frame, ceiling, garage frame and ramp in wood, stone and metal; wooden and metal doors, a garage door, a gate frame and gate, wooden and metal window bars, and the tool cupboard. Each has its own collision (with wood, stone or metal surface sounds and bullet effects) and uses four textures painted by code (weathered planks, rusty corrugated metal, stone blocks, dark metal). Grid 4 m, walls 3 m tall; doors pivot on their hinges.
 * basebuilding.lua now uses them (propsResource = 'wasteland_buildprops'); the paid sinor-buildingProps-v2 pack still works if you set it back. server.cfg ensures wasteland_buildprops before wasteland_basebuilding.

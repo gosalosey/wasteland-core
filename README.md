@@ -23,6 +23,8 @@ That's it. Wasteland creates its own database tables. The recipe also installs t
 
 > **Base building props are included and free.** The building pieces (foundations, walls, doorways, window frames, ceilings, ramps, doors, gates, garage doors, window bars) come from **wasteland_buildprops**: original models and textures made for Wasteland, in wood, stone and metal. Nothing to buy. Own the paid sinor-buildingProps-v2 pack, or have your own props? You can still use them: see [docs/INSTALL.md](docs/INSTALL.md#using-other-building-props). To switch base building off, set `basebuilding = false` in `modules.lua`.
 
+![Wasteland building props](docs/images/buildprops.png)
+
 Installing by hand, adding admins, or updating: see **[docs/INSTALL.md](docs/INSTALL.md)**.
 
 ---
