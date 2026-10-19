@@ -1,9 +1,12 @@
 -- Base building (module "basebuilding", resource wasteland_basebuilding).
 --
--- The building pieces need props (3D models). By default they come from the
--- paid "sinor-buildingProps-v2" pack by SinorSystem (https://sinorsystem.tebex.io/,
--- not included; tied to the Cfx account that bought it). Put it in resources
--- and `ensure` it before wasteland_basebuilding.
+-- The building pieces need props (3D models). By default they come from
+-- wasteland_buildprops: free, original models made for Wasteland (wood, stone
+-- and metal), included. Ensure it before wasteland_basebuilding.
+--
+-- The paid "sinor-buildingProps-v2" pack by SinorSystem (https://sinorsystem.tebex.io/)
+-- still works if you own it: set propsResource = 'sinor-buildingProps-v2' and
+-- use its model names (sinor_prop_wall_wood, ...).
 --
 -- YOUR OWN PROPS instead: stream them in a resource of your own (ensure it
 -- before wasteland_basebuilding), set `propsResource` below to its name, and
@@ -36,7 +39,7 @@ return {
 
     -- The resource with the building props ('' = none to check, e.g. GTA's
     -- own props). Only used to warn at start when it is not running.
-    propsResource = 'sinor-buildingProps-v2',
+    propsResource = 'wasteland_buildprops',
 
     -- radius: the claim (building, access). safeRadius: zombies stay out of
     -- this many metres around the cupboard (no spawning, chasing or hits; ones
@@ -94,33 +97,33 @@ return {
     categoryLabels = { structure = 'Structures', door = 'Doors', garage = 'Garage', defense = 'Defenses', stash = 'Storage', cupboard = 'Tool Cupboard' },
 
     pieces = {
-        toolcupboard = { label = 'Tool Cupboard', model = 'sinor_prop_toolcupboard', category = 'cupboard',
+        toolcupboard = { label = 'Tool Cupboard', model = 'wl_bp_toolcupboard', category = 'cupboard',
             cost = { wood_planks = 10, scrap_metal = 5 }, health = 500, material = 'wood' },
-        foundation = { label = 'Foundation', model = 'sinor_prop_foundation_square_wood', category = 'structure',
+        foundation = { label = 'Foundation', model = 'wl_bp_foundation_wood', category = 'structure',
             cost = { wood_planks = 8 }, health = 500, material = 'wood' },
-        wall = { label = 'Wall', model = 'sinor_prop_wall_wood', category = 'structure', cost = { wood_planks = 6 }, health = 500, material = 'wood' },
-        doorway = { label = 'Doorway', model = 'sinor_prop_doorway_wood', category = 'structure', cost = { wood_planks = 5 }, health = 500, material = 'wood' },
-        windowframe = { label = 'Window Frame', model = 'sinor_prop_windowframe_wood', category = 'structure', cost = { wood_planks = 5 }, health = 500, material = 'wood' },
-        halfwall = { label = 'Half Wall', model = 'sinor_prop_halfwall_wood', category = 'structure', cost = { wood_planks = 4 }, health = 500, material = 'wood' },
-        ceiling = { label = 'Ceiling', model = 'sinor_prop_ceiling_square_wood', category = 'structure', cost = { wood_planks = 6 }, health = 500, material = 'wood' },
-        frame = { label = 'Frame', model = 'sinor_prop_frame_wood', category = 'structure', cost = { wood_planks = 5, metal_sheet = 1 }, health = 500, material = 'wood' },
-        ramp = { label = 'Ramp', model = 'sinor_prop_ramp_wood', category = 'structure', cost = { wood_planks = 5 }, health = 500, material = 'wood' },
-        gateframe = { label = 'Gate Frame', model = 'sinor_prop_gate_frame', category = 'structure', cost = { wood_planks = 20 }, health = 700, material = 'wood' },
-        door = { label = 'Wooden Door', model = 'sinor_prop_door_wood', category = 'door', cost = { wood_planks = 10 }, health = 600,
+        wall = { label = 'Wall', model = 'wl_bp_wall_wood', category = 'structure', cost = { wood_planks = 6 }, health = 500, material = 'wood' },
+        doorway = { label = 'Doorway', model = 'wl_bp_doorway_wood', category = 'structure', cost = { wood_planks = 5 }, health = 500, material = 'wood' },
+        windowframe = { label = 'Window Frame', model = 'wl_bp_windowframe_wood', category = 'structure', cost = { wood_planks = 5 }, health = 500, material = 'wood' },
+        halfwall = { label = 'Half Wall', model = 'wl_bp_halfwall_wood', category = 'structure', cost = { wood_planks = 4 }, health = 500, material = 'wood' },
+        ceiling = { label = 'Ceiling', model = 'wl_bp_ceiling_wood', category = 'structure', cost = { wood_planks = 6 }, health = 500, material = 'wood' },
+        frame = { label = 'Frame', model = 'wl_bp_frame_wood', category = 'structure', cost = { wood_planks = 5, metal_sheet = 1 }, health = 500, material = 'wood' },
+        ramp = { label = 'Ramp', model = 'wl_bp_ramp_wood', category = 'structure', cost = { wood_planks = 5 }, health = 500, material = 'wood' },
+        gateframe = { label = 'Gate Frame', model = 'wl_bp_gate_frame', category = 'structure', cost = { wood_planks = 20 }, health = 700, material = 'wood' },
+        door = { label = 'Wooden Door', model = 'wl_bp_door_wood', category = 'door', cost = { wood_planks = 10 }, health = 600,
             material = 'wood', openAngleOffset = 100.0 },
-        metaldoor = { label = 'Metal Door', model = 'sinor_prop_door_metal', category = 'door', cost = { metal_sheet = 6 }, health = 1500,
+        metaldoor = { label = 'Metal Door', model = 'wl_bp_door_metal', category = 'door', cost = { metal_sheet = 6 }, health = 1500,
             material = 'metal', openAngleOffset = 100.0, family = 'door', hidden = true },
         -- interactDistance: E works from this far (metres), also from a vehicle;
         -- passThrough: swings through players and vehicles instead of pushing them.
-        gatedoor = { label = 'Gate Door', model = 'sinor_prop_gate_door', category = 'door', cost = { wood_planks = 20, metal_sheet = 2 }, health = 700,
+        gatedoor = { label = 'Gate Door', model = 'wl_bp_gate_door', category = 'door', cost = { wood_planks = 20, metal_sheet = 2 }, health = 700,
             material = 'wood', openAngleOffset = 100.0, interactDistance = 8.0, passThrough = true },
         -- Garage doors roll up when opened (openLift: metres; leave it out to use the door's own height).
-        garagedoor = { label = 'Garage Door', model = 'sinor_prop_garage_wood', category = 'garage', cost = { wood_planks = 20 }, health = 600,
+        garagedoor = { label = 'Garage Door', model = 'wl_bp_garage_wood', category = 'garage', cost = { wood_planks = 20 }, health = 600,
             material = 'wood' },
         -- Window bars snap into a window frame (wood upgrades to metal).
-        windowbar = { label = 'Window Bars', model = 'sinor_prop_windowbar_wood', category = 'structure', cost = { wood_planks = 4 },
+        windowbar = { label = 'Window Bars', model = 'wl_bp_windowbar_wood', category = 'structure', cost = { wood_planks = 4 },
             health = 400, material = 'wood' },
-        windowbar_metal = { label = 'Metal Window Bars', model = 'sinor_prop_windowbar_metal', category = 'structure', health = 1200,
+        windowbar_metal = { label = 'Metal Window Bars', model = 'wl_bp_windowbar_metal', category = 'structure', health = 1200,
             material = 'metal', family = 'windowbar', hidden = true },
 
         -- Defenses (placed anywhere on your land). Zombies that walk into
@@ -148,20 +151,20 @@ return {
             health = 400, material = 'wood', grid = { width = 8, height = 5, maxWeight = 120 } },
 
         -- Upgrade tiers (reached through `upgrades`, not built directly)
-        foundation_stone = { label = 'Stone Foundation', model = 'sinor_prop_foundation_square_stone', category = 'structure', health = 1000, material = 'stone', family = 'foundation', hidden = true },
-        foundation_metal = { label = 'Metal Foundation', model = 'sinor_prop_foundation_square_metal', category = 'structure', health = 2000, material = 'metal', family = 'foundation', hidden = true },
-        wall_stone = { label = 'Stone Wall', model = 'sinor_prop_wall_stone', category = 'structure', health = 1000, material = 'stone', family = 'wall', hidden = true },
-        wall_metal = { label = 'Metal Wall', model = 'sinor_prop_wall_metal', category = 'structure', health = 2000, material = 'metal', family = 'wall', hidden = true },
-        doorway_stone = { label = 'Stone Doorway', model = 'sinor_prop_doorway_stone', category = 'structure', health = 1000, material = 'stone', family = 'doorway', hidden = true },
-        doorway_metal = { label = 'Metal Doorway', model = 'sinor_prop_doorway_metal', category = 'structure', health = 2000, material = 'metal', family = 'doorway', hidden = true },
-        windowframe_stone = { label = 'Stone Window Frame', model = 'sinor_prop_windowframe_stone', category = 'structure', health = 1000, material = 'stone', family = 'windowframe', hidden = true },
-        windowframe_metal = { label = 'Metal Window Frame', model = 'sinor_prop_windowframe_metal', category = 'structure', health = 2000, material = 'metal', family = 'windowframe', hidden = true },
-        halfwall_stone = { label = 'Stone Half Wall', model = 'sinor_prop_halfwall_stone', category = 'structure', health = 1000, material = 'stone', family = 'halfwall', hidden = true },
-        halfwall_metal = { label = 'Metal Half Wall', model = 'sinor_prop_halfwall_metal', category = 'structure', health = 2000, material = 'metal', family = 'halfwall', hidden = true },
-        ceiling_stone = { label = 'Stone Ceiling', model = 'sinor_prop_ceiling_square_stone', category = 'structure', health = 1000, material = 'stone', family = 'ceiling', hidden = true },
-        ceiling_metal = { label = 'Metal Ceiling', model = 'sinor_prop_ceiling_square_metal', category = 'structure', health = 2000, material = 'metal', family = 'ceiling', hidden = true },
-        frame_metal = { label = 'Metal Frame', model = 'sinor_prop_frame_metal', category = 'structure', health = 2000, material = 'metal', family = 'frame', hidden = true },
-        ramp_metal = { label = 'Metal Ramp', model = 'sinor_prop_ramp_metal', category = 'structure', health = 2000, material = 'metal', family = 'ramp', hidden = true },
+        foundation_stone = { label = 'Stone Foundation', model = 'wl_bp_foundation_stone', category = 'structure', health = 1000, material = 'stone', family = 'foundation', hidden = true },
+        foundation_metal = { label = 'Metal Foundation', model = 'wl_bp_foundation_metal', category = 'structure', health = 2000, material = 'metal', family = 'foundation', hidden = true },
+        wall_stone = { label = 'Stone Wall', model = 'wl_bp_wall_stone', category = 'structure', health = 1000, material = 'stone', family = 'wall', hidden = true },
+        wall_metal = { label = 'Metal Wall', model = 'wl_bp_wall_metal', category = 'structure', health = 2000, material = 'metal', family = 'wall', hidden = true },
+        doorway_stone = { label = 'Stone Doorway', model = 'wl_bp_doorway_stone', category = 'structure', health = 1000, material = 'stone', family = 'doorway', hidden = true },
+        doorway_metal = { label = 'Metal Doorway', model = 'wl_bp_doorway_metal', category = 'structure', health = 2000, material = 'metal', family = 'doorway', hidden = true },
+        windowframe_stone = { label = 'Stone Window Frame', model = 'wl_bp_windowframe_stone', category = 'structure', health = 1000, material = 'stone', family = 'windowframe', hidden = true },
+        windowframe_metal = { label = 'Metal Window Frame', model = 'wl_bp_windowframe_metal', category = 'structure', health = 2000, material = 'metal', family = 'windowframe', hidden = true },
+        halfwall_stone = { label = 'Stone Half Wall', model = 'wl_bp_halfwall_stone', category = 'structure', health = 1000, material = 'stone', family = 'halfwall', hidden = true },
+        halfwall_metal = { label = 'Metal Half Wall', model = 'wl_bp_halfwall_metal', category = 'structure', health = 2000, material = 'metal', family = 'halfwall', hidden = true },
+        ceiling_stone = { label = 'Stone Ceiling', model = 'wl_bp_ceiling_stone', category = 'structure', health = 1000, material = 'stone', family = 'ceiling', hidden = true },
+        ceiling_metal = { label = 'Metal Ceiling', model = 'wl_bp_ceiling_metal', category = 'structure', health = 2000, material = 'metal', family = 'ceiling', hidden = true },
+        frame_metal = { label = 'Metal Frame', model = 'wl_bp_frame_metal', category = 'structure', health = 2000, material = 'metal', family = 'frame', hidden = true },
+        ramp_metal = { label = 'Metal Ramp', model = 'wl_bp_ramp_metal', category = 'structure', health = 2000, material = 'metal', family = 'ramp', hidden = true },
     },
 
     upgrades = {

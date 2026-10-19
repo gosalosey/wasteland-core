@@ -7,9 +7,8 @@ author 'Wasteland Core contributors'
 description 'Wasteland Core - base building (tool cupboards, snapping pieces, doors, storage, upkeep, raids). Ported from sbb-basebuilding.'
 version '1.0.0'
 
--- The building props come from the "sinor-buildingProps-v2" asset pack,
--- which is NOT part of Wasteland Core (a licensed pack tied to the Cfx
--- account that owns it). Install it on the server and ensure it before this.
+-- The building props come from wasteland_buildprops (free, included);
+-- ensure it before this. Other packs: basebuilding.lua propsResource.
 dependencies {
     'wasteland_core',
     'wasteland_database',

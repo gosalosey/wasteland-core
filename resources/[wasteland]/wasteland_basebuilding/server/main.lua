@@ -4,9 +4,8 @@
 -- repairs, upkeep with decay, raiding (explosions, melee on wood, lockpicks).
 -- Access: the cupboard's owner, players they authorize, and the owner's
 -- group. Every rule is checked here; clients only show and ask.
--- The props come from the "sinor-buildingProps-v2" asset pack by default, or
--- your own props (basebuilding.lua propsResource and each piece's model) (not part of
--- Wasteland Core; see basebuilding.lua).
+-- The props come from wasteland_buildprops (free, included) by default, or
+-- any props pack (basebuilding.lua propsResource and each piece's model).
 
 local Rules = WLBB.Rules
 local SQL = WLBB.SQL
@@ -756,7 +755,7 @@ M = Wasteland.DefineModule({
         optional = true,
         schema = { type = 'table', fields = {
             buildItem = { type = 'string', default = 'building_plan', pattern = '^[%w_]+$' },
-            propsResource = { type = 'string', default = 'sinor-buildingProps-v2', maxLength = 64,
+            propsResource = { type = 'string', default = 'wasteland_buildprops', maxLength = 64,
                 description = "The resource with the building props ('' = none to check)" },
             cupboard = { type = 'table', fields = {
                 piece = { type = 'string', default = 'toolcupboard' },

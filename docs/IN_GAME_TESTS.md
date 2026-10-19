@@ -601,7 +601,7 @@ Give yourself: a weapon_knife, a weapon_huntingrifle with ammo_308, a campfire, 
 | R41.7 | Left Alt on the fire: Put out and pick up | The fire is gone; the campfire item is back |
 
 ## R42: base building
-The sinor-buildingProps-v2 pack must be running. Give yourself: building_plan, 60 wood_planks, 10 scrap_metal, 20 stone, 10 metal_sheet, 2 lockpick (admin panel).
+wasteland_buildprops must be running. Give yourself: building_plan, 60 wood_planks, 10 scrap_metal, 20 stone, 10 metal_sheet, 2 lockpick (admin panel).
 
 | # | Do | Expect |
 |---|---|---|

@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'wasteland_buildprops'
 author 'Wasteland Core contributors'
-description 'Wasteland Core - building props of our own (being tested; base building uses sinor until they are ready)'
+description 'Wasteland Core - free building props for base building (walls, foundations, doors, gates...). Original models and textures, free to share.'
 version '1.0.0'
 
 -- Model names: wl_bp_<piece>_<wood|stone|metal>, wl_bp_door_*, wl_bp_gate_*,

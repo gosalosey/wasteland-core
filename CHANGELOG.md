@@ -1,5 +1,13 @@
 # Changelog
 
+## Base building switched to our own props (owner)
+* Approved in game (solid, bullets hit them, weathered look): basebuilding.lua uses wasteland_buildprops again; existing bases switch on the next restart.
+
+## Free building props of our own: base building no longer needs a paid pack (owner)
+* New resource wasteland_buildprops: 32 original models made for Wasteland: foundation, wall, half wall, doorway, window frame, ceiling, garage frame and ramp in wood, stone and metal; wooden and metal doors, a garage door, a gate frame and gate, wooden and metal window bars, and the tool cupboard. Each has its own collision (with wood, stone or metal surface sounds and bullet effects) and uses four textures painted by code (weathered planks, rusty corrugated metal, stone blocks, dark metal). Grid 4 m, walls 3 m tall; doors pivot on their hinges.
+* basebuilding.lua now uses them (propsResource = 'wasteland_buildprops'); the paid sinor-buildingProps-v2 pack still works if you set it back. server.cfg ensures wasteland_buildprops before wasteland_basebuilding.
+* tools/buildprops rebuilds the models from a script (no Blender, no GTA V needed): gen_buildprops.py writes them, a small converter on CodeWalker.Core (MIT) turns them into GTA files.
+
 ## Our building props: bullets hit thin pieces, realistic textures (owner)
 * Collision is now solid boxes per part (as GTA's own thin props), with a small margin: bullets stop on walls, doorways and doors, not only on foundations.
 * New textures: weathered grey planks with knots, nail rust and mould; dark cracked beams; galvanised corrugated metal with rust patches and streaks; dirty concrete blocks with water stains and moss; chipped painted steel. Blood is dark and faded, spray paint faded with overspray; no more cartoon colours. Every texture now has a normal map (real bumps in the game's light).
