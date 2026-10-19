@@ -1,5 +1,8 @@
 # Changelog
 
+## Storage boxes place again (owner)
+* The large storage container used v_res_tre_storagebox, an interior prop the game will not spawn ("model ... is not in the game"). All three storage pieces now use our own models: wl_bp_stash_small (a wooden crate), wl_bp_stash_large (a corrugated metal box with a lid and padlock) and wl_bp_weaponlocker (a tall steel cabinet), with collision.
+
 ## Base building switched to our own props (owner)
 * Approved in game (solid, bullets hit them, weathered look): basebuilding.lua uses wasteland_buildprops again; existing bases switch on the next restart.
 

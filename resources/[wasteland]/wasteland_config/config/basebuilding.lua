@@ -143,11 +143,11 @@ return {
         sandbags = { label = 'Sandbag Wall', model = 'v_ind_cf_flour', altModels = { 'prop_mb_sandblock_02', 'prop_conc_sacks_02a' },
             category = 'defense', cost = { stone = 10, rag = 4 }, health = 1500, material = 'stone' },
 
-        stash_small = { label = 'Small Storage Box', model = 'prop_cs_lester_crate', category = 'stash', cost = { wood_planks = 6, scrap_metal = 2 },
+        stash_small = { label = 'Small Storage Box', model = 'wl_bp_stash_small', category = 'stash', cost = { wood_planks = 6, scrap_metal = 2 },
             health = 400, material = 'wood', grid = { width = 8, height = 6, maxWeight = 100 } },
-        stash_large = { label = 'Large Storage Container', model = 'v_res_tre_storagebox', category = 'stash', cost = { wood_planks = 15, metal_sheet = 4 },
+        stash_large = { label = 'Large Storage Container', model = 'wl_bp_stash_large', category = 'stash', cost = { wood_planks = 15, metal_sheet = 4 },
             health = 600, material = 'wood', grid = { width = 12, height = 10, maxWeight = 400 } },
-        weaponlocker = { label = 'Weapon Locker', model = 'prop_gun_case_02', category = 'stash', cost = { wood_planks = 6, metal_sheet = 2 },
+        weaponlocker = { label = 'Weapon Locker', model = 'wl_bp_weaponlocker', category = 'stash', cost = { wood_planks = 6, metal_sheet = 2 },
             health = 400, material = 'wood', grid = { width = 8, height = 5, maxWeight = 120 } },
 
         -- Upgrade tiers (reached through `upgrades`, not built directly)

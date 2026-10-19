@@ -674,6 +674,55 @@ def toolcupboard():
     out += box(-0.04, -0.3, 0.88, 0.04, -0.27, 0.96, METAL)  # padlock
     return out
 
+
+def crate():
+    """Small storage: a wooden crate, planks on beam corners."""
+    rnd = random.Random(21)
+    out = box(-0.47, -0.27, 0.03, 0.47, 0.27, 0.6, BEAM)
+    for side in (-1, 1):
+        z = 0.04
+        while z < 0.6:
+            bh = min(0.13, 0.62 - z)
+            out += box(-0.46, side * 0.3 - (0.03 if side > 0 else 0), z, 0.46, side * 0.3 + (0.03 if side < 0 else 0), z + bh - 0.012, WOOD)
+            z += bh
+    for x0 in (-0.5, 0.44):
+        out += box(x0, -0.3, 0.0, x0 + 0.06, 0.3, 0.62, BEAM)
+    x = -0.46
+    while x < 0.46:
+        bw = min(0.16, 0.46 - x)
+        out += box(x + 0.006, -0.28, 0.6, x + bw - 0.006, 0.28, 0.64 - rnd.uniform(0, 0.01), WOOD)
+        x += bw
+    out += box(-0.06, -0.31, 0.42, 0.06, -0.3, 0.52, DARK)  # latch
+    return out
+
+def container():
+    """Large storage: a corrugated metal box with a lid, frame and handles."""
+    out = box(-0.78, -0.33, 0.06, 0.78, 0.33, 1.08, DARK)
+    for side in (-1, 1):
+        out += box(-0.76, side * 0.35 - (0.02 if side > 0 else 0), 0.08, 0.76, side * 0.35 + (0.02 if side < 0 else 0), 1.06, METAL)
+        out += box(side * 0.8 - (0.02 if side > 0 else 0), -0.33, 0.08, side * 0.8 + (0.02 if side < 0 else 0), 0.33, 1.06, METAL)
+    for x0 in (-0.8, 0.74):
+        for y0 in (-0.35, 0.29):
+            out += box(x0, y0, 0, x0 + 0.06, y0 + 0.06, 1.12, DARK)
+    out += box(-0.8, -0.35, 1.06, 0.8, 0.35, 1.14, DARK)  # lid
+    out += box(-0.2, -0.37, 0.8, 0.2, -0.35, 0.86, DARK)  # handle
+    out += box(-0.04, -0.37, 0.9, 0.04, -0.35, 1.0, METAL)  # padlock
+    return out
+
+def locker():
+    """Weapon locker: a tall steel cabinet with two doors, vents and a padlock."""
+    out = box(-0.38, -0.2, 0.04, 0.38, 0.22, 1.86, DARK)
+    out += box(-0.4, -0.22, 1.82, 0.4, 0.24, 1.9, DARK)
+    out += box(-0.4, -0.22, 0, 0.4, 0.24, 0.06, DARK)
+    out += box(-0.37, -0.23, 0.08, -0.01, -0.21, 1.8, METAL)
+    out += box(0.01, -0.23, 0.08, 0.37, -0.21, 1.8, METAL)
+    for z in (1.5, 1.56, 1.62):  # vents
+        out += box(-0.3, -0.24, z, -0.08, -0.23, z + 0.025, DARK)
+        out += box(0.08, -0.24, z, 0.3, -0.23, z + 0.025, DARK)
+    out += box(-0.05, -0.25, 0.9, -0.02, -0.21, 1.1, DARK)
+    out += box(0.02, -0.25, 0.9, 0.05, -0.21, 1.1, DARK)
+    out += box(-0.035, -0.26, 0.95, 0.035, -0.24, 1.03, METAL)
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -717,6 +766,9 @@ PIECES += [
     ('wl_bp_gate_frame', gate_frame(), cbox(-2.8, -0.25, 0, -2.3, 0.25, 4.5) + cbox(2.3, -0.25, 0, 2.8, 0.25, 4.5) + cbox(-2.8, -0.25, 4.0, 2.8, 0.25, 4.5), 70),
     ('wl_bp_gate_door', gate_door(), cbox(0, -0.06, 0.05, 4.56, 0.06, 3.95), 56),
     ('wl_bp_toolcupboard', toolcupboard(), cbox(-0.5, -0.3, 0, 0.5, 0.3, 1.8), 56),
+    ('wl_bp_stash_small', crate(), cbox(-0.5, -0.31, 0, 0.5, 0.31, 0.64), 70),
+    ('wl_bp_stash_large', container(), cbox(-0.8, -0.37, 0, 0.8, 0.35, 1.14), 56),
+    ('wl_bp_weaponlocker', locker(), cbox(-0.4, -0.26, 0, 0.4, 0.24, 1.9), 56),
 ]
 
 # ---------------------------------------------------------------------------
