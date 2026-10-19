@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: rain inside bases (owner)
+* Hiding the rain drops was not enough (ripples and wet floors stayed). Under your own roof while it rains, your game now shows an overcast sky instead (only for you, only while you are inside), so no drops, ripples or wet floor; outside the server's weather comes straight back. F8 logs when you go under a roof or back out.
+
 ## No rain inside your base (owner)
 * Under a roof you built (a ceiling, a ladder hatch, the floor above, stairs) rain stops for you, you dry off, and survival counts it as shelter (no rain chill, at least 15 C) like vehicles and buildings. Outside it rains as before. Export IsSheltered().
 

@@ -1142,6 +1142,14 @@ end)
 
 local sheltered = false
 local ROOF = { ceiling = true, hatch = true, foundation = true, stairs = true }
+local RAINY = {}
+for _, w in ipairs({ 'RAIN', 'THUNDER', 'CLEARING' }) do RAINY[GetHashKey(w)] = true end
+
+-- Is the server's weather rainy? (the weather types, not the override we set)
+local function rainyWeather()
+    local a, b, mix = GetWeatherTypeTransition()
+    return RAINY[a] == true or (RAINY[b] == true and (mix or 0) > 0.1)
+end
 
 local function roofAbove(ped)
     local from = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0) -- head
@@ -1164,10 +1172,23 @@ Citizen.CreateThread(function()
             local now = not IsPedInAnyVehicle(ped, false) and roofAbove(ped)
             if now ~= sheltered then
                 sheltered = now
-                -- no rain drawn while under your own roof; back to the weather outside
-                SetRainLevel(sheltered and 0.0 or -1.0)
+                print(('[wasteland_basebuilding] %s'):format(sheltered and 'under a roof: no rain here' or 'outside: weather as normal'))
+                if not sheltered then
+                    -- back to the server's weather
+                    SetRainLevel(-1.0)
+                    ClearOverrideWeather()
+                end
             end
             if sheltered then
+                -- only for this player while under the roof: an overcast sky
+                -- instead of rain (no drops, no ripples, no wet floor). Set every
+                -- tick, so a weather change from the server cannot bring rain in.
+                if rainyWeather() then
+                    SetOverrideWeather('OVERCAST')
+                    SetRainLevel(0.0)
+                else
+                    ClearOverrideWeather()
+                end
                 ClearPedWetness(ped)
                 SetPedWetnessHeight(ped, 0.0)
             end
@@ -1179,7 +1200,7 @@ end)
 exports('IsSheltered', function() return sheltered end)
 
 AddEventHandler('onResourceStop', function(res)
-    if res == GetCurrentResourceName() and sheltered then SetRainLevel(-1.0) end
+    if res == GetCurrentResourceName() and sheltered then SetRainLevel(-1.0); ClearOverrideWeather() end
 end)
 
 -------------------------------------------------------------------------------
