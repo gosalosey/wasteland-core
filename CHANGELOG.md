@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: floating over ramps (owner)
+* Ramp collision was the last triangle mesh (that kind misbehaved before: bullets went through walls); it is now one tilted solid box like the stairs, with the same size for snapping.
+
 ## Upper floors, stairs fit, moving placed pieces (owner)
 * Walls, doorways, window frames, half walls and frames snap along ceiling edges too, so upper floors build like the ground floor.
 * Stairs fit inside the walls (walls take 0.2 m of each square's edge; the stairs clipped into them), with a top step onto the next floor.

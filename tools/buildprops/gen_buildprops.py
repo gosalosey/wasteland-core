@@ -868,6 +868,7 @@ HOLES = {'doorway': (-0.6, 0, 0.6, 2.2), 'windowframe': (-0.6, 1.0, 0.6, 2.0), '
 MATID = {'wood': 70, 'stone': 11, 'metal': 56}
 
 PIECES = []  # (model, look faces, collision parts, material id)
+EXTENT = {}  # model -> (min, max) when the size the game sees is not the collision's
 seed = 100
 for mat in ('wood', 'stone', 'metal'):
     seed += 10
@@ -877,7 +878,8 @@ for mat in ('wood', 'stone', 'metal'):
     for name, hole in HOLES.items():
         PIECES.append((f'wl_bp_{name}_{mat}', styled_wall(mat, seed + len(name), hole), solid_wall(hole), MATID[mat]))
     PIECES.append((f'wl_bp_ceiling_{mat}', ceiling(mat, seed + 3), cbox(-h2, -h2, 0, h2, h2, T), MATID[mat]))
-    PIECES.append((f'wl_bp_ramp_{mat}', ramp(mat, seed + 4), [('mesh', wedge(-h2, -h2, h2, h2, 1.0))], MATID[mat]))
+    PIECES.append((f'wl_bp_ramp_{mat}', ramp(mat, seed + 4), slope_box(-h2, h2, -h2, h2, 0.0, 1.0, 0.3), MATID[mat]))
+    EXTENT[f'wl_bp_ramp_{mat}'] = ((-h2, -h2, 0.0), (h2, h2, 1.0))  # the size snapping knows (unchanged)
     half = FLOOR / 2
     PIECES.append((f'wl_bp_stairs_{mat}', stairs(mat, seed + 5),
         slope_box(-1.75, -0.05, -1.55, 0.75, 0.0, half, 0.3)
@@ -1057,7 +1059,7 @@ def shader(tex):
 # collision inside the model file (without it, you walk through).
 archetypes = []
 for model, look, solid, mid in PIECES:
-    mn, mx = extent_parts(solid)   # the size the game sees: the collision's (unchanged)
+    mn, mx = EXTENT.get(model) or extent_parts(solid)   # the size the game sees (unchanged)
     c = tuple((mn[i] + mx[i]) / 2 for i in range(3))
     r = math.dist(mn, mx) / 2
     groups = {}
