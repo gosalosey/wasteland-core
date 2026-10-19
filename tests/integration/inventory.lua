@@ -221,13 +221,13 @@ describe('backpacks and equipment', function()
         op(server, id, 'move', bottle.uid, 'player:1', s.backpack, 0, 0, false)
         expect(select(2, find(snap(server, id), 'water_bottle'))).toBe(s.backpack)
         server:command(0, string.format('give %d scrap_metal 10', id)); server:advance(150)
-        -- pockets hold 35 kg, the small bag 35 kg; scrap is 1 kg each
+        -- pockets hold 35 kg, the small bag 35 kg; scrap is 0.5 kg each
         local scrap = find(snap(server, id), 'scrap_metal')
         expect(scrap.count).toBe(10)
         give(server, id, 'scrap_metal', 10)
         expect(rowCount(server, 'scrap_metal')).toBe(20)
-        give(server, id, 'scrap_metal', 55)
-        expect(rowCount(server, 'scrap_metal')).toBe(20) -- 75 kg would not fit: nothing added (all or nothing)
+        give(server, id, 'scrap_metal', 200)
+        expect(rowCount(server, 'scrap_metal')).toBe(20) -- 100 kg more would not fit: nothing added (all or nothing)
     end)
 
     it('a bag can never go inside a bag (here: from a stash into the worn bag)', function()

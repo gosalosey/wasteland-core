@@ -1,5 +1,8 @@
 # Changelog
 
+## Items weigh half as much (owner)
+* Every item weight in inventory.lua is halved (for example a water bottle 0.6 -> 0.3 kg, scrap metal 1 -> 0.5 kg). Pocket and bag limits are unchanged, so players carry about twice as much.
+
 ## Fix: stone stairs (owner)
 * Stone steps were solid blocks down to the ground (a huge mass, the upper flight a block in mid air, flickering where the blocks met). Steps are now treads on risers that meet exactly (no overlap, every material), with a sloped slab under each flight (thick concrete for stone).
 
