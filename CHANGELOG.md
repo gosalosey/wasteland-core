@@ -1,5 +1,9 @@
 # Changelog
 
+## HUD and toilet tweaks (owner)
+* The id, name and cash line is bigger and bolder; the armour bar is as long as the health bar and taller.
+* Pee and poop fill half as fast (bladderPerHour 25, bowelPerHour 12; drinking and eating add half as much).
+
 ## Fix: frozen after logging in, then falling through the map again and again (owner)
 * Putting a character back on its spot after the base server's own spawn left it frozen with no collision; placing now always lets go of the ped.
 * The fall-through safety net only remembers spots where you really stood on ground (never while frozen or in noclip), and if it happens again within 30 seconds you are sent to a safe camp instead of looping.

@@ -24,8 +24,8 @@ return {
     -- eating the bowels a bit faster. minToGo: below this you do not need to.
     toilet = {
         enabled = true,
-        bladderPerHour = 50, bowelPerHour = 25,
-        drinkToBladder = 0.4, foodToBowel = 0.3, -- share of thirst / hunger restored
+        bladderPerHour = 25, bowelPerHour = 12,
+        drinkToBladder = 0.2, foodToBowel = 0.15, -- share of thirst / hunger restored
         minToGo = 20,
         -- Where the pee stream starts, from the hips: offset { right, forward,
         -- up } in metres, rotation, size. Find good numbers in-game with
