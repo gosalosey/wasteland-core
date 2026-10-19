@@ -361,6 +361,19 @@ local function addTargets(obj, id, isCupboard)
             canInteract = function() local p = propCache[id]; return p ~= nil and p.health < p.max_health end,
             onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:repair', id) end }
     end
+    local pdata = not isCupboard and propCache[id] or nil
+    local gp = pdata and cfg.pieces[pdata.piece]
+    if gp and gp.generator then
+        opts[#opts + 1] = { label = 'Turn on / off', icon = '⏻', distance = d,
+            onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generator', id) end }
+        opts[#opts + 1] = { label = 'Add fuel (jerry can)', icon = '⛽', distance = d,
+            onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generatorFuel', id) end }
+        opts[#opts + 1] = { label = 'Check fuel', icon = '◔', distance = d,
+            onSelect = function()
+                local p = propCache[id]
+                if p then notify(('Fuel: %.1f / %d L, %s.'):format(p.fuel or 0, gp.generator.tankLitres, p.is_open and 'running' or 'off')) end
+            end }
+    end
     if isCupboard then
         opts[#opts + 1] = { label = 'Move', icon = '✥', distance = d,
             canInteract = function() return not isPlacing and cupboardCache[id] ~= nil end,
@@ -570,6 +583,48 @@ RegisterNetEvent('wasteland:basebuilding:client:cupboardMoved', function(id, pat
 end)
 RegisterNetEvent('wasteland:basebuilding:client:propAdded', function(p) storeProp(p) end)
 RegisterNetEvent('wasteland:basebuilding:client:propRemoved', function(id) propCache[id] = nil; DespawnProp(id) end)
+RegisterNetEvent('wasteland:basebuilding:client:power', function(id, patch)
+    local data = propCache[id]
+    if not data or type(patch) ~= 'table' then return end
+    data.is_open, data.fuel = patch.is_open == true, tonumber(patch.fuel) or 0
+end)
+
+-- Lights: lit while a running generator is within its power radius.
+local function powered(at)
+    for _, d in pairs(propCache) do
+        local piece = cfg.pieces[d.piece]
+        if piece and piece.generator and d.is_open and (d.fuel or 0) > 0 and #(d.coords - at) <= piece.generator.powerRadius then return true end
+    end
+    return false
+end
+
+Citizen.CreateThread(function()
+    local lit = {}
+    local nextCheck = 0
+    while true do
+        if not cfg then Wait(1000) else
+            local t = GetGameTimer()
+            if t >= nextCheck then
+                nextCheck = t + 1000
+                lit = {}
+                local me = GetEntityCoords(PlayerPedId())
+                for _, d in pairs(propCache) do
+                    local piece = cfg.pieces[d.piece]
+                    if piece and piece.light and #(d.coords - me) < 120.0 and powered(d.coords) then
+                        local l = piece.light
+                        lit[#lit + 1] = { at = d.coords + vector3(0.0, 0.0, l.height), r = l.color[1], g = l.color[2], b = l.color[3],
+                            range = l.range, intensity = l.intensity }
+                    end
+                end
+            end
+            for _, l in ipairs(lit) do
+                DrawLightWithRange(l.at.x, l.at.y, l.at.z, l.r, l.g, l.b, l.range, l.intensity)
+            end
+            Wait(#lit > 0 and 0 or 500)
+        end
+    end
+end)
+
 RegisterNetEvent('wasteland:basebuilding:client:propMoved', function(id, patch)
     local data = propCache[id]
     if not data or type(patch) ~= 'table' then return end

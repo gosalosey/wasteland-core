@@ -93,8 +93,8 @@ return {
         wallsInset = true,
     },
 
-    categoryOrder = { 'structure', 'door', 'garage', 'defense', 'stash', 'cupboard' },
-    categoryLabels = { structure = 'Structures', door = 'Doors', garage = 'Garage', defense = 'Defenses', stash = 'Storage', cupboard = 'Tool Cupboard' },
+    categoryOrder = { 'structure', 'door', 'garage', 'defense', 'stash', 'power', 'cupboard' },
+    categoryLabels = { structure = 'Structures', door = 'Doors', garage = 'Garage', defense = 'Defenses', stash = 'Storage', power = 'Power', cupboard = 'Tool Cupboard' },
 
     pieces = {
         toolcupboard = { label = 'Tool Cupboard', model = 'wl_bp_toolcupboard', category = 'cupboard',
@@ -149,6 +149,15 @@ return {
         -- wireFrom..wireTo metres up and wireReach metres from the wall's line.
         extwall = { label = 'High External Wall', model = 'wl_bp_extwall', category = 'defense', cost = { metal_sheet = 8, scrap_metal = 6 },
             health = 2500, material = 'metal', wireDamage = 12, wireBleed = 0.3, wireFrom = 3.45, wireTo = 4.7, wireReach = 0.75 },
+        -- Power: a generator runs on fuel from jerry cans (Left Alt: Add fuel, Turn on / off)
+        -- and powers lights within powerRadius of it. It is loud: zombies within
+        -- `noise` metres come to look while it runs.
+        generator = { label = 'Generator', model = 'wl_bp_generator', category = 'power', cost = { metal_sheet = 6, scrap_metal = 10 },
+            health = 800, material = 'metal', generator = { tankLitres = 20, litresPerHour = 2, powerRadius = 40, noise = 30 } },
+        worklight = { label = 'Work Light', model = 'wl_bp_worklight', category = 'power', cost = { scrap_metal = 4 }, health = 200, material = 'metal',
+            light = { height = 1.85, range = 22.0, intensity = 8.0, color = { 255, 236, 205 } } },
+        lamp = { label = 'Hanging Lamp', model = 'wl_bp_lamp', category = 'power', cost = { scrap_metal = 2 }, health = 150, material = 'metal',
+            light = { height = -0.72, range = 12.0, intensity = 5.0, color = { 255, 210, 150 } } },
         spikes = { label = 'Spike Strip', model = 'p_stinger_piece_01', scale = 2.0,
             category = 'defense', cost = { scrap_metal = 6 }, health = 400, material = 'metal',
             contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 2.5 },

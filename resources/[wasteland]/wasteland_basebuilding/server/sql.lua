@@ -72,13 +72,18 @@ CREATE TABLE IF NOT EXISTS wl_bb_notices (
         name = 'props_owner',
         up = [[ALTER TABLE wl_bb_props ADD COLUMN owner_id INT UNSIGNED NULL AFTER cupboard_id]],
     },
+    {
+        version = 6,
+        name = 'props_fuel',
+        up = [[ALTER TABLE wl_bb_props ADD COLUMN fuel DOUBLE NOT NULL DEFAULT 0 AFTER is_open]],
+    },
 }
 
 WLBB.SQL = {
     selectCupboards = 'SELECT id, owner_id, x, y, z, heading, radius, health, max_health, created_unix FROM wl_bb_cupboards',
     cupboardMove = 'UPDATE wl_bb_cupboards SET x = ?, y = ?, z = ?, heading = ? WHERE id = ?',
     selectAuth = 'SELECT cupboard_id, character_id, name FROM wl_bb_auth',
-    selectProps = 'SELECT id, cupboard_id, owner_id, category, piece, model, x, y, z, heading, is_open, health, max_health, material, created_unix FROM wl_bb_props',
+    selectProps = 'SELECT id, cupboard_id, owner_id, category, piece, model, x, y, z, heading, is_open, fuel, health, max_health, material, created_unix FROM wl_bb_props',
     insertCupboard = 'INSERT INTO wl_bb_cupboards (owner_id, x, y, z, heading, radius, health, max_health, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     deleteCupboard = 'DELETE FROM wl_bb_cupboards WHERE id = ?',
     cupboardHealth = 'UPDATE wl_bb_cupboards SET health = ? WHERE id = ?',
@@ -88,6 +93,7 @@ WLBB.SQL = {
     insertProp = 'INSERT INTO wl_bb_props (cupboard_id, owner_id, category, piece, model, x, y, z, heading, is_open, health, max_health, material, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)',
     deleteProp = 'DELETE FROM wl_bb_props WHERE id = ?',
     propOpen = 'UPDATE wl_bb_props SET is_open = ? WHERE id = ?',
+    propPower = 'UPDATE wl_bb_props SET fuel = ?, is_open = ? WHERE id = ?',
     propHealth = 'UPDATE wl_bb_props SET health = ? WHERE id = ?',
     propUpgrade = 'UPDATE wl_bb_props SET piece = ?, model = ?, health = ?, max_health = ?, material = ? WHERE id = ?',
     propMove = 'UPDATE wl_bb_props SET x = ?, y = ?, z = ?, heading = ?, cupboard_id = ?, is_open = 0 WHERE id = ?',

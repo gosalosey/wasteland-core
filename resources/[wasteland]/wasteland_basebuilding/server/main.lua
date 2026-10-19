@@ -147,7 +147,8 @@ local function clientConfig()
             openAngleOffset = p.openAngleOffset, openLift = p.openLift, cost = p.cost, material = p.material,
             interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
             contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale,
-            ladder = p.ladder, wireDamage = p.wireDamage, wireFrom = p.wireFrom, wireTo = p.wireTo, wireReach = p.wireReach }
+            ladder = p.ladder, wireDamage = p.wireDamage, wireFrom = p.wireFrom, wireTo = p.wireTo, wireReach = p.wireReach,
+            generator = p.generator, light = p.light }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -178,7 +179,7 @@ end
 
 local function propInfo(p)
     return { id = p.id, cupboard_id = p.cupboard_id, category = p.category, piece = p.piece, model = p.model, coords = p.coords,
-        heading = p.heading, is_open = p.is_open, health = p.health, max_health = p.max_health, material = p.material }
+        heading = p.heading, is_open = p.is_open, health = p.health, max_health = p.max_health, material = p.material, fuel = p.fuel or 0 }
 end
 
 local function mineFor(cid)
@@ -471,6 +472,81 @@ local function touchWire(src, id)
     end
     TriggerClientEvent('wasteland:basebuilding:client:notice', src, 'Barbed wire!')
 end
+
+-------------------------------------------------------------------------------
+-- Power: generators (fuel from jerry cans, on/off) and the lights they power
+-------------------------------------------------------------------------------
+
+local function powerChanged(p)
+    write(SQL.propPower, { p.fuel or 0, p.is_open and 1 or 0, p.id }, 'generator ' .. p.id)
+    TriggerClientEvent('wasteland:basebuilding:client:power', -1, p.id, { is_open = p.is_open, fuel = p.fuel or 0 })
+end
+
+local function generatorOf(src, id)
+    local cid = characterOf(src)
+    local p = props[id]
+    local piece = p and M.config.pieces[p.piece]
+    if not piece or not piece.generator or not cid then return nil end
+    if not near(src, p.coords, M.config.targetDistance + 1.0) then return nil end
+    if not pieceAccess(cid, p) then notice(src, 'You are not allowed to use this generator.'); return nil end
+    return p, piece.generator
+end
+
+local function generatorToggle(src, id)
+    local p = generatorOf(src, id)
+    if not p then return end
+    if not p.is_open and (p.fuel or 0) <= 0 then notice(src, 'The generator has no fuel. Add fuel from a jerry can.'); return end
+    p.is_open = not p.is_open
+    powerChanged(p)
+    notice(src, p.is_open and 'Generator on.' or 'Generator off.')
+end
+
+local function generatorFuel(src, id)
+    local p, g = generatorOf(src, id)
+    if not p then return end
+    local space = g.tankLitres - (p.fuel or 0)
+    if space <= 0.05 then notice(src, 'The tank is full.'); return end
+    local best
+    for _, c in ipairs(inv():FindItems(src, 'jerry_can')) do
+        if (c.metadata.fuel or 0) > 0 and (not best or c.metadata.fuel > best.metadata.fuel) then best = c end
+    end
+    if not best then notice(src, 'You need a jerry can with fuel in it.'); return end
+    local amount = math.min(best.metadata.fuel, space)
+    inv():SetItemMetadata(src, best.uid, { fuel = best.metadata.fuel - amount })
+    p.fuel = (p.fuel or 0) + amount
+    powerChanged(p)
+    notice(src, ('Added %.1f L. Tank: %.1f / %d L (about %.1f hours).'):format(amount, p.fuel, g.tankLitres,
+        g.litresPerHour > 0 and p.fuel / g.litresPerHour or 0))
+end
+
+-- Every minute: running generators burn fuel (and stop when empty); they are
+-- loud, so zombies nearby come to look.
+local function powerTick()
+    for _, p in pairs(props) do
+        local piece = M.config.pieces[p.piece]
+        local g = piece and piece.generator
+        if g and p.is_open then
+            p.fuel = math.max(0, (p.fuel or 0) - g.litresPerHour / 60)
+            if p.fuel <= 0 then p.is_open = false end
+            powerChanged(p)
+            if p.is_open and g.noise > 0 then TriggerEvent('wasteland:noise', p.coords, g.noise) end
+        end
+    end
+end
+
+--- IsPowered(coords) -> boolean: a running generator powers this spot (lights; electric fences later)
+local function isPowered(at)
+    for _, p in pairs(props) do
+        local piece = M.config.pieces[p.piece]
+        if piece and piece.generator and p.is_open and (p.fuel or 0) > 0
+            and Rules.dist(p.coords, at) <= piece.generator.powerRadius then return true end
+    end
+    return false
+end
+exports('IsPowered', function(coords)
+    if not (M and M.active) or type(coords) ~= 'table' then return false end
+    return isPowered({ x = coords.x, y = coords.y, z = coords.z or 0 })
+end)
 
 local function dropCupboard(c, why)
     cupboards[c.id] = nil
@@ -792,6 +868,15 @@ local function loop(token)
     end
 end
 
+local function powerLoop(token)
+    while runToken == token do
+        Citizen.Wait(60000)
+        if runToken ~= token then return end
+        local ok, err = pcall(powerTick)
+        if not ok then M.log:warn('power: %s', tostring(err)) end
+    end
+end
+
 -------------------------------------------------------------------------------
 -- Players
 -------------------------------------------------------------------------------
@@ -891,12 +976,12 @@ M = Wasteland.DefineModule({
             streamRadius = { type = 'number', default = 150.0, min = 30, max = 1000 },
             refund = { type = 'number', default = 0.5, min = 0, max = 1 },
             placement = ANY,
-            categoryOrder = { type = 'array', default = { 'structure', 'door', 'garage', 'stash', 'cupboard' }, items = { type = 'string' } },
+            categoryOrder = { type = 'array', default = { 'structure', 'door', 'garage', 'stash', 'power', 'cupboard' }, items = { type = 'string' } },
             categoryLabels = { type = 'map', default = {}, keys = { type = 'string' }, values = { type = 'string' } },
             pieces = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'table', allowUnknown = true, fields = {
                 label = { type = 'string', required = true },
                 model = { type = 'string', required = true },
-                category = { type = 'enum', values = { 'cupboard', 'structure', 'door', 'garage', 'stash', 'defense' }, required = true },
+                category = { type = 'enum', values = { 'cupboard', 'structure', 'door', 'garage', 'stash', 'defense', 'power' }, required = true },
                 cost = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'integer', min = 1, max = 100000 } },
                 health = { type = 'integer', default = 500, min = 1, max = 100000 },
                 material = { type = 'enum', values = { 'wood', 'stone', 'metal' }, default = 'wood' },
@@ -919,6 +1004,18 @@ M = Wasteland.DefineModule({
                 wireFrom = { type = 'number', min = 0, max = 50, description = 'Barbed wire: from this height (m above the base)' },
                 wireTo = { type = 'number', min = 0, max = 50, description = 'Barbed wire: up to this height' },
                 wireReach = { type = 'number', min = 0.1, max = 5, description = 'Barbed wire: this close to the wall line counts' },
+                generator = { type = 'table', nullable = true, fields = {
+                    tankLitres = { type = 'number', default = 20, min = 1, max = 1000 },
+                    litresPerHour = { type = 'number', default = 2, min = 0, max = 1000 },
+                    powerRadius = { type = 'number', default = 40, min = 1, max = 500 },
+                    noise = { type = 'number', default = 30, min = 0, max = 500, description = 'Zombies this close come to look while it runs' },
+                } },
+                light = { type = 'table', nullable = true, fields = {
+                    height = { type = 'number', default = 1.5, min = -20, max = 20 },
+                    range = { type = 'number', default = 15, min = 1, max = 100 },
+                    intensity = { type = 'number', default = 5, min = 0.1, max = 100 },
+                    color = { type = 'array', default = { 255, 230, 200 }, items = { type = 'integer', min = 0, max = 255 } },
+                } },
                 grid = { type = 'table', nullable = true, fields = {
                     width = { type = 'integer', required = true, min = 1, max = 20 },
                     height = { type = 'integer', required = true, min = 1, max = 20 },
@@ -994,7 +1091,7 @@ M = Wasteland.DefineModule({
                         -- the model set for the piece now (so changing props packs updates built bases)
                         category = r.category, piece = r.piece, model = c.pieces[r.piece].model or r.model,
                         coords = { x = r.x, y = r.y, z = r.z }, heading = r.heading + 0.0, is_open = r.is_open == 1 or r.is_open == true,
-                        health = r.health, max_health = r.max_health, material = r.material }
+                        health = r.health, max_health = r.max_health, material = r.material, fuel = tonumber(r.fuel) or 0 }
                 else
                     skipped = skipped + 1
                 end
@@ -1009,6 +1106,7 @@ M = Wasteland.DefineModule({
             sync(-1)
             sendMineAll()
             Citizen.CreateThread(function() loop(token) end)
+            Citizen.CreateThread(function() powerLoop(token) end)
             M.ready()
         end)
         return true
@@ -1056,6 +1154,8 @@ M.netEvent('wasteland:basebuilding:server:remove', { args = { ID }, rateLimit = 
 M.netEvent('wasteland:basebuilding:server:move', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
     function(src, id, x, y, z, heading) moveProp(src, id, x, y, z, heading) end)
 M.netEvent('wasteland:basebuilding:server:removeCupboard', { args = { ID }, rateLimit = RATE }, function(src, id) removeCupboard(src, id) end)
+M.netEvent('wasteland:basebuilding:server:generator', { args = { ID }, rateLimit = RATE }, function(src, id) generatorToggle(src, id) end)
+M.netEvent('wasteland:basebuilding:server:generatorFuel', { args = { ID }, rateLimit = RATE }, function(src, id) generatorFuel(src, id) end)
 M.netEvent('wasteland:basebuilding:server:wire', { args = { ID }, rateLimit = { burst = 3, perSecond = 2 } }, function(src, id) touchWire(src, id) end)
 M.netEvent('wasteland:basebuilding:server:moveCupboard', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
     function(src, id, x, y, z, heading) moveCupboard(src, id, x, y, z, heading) end)

@@ -880,6 +880,57 @@ def extwall(seed):
             out += rbox(x, y, z, 0.012, 0.012, 0.09, DARK, rx=-45, rz=-30)
             x += 0.16
     return out
+
+
+# ---------------------------------------------------------------------------
+# Power: a diesel generator, a work light on a stand, a hanging lamp
+# ---------------------------------------------------------------------------
+
+def generator():
+    out = []
+    # skid frame
+    for y in (-0.38, 0.32):
+        out += box(-0.75, y, 0, 0.75, y + 0.06, 0.08, DARK)
+    for x in (-0.7, 0.64):
+        out += box(x, -0.38, 0.08, x + 0.06, 0.38, 0.14, DARK)
+    # engine block and alternator
+    out += box(-0.62, -0.3, 0.14, 0.15, 0.3, 0.72, DARK)
+    out += box(0.15, -0.24, 0.18, 0.62, 0.24, 0.62, METAL)
+    for x in (0.2, 0.32, 0.44, 0.56):  # cooling fins
+        out += box(x, -0.26, 0.2, x + 0.03, 0.26, 0.6, DARK)
+    # fuel tank on top, filler cap, exhaust pipe, control panel
+    out += box(-0.6, -0.26, 0.72, 0.1, 0.26, 0.98, METAL)
+    out += box(-0.5, -0.06, 0.98, -0.4, 0.04, 1.03, DARK)
+    out += box(-0.66, 0.18, 0.5, -0.6, 0.24, 1.2, DARK)
+    out += box(-0.68, 0.16, 1.2, -0.58, 0.26, 1.24, DARK)
+    out += box(0.2, -0.32, 0.66, 0.6, -0.28, 0.9, METAL)
+    out += box(0.26, -0.33, 0.74, 0.32, -0.32, 0.8, DARK)
+    out += box(0.4, -0.33, 0.74, 0.54, -0.32, 0.84, DARK)
+    return out
+
+def worklight():
+    out = []
+    # three legs, a pole and a crossbar with two lamp heads facing -y
+    for a in (0, 120, 240):
+        r = math.radians(a)
+        out += rbox(math.sin(r) * 0.28, math.cos(r) * 0.28, 0.32, 0.035, 0.035, 0.7, DARK,
+                    rx=math.cos(r) * 25, ry=-math.sin(r) * 25)
+    out += box(-0.025, -0.025, 0.55, 0.025, 0.025, 1.8, DARK)
+    out += box(-0.3, -0.03, 1.78, 0.3, 0.03, 1.84, DARK)
+    for x in (-0.22, 0.22):
+        out += box(x - 0.12, -0.14, 1.72, x + 0.12, 0.02, 1.95, METAL)
+        out += box(x - 0.1, -0.15, 1.74, x + 0.1, -0.14, 1.93, METAL)   # the glass
+    out += box(0.02, 0.0, 0.5, 0.05, 0.03, 1.6, DARK)                   # cable
+    return out
+
+def hanging_lamp():
+    out = []
+    out += box(-0.06, -0.06, -0.02, 0.06, 0.06, 0.0, DARK)               # ceiling plate
+    out += box(-0.008, -0.008, -0.55, 0.008, 0.008, -0.02, DARK)          # cord
+    out += box(-0.18, -0.18, -0.68, 0.18, 0.18, -0.6, METAL)             # shade
+    out += box(-0.12, -0.12, -0.6, 0.12, 0.12, -0.55, METAL)
+    out += box(-0.05, -0.05, -0.74, 0.05, 0.05, -0.68, BEAM)              # bulb holder
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -954,6 +1005,9 @@ PIECES += [
     # the wall, and a thin box over the wire (so you touch it, not slip through)
     ('wl_bp_extwall', extwall(77), cbox(-EXT_W / 2, -0.1, 0, EXT_W / 2, EXT_T / 2, EXT_H)
         + cbox(-EXT_W / 2, -0.4, EXT_H, EXT_W / 2, 0.05, WIRE_TO - 0.05), 56),
+    ('wl_bp_generator', generator(), cbox(-0.75, -0.38, 0, 0.75, 0.38, 1.0), 56),
+    ('wl_bp_worklight', worklight(), cbox(-0.3, -0.3, 0, 0.3, 0.3, 1.95), 56),
+    ('wl_bp_lamp', hanging_lamp(), cbox(-0.18, -0.18, -0.74, 0.18, 0.18, 0.0), 56),
     ('wl_bp_stash_small', crate(), cbox(-0.5, -0.31, 0, 0.5, 0.31, 0.64), 70),
     ('wl_bp_stash_large', container(), cbox(-0.8, -0.37, 0, 0.8, 0.35, 1.14), 56),
     ('wl_bp_weaponlocker', locker(), cbox(-0.4, -0.26, 0, 0.4, 0.24, 1.9), 56),

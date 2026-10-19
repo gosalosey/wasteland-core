@@ -1,5 +1,10 @@
 # Changelog
 
+## Power: generator and lights (owner)
+* New Power section in the build menu. Generator (6 metal sheet, 10 scrap metal): Left Alt > Add fuel takes fuel from your fullest jerry can (20 L tank), Turn on / off, Check fuel. It burns 2 L an hour (a full tank lasts 10 hours) and stops when empty. It is loud: while it runs, zombies within 30 m come to look.
+* Work Light (a floodlight on a tripod) and Hanging Lamp (for ceilings) light up for real while a running generator is within 40 m.
+* Fuel is saved (migration 6 adds a fuel column). IsPowered(coords) export, ready for electric fences.
+
 ## High external wall with barbed wire (owner)
 * New defense: High External Wall (8 metal sheet, 6 scrap metal; 2500 health): 4 m sections of overlapping rusty corrugated sheets on steel posts, 3.6 m tall, with three strands of barbed wire on leaning arms on top. Sections chain into a perimeter and stand on the ground.
 * The barbed wire hurts anyone who touches it (12 a second, 30% chance a player starts bleeding): only its strip along the top, so standing next to or leaning on the wall is safe; climbing over it is not. Zombies too. The server checks a player is really up at the wire. Settings: wireDamage, wireBleed, wireFrom, wireTo, wireReach in basebuilding.lua.
