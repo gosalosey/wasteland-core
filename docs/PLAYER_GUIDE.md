@@ -62,6 +62,7 @@ Kill a deer or boar, then hold **Left Alt** on it with a knife in your pockets t
 * **Doors** swing through you instead of pushing you away.
 * **Defences:** barbed wire and spike strips hurt and slow zombies, and sandbags are a tough wall. The **High External Wall** builds a tall metal perimeter; the barbed wire along its top hurts anyone (player or zombie) who touches it, so climbing over costs blood.
 * **Power:** a **Generator** runs on fuel from a jerry can (Left Alt: Add fuel, Turn on / off, Check fuel; a full 20 L tank lasts 10 hours). While it runs, **Work Lights** and **Hanging Lamps** within 40 m light up. It is loud: zombies nearby come to look. A running generator also makes **Electric Fences** in range live: touching one shocks players (a jolt and a stagger) and throws zombies back.
+* **Beds:** build a bed (Furniture) and Left Alt > **Lie down and rest**: you slowly heal and the zombie infection eases. Move or press X to get up; getting hurt wakes you.
 * **Upkeep:** keep wood, stone and metal in the cupboard's supplies, or your base slowly decays.
 * **No cupboard?** You can still build walls, doors and defences to barricade an old building. They're yours only, and they disappear after 12 hours unless a cupboard claims them.
 

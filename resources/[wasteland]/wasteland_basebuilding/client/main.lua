@@ -16,6 +16,7 @@ local movingId = nil -- the placed piece being moved (hidden; not a snap anchor)
 local StartPlacement   -- defined below (used by the Left Alt Move option above it)
 local PoweredAt        -- (coords) -> boolean: a running generator powers this spot (set below)
 local showRange = {}   -- generator id -> true: draw its power range (Left Alt option)
+local restingOn = nil  -- the bed this player lies on
 local warnedModels = {}
 local KEY_E, KEY_BACK = 38, 194
 local WALL_LIKE = { wall = true, doorway = true, windowframe = true, halfwall = true }
@@ -389,6 +390,11 @@ local function addTargets(obj, id, isCupboard)
     end
     local pdata = not isCupboard and propCache[id] or nil
     local gp = pdata and cfg.pieces[pdata.piece]
+    if gp and gp.bed then
+        opts[#opts + 1] = { label = 'Lie down and rest', icon = '☾', distance = d,
+            canInteract = function() return not restingOn end,
+            onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:rest', id, true) end }
+    end
     if gp and gp.generator then
         opts[#opts + 1] = { label = 'Turn on / off', icon = '⏻', distance = d,
             onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generator', id) end }
@@ -660,6 +666,48 @@ Citizen.CreateThread(function()
 end)
 
 PoweredAt = powered
+
+-- Lying in a bed: on top of the mattress, an idle sleeping animation; moving,
+-- X or being hurt gets you up (and tells the server).
+local REST_DICT, REST_ANIM = 'timetable@tracy@sleep@', 'idle_c'
+local function getUp(silent)
+    if not restingOn then return end
+    TriggerServerEvent('wasteland:basebuilding:server:rest', restingOn, false)
+    restingOn = nil
+    local ped = PlayerPedId()
+    ClearPedTasks(ped)
+    if not silent then notify('You get up.') end
+end
+
+RegisterNetEvent('wasteland:basebuilding:client:rest', function(id)
+    local data = propCache[id]
+    if not data then return end
+    local ped = PlayerPedId()
+    RequestAnimDict(REST_DICT)
+    local untilT = GetGameTimer() + 2000
+    while not HasAnimDictLoaded(REST_DICT) and GetGameTimer() < untilT do Wait(0) end
+    local at = data.coords + vector3(0.0, 0.0, 0.95)
+    SetEntityCoords(ped, at.x, at.y, at.z, false, false, false, false)
+    SetEntityHeading(ped, (data.heading + 270.0) % 360.0)
+    TaskPlayAnim(ped, REST_DICT, REST_ANIM, 2.0, 2.0, -1, 1, 0, false, false, false)
+    restingOn = id
+    notify('Resting: you heal slowly and the infection eases. Move or press X to get up.')
+    Citizen.CreateThread(function()
+        local health = GetEntityHealth(ped)
+        while restingOn == id do
+            Wait(0)
+            DisableControlAction(0, 24, true); DisableControlAction(0, 25, true)
+            local moving = IsControlPressed(0, 32) or IsControlPressed(0, 33) or IsControlPressed(0, 34) or IsControlPressed(0, 35) or IsControlPressed(0, 22)
+            local now = GetEntityHealth(ped)
+            if moving or IsControlJustPressed(0, 73) or IsEntityDead(ped) or now < health - 1 or not propCache[id] then
+                getUp(IsEntityDead(ped))
+                break
+            end
+            health = math.max(health, now)
+            if not IsEntityPlayingAnim(ped, REST_DICT, REST_ANIM, 3) then TaskPlayAnim(ped, REST_DICT, REST_ANIM, 2.0, 2.0, -1, 1, 0, false, false, false) end
+        end
+    end)
+end)
 
 -- The power range of generators the player chose to see: a ring on the ground
 -- (green while running, grey while off) and a label over the generator.

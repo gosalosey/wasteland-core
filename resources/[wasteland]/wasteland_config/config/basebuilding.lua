@@ -93,8 +93,8 @@ return {
         wallsInset = true,
     },
 
-    categoryOrder = { 'structure', 'door', 'garage', 'defense', 'stash', 'power', 'cupboard' },
-    categoryLabels = { structure = 'Structures', door = 'Doors', garage = 'Garage', defense = 'Defenses', stash = 'Storage', power = 'Power', cupboard = 'Tool Cupboard' },
+    categoryOrder = { 'structure', 'door', 'garage', 'defense', 'stash', 'furniture', 'power', 'cupboard' },
+    categoryLabels = { structure = 'Structures', door = 'Doors', garage = 'Garage', defense = 'Defenses', stash = 'Storage', furniture = 'Furniture', power = 'Power', cupboard = 'Tool Cupboard' },
 
     pieces = {
         toolcupboard = { label = 'Tool Cupboard', model = 'wl_bp_toolcupboard', category = 'cupboard',
@@ -164,6 +164,11 @@ return {
         efence = { label = 'Electric Fence', model = 'wl_bp_efence', category = 'defense', cost = { metal_sheet = 4, scrap_metal = 8 },
             health = 1200, material = 'metal', needsPower = true, shock = true,
             wireDamage = 15, wireBleed = 0, wireFrom = 0.0, wireTo = 2.65, wireReach = 0.6 },
+        -- Bed: Left Alt > Lie down and rest. Every tickSeconds while lying on it:
+        -- `health` health back and `infection` taken off the zombie infection.
+        -- Moving, X, or being hurt gets you up.
+        bed = { label = 'Bed', model = 'wl_bp_bed', category = 'furniture', cost = { wood_planks = 8, rag = 4 }, health = 300, material = 'wood',
+            bed = { tickSeconds = 10, health = 2, infection = 1.5 } },
         spikes = { label = 'Spike Strip', model = 'p_stinger_piece_01', scale = 2.0,
             category = 'defense', cost = { scrap_metal = 6 }, health = 400, material = 'metal',
             contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 2.5 },

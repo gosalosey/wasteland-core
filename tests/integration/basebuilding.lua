@@ -358,4 +358,24 @@ describe('base building', function()
         expect(zaps()).toBe(1)
         server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
     end)
+
+    it('bed: lying on it heals a little at a time; only the owner; leaving it stops it', function()
+        I('AddItem', a, 'wood_planks', 8); I('AddItem', a, 'rag', 4); server:advance(200)
+        place(a, 'bed', 1.5, 1.5)
+        local bed = lastProp(a)
+        expect(bed.piece).toBe('bed')
+        server.players[c].coords = { x = 2.0, y = 1.0, z = 30.0 }
+        act(c, 'rest', bed.id, true)
+        expect(note(c)).toBe('This is not your bed.')
+        act(a, 'rest', bed.id, true)
+        expect(#server:clientEventsFor(a, 'wasteland:basebuilding:client:rest')).toBe(1)
+        local heals = function() return #server:clientEventsFor(a, 'wasteland:survival:client:heal') end
+        local before = heals()
+        server:advance(21000)
+        expect(heals()).toBe(before + 2)            -- every 10 seconds
+        server.players[a].coords = { x = 20.0, y = 20.0, z = 30.0 }   -- walked away
+        server:advance(11000)
+        expect(heals()).toBe(before + 2)
+        server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
+    end)
 end)

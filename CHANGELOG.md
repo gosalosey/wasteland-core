@@ -1,5 +1,8 @@
 # Changelog
 
+## Beds (owner)
+* New Furniture section with a Bed (8 wood planks, 4 rags): two pallets, a stained mattress, a pillow and a blanket. Left Alt > Lie down and rest: your character lies on it; every 10 seconds you get 2 health back and the zombie infection drops by 1.5. Moving, X, or being hurt gets you up. Only those with access to the base can use it, one person per bed. Settings: bed.tickSeconds, health, infection in basebuilding.lua.
+
 ## Generator: show its power range (owner)
 * Left Alt on a generator > Show / hide power range: a ring on the ground at its power radius (green while running, grey while off) and a label. Lights and electric fences inside it get power.
 

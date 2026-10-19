@@ -149,7 +149,7 @@ local function clientConfig()
             interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
             contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale,
             ladder = p.ladder, wireDamage = p.wireDamage, wireFrom = p.wireFrom, wireTo = p.wireTo, wireReach = p.wireReach,
-            generator = p.generator, light = p.light, needsPower = p.needsPower, shock = p.shock }
+            generator = p.generator, light = p.light, needsPower = p.needsPower, shock = p.shock, bed = p.bed }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -552,6 +552,55 @@ exports('IsPowered', function(coords)
     return isPowered({ x = coords.x, y = coords.y, z = coords.z or 0 })
 end)
 
+-------------------------------------------------------------------------------
+-- Beds: lying on one slowly heals and fights the infection
+-------------------------------------------------------------------------------
+
+local resting = {} -- source -> { id, next (game timer) }
+
+local function setResting(src, id, on)
+    if not on then resting[src] = nil; return end
+    local cid = characterOf(src)
+    local p = props[id]
+    local piece = p and M.config.pieces[p.piece]
+    if not cid or not piece or not piece.bed then return end
+    if not near(src, p.coords, 3.0) then notice(src, 'Get closer to the bed.'); return end
+    if not pieceAccess(cid, p) then notice(src, 'This is not your bed.'); return end
+    for other, r in pairs(resting) do
+        if other ~= src and r.id == id then notice(src, 'Someone is lying in this bed.'); return end
+    end
+    resting[src] = { id = id, next = GetGameTimer() + piece.bed.tickSeconds * 1000 }
+    TriggerClientEvent('wasteland:basebuilding:client:rest', src, id)
+end
+
+local function restTick()
+    local t = GetGameTimer()
+    for src, r in pairs(resting) do
+        local p = props[r.id]
+        local piece = p and M.config.pieces[p.piece]
+        if not piece or not piece.bed or not near(src, p.coords, 3.0) then
+            resting[src] = nil
+        elseif t >= r.next then
+            r.next = t + piece.bed.tickSeconds * 1000
+            local b = piece.bed
+            if b.infection > 0 then
+                pcall(function() exports.wasteland_survival:ModifyStats(src, { infection = -b.infection }) end)
+            end
+            if b.health > 0 then TriggerClientEvent('wasteland:survival:client:heal', src, b.health) end
+        end
+    end
+end
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1000)
+        if M and M.active and next(resting) then
+            local ok, err = pcall(restTick)
+            if not ok then M.log:warn('rest: %s', tostring(err)) end
+        end
+    end
+end)
+
 local function dropCupboard(c, why)
     cupboards[c.id] = nil
     carry[c.id] = nil
@@ -907,7 +956,7 @@ end
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
-    if src then meleeCooldown[src], picking[src], adminBuild[src], wireHurt[src] = nil, nil, nil, nil end
+    if src then meleeCooldown[src], picking[src], adminBuild[src], wireHurt[src], resting[src] = nil, nil, nil, nil, nil end
 end)
 
 local function useBuildItem(src)
@@ -980,12 +1029,12 @@ M = Wasteland.DefineModule({
             streamRadius = { type = 'number', default = 150.0, min = 30, max = 1000 },
             refund = { type = 'number', default = 0.5, min = 0, max = 1 },
             placement = ANY,
-            categoryOrder = { type = 'array', default = { 'structure', 'door', 'garage', 'stash', 'power', 'cupboard' }, items = { type = 'string' } },
+            categoryOrder = { type = 'array', default = { 'structure', 'door', 'garage', 'stash', 'furniture', 'power', 'cupboard' }, items = { type = 'string' } },
             categoryLabels = { type = 'map', default = {}, keys = { type = 'string' }, values = { type = 'string' } },
             pieces = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'table', allowUnknown = true, fields = {
                 label = { type = 'string', required = true },
                 model = { type = 'string', required = true },
-                category = { type = 'enum', values = { 'cupboard', 'structure', 'door', 'garage', 'stash', 'defense', 'power' }, required = true },
+                category = { type = 'enum', values = { 'cupboard', 'structure', 'door', 'garage', 'stash', 'defense', 'power', 'furniture' }, required = true },
                 cost = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'integer', min = 1, max = 100000 } },
                 health = { type = 'integer', default = 500, min = 1, max = 100000 },
                 material = { type = 'enum', values = { 'wood', 'stone', 'metal' }, default = 'wood' },
@@ -1009,6 +1058,11 @@ M = Wasteland.DefineModule({
                 wireTo = { type = 'number', min = 0, max = 50, description = 'Barbed wire: up to this height' },
                 wireReach = { type = 'number', min = 0.1, max = 5, description = 'Barbed wire: this close to the wall line counts' },
                 needsPower = { type = 'boolean', description = 'Only works while a running generator is in range (electric fence)' },
+                bed = { type = 'table', nullable = true, fields = {
+                    tickSeconds = { type = 'number', default = 10, min = 1, max = 600 },
+                    health = { type = 'number', default = 2, min = 0, max = 200, description = 'Health back each tick' },
+                    infection = { type = 'number', default = 1.5, min = 0, max = 100, description = 'Infection taken off each tick' },
+                } },
                 shock = { type = 'boolean', description = 'Touching it shocks: players stagger, zombies are thrown back' },
                 generator = { type = 'table', nullable = true, fields = {
                     tankLitres = { type = 'number', default = 20, min = 1, max = 1000 },
@@ -1162,6 +1216,8 @@ M.netEvent('wasteland:basebuilding:server:move', { args = { ID, COORD, COORD, CO
 M.netEvent('wasteland:basebuilding:server:removeCupboard', { args = { ID }, rateLimit = RATE }, function(src, id) removeCupboard(src, id) end)
 M.netEvent('wasteland:basebuilding:server:generator', { args = { ID }, rateLimit = RATE }, function(src, id) generatorToggle(src, id) end)
 M.netEvent('wasteland:basebuilding:server:generatorFuel', { args = { ID }, rateLimit = RATE }, function(src, id) generatorFuel(src, id) end)
+M.netEvent('wasteland:basebuilding:server:rest', { args = { ID, { type = 'boolean', required = true } }, rateLimit = RATE },
+    function(src, id, on) setResting(src, id, on) end)
 M.netEvent('wasteland:basebuilding:server:wire', { args = { ID }, rateLimit = { burst = 3, perSecond = 2 } }, function(src, id) touchWire(src, id) end)
 M.netEvent('wasteland:basebuilding:server:moveCupboard', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
     function(src, id, x, y, z, heading) moveCupboard(src, id, x, y, z, heading) end)

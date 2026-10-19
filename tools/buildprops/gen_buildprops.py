@@ -302,6 +302,24 @@ def plain(seed, dark, light, grime=0.35):
 
 ceramic_d, ceramic_h = plain(66, (176, 172, 160), (232, 228, 216))
 copper_d, copper_h = plain(88, (96, 58, 30), (176, 112, 64), 0.25)
+
+def fabric(seed):
+    """Stained mattress / blanket cloth: a fine weave, stains, a seam grid."""
+    S = TEX
+    weave = Image.new('L', (S, S))
+    weave.putdata([128 + int(40 * math.sin(x * 0.9) * math.sin(y * 0.9)) for y in range(S) for x in range(S)])
+    base = Image.blend(fbm(S, seed, base=6, octaves=5), weave, 0.25)
+    img = colorize(base, (92, 86, 72), (168, 158, 134))
+    stains = fbm(S, seed + 5, base=3, octaves=5).point(lambda v: max(0, (v - 150) * 3))
+    img = over(img, colorize(fbm(S, seed + 6, base=10, octaves=3), (78, 66, 44), (120, 100, 64)), stains.point(lambda v: v // 2))
+    d = ImageDraw.Draw(img)
+    for i in range(0, S, S // 4):
+        d.line((i, 0, i, S), fill=(70, 64, 54), width=3)
+        d.line((0, i, S, i), fill=(70, 64, 54), width=3)
+    h = weave.point(lambda v: 110 + v // 4)
+    return desaturate(img, 0.15), h
+
+fabric_d, fabric_h = fabric(121)
 wood_d, wood_h = weathered_wood(11)
 beam_d, beam_h = beam_wood(55)
 metal_d, metal_h = corrugated(22)
@@ -315,9 +333,10 @@ TEXTURES = {
     'wlbp_darkmetal': grunge(dark_d, 404, blood=1, spray=0),
     'wlbp_ceramic': ceramic_d,
     'wlbp_copper': copper_d,
+    'wlbp_fabric': grunge(fabric_d, 505, blood=1, spray=0),
 }
 HEIGHTS = {'wlbp_wood': wood_h, 'wlbp_beam': beam_h, 'wlbp_metal': metal_h, 'wlbp_stone': stone_h, 'wlbp_darkmetal': dark_h,
-           'wlbp_ceramic': ceramic_h, 'wlbp_copper': copper_h}
+           'wlbp_ceramic': ceramic_h, 'wlbp_copper': copper_h, 'wlbp_fabric': fabric_h}
 ALL_TEX = dict(TEXTURES)
 for k, hgt in HEIGHTS.items():
     ALL_TEX[k + '_n'] = normal_map(hgt, 4.0 if k == 'wlbp_metal' else 3.0)
@@ -970,6 +989,27 @@ def efence():
     out += box(-w2 + 0.13, -0.21, 1.6, -w2 + 0.22, -0.2, 1.7, DARK)
     out += box(-w2 + 0.2, -0.16, 0.0, -w2 + 0.24, -0.12, 1.3, DARK)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Bed: two pallets, a stained mattress, a pillow (at +x) and a rough blanket.
+# 2.0 x 1.0 m, the mattress top at 0.44 m.
+# ---------------------------------------------------------------------------
+
+def bed():
+    out = []
+    for z0 in (0.0, 0.13):                      # two pallets stacked
+        for y in (-0.48, -0.03, 0.42):          # bearers
+            out += box(-1.0, y, z0, 1.0, y + 0.06, z0 + 0.07, BEAM)
+        x = -1.0
+        while x < 1.0 - 0.01:                   # deck boards across
+            out += box(x + 0.01, -0.5, z0 + 0.07, x + 0.13, 0.5, z0 + 0.12, WOOD)
+            x += 0.18
+    out += box(-0.95, -0.46, 0.25, 0.95, 0.46, 0.43, 'wlbp_fabric')          # mattress
+    out += rbox(0.72, 0.0, 0.48, 0.32, 0.62, 0.1, 'wlbp_fabric', ry=-4)     # pillow
+    out += rbox(-0.25, 0.01, 0.445, 1.32, 0.96, 0.03, 'wlbp_fabric', rz=2)  # blanket
+    out += rbox(0.42, 0.0, 0.47, 0.12, 0.96, 0.05, 'wlbp_fabric', rz=2)     # its folded edge
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -1047,6 +1087,7 @@ PIECES += [
     # electric fence: posts, and one thin panel over the wires (you touch them, not slip through)
     ('wl_bp_efence', efence(), cbox(-EF_W / 2, -0.07, 0, -EF_W / 2 + 0.1, 0.07, EF_H + 0.05) + cbox(EF_W / 2 - 0.1, -0.07, 0, EF_W / 2, 0.07, EF_H + 0.05)
         + cbox(-EF_W / 2 + 0.1, -0.1, 0.1, EF_W / 2 - 0.1, 0.03, EF_H - 0.02), 56),
+    ('wl_bp_bed', bed(), cbox(-1.0, -0.5, 0, 1.0, 0.5, 0.44), 70),
     ('wl_bp_generator', generator(), cbox(-0.75, -0.38, 0, 0.75, 0.38, 1.0), 56),
     ('wl_bp_worklight', worklight(), cbox(-0.3, -0.3, 0, 0.3, 0.3, 1.95), 56),
     ('wl_bp_lamp', hanging_lamp(), cbox(-0.18, -0.18, -0.74, 0.18, 0.18, 0.0), 56),
