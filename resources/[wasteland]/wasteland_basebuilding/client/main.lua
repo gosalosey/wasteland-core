@@ -398,8 +398,10 @@ local function addTargets(obj, id, isCupboard)
     if gp and gp.generator then
         opts[#opts + 1] = { label = 'Turn on / off', icon = '⏻', distance = d,
             onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generator', id) end }
-        opts[#opts + 1] = { label = 'Add fuel (jerry can)', icon = '⛽', distance = d,
-            onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generatorFuel', id) end }
+        if not gp.generator.unlimited then
+            opts[#opts + 1] = { label = 'Add fuel (jerry can)', icon = '⛽', distance = d,
+                onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:generatorFuel', id) end }
+        end
         opts[#opts + 1] = { label = 'Show / hide power range', icon = '◎', distance = d,
             onSelect = function()
                 showRange[id] = not showRange[id] or nil
@@ -409,7 +411,8 @@ local function addTargets(obj, id, isCupboard)
         opts[#opts + 1] = { label = 'Check fuel', icon = '◔', distance = d,
             onSelect = function()
                 local p = propCache[id]
-                if p then notify(('Fuel: %.1f / %d L, %s.'):format(p.fuel or 0, gp.generator.tankLitres, p.is_open and 'running' or 'off')) end
+                if p and gp.generator.unlimited then notify(('Unlimited power, %s.'):format(p.is_open and 'running' or 'off'))
+                elseif p then notify(('Fuel: %.1f / %d L, %s.'):format(p.fuel or 0, gp.generator.tankLitres, p.is_open and 'running' or 'off')) end
             end }
     end
     if isCupboard then
@@ -633,7 +636,7 @@ end)
 local function powered(at)
     for _, d in pairs(propCache) do
         local piece = cfg.pieces[d.piece]
-        if piece and piece.generator and d.is_open and (d.fuel or 0) > 0 and #(d.coords - at) <= piece.generator.powerRadius then return true end
+        if piece and piece.generator and d.is_open and ((d.fuel or 0) > 0 or piece.generator.unlimited) and #(d.coords - at) <= piece.generator.powerRadius then return true end
     end
     return false
 end
@@ -727,7 +730,7 @@ Citizen.CreateThread(function()
                     showRange[id] = nil
                 else
                     local r = piece.generator.powerRadius
-                    local on = d.is_open and (d.fuel or 0) > 0
+                    local on = d.is_open and ((d.fuel or 0) > 0 or piece.generator.unlimited)
                     local c = on and { 90, 220, 110 } or { 170, 170, 160 }
                     DrawMarker(1, d.coords.x, d.coords.y, d.coords.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, r * 2.0, r * 2.0, 2.2,
                         c[1], c[2], c[3], 45, false, false, 2, false, nil, nil, false)

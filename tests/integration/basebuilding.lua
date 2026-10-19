@@ -378,4 +378,20 @@ describe('base building', function()
         expect(heals()).toBe(before + 2)
         server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
     end)
+
+    it('admin generator: only admins build it; free, needs no fuel, powers its range', function()
+        server.players[c].coords = { x = 2.0, y = 1.0, z = 30.0 }
+        place(c, 'admingenerator', 3.0, 1.0)
+        expect(note(c)).toBe('Only admins can build that.')
+        server.aces[a .. '|wasteland.admin'] = true
+        place(a, 'admingenerator', -3.0, -3.0)
+        local gen = lastProp(a)
+        expect(gen.piece).toBe('admingenerator')
+        act(a, 'generator', gen.id)
+        expect(note(a)).toBe('Generator on.')
+        expect(server:export('wasteland_basebuilding', 'IsPowered', { x = -40.0, y = -3.0, z = 30.0 })).toBe(true)
+        server:advance(61000)
+        expect(server:export('wasteland_basebuilding', 'IsPowered', { x = -40.0, y = -3.0, z = 30.0 })).toBe(true) -- still on
+        server.aces[a .. '|wasteland.admin'] = nil
+    end)
 end)

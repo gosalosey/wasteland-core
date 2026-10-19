@@ -66,6 +66,16 @@ local function label(item)
     return d and d.label or item
 end
 
+-- Admins: the same as the F10 admin panel (wasteland_admin), else its ACE.
+local function isAdmin(src)
+    if GetResourceState('wasteland_admin') == 'started' then
+        local ok, yes = pcall(function() return exports.wasteland_admin:IsAdmin(src) end)
+        if ok then return yes == true end
+    end
+    local allowed = IsPlayerAceAllowed(tostring(src), 'wasteland.admin')
+    return allowed == true or allowed == 1
+end
+
 local function countOf(src) return function(item) return inv():GetItemCount(src, item) or 0 end end
 
 local function pay(src, cost)
@@ -149,7 +159,7 @@ local function clientConfig()
             interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
             contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale,
             ladder = p.ladder, wireDamage = p.wireDamage, wireFrom = p.wireFrom, wireTo = p.wireTo, wireReach = p.wireReach,
-            generator = p.generator, light = p.light, needsPower = p.needsPower, shock = p.shock, bed = p.bed }
+            generator = p.generator, light = p.light, needsPower = p.needsPower, shock = p.shock, bed = p.bed, adminOnly = p.adminOnly }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -239,7 +249,7 @@ local function buildView(src)
     for _, cat in ipairs(M.config.categoryOrder) do
         local list = {}
         for key, p in pairs(M.config.pieces) do
-            if p.category == cat and not p.hidden then
+            if p.category == cat and not p.hidden and (not p.adminOnly or isAdmin(src)) then
                 local cost = {}
                 local names = {}
                 for item in pairs(p.cost or {}) do names[#names + 1] = item end
@@ -300,6 +310,7 @@ local function placeProp(src, key, x, y, z, heading)
     local piece = M.config.pieces[key]
     local cid = characterOf(src)
     if not piece or piece.hidden or not cid then return end
+    if piece.adminOnly and not isAdmin(src) then notice(src, 'Only admins can build that.'); return end
     local coords = { x = x, y = y, z = z }
     if not near(src, coords, M.config.placement.maxPlaceDistance + 2.0) then notice(src, 'Too far away to place that.'); return end
 
@@ -498,7 +509,8 @@ end
 local function generatorToggle(src, id)
     local p = generatorOf(src, id)
     if not p then return end
-    if not p.is_open and (p.fuel or 0) <= 0 then notice(src, 'The generator has no fuel. Add fuel from a jerry can.'); return end
+    local _, gcfg = generatorOf(src, id)
+    if not p.is_open and (p.fuel or 0) <= 0 and not (gcfg and gcfg.unlimited) then notice(src, 'The generator has no fuel. Add fuel from a jerry can.'); return end
     p.is_open = not p.is_open
     powerChanged(p)
     notice(src, p.is_open and 'Generator on.' or 'Generator off.')
@@ -507,6 +519,7 @@ end
 local function generatorFuel(src, id)
     local p, g = generatorOf(src, id)
     if not p then return end
+    if g.unlimited then notice(src, 'This generator needs no fuel.'); return end
     local space = g.tankLitres - (p.fuel or 0)
     if space <= 0.05 then notice(src, 'The tank is full.'); return end
     local best
@@ -528,7 +541,7 @@ local function powerTick()
     for _, p in pairs(props) do
         local piece = M.config.pieces[p.piece]
         local g = piece and piece.generator
-        if g and p.is_open then
+        if g and p.is_open and not g.unlimited then
             p.fuel = math.max(0, (p.fuel or 0) - g.litresPerHour / 60)
             if p.fuel <= 0 then p.is_open = false end
             powerChanged(p)
@@ -541,7 +554,7 @@ end
 local function isPowered(at)
     for _, p in pairs(props) do
         local piece = M.config.pieces[p.piece]
-        if piece and piece.generator and p.is_open and (p.fuel or 0) > 0
+        if piece and piece.generator and p.is_open and ((p.fuel or 0) > 0 or piece.generator.unlimited)
             and Rules.dist(p.coords, at) <= piece.generator.powerRadius then return true end
     end
     return false
@@ -1058,6 +1071,7 @@ M = Wasteland.DefineModule({
                 wireTo = { type = 'number', min = 0, max = 50, description = 'Barbed wire: up to this height' },
                 wireReach = { type = 'number', min = 0.1, max = 5, description = 'Barbed wire: this close to the wall line counts' },
                 needsPower = { type = 'boolean', description = 'Only works while a running generator is in range (electric fence)' },
+                adminOnly = { type = 'boolean', default = false, description = 'Only admins (the F10 admin panel) can build it' },
                 bed = { type = 'table', nullable = true, fields = {
                     tickSeconds = { type = 'number', default = 10, min = 1, max = 600 },
                     health = { type = 'number', default = 2, min = 0, max = 200, description = 'Health back each tick' },
@@ -1073,6 +1087,7 @@ M = Wasteland.DefineModule({
                     litresPerHour = { type = 'number', default = 2, min = 0, max = 1000 },
                     powerRadius = { type = 'number', default = 40, min = 1, max = 500 },
                     noise = { type = 'number', default = 30, min = 0, max = 500, description = 'Zombies this close come to look while it runs' },
+                    unlimited = { type = 'boolean', default = false, description = 'Needs no fuel (admin generator)' },
                 } },
                 light = { type = 'table', nullable = true, fields = {
                     height = { type = 'number', default = 1.5, min = -20, max = 20 },

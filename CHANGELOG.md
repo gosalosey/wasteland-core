@@ -1,5 +1,8 @@
 # Changelog
 
+## Admin Generator (owner)
+* New Power piece for admins only (the same people as the F10 admin panel): free, needs no fuel (unlimited), silent, powers 60 m, very tough (100000 health). Hidden from the build menu for everyone else, and the server refuses it for them. Piece fields: adminOnly, generator.unlimited.
+
 ## Fix: lying in bed (owner)
 * The sleeping animation had its own offset (you sank into the mattress, across the bed). Now a flat lying-on-your-back animation, placed on the mattress top, held still while resting, head at the pillow end. bed.lie (x, y, up, turn) in basebuilding.lua tunes it.
 
