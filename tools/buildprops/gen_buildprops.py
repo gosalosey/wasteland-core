@@ -612,6 +612,8 @@ SHADER_PARAMS = '''     <Item name="matMaterialColorScale" type="Vector" x="1" y
      <Item name="globalAnimUV1" type="Vector" x="0" y="1" z="0" w="0" />
      <Item name="globalAnimUV0" type="Vector" x="1" y="0" z="0" w="0" />'''
 
+# flags 32 and physicsDictionary = the model itself: the game then uses the
+# collision inside the model file (without it, you walk through).
 archetypes = []
 for model, look, solid, mid in PIECES:
     # the size the game sees is the collision's (unchanged), whatever the details
@@ -775,7 +777,7 @@ for model, look, solid, mid in PIECES:
         fh.write(xml)
     archetypes.append(f'''  <Item type="CBaseArchetypeDef">
    <lodDist value="200" />
-   <flags value="537001984" />
+   <flags value="32" />
    <specialAttribute value="0" />
    {vec('bbMin', mn)}
    {vec('bbMax', mx)}
@@ -786,7 +788,7 @@ for model, look, solid, mid in PIECES:
    <textureDictionary>{TXD}</textureDictionary>
    <clipDictionary />
    <drawableDictionary />
-   <physicsDictionary />
+   <physicsDictionary>{model}</physicsDictionary>
    <assetType>ASSET_TYPE_DRAWABLE</assetType>
    <assetName>{model}</assetName>
    <extensions />
