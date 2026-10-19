@@ -509,6 +509,8 @@ describe('real MariaDB: base building', function()
         expect(open == 1 or open == true).toBe(true) -- TINYINT(1) comes back as a boolean
         act(a, 'upgrade', found.id)
         expect(backend:rows('SELECT piece FROM wl_bb_props WHERE id = ?', { found.id })[1].piece).toBe('foundation_stone')
+        act(a, 'move', door.id, 902.5, 901.0, 30.0, 90.0)
+        expect(backend:rows('SELECT x FROM wl_bb_props WHERE id = ?', { door.id })[1].x).toBe(902.5)
         act(a, 'authorize', cup.id, c)
         expect(#backend:rows('SELECT character_id FROM wl_bb_auth WHERE cupboard_id = ?', { cup.id })).toBe(1)
         local cId = server:export('wasteland_players', 'GetCharacterId', c)
