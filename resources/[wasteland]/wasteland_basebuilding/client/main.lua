@@ -693,9 +693,17 @@ StartPlacement = function(pieceKey)
             if snapEnabled and candidates then
                 local raw = vector3(target.x, target.y, target.z)
                 local best, bestDist, bestPrio = nil, nil, nil
+                -- Ceilings: aim anywhere under (or at) the spot it would cover; the
+                -- distance is measured flat, since you look at walls or the floor.
+                local flat = pieceKey == 'ceiling' or (cfg.pieces[pieceKey] and cfg.pieces[pieceKey].family == 'ceiling')
+                local reach = P.snapDistance
+                if flat then
+                    local d = GetModelDims(GetHashKey(cfg.pieces[pieceKey].model))
+                    reach = math.max(P.snapDistance, math.min(d.size.x, d.size.y) / 2.0 + 0.5)
+                end
                 for _, cand in ipairs(candidates) do
-                    local dist = #(raw - cand.coords)
-                    if dist <= P.snapDistance then
+                    local dist = flat and (#(raw.xy - cand.coords.xy) + 0.1 * math.abs(raw.z - cand.coords.z)) or #(raw - cand.coords)
+                    if dist <= reach then
                         local prio = cand.priority or 2
                         if not bestPrio or prio < bestPrio or (prio == bestPrio and dist < bestDist) then best, bestDist, bestPrio = cand, dist, prio end
                     end

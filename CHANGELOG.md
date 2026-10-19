@@ -1,5 +1,8 @@
 # Changelog
 
+## Ceilings snap again (owner)
+* A ceiling's snap point is its middle, about 2 m from where you aim (a wall top or the floor), so it never came within the 2 m snap distance. Ceilings now snap when you aim anywhere under the spot they would cover (measured flat; the nearest storey wins).
+
 ## Storage boxes place again (owner)
 * The large storage container used v_res_tre_storagebox, an interior prop the game will not spawn ("model ... is not in the game"). All three storage pieces now use our own models: wl_bp_stash_small (a wooden crate), wl_bp_stash_large (a corrugated metal box with a lid and padlock) and wl_bp_weaponlocker (a tall steel cabinet), with collision.
 
