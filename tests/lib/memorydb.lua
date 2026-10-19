@@ -338,6 +338,11 @@ function MemoryDB:installBasebuilding(SQL)
         if r then r.piece, r.model, r.health, r.max_health, r.material = p[1], p[2], p[3], p[4], p[5] end
         return header(1)
     end)
+    self:on(SQL.cupboardMove, function(db, p)
+        local r = db.data.wl_bb_cupboards[p[5]]
+        if r then r.x, r.y, r.z, r.heading = p[1], p[2], p[3], p[4] end
+        return header(1)
+    end)
     self:on(SQL.propMove, function(db, p)
         local r = db.data.wl_bb_props[p[6]]
         if r then r.x, r.y, r.z, r.heading, r.cupboard_id, r.is_open = p[1], p[2], p[3], p[4], p[5], 0 end

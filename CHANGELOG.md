@@ -1,5 +1,9 @@
 # Changelog
 
+## Move the tool cupboard; doors swing through people (owner)
+* Left Alt on your tool cupboard > Move (owner only). It claims the land, so every piece it covers must stay within its reach, and it cannot go onto someone else's land or too close to another cupboard.
+* Wooden and metal doors swing through players and vehicles like gates (passThrough), instead of pushing you.
+
 ## Items weigh half as much (owner)
 * Every item weight in inventory.lua is halved (for example a water bottle 0.6 -> 0.3 kg, scrap metal 1 -> 0.5 kg). Pocket and bag limits are unchanged, so players carry about twice as much.
 

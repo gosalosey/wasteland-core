@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS wl_bb_notices (
 
 WLBB.SQL = {
     selectCupboards = 'SELECT id, owner_id, x, y, z, heading, radius, health, max_health, created_unix FROM wl_bb_cupboards',
+    cupboardMove = 'UPDATE wl_bb_cupboards SET x = ?, y = ?, z = ?, heading = ? WHERE id = ?',
     selectAuth = 'SELECT cupboard_id, character_id, name FROM wl_bb_auth',
     selectProps = 'SELECT id, cupboard_id, owner_id, category, piece, model, x, y, z, heading, is_open, health, max_health, material, created_unix FROM wl_bb_props',
     insertCupboard = 'INSERT INTO wl_bb_cupboards (owner_id, x, y, z, heading, radius, health, max_health, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',

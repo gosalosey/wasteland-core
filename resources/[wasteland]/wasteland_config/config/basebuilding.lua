@@ -116,9 +116,9 @@ return {
             family = 'ceiling', ladder = true },
         gateframe = { label = 'Gate Frame', model = 'wl_bp_gate_frame', category = 'structure', cost = { wood_planks = 20 }, health = 700, material = 'wood' },
         door = { label = 'Wooden Door', model = 'wl_bp_door_wood', category = 'door', cost = { wood_planks = 10 }, health = 600,
-            material = 'wood', openAngleOffset = 100.0 },
+            material = 'wood', openAngleOffset = 100.0, passThrough = true },
         metaldoor = { label = 'Metal Door', model = 'wl_bp_door_metal', category = 'door', cost = { metal_sheet = 6 }, health = 1500,
-            material = 'metal', openAngleOffset = 100.0, family = 'door', hidden = true },
+            material = 'metal', openAngleOffset = 100.0, family = 'door', hidden = true, passThrough = true },
         -- interactDistance: E works from this far (metres), also from a vehicle;
         -- passThrough: swings through players and vehicles instead of pushing them.
         gatedoor = { label = 'Gate Door', model = 'wl_bp_gate_door', category = 'door', cost = { wood_planks = 20, metal_sheet = 2 }, health = 700,

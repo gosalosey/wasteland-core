@@ -321,7 +321,11 @@ local function addTargets(obj, id, isCupboard)
             canInteract = function() local p = propCache[id]; return p ~= nil and p.health < p.max_health end,
             onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:repair', id) end }
     end
-    if not isCupboard then
+    if isCupboard then
+        opts[#opts + 1] = { label = 'Move', icon = '✥', distance = d,
+            canInteract = function() return not isPlacing and cupboardCache[id] ~= nil end,
+            onSelect = function() StartPlacement(cfg.cupboardPiece, id, true) end }
+    else
         opts[#opts + 1] = { label = 'Move', icon = '✥', distance = d,
             canInteract = function() return not isPlacing and propCache[id] ~= nil end,
             onSelect = function() local p = propCache[id]; if p then StartPlacement(p.piece, id) end end }
@@ -517,6 +521,13 @@ RegisterNetEvent('wasteland:basebuilding:client:cupboardRemoved', function(id)
     if myBlips[id] then RemoveBlip(myBlips[id]); myBlips[id] = nil end
 end)
 RegisterNetEvent('wasteland:basebuilding:client:cupboardHealth', function(id, health) if cupboardCache[id] then cupboardCache[id].health = health end end)
+RegisterNetEvent('wasteland:basebuilding:client:cupboardMoved', function(id, patch)
+    local c = cupboardCache[id]
+    if not c or type(patch) ~= 'table' then return end
+    c.coords, c.heading = vec(patch.coords), patch.heading
+    DespawnCupboard(id)
+    SpawnCupboard(id)
+end)
 RegisterNetEvent('wasteland:basebuilding:client:propAdded', function(p) storeProp(p) end)
 RegisterNetEvent('wasteland:basebuilding:client:propRemoved', function(id) propCache[id] = nil; DespawnProp(id) end)
 RegisterNetEvent('wasteland:basebuilding:client:propMoved', function(id, patch)
@@ -691,14 +702,15 @@ local function help(text)
     EndTextCommandDisplayHelp(0, false, false, -1)
 end
 
-StartPlacement = function(pieceKey, moveId)
+StartPlacement = function(pieceKey, moveId, moveCupboard)
     local piece = cfg.pieces[pieceKey]
     if not piece or isPlacing then return end
-    -- Moving a placed piece: hide it while its see-through copy is moved.
+    -- Moving a placed piece (or the tool cupboard): hide it while its see-through copy is moved.
     local movingObj = nil
     if moveId then
-        movingId = moveId
-        movingObj = spawnedProps and spawnedProps[moveId] and spawnedProps[moveId].obj or nil
+        movingId = not moveCupboard and moveId or nil
+        local list = moveCupboard and spawnedCupboards or spawnedProps
+        movingObj = list[moveId] and list[moveId].obj or nil
         if movingObj and DoesEntityExist(movingObj) then SetEntityVisible(movingObj, false, false); SetEntityCollision(movingObj, false, false) end
     end
     local model = GetHashKey(piece.model)
@@ -820,7 +832,9 @@ StartPlacement = function(pieceKey, moveId)
                 piece.label, didSnap and ' (snapped)' or '', snapEnabled and 'on' or 'off', overlap, rampHelp))
 
             if IsDisabledControlJustReleased(0, KEY_E) then
-                if moveId then
+                if moveId and moveCupboard then
+                    TriggerServerEvent('wasteland:basebuilding:server:moveCupboard', moveId, placeCoords.x, placeCoords.y, placeCoords.z, heading)
+                elseif moveId then
                     TriggerServerEvent('wasteland:basebuilding:server:move', moveId, placeCoords.x, placeCoords.y, placeCoords.z, heading)
                 else
                     TriggerServerEvent('wasteland:basebuilding:server:place', pieceKey, placeCoords.x, placeCoords.y, placeCoords.z, heading)

@@ -409,6 +409,36 @@ local function moveProp(src, id, x, y, z, heading)
     notice(src, 'Moved.')
 end
 
+-- Move the tool cupboard (owner only). It claims the land, so: every piece it
+-- covers must stay within its reach, it may not go onto someone else's land,
+-- and not too close to another cupboard.
+local function moveCupboard(src, id, x, y, z, heading)
+    local cid = characterOf(src)
+    local c = cupboards[id]
+    if not c or not cid then return end
+    local coords = { x = x, y = y, z = z }
+    if c.owner ~= cid then notice(src, 'Only the owner can move this tool cupboard.'); return end
+    if not near(src, c.coords, M.config.placement.maxPlaceDistance + 10.0) then notice(src, 'Too far from the tool cupboard.'); return end
+    if not near(src, coords, M.config.placement.maxPlaceDistance + 2.0) then notice(src, 'Too far away to put it there.'); return end
+    for oid, o in pairs(cupboards) do
+        if oid ~= id then
+            if Rules.dist(coords, o.coords) < M.config.cupboard.minGap then notice(src, 'Too close to another tool cupboard.'); return end
+            if Rules.dist(coords, o.coords) <= o.radius and not hasAccess(cid, o) then notice(src, 'This land is claimed by someone else.'); return end
+        end
+    end
+    for _, p in pairs(props) do
+        if p.cupboard_id == id and Rules.dist(p.coords, coords) > c.radius then
+            notice(src, 'Part of your base would be outside the tool cupboard\'s reach. Move it closer to the middle.')
+            return
+        end
+    end
+    c.coords, c.heading = coords, (tonumber(heading) or 0.0) % 360.0
+    write(SQL.cupboardMove, { x, y, z, c.heading, id }, 'moving cupboard ' .. id)
+    TriggerClientEvent('wasteland:basebuilding:client:cupboardMoved', -1, id, { coords = coords, heading = c.heading })
+    sendMineAll()
+    notice(src, 'Tool cupboard moved.')
+end
+
 local function dropCupboard(c, why)
     cupboards[c.id] = nil
     carry[c.id] = nil
@@ -968,6 +998,8 @@ M.netEvent('wasteland:basebuilding:server:remove', { args = { ID }, rateLimit = 
 M.netEvent('wasteland:basebuilding:server:move', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
     function(src, id, x, y, z, heading) moveProp(src, id, x, y, z, heading) end)
 M.netEvent('wasteland:basebuilding:server:removeCupboard', { args = { ID }, rateLimit = RATE }, function(src, id) removeCupboard(src, id) end)
+M.netEvent('wasteland:basebuilding:server:moveCupboard', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
+    function(src, id, x, y, z, heading) moveCupboard(src, id, x, y, z, heading) end)
 M.netEvent('wasteland:basebuilding:server:door', { args = { ID }, rateLimit = RATE }, function(src, id) toggleDoor(src, id) end)
 M.netEvent('wasteland:basebuilding:server:stash', { args = { ID }, rateLimit = RATE }, function(src, id) openStash(src, id) end)
 M.netEvent('wasteland:basebuilding:server:supplies', { args = { ID }, rateLimit = RATE }, function(src, id) openSupplies(src, id) end)
