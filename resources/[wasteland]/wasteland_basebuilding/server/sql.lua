@@ -89,6 +89,7 @@ WLBB.SQL = {
     propOpen = 'UPDATE wl_bb_props SET is_open = ? WHERE id = ?',
     propHealth = 'UPDATE wl_bb_props SET health = ? WHERE id = ?',
     propUpgrade = 'UPDATE wl_bb_props SET piece = ?, model = ?, health = ?, max_health = ?, material = ? WHERE id = ?',
+    propMove = 'UPDATE wl_bb_props SET x = ?, y = ?, z = ?, heading = ?, cupboard_id = ?, is_open = 0 WHERE id = ?',
     detachProps = 'UPDATE wl_bb_props SET cupboard_id = NULL WHERE cupboard_id = ?',
     attachProp = 'UPDATE wl_bb_props SET cupboard_id = ? WHERE id = ?',
     insertNotice = 'INSERT INTO wl_bb_notices (character_id, message, created_unix) VALUES (?, ?, ?)',

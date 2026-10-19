@@ -11,6 +11,8 @@ local cupboardCache, propCache = {}, {}      -- id -> data (coords as vector3)
 local spawnedCupboards, spawnedProps = {}, {} -- id -> { obj, targets }
 local myBlips = {}
 local isPlacing, picking = false, false
+local movingId = nil -- the placed piece being moved (hidden; not a snap anchor)
+local StartPlacement   -- defined below (used by the Left Alt Move option above it)
 local warnedModels = {}
 local KEY_E, KEY_BACK = 38, 194
 local WALL_LIKE = { wall = true, doorway = true, windowframe = true, halfwall = true }
@@ -134,7 +136,8 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
     local newDims = newPiece and GetModelDims(GetHashKey(newPiece.model)) or { size = vector3(2.0, 2.0, 2.0), min = vector3(-1.0, -1.0, -1.0), max = vector3(1.0, 1.0, 1.0) }
 
     local candidates = {}
-    for _, data in pairs(propCache) do
+    for pid, data in pairs(propCache) do
+      if pid ~= movingId then
         local anchorConf = cfg.pieces[data.piece]
         local family = anchorConf and (anchorConf.family or data.piece)
         local mode = family and ruleByAnchor[family]
@@ -208,6 +211,7 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
                 candidates[#candidates + 1] = { coords = data.coords - RotateOffset(centerOffset, data.heading), heading = data.heading, priority = 1 }
             end
         end
+      end
     end
     return candidates
 end
@@ -316,6 +320,11 @@ local function addTargets(obj, id, isCupboard)
         opts[#opts + 1] = { label = rc and ('Repair (%dx %s)'):format(rc.count, rc.item:gsub('_', ' ')) or 'Repair', icon = '⚒', distance = d,
             canInteract = function() local p = propCache[id]; return p ~= nil and p.health < p.max_health end,
             onSelect = function() TriggerServerEvent('wasteland:basebuilding:server:repair', id) end }
+    end
+    if not isCupboard then
+        opts[#opts + 1] = { label = 'Move', icon = '✥', distance = d,
+            canInteract = function() return not isPlacing and propCache[id] ~= nil end,
+            onSelect = function() local p = propCache[id]; if p then StartPlacement(p.piece, id) end end }
     end
     opts[#opts + 1] = { label = 'Remove', icon = '✕', distance = d,
         onSelect = function() TriggerServerEvent(isCupboard and 'wasteland:basebuilding:server:removeCupboard' or 'wasteland:basebuilding:server:remove', id) end }
@@ -506,6 +515,13 @@ end)
 RegisterNetEvent('wasteland:basebuilding:client:cupboardHealth', function(id, health) if cupboardCache[id] then cupboardCache[id].health = health end end)
 RegisterNetEvent('wasteland:basebuilding:client:propAdded', function(p) storeProp(p) end)
 RegisterNetEvent('wasteland:basebuilding:client:propRemoved', function(id) propCache[id] = nil; DespawnProp(id) end)
+RegisterNetEvent('wasteland:basebuilding:client:propMoved', function(id, patch)
+    local data = propCache[id]
+    if not data or type(patch) ~= 'table' then return end
+    data.coords, data.heading, data.cupboard_id, data.is_open = vec(patch.coords), patch.heading, patch.cupboard_id, false
+    DespawnProp(id)
+    SpawnProp(id)
+end)
 RegisterNetEvent('wasteland:basebuilding:client:propHealth', function(id, health) if propCache[id] then propCache[id].health = health end end)
 RegisterNetEvent('wasteland:basebuilding:client:propUpgraded', function(id, patch)
     local data = propCache[id]
@@ -590,7 +606,6 @@ RegisterNetEvent('wasteland:basebuilding:client:cupboard', function(view)
     showScreen({ mode = 'cupboard', cupboard = view })
 end)
 
-local StartPlacement
 
 AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     payload = type(payload) == 'table' and payload or {}
@@ -672,9 +687,16 @@ local function help(text)
     EndTextCommandDisplayHelp(0, false, false, -1)
 end
 
-StartPlacement = function(pieceKey)
+StartPlacement = function(pieceKey, moveId)
     local piece = cfg.pieces[pieceKey]
     if not piece or isPlacing then return end
+    -- Moving a placed piece: hide it while its see-through copy is moved.
+    local movingObj = nil
+    if moveId then
+        movingId = moveId
+        movingObj = spawnedProps and spawnedProps[moveId] and spawnedProps[moveId].obj or nil
+        if movingObj and DoesEntityExist(movingObj) then SetEntityVisible(movingObj, false, false); SetEntityCollision(movingObj, false, false) end
+    end
     local model = GetHashKey(piece.model)
     if not RequestModelHash(model) then notify('That piece cannot be shown: is the building props pack installed?'); return end
     local P = cfg.placement
@@ -696,6 +718,8 @@ StartPlacement = function(pieceKey)
     local function cleanup()
         if DoesEntityExist(ghost) then DeleteEntity(ghost) end
         isPlacing = false
+        if movingObj and DoesEntityExist(movingObj) then SetEntityVisible(movingObj, true, false); SetEntityCollision(movingObj, true, true) end
+        movingId = nil
     end
 
     Citizen.CreateThread(function()
@@ -792,7 +816,11 @@ StartPlacement = function(pieceKey)
                 piece.label, didSnap and ' (snapped)' or '', snapEnabled and 'on' or 'off', overlap, rampHelp))
 
             if IsDisabledControlJustReleased(0, KEY_E) then
-                TriggerServerEvent('wasteland:basebuilding:server:place', pieceKey, placeCoords.x, placeCoords.y, placeCoords.z, heading)
+                if moveId then
+                    TriggerServerEvent('wasteland:basebuilding:server:move', moveId, placeCoords.x, placeCoords.y, placeCoords.z, heading)
+                else
+                    TriggerServerEvent('wasteland:basebuilding:server:place', pieceKey, placeCoords.x, placeCoords.y, placeCoords.z, heading)
+                end
                 cleanup()
                 return
             end

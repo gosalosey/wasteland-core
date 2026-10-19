@@ -15,12 +15,13 @@ local WALL_LIKE = { 'wall', 'doorway', 'windowframe', 'halfwall' }
 function Rules.snapRules()
     local r = {}
     for _, piece in ipairs(WALL_LIKE) do
-        local rules = { { anchor = 'foundation', mode = 'edge' } }
+        -- on a foundation's edge, or a ceiling's (upper floors), and next to each other
+        local rules = { { anchor = 'foundation', mode = 'edge' }, { anchor = 'ceiling', mode = 'edge' } }
         for _, other in ipairs(WALL_LIKE) do rules[#rules + 1] = { anchor = other, mode = 'chain' } end
         r[piece] = rules
     end
     r.foundation = { { anchor = 'foundation', mode = 'edge' } }
-    r.frame = { { anchor = 'foundation', mode = 'edge' } }
+    r.frame = { { anchor = 'foundation', mode = 'edge' }, { anchor = 'ceiling', mode = 'edge' } }
     r.gateframe = { { anchor = 'foundation', mode = 'edge' } }
     r.ramp = { { anchor = 'foundation', mode = 'edge' } }
     r.ceiling = { { anchor = 'frame', mode = 'top' }, { anchor = 'ceiling', mode = 'edge' } }

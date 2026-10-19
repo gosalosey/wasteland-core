@@ -758,8 +758,8 @@ def stairs(mat, seed):
     out = []
     half = FLOOR / 2
     # flight A: left half, up towards +y; landing at the back; flight B: right half, up towards -y
-    fa = (-1.95, -0.05, -1.75, 0.85, 0.0, half)
-    fb = (0.05, 1.95, 0.85, -1.95, half, FLOOR)
+    fa = (-1.75, -0.05, -1.55, 0.75, 0.0, half)
+    fb = (0.05, 1.75, 0.75, -1.8, half, FLOOR)
     for (x0, x1, ylo, yhi, zlo, zhi) in (fa, fb):
         steps = 10
         run = (yhi - ylo) / steps
@@ -783,11 +783,12 @@ def stairs(mat, seed):
             py = ylo + (yhi - ylo) * t; pz = zlo + (zhi - zlo) * t
             out += box(rx_ - 0.03, py - 0.03, pz, rx_ + 0.03, py + 0.03, pz + 0.95, side)
     # landing with posts
-    out += box(-1.98, 0.85, half - 0.12, 1.98, 1.98, half, tread)
-    for px in (-1.95, 1.87):
-        for py in (0.88, 1.9):
+    out += box(-1.78, 0.75, half - 0.12, 1.78, 1.78, half, tread)
+    for px in (-1.76, 1.68):
+        for py in (0.78, 1.7):
             out += box(px, py, 0, px + 0.08, py + 0.08, half - 0.12, side)
-    out += box(-1.98, 1.92, half, 1.98, 1.98, half + 0.95, side)  # back rail
+    out += box(-1.78, 1.72, half, 1.78, 1.78, half + 0.95, side)  # back rail
+    out += box(0.05, -2.0, FLOOR - 0.1, 1.75, -1.8, FLOOR, tread)    # top step onto the next floor
     return out
 
 HOLE = (0.8, -1.8, 1.8, -0.8)   # x0, y0, x1, y1 of the hatch opening
@@ -879,10 +880,11 @@ for mat in ('wood', 'stone', 'metal'):
     PIECES.append((f'wl_bp_ramp_{mat}', ramp(mat, seed + 4), [('mesh', wedge(-h2, -h2, h2, h2, 1.0))], MATID[mat]))
     half = FLOOR / 2
     PIECES.append((f'wl_bp_stairs_{mat}', stairs(mat, seed + 5),
-        slope_box(-1.95, -0.05, -1.75, 0.85, 0.0, half, 0.3)
-        + slope_box(0.05, 1.95, 0.85, -1.95, half, FLOOR, 0.3)
-        + cbox(-1.98, 0.85, half - 0.12, 1.98, 1.98, half)
-        + cbox(-1.98, 1.92, half, 1.98, 1.98, half + 0.95), MATID[mat]))
+        slope_box(-1.75, -0.05, -1.55, 0.75, 0.0, half, 0.3)
+        + slope_box(0.05, 1.75, 0.75, -1.8, half, FLOOR, 0.3)
+        + cbox(-1.78, 0.75, half - 0.12, 1.78, 1.78, half)
+        + cbox(-1.78, 1.72, half, 1.78, 1.78, half + 0.95)
+        + cbox(0.05, -2.0, FLOOR - 0.1, 1.75, -1.8, FLOOR), MATID[mat]))
     hx0, hy0, hx1, hy1 = HOLE
     PIECES.append((f'wl_bp_hatch_{mat}', hatch(mat, seed + 6),
         cbox(-h2, -h2, 0, hx0, h2, T) + cbox(hx1, -h2, 0, h2, h2, T) + cbox(hx0, -h2, 0, hx1, hy0, T) + cbox(hx0, hy1, 0, hx1, h2, T)

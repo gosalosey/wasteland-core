@@ -105,6 +105,21 @@ describe('base building', function()
         expect(box.category).toBe('stash')
     end)
 
+    it('moving a placed piece: storage keeps what is in it; a stranger may not move it', function()
+        act(a, 'stash', box.id) -- opening it loads the storage
+        local inv = 'stash:bb_stash_' .. box.id
+        I('AddItem', inv, 'bandage', 2); server:advance(200)
+        expect(I('GetItemCount', inv, 'bandage')).toBe(2)
+        act(a, 'move', box.id, 3.0, -2.0, 30.0, 90.0)
+        expect(note(a)).toBe('Moved.')
+        local moved = last(c, 'wasteland:basebuilding:client:propMoved').args
+        expect(moved[1]).toBe(box.id); expect(moved[2].coords.x).toBe(3.0); expect(moved[2].heading).toBe(90.0)
+        expect(server.db.backend.data.wl_bb_props[box.id].x).toBe(3.0)
+        expect(I('GetItemCount', inv, 'bandage')).toBe(2)
+        act(c, 'move', box.id, 2.0, -1.0, 30.0, 0.0)
+        expect(note(c)).toBe('You are not allowed to move this.')
+    end)
+
     it('doors: the owner opens them, a stranger finds them locked', function()
         act(a, 'door', door.id)
         expect(last(c, 'wasteland:basebuilding:client:door').args[2]).toBe(true)

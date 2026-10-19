@@ -382,6 +382,33 @@ local function removeProp(src, id)
     notice(src, 'Removed.')
 end
 
+-- Move a placed piece somewhere else (it keeps its id, so storage keeps what
+-- is in it). The same rules as building there apply at the new spot.
+local function moveProp(src, id, x, y, z, heading)
+    local cid = characterOf(src)
+    local p = props[id]
+    if not p or not cid then return end
+    local coords = { x = x, y = y, z = z }
+    if not near(src, p.coords, M.config.placement.maxPlaceDistance + 10.0) then notice(src, 'Too far from that piece.'); return end
+    if not near(src, coords, M.config.placement.maxPlaceDistance + 2.0) then notice(src, 'Too far away to put it there.'); return end
+    if not pieceAccess(cid, p) then notice(src, 'You are not allowed to move this.'); return end
+    local ok, c = accessAt(cid, coords)
+    if c and not ok then notice(src, 'You are not allowed to build there.'); return end
+    if not c then
+        local fb = M.config.freeBuild
+        local allowed = false
+        if fb and fb.enabled then
+            for _, cat in ipairs(fb.categories or {}) do if cat == p.category then allowed = true end end
+        end
+        if not allowed then notice(src, 'Place a Tool Cupboard first: you can only build within reach of one you may use.'); return end
+    end
+    p.coords, p.heading, p.is_open = coords, (tonumber(heading) or 0.0) % 360.0, false
+    p.cupboard_id = c and c.id or nil
+    write(SQL.propMove, { x, y, z, p.heading, p.cupboard_id, id }, 'moving piece ' .. id)
+    TriggerClientEvent('wasteland:basebuilding:client:propMoved', -1, id, { coords = coords, heading = p.heading, cupboard_id = p.cupboard_id })
+    notice(src, 'Moved.')
+end
+
 local function dropCupboard(c, why)
     cupboards[c.id] = nil
     carry[c.id] = nil
@@ -938,6 +965,8 @@ M.netEvent('wasteland:basebuilding:server:place', {
     rateLimit = { burst = 4, perSecond = 1 },
 }, function(src, key, x, y, z, h) Citizen.CreateThread(function() placeProp(src, key, x, y, z, h) end) end)
 M.netEvent('wasteland:basebuilding:server:remove', { args = { ID }, rateLimit = RATE }, function(src, id) Citizen.CreateThread(function() removeProp(src, id) end) end)
+M.netEvent('wasteland:basebuilding:server:move', { args = { ID, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } }, rateLimit = RATE },
+    function(src, id, x, y, z, heading) moveProp(src, id, x, y, z, heading) end)
 M.netEvent('wasteland:basebuilding:server:removeCupboard', { args = { ID }, rateLimit = RATE }, function(src, id) removeCupboard(src, id) end)
 M.netEvent('wasteland:basebuilding:server:door', { args = { ID }, rateLimit = RATE }, function(src, id) toggleDoor(src, id) end)
 M.netEvent('wasteland:basebuilding:server:stash', { args = { ID }, rateLimit = RATE }, function(src, id) openStash(src, id) end)

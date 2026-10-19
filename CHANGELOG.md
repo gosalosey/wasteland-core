@@ -1,5 +1,10 @@
 # Changelog
 
+## Upper floors, stairs fit, moving placed pieces (owner)
+* Walls, doorways, window frames, half walls and frames snap along ceiling edges too, so upper floors build like the ground floor.
+* Stairs fit inside the walls (walls take 0.2 m of each square's edge; the stairs clipped into them), with a top step onto the next floor.
+* Move: Left Alt on a placed piece (not the cupboard) > Move: it goes see-through and follows your aim (same snapping and keys), E puts it down. It keeps its id, so storage keeps what is in it; building rules apply at the new spot.
+
 ## Fix: stairs collision, ceilings snapping on walls (owner)
 * Stairs had no collision: a paper-thin helper box (thinner than the physics margin) made the game drop it. The flights are now tilted solid boxes (as GTA's own props), the landing and rail boxes.
 * Ceilings on walls: the snap spot was only on one side of a wall (the side assumed to be the room); walls turned the other way put it outside. There is now a spot on each side; the closer one wins.
