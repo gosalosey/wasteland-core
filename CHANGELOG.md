@@ -1,5 +1,9 @@
 # Changelog
 
+## Our building props: bullets hit thin pieces, realistic textures (owner)
+* Collision is now solid boxes per part (as GTA's own thin props), with a small margin: bullets stop on walls, doorways and doors, not only on foundations.
+* New textures: weathered grey planks with knots, nail rust and mould; dark cracked beams; galvanised corrugated metal with rust patches and streaks; dirty concrete blocks with water stains and moss; chipped painted steel. Blood is dark and faded, spray paint faded with overspray; no more cartoon colours. Every texture now has a normal map (real bumps in the game's light).
+
 ## Our building props: collision fixed (owner)
 * The props had no collision because their archetypes did not name a physics dictionary: each now names itself (and flags 32), so the game uses the collision inside the model. Test walls removed. Base building still uses sinor until our props are approved in game.
 

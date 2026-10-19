@@ -1,113 +1,277 @@
 """Wasteland building props generator.
 
 Writes CodeWalker XML for every base-building piece (model, collision,
-archetypes) plus original procedural textures, ready for `wlprops build`.
-Everything here is made from scratch (simple boxes and code-painted
+archetypes) plus original procedural textures and normal maps, ready for
+`wlprops build`. Everything is made from scratch (shapes and code-painted
 textures), so the result can be shared freely with Wasteland Core.
 
 usage: python gen_buildprops.py <outDir>
 """
 import io, math, os, random, struct, sys
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
 
 OUT = sys.argv[1]
 os.makedirs(OUT, exist_ok=True)
 TXD = 'wl_buildprops'
-TEX = 512
+TEX = 1024   # diffuse
+NRM = 512    # normal maps
 
 # ---------------------------------------------------------------------------
-# Textures (painted with code)
+# Noise helpers (tileable: every layer is wrapped before blurring/resizing)
 # ---------------------------------------------------------------------------
 
-def noise(size, scale, seed, amp):
+def value_noise(size, cells, seed, sx=1, sy=1):
+    """Smooth tileable noise: random cells, wrapped, scaled up bicubic. sx/sy stretch."""
     rnd = random.Random(seed)
-    small = Image.new('L', (max(1, size // scale), max(1, size // scale)))
-    small.putdata([rnd.randint(128 - amp, 128 + amp) for _ in range(small.size[0] * small.size[1])])
-    return small.resize((size, size), Image.BICUBIC)
+    cw, ch = max(2, cells // sx), max(2, cells // sy)
+    small = Image.new('L', (cw, ch))
+    small.putdata([rnd.randint(0, 255) for _ in range(cw * ch)])
+    # wrap by tiling 3x3 and cropping the middle after resize
+    big = Image.new('L', (cw * 3, ch * 3))
+    for i in range(3):
+        for j in range(3):
+            big.paste(small, (i * cw, j * ch))
+    up = big.resize((size * 3, size * 3), Image.BICUBIC)
+    return up.crop((size, size, size * 2, size * 2))
 
-def tint(gray, dark, light):
+def fbm(size, seed, base=4, octaves=5, sx=1, sy=1, falloff=0.55):
+    """Fractal noise: octaves of value noise blended together, contrast stretched."""
+    acc, total, amp = None, 0.0, 1.0
+    for o in range(octaves):
+        layer = value_noise(size, base * (2 ** o), seed + o * 101, sx, sy)
+        if acc is None:
+            acc, total = layer, amp
+        else:
+            acc = Image.blend(acc, layer, amp / (total + amp))
+            total += amp
+        amp *= falloff
+    return ImageOps.autocontrast(acc)
+
+def colorize(gray, dark, light):
     lut = []
     for c in range(3):
-        lut += [int(dark[c] + (light[c] - dark[c]) * i / 255) for i in range(256)]
+        lut += [max(0, min(255, int(dark[c] + (light[c] - dark[c]) * i / 255))) for i in range(256)]
     return Image.merge('RGB', (gray, gray, gray)).point(lut)
 
-def blend(a, b, mask):
-    return Image.composite(b, a, mask)
+def mul(img, gray, strength):
+    """Darken img where gray is dark (multiply), strength 0..1."""
+    m = gray.point(lambda v: int(255 - (255 - v) * strength))
+    return ImageChops.multiply(img, Image.merge('RGB', (m, m, m)))
 
-def wood(seed=1):
+def over(img, color_img, mask):
+    return Image.composite(color_img, img, mask)
+
+def desaturate(img, amount):
+    g = ImageOps.grayscale(img).convert('RGB')
+    return Image.blend(img, g, amount)
+
+def tile_draw(size, fn):
+    """Draw on a 3x3 canvas and fold it back, so marks near edges wrap."""
+    big = Image.new('RGBA', (size * 3, size * 3), (0, 0, 0, 0))
+    fn(ImageDraw.Draw(big), size)
+    out = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    for i in range(3):
+        for j in range(3):
+            out.alpha_composite(big.crop((i * size, j * size, (i + 1) * size, (j + 1) * size)))
+    return out
+
+# ---------------------------------------------------------------------------
+# Materials: diffuse + height (for the normal map)
+# ---------------------------------------------------------------------------
+
+def weathered_wood(seed, boards=8, palette=((62, 54, 44), (150, 136, 114))):
     rnd = random.Random(seed)
-    img = Image.new('RGB', (TEX, TEX))
-    d = ImageDraw.Draw(img)
-    boards, y = 8, 0
-    bh = TEX // boards
+    S = TEX
+    img = Image.new('RGB', (S, S))
+    height = Image.new('L', (S, S), 200)
+    hd = ImageDraw.Draw(height)
+    bh = S // boards
+    grain_all = fbm(S, seed, base=3, octaves=5, sx=1, sy=1)
     for i in range(boards):
-        base = rnd.randint(-18, 18)
-        grain = noise(TEX, 6, seed * 100 + i, 40).resize((TEX * 4, bh), Image.BICUBIC).crop((0, 0, TEX, bh))
-        streak = Image.effect_noise((TEX, bh), 30).filter(ImageFilter.GaussianBlur(1)).resize((TEX, bh))
-        g = Image.blend(grain, streak, 0.35)
-        col = tint(g, (62 + base, 44 + base, 28 + base), (150 + base, 112 + base, 72 + base))
-        img.paste(col, (0, y))
-        # gap and nails
-        d.rectangle((0, y, TEX, y + 2), fill=(22, 16, 10))
-        for nx in (18, TEX // 2, TEX - 22):
-            cy = y + bh // 2
-            d.ellipse((nx - 4, cy - 4, nx + 4, cy + 4), fill=(48, 44, 40))
-            d.ellipse((nx - 2, cy - 2, nx + 1, cy + 1), fill=(110, 100, 88))
-        y += bh
-    # dirt and weathering
-    dirt = noise(TEX, 32, seed + 7, 60)
-    img = blend(img, tint(dirt, (30, 26, 20), (80, 70, 55)), dirt.point(lambda v: max(0, v - 150) * 2))
-    return img
+        y0 = i * bh
+        g = fbm(S, seed * 7 + i, base=2, octaves=5, sx=1, sy=1).resize((S * 6, bh), Image.BICUBIC)
+        off = rnd.randint(0, S * 5)
+        g = g.crop((off, 0, off + S, bh))
+        fine = Image.effect_noise((S, bh), 40).resize((S // 4, bh), Image.BICUBIC).resize((S, bh), Image.BICUBIC)
+        g = Image.blend(g, fine, 0.35)
+        shift = rnd.randint(-14, 10)
+        grey = rnd.random() < 0.35
+        dark = tuple(c + shift for c in palette[0]); light = tuple(c + shift for c in palette[1])
+        if grey:
+            dark = (dark[0] - 4, dark[1], dark[2] + 4); light = (light[0] - 10, light[1] - 2, light[2] + 6)
+        board = colorize(g, dark, light)
+        # darker towards the board's lower edge (dirt sits there)
+        grad = Image.linear_gradient('L').resize((S, bh)).point(lambda v: 255 - int(v * 0.35))
+        board = mul(board, grad.point(lambda v: v), 0.6)
+        img.paste(board, (0, y0))
+        # knots
+        for _ in range(rnd.randint(0, 2)):
+            kx, ky = rnd.randint(30, S - 30), y0 + rnd.randint(bh // 4, 3 * bh // 4)
+            kd = ImageDraw.Draw(img)
+            for r in range(14, 2, -3):
+                c = 40 + r * 3
+                kd.ellipse((kx - r * 2, ky - r, kx + r * 2, ky + r), outline=(c, c - 8, c - 16), width=2)
+        # gap between boards (deep in the height map)
+        ImageDraw.Draw(img).rectangle((0, y0, S, y0 + 4), fill=(18, 15, 12))
+        hd.rectangle((0, y0, S, y0 + 5), fill=40)
+        hd.rectangle((0, y0 + 5, S, y0 + 10), fill=150)
+        # nails with a rust run
+        for nx in (rnd.randint(20, 60), rnd.randint(S // 2 - 30, S // 2 + 30), S - rnd.randint(20, 60)):
+            ny = y0 + bh // 2 + rnd.randint(-8, 8)
+            d = ImageDraw.Draw(img)
+            d.ellipse((nx - 5, ny - 5, nx + 5, ny + 5), fill=(42, 36, 32))
+            hd.ellipse((nx - 5, ny - 5, nx + 5, ny + 5), fill=230)
+            run = Image.new('L', (S, S), 0)
+            ImageDraw.Draw(run).line((nx, ny, nx + rnd.randint(-2, 2), ny + rnd.randint(30, 90)), fill=110, width=5)
+            img = over(img, Image.new('RGB', (S, S), (92, 52, 28)), run.filter(ImageFilter.GaussianBlur(3)))
+    # grain into the height map too
+    height = ImageChops.multiply(height, grain_all.point(lambda v: 170 + v // 3))
+    # large-scale dirt and water stains
+    dirt = fbm(S, seed + 50, base=3, octaves=4)
+    img = mul(img, dirt.point(lambda v: min(255, v + 60)), 0.55)
+    mold = fbm(S, seed + 60, base=4, octaves=4).point(lambda v: max(0, v - 165) * 3)
+    img = over(img, Image.new('RGB', (S, S), (58, 64, 40)), mold.point(lambda v: v // 3))
+    return desaturate(img, 0.18), height
 
-def metal(seed=2):
+def corrugated(seed, ridges=12, base=((88, 92, 94), (162, 165, 164))):
     rnd = random.Random(seed)
-    w = TEX
-    ridge = Image.new('L', (w, 1))
-    ridge.putdata([int(128 + 70 * math.sin(x / w * math.pi * 2 * 10)) for x in range(w)])
-    ridge = ridge.resize((w, w))
-    streaks = noise(w, 4, seed, 30).resize((w, w // 16), Image.BICUBIC).resize((w, w), Image.BICUBIC)
-    g = Image.blend(ridge, streaks, 0.3)
-    img = tint(g, (58, 62, 64), (150, 154, 152))
-    # rust patches and drips
-    rust = noise(w, 40, seed + 3, 90)
-    mask = rust.point(lambda v: max(0, v - 140) * 3)
-    img = blend(img, tint(noise(w, 3, seed + 4, 50), (70, 32, 14), (160, 82, 34)), mask)
-    d = ImageDraw.Draw(img)
-    for _ in range(26):
-        x = rnd.randint(0, w); y = rnd.randint(0, w // 2)
-        d.line((x, y, x + rnd.randint(-3, 3), y + rnd.randint(40, 200)), fill=(96, 48, 22), width=rnd.randint(1, 3))
-    # rivets along the top and bottom
-    for x in range(16, w, 64):
-        for y in (14, w - 14):
-            d.ellipse((x - 5, y - 5, x + 5, y + 5), fill=(70, 72, 72)); d.ellipse((x - 3, y - 3, x + 1, y + 1), fill=(170, 170, 165))
-    return img.filter(ImageFilter.SMOOTH)
+    S = TEX
+    ridge = Image.new('L', (S, 1))
+    ridge.putdata([int(128 + 127 * math.sin(x / S * math.pi * 2 * ridges)) for x in range(S)])
+    ridge = ridge.resize((S, S))
+    zinc = fbm(S, seed, base=4, octaves=6)
+    shade = Image.blend(zinc, ridge, 0.25)
+    img = colorize(shade, base[0], base[1])
+    # rust: patches (fbm threshold) with darker cores, and streaks running down from the top
+    rust = fbm(S, seed + 9, base=3, octaves=6)
+    patch = rust.point(lambda v: max(0, min(255, (v - 150) * 4)))
+    core = rust.point(lambda v: max(0, min(255, (v - 185) * 5)))
+    rust_col = colorize(fbm(S, seed + 3, base=16, octaves=3), (78, 40, 22), (142, 78, 40))
+    img = over(img, rust_col, patch)
+    img = over(img, colorize(fbm(S, seed + 4, base=16, octaves=3), (44, 24, 14), (82, 44, 24)), core)
+    streaks = tile_draw(S, lambda d, s: [d.line((x, y, x + rnd.randint(-3, 3), y + rnd.randint(80, 320)),
+                                                fill=(110, 56, 26, rnd.randint(40, 110)), width=rnd.randint(2, 7))
+                                         for x, y in [(rnd.randint(s, 2 * s), s + rnd.randint(0, 60)) for _ in range(40)]])
+    base_img = img.convert('RGBA'); base_img.alpha_composite(streaks.filter(ImageFilter.GaussianBlur(2)))
+    img = base_img.convert('RGB')
+    dirt = fbm(S, seed + 20, base=2, octaves=4)
+    img = mul(img, dirt.point(lambda v: min(255, v + 80)), 0.5)
+    height = ridge.point(lambda v: 60 + v * 0.6)
+    return desaturate(img, 0.1), height.convert('L')
 
-def stone(seed=3):
+def blocks(seed):
     rnd = random.Random(seed)
-    img = Image.new('RGB', (TEX, TEX), (70, 68, 62))
-    d = ImageDraw.Draw(img)
-    rows = 8; rh = TEX // rows
+    S = TEX
+    rows = 8; rh = S // rows
+    img = Image.new('RGB', (S, S), (74, 72, 68))
+    height = Image.new('L', (S, S), 60)
+    speck = fbm(S, seed, base=24, octaves=3)
     for r in range(rows):
-        x = -rnd.randint(0, 60) if r % 2 else 0
-        while x < TEX:
-            bw = rnd.randint(70, 120)
-            shade = rnd.randint(-22, 22)
-            tile = tint(noise(bw, 3, rnd.randint(0, 9999), 45).resize((bw, rh)), (88 + shade, 84 + shade, 76 + shade), (160 + shade, 154 + shade, 140 + shade))
-            img.paste(tile.crop((0, 0, max(1, bw - 6), rh - 6)), (x + 3, r * rh + 3))
+        x = -rnd.randint(0, 120) if r % 2 else 0
+        while x < S:
+            bw = rnd.choice([S // 4, S // 4, S // 5])
+            sh = rnd.randint(-12, 12)
+            tone = colorize(speck, (96 + sh, 95 + sh, 91 + sh), (152 + sh, 150 + sh, 144 + sh)).crop((0, 0, S, S))
+            box = (x + 4, r * rh + 4, x + bw - 4, r * rh + rh - 4)
+            m = Image.new('L', (S, S), 0); ImageDraw.Draw(m).rectangle(box, fill=255)
+            img = over(img, tone, m)
+            ImageDraw.Draw(height).rectangle(box, fill=210)
             x += bw
-    grime = noise(TEX, 24, seed + 9, 70)
-    img = blend(img, tint(grime, (28, 30, 22), (60, 66, 44)), grime.point(lambda v: max(0, v - 155) * 2))
-    return img
+    stains = tile_draw(S, lambda d, s: [d.line((x, y, x + rnd.randint(-4, 4), y + rnd.randint(100, 380)),
+                                               fill=(40, 40, 34, rnd.randint(30, 80)), width=rnd.randint(6, 18))
+                                        for x, y in [(rnd.randint(s, 2 * s), s + rnd.randint(0, s)) for _ in range(18)]])
+    b = img.convert('RGBA'); b.alpha_composite(stains.filter(ImageFilter.GaussianBlur(5))); img = b.convert('RGB')
+    dirt = fbm(S, seed + 5, base=3, octaves=4)
+    img = mul(img, dirt.point(lambda v: min(255, v + 70)), 0.5)
+    moss = fbm(S, seed + 7, base=5, octaves=4).point(lambda v: max(0, v - 175) * 3)
+    img = over(img, colorize(speck, (40, 52, 30), (80, 96, 54)), moss.point(lambda v: v // 2))
+    height = height.filter(ImageFilter.GaussianBlur(2))
+    return desaturate(img, 0.15), height
 
-def dark_metal(seed=4):
-    g = noise(TEX, 8, seed, 25)
-    img = tint(g, (34, 34, 34), (78, 78, 76))
-    d = ImageDraw.Draw(img)
-    for y in range(0, TEX, 128):
-        d.rectangle((0, y, TEX, y + 5), fill=(24, 24, 24))
-    rust = noise(TEX, 30, seed + 1, 90)
-    img = blend(img, tint(noise(TEX, 3, seed + 2, 40), (66, 30, 12), (130, 66, 30)), rust.point(lambda v: max(0, v - 165) * 3))
-    return img
+def painted_steel(seed):
+    rnd = random.Random(seed)
+    S = TEX
+    paint = colorize(fbm(S, seed, base=6, octaves=5), (40, 46, 42), (78, 86, 78))
+    rust = fbm(S, seed + 2, base=4, octaves=6)
+    chips = rust.point(lambda v: max(0, min(255, (v - 168) * 5)))
+    img = over(paint, colorize(fbm(S, seed + 3, base=20, octaves=3), (70, 36, 18), (128, 70, 36)), chips)
+    sc = tile_draw(S, lambda d, s: [d.line((x, y, x + rnd.randint(-120, 120), y + rnd.randint(-20, 20)),
+                                           fill=(120, 124, 118, rnd.randint(40, 100)), width=1)
+                                    for x, y in [(rnd.randint(s, 2 * s), rnd.randint(s, 2 * s)) for _ in range(120)]])
+    b = img.convert('RGBA'); b.alpha_composite(sc); img = b.convert('RGB')
+    for y in range(0, S, S // 4):  # panel seams
+        ImageDraw.Draw(img).rectangle((0, y, S, y + 4), fill=(24, 26, 24))
+    dirt = fbm(S, seed + 9, base=3, octaves=4)
+    img = mul(img, dirt.point(lambda v: min(255, v + 80)), 0.5)
+    height = Image.new('L', (S, S), 180)
+    for y in range(0, S, S // 4):
+        ImageDraw.Draw(height).rectangle((0, y, S, y + 5), fill=60)
+    height = ImageChops.subtract(height, chips.point(lambda v: v // 4))
+    return img, height
+
+def beam_wood(seed):
+    S = TEX
+    g = fbm(S, seed, base=2, octaves=6).resize((S // 10, S), Image.BICUBIC).resize((S, S), Image.BICUBIC)
+    g = Image.blend(g, fbm(S, seed + 1, base=6, octaves=4), 0.3)
+    img = colorize(g, (30, 24, 18), (92, 78, 62))
+    rnd = random.Random(seed)
+    cracks = tile_draw(S, lambda d, s: [d.line((x, y, x + rnd.randint(-5, 5), y + rnd.randint(60, 260)),
+                                               fill=(14, 11, 8, 200), width=rnd.randint(1, 3))
+                                        for x, y in [(rnd.randint(s, 2 * s), rnd.randint(s, 2 * s)) for _ in range(30)]])
+    b = img.convert('RGBA'); b.alpha_composite(cracks); img = b.convert('RGB')
+    dirt = fbm(S, seed + 3, base=3, octaves=4)
+    img = mul(img, dirt.point(lambda v: min(255, v + 70)), 0.5)
+    height = g.point(lambda v: 120 + v // 3)
+    return desaturate(img, 0.2), height
+
+def grunge(img, seed, blood=1, spray=0):
+    """Dried blood (dark, irregular, faded) and faded spray paint with overspray."""
+    rnd = random.Random(seed)
+    S = img.size[0]
+    out = img.convert('RGBA')
+    for _ in range(blood):
+        cx, cy = rnd.randint(S // 6, 5 * S // 6), rnd.randint(S // 6, 5 * S // 6)
+        n = fbm(S, rnd.randint(0, 99999), base=12, octaves=4)
+        blob = Image.new('L', (S, S), 0)
+        ImageDraw.Draw(blob).ellipse((cx - 90, cy - 60, cx + 90, cy + 70), fill=255)
+        blob = blob.filter(ImageFilter.GaussianBlur(40))
+        mask = ImageChops.multiply(blob, n.point(lambda v: 255 if v > 140 else 0)).point(lambda v: int(v * 0.55))
+        for _ in range(4):  # runs
+            x = cx + rnd.randint(-60, 60)
+            ImageDraw.Draw(mask).line((x, cy, x + rnd.randint(-3, 3), cy + rnd.randint(60, 180)), fill=90, width=rnd.randint(3, 6))
+        mask = mask.filter(ImageFilter.GaussianBlur(1.5))
+        col = Image.new('RGBA', (S, S), (54, 16, 12, 255))
+        out = Image.composite(col, out, mask)
+    for _ in range(spray):
+        col = rnd.choice([(128, 34, 28), (150, 140, 120)])
+        cx, cy = rnd.randint(S // 4, 3 * S // 4), rnd.randint(S // 4, 3 * S // 4)
+        s = rnd.randint(70, 110)
+        m = Image.new('L', (S, S), 0)
+        d = ImageDraw.Draw(m)
+        d.line((cx - s, cy - s, cx + s, cy + s), fill=255, width=16)
+        d.line((cx - s, cy + s, cx + s, cy - s), fill=255, width=16)
+        for _ in range(5):
+            x = cx + rnd.randint(-s, s)
+            d.line((x, cy + rnd.randint(-s, s), x, cy + s + rnd.randint(20, 70)), fill=160, width=3)
+        over_spray = m.filter(ImageFilter.GaussianBlur(6)).point(lambda v: v // 3)
+        m = ImageChops.lighter(m.filter(ImageFilter.GaussianBlur(1)), over_spray)
+        worn = fbm(S, rnd.randint(0, 9999), base=10, octaves=3).point(lambda v: 255 if v > 95 else 60)
+        m = ImageChops.multiply(m, worn).point(lambda v: int(v * 0.5))
+        out = Image.composite(Image.new('RGBA', (S, S), col + (255,)), out, m)
+    return out.convert('RGB')
+
+def normal_map(height, strength=3.0):
+    h = height.resize((NRM, NRM), Image.LANCZOS).filter(ImageFilter.GaussianBlur(0.8))
+    px = h.load(); w = NRM
+    out = Image.new('RGB', (w, w)); o = out.load()
+    for y in range(w):
+        for x in range(w):
+            dx = (px[(x + 1) % w, y] - px[(x - 1) % w, y]) / 255.0 * strength
+            dy = (px[x, (y + 1) % w] - px[x, (y - 1) % w]) / 255.0 * strength
+            nx, ny, nz = -dx, dy, 1.0
+            l = math.sqrt(nx * nx + ny * ny + nz * nz)
+            o[x, y] = (int((nx / l * 0.5 + 0.5) * 255), int((ny / l * 0.5 + 0.5) * 255), int((nz / l * 0.5 + 0.5) * 255))
+    return out
 
 def write_dds(img, path):
     """Uncompressed BGRA8 DDS with a full mip chain."""
@@ -117,8 +281,7 @@ def write_dds(img, path):
         s = mips[-1].size[0] // 2
         mips.append(mips[-1].resize((s, s), Image.LANCZOS))
     w, h = img.size
-    DDSD_CAPS, DDSD_HEIGHT, DDSD_WIDTH, DDSD_PITCH, DDSD_PIXELFORMAT, DDSD_MIPMAPCOUNT = 0x1, 0x2, 0x4, 0x8, 0x1000, 0x20000
-    flags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PITCH | DDSD_PIXELFORMAT | DDSD_MIPMAPCOUNT
+    flags = 0x1 | 0x2 | 0x4 | 0x8 | 0x1000 | 0x20000
     pf = struct.pack('<IIIIIIII', 32, 0x41, 0, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000)
     caps = 0x1000 | 0x8 | 0x400000
     header = struct.pack('<4sIIIIIII', b'DDS ', 124, flags, h, w, w * 4, 0, len(mips)) + b'\0' * 44 + pf + struct.pack('<IIIII', caps, 0, 0, 0, 0)
@@ -129,67 +292,36 @@ def write_dds(img, path):
             f.write(Image.merge('RGBA', (b, g, r, a)).tobytes())
     return len(mips)
 
-def beam(seed=5):
-    """Dark, rough timber for studs, braces and frames."""
-    g = noise(TEX, 5, seed, 45).resize((TEX // 8, TEX), Image.BICUBIC).resize((TEX, TEX), Image.BICUBIC)
-    g = Image.blend(g, Image.effect_noise((TEX, TEX), 25).filter(ImageFilter.GaussianBlur(1)), 0.3)
-    img = tint(g, (34, 24, 15), (98, 72, 46))
-    d = ImageDraw.Draw(img)
-    rnd = random.Random(seed)
-    for _ in range(14):  # cracks along the grain
-        x = rnd.randint(0, TEX); y = rnd.randint(0, TEX)
-        d.line((x, y, x + rnd.randint(-4, 4), y + rnd.randint(30, 120)), fill=(20, 14, 9), width=1)
-    return img
-
-def decals(img, seed, blood=3, spray=1):
-    """Old blood splatters and spray-paint marks (survivors' signs)."""
-    rnd = random.Random(seed)
-    img = img.copy()
-    over = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(over)
-    for _ in range(blood):
-        cx, cy = rnd.randint(40, TEX - 40), rnd.randint(40, TEX - 40)
-        for _ in range(40):
-            r = rnd.randint(2, 14); dx, dy = rnd.gauss(0, 22), rnd.gauss(0, 18)
-            d.ellipse((cx + dx - r, cy + dy - r, cx + dx + r, cy + dy + r), fill=(70, 8, 6, rnd.randint(90, 170)))
-        for _ in range(5):  # drips
-            x = cx + rnd.randint(-25, 25)
-            d.line((x, cy, x + rnd.randint(-2, 2), cy + rnd.randint(30, 110)), fill=(60, 6, 5, 140), width=rnd.randint(2, 4))
-    for _ in range(spray):  # a spray-painted X or arrow
-        col = rnd.choice([(190, 40, 30), (220, 200, 60), (230, 230, 225)])
-        cx, cy = rnd.randint(110, TEX - 110), rnd.randint(110, TEX - 110)
-        s = rnd.randint(50, 80)
-        if rnd.random() < 0.5:
-            d.line((cx - s, cy - s, cx + s, cy + s), fill=col + (170,), width=12)
-            d.line((cx - s, cy + s, cx + s, cy - s), fill=col + (170,), width=12)
-        else:
-            d.line((cx - s, cy, cx + s, cy), fill=col + (170,), width=11)
-            d.line((cx + s, cy, cx + s - 30, cy - 26), fill=col + (170,), width=11)
-            d.line((cx + s, cy, cx + s - 30, cy + 26), fill=col + (170,), width=11)
-    over = over.filter(ImageFilter.GaussianBlur(1.2))
-    base = img.convert('RGBA')
-    base.alpha_composite(over)
-    return base.convert('RGB')
-
+wood_d, wood_h = weathered_wood(11)
+beam_d, beam_h = beam_wood(55)
+metal_d, metal_h = corrugated(22)
+stone_d, stone_h = blocks(33)
+dark_d, dark_h = painted_steel(44)
 TEXTURES = {
-    'wlbp_wood': decals(wood(11), 101, blood=2, spray=1),
-    'wlbp_beam': beam(55),
-    'wlbp_metal': decals(metal(22), 202, blood=1, spray=1),
-    'wlbp_stone': decals(stone(33), 303, blood=1, spray=1),
-    'wlbp_darkmetal': decals(dark_metal(44), 404, blood=1, spray=0),
+    'wlbp_wood': grunge(wood_d, 101, blood=1, spray=1),
+    'wlbp_beam': beam_d,
+    'wlbp_metal': grunge(metal_d, 202, blood=1, spray=0),
+    'wlbp_stone': grunge(stone_d, 303, blood=1, spray=1),
+    'wlbp_darkmetal': grunge(dark_d, 404, blood=1, spray=0),
 }
+HEIGHTS = {'wlbp_wood': wood_h, 'wlbp_beam': beam_h, 'wlbp_metal': metal_h, 'wlbp_stone': stone_h, 'wlbp_darkmetal': dark_h}
+ALL_TEX = dict(TEXTURES)
+for k, hgt in HEIGHTS.items():
+    ALL_TEX[k + '_n'] = normal_map(hgt, 4.0 if k == 'wlbp_metal' else 3.0)
+
 items = []
-for name, img in TEXTURES.items():
+for name, img in ALL_TEX.items():
     levels = write_dds(img, os.path.join(OUT, name + '.dds'))
-    img.save(os.path.join(OUT, name + '_preview.png'))
+    if not name.endswith('_n'):
+        img.resize((256, 256)).save(os.path.join(OUT, name + '_preview.png'))
     items.append(f'''  <Item>
    <Name>{name}</Name>
    <Unk32 value="128" />
-   <Usage>DIFFUSE</Usage>
+   <Usage>{'NORMAL' if name.endswith('_n') else 'DIFFUSE'}</Usage>
    <UsageFlags>UNK24</UsageFlags>
    <ExtraFlags value="0" />
-   <Width value="{TEX}" />
-   <Height value="{TEX}" />
+   <Width value="{img.size[0]}" />
+   <Height value="{img.size[1]}" />
    <MipLevels value="{levels}" />
    <Format>D3DFMT_A8R8G8B8</Format>
    <FileName>{name}.dds</FileName>
@@ -542,62 +674,63 @@ def toolcupboard():
     out += box(-0.04, -0.3, 0.88, 0.04, -0.27, 0.96, METAL)  # padlock
     return out
 
-# Collision: the simple solid shapes (unchanged sizes).
+# ---------------------------------------------------------------------------
+# Collision: solid boxes (like GTA's own thin props: bullets and players hit
+# them), a triangle mesh only for the ramp's slope. Sizes never change.
+# ---------------------------------------------------------------------------
+
+def cbox(x0, y0, z0, x1, y1, z1):
+    return [('box', (x0, y0, z0, x1, y1, z1))]
+
 def solid_wall(hole=None, height=H, width=S):
     w2 = width / 2
     if not hole:
-        return box(-w2, -t2, 0, w2, t2, height)
+        return cbox(-w2, -t2, 0, w2, t2, height)
     hx0, hz0, hx1, hz1 = hole
     parts = []
-    if hx0 > -w2: parts += box(-w2, -t2, 0, hx0, t2, height)
-    if hx1 < w2: parts += box(hx1, -t2, 0, w2, t2, height)
-    if hz0 > 0: parts += box(hx0, -t2, 0, hx1, t2, hz0)
-    if hz1 < height: parts += box(hx0, -t2, hz1, hx1, t2, height)
+    if hx0 > -w2: parts += cbox(-w2, -t2, 0, hx0, t2, height)
+    if hx1 < w2: parts += cbox(hx1, -t2, 0, w2, t2, height)
+    if hz0 > 0: parts += cbox(hx0, -t2, 0, hx1, t2, hz0)
+    if hz1 < height: parts += cbox(hx0, -t2, hz1, hx1, t2, height)
     return parts
-
-def solid_bars(x0, z0, x1, z1, thick):
-    return box(x0, -thick, z0, x1, thick, z1)
 
 HOLES = {'doorway': (-0.6, 0, 0.6, 2.2), 'windowframe': (-0.6, 1.0, 0.6, 2.0), 'frame': (-1.6, 0, 1.6, 2.6)}
 MATID = {'wood': 70, 'stone': 11, 'metal': 56}
 
-PIECES = []  # (model, look faces, collision faces, material id)
+PIECES = []  # (model, look faces, collision parts, material id)
 seed = 100
 for mat in ('wood', 'stone', 'metal'):
     seed += 10
-    PIECES.append((f'wl_bp_foundation_{mat}', foundation(mat, seed), box(-h2, -h2, 0, h2, h2, 1.0), MATID[mat]))
+    PIECES.append((f'wl_bp_foundation_{mat}', foundation(mat, seed), cbox(-h2, -h2, 0, h2, h2, 1.0), MATID[mat]))
     PIECES.append((f'wl_bp_wall_{mat}', styled_wall(mat, seed + 1), solid_wall(), MATID[mat]))
     PIECES.append((f'wl_bp_halfwall_{mat}', styled_wall(mat, seed + 2, height=H / 2), solid_wall(height=H / 2), MATID[mat]))
     for name, hole in HOLES.items():
         PIECES.append((f'wl_bp_{name}_{mat}', styled_wall(mat, seed + len(name), hole), solid_wall(hole), MATID[mat]))
-    PIECES.append((f'wl_bp_ceiling_{mat}', ceiling(mat, seed + 3), box(-h2, -h2, 0, h2, h2, T), MATID[mat]))
-    PIECES.append((f'wl_bp_ramp_{mat}', ramp(mat, seed + 4), wedge(-h2, -h2, h2, h2, 1.0), MATID[mat]))
+    PIECES.append((f'wl_bp_ceiling_{mat}', ceiling(mat, seed + 3), cbox(-h2, -h2, 0, h2, h2, T), MATID[mat]))
+    PIECES.append((f'wl_bp_ramp_{mat}', ramp(mat, seed + 4), [('mesh', wedge(-h2, -h2, h2, h2, 1.0))], MATID[mat]))
 PIECES += [
-    ('wl_bp_door_wood', door('wood'), box(0, -0.04, 0.02, 1.16, 0.04, 2.17), 70),
-    ('wl_bp_door_metal', door('metal'), box(0, -0.04, 0.02, 1.16, 0.04, 2.17), 56),
-    ('wl_bp_garage_wood', garage(), box(-1.58, -0.05, 0.02, 1.58, 0.05, 2.58), 70),
-    ('wl_bp_windowbar_wood', windowbars('wood'), solid_bars(-0.58, 1.02, 0.58, 1.98, 0.03), 70),
-    ('wl_bp_windowbar_metal', windowbars('metal'), solid_bars(-0.58, 1.02, 0.58, 1.98, 0.02), 56),
-    ('wl_bp_gate_frame', gate_frame(), box(-2.8, -0.25, 0, -2.3, 0.25, 4.5) + box(2.3, -0.25, 0, 2.8, 0.25, 4.5) + box(-2.8, -0.25, 4.0, 2.8, 0.25, 4.5), 70),
-    ('wl_bp_gate_door', gate_door(), box(0, -0.06, 0.05, 4.56, 0.06, 3.95), 56),
-    ('wl_bp_toolcupboard', toolcupboard(), box(-0.5, -0.3, 0, 0.5, 0.3, 1.8), 56),
+    ('wl_bp_door_wood', door('wood'), cbox(0, -0.04, 0.02, 1.16, 0.04, 2.17), 70),
+    ('wl_bp_door_metal', door('metal'), cbox(0, -0.04, 0.02, 1.16, 0.04, 2.17), 56),
+    ('wl_bp_garage_wood', garage(), cbox(-1.58, -0.05, 0.02, 1.58, 0.05, 2.58), 70),
+    ('wl_bp_windowbar_wood', windowbars('wood'), cbox(-0.58, -0.03, 1.02, 0.58, 0.03, 1.98), 70),
+    ('wl_bp_windowbar_metal', windowbars('metal'), cbox(-0.58, -0.02, 1.02, 0.58, 0.02, 1.98), 56),
+    ('wl_bp_gate_frame', gate_frame(), cbox(-2.8, -0.25, 0, -2.3, 0.25, 4.5) + cbox(2.3, -0.25, 0, 2.8, 0.25, 4.5) + cbox(-2.8, -0.25, 4.0, 2.8, 0.25, 4.5), 70),
+    ('wl_bp_gate_door', gate_door(), cbox(0, -0.06, 0.05, 4.56, 0.06, 3.95), 56),
+    ('wl_bp_toolcupboard', toolcupboard(), cbox(-0.5, -0.3, 0, 0.5, 0.3, 1.8), 56),
 ]
 
 # ---------------------------------------------------------------------------
 # Output
 # ---------------------------------------------------------------------------
 
-def tris_of(faces):
-    out = []
-    for item in faces:
-        q = item[1]
-        for a, b, c in ((0, 1, 2), (0, 2, 3)):
-            if len({q[a], q[b], q[c]}) == 3:
-                out.append((q[a], q[b], q[c]))
-    return out
-
-def extent(faces):
-    pts = [p for item in faces for p in item[1]]
+def extent_parts(parts):
+    pts = []
+    for kind, data in parts:
+        if kind == 'box':
+            x0, y0, z0, x1, y1, z1 = data
+            pts += [(x0, y0, z0), (x1, y1, z1)]
+        else:
+            pts += [p for item in data for p in item[1]]
     return (min(p[0] for p in pts), min(p[1] for p in pts), min(p[2] for p in pts)), \
            (max(p[0] for p in pts), max(p[1] for p in pts), max(p[2] for p in pts))
 
@@ -605,19 +738,131 @@ def vec(tag, v, w=None):
     s = f'<{tag} x="{f(v[0])}" y="{f(v[1])}" z="{f(v[2])}"'
     return s + (f' w="{f(w)}" />' if w is not None else ' />')
 
-SHADER_PARAMS = '''     <Item name="matMaterialColorScale" type="Vector" x="1" y="0" z="0" w="1" />
+def tangent(n):
+    ax = max(range(3), key=lambda i: abs(n[i]))
+    return (0.0, 1.0, 0.0) if ax == 0 else (1.0, 0.0, 0.0)
+
+COMMON_FLAGS = '''<MaterialColourIndex value="0" />
+      <ProceduralID value="0" />
+      <RoomID value="0" />
+      <PedDensity value="0" />
+      <UnkFlags value="0" />
+      <PolyFlags value="0" />'''
+CFLAGS = '''<CompositeFlags1>MAP_WEAPON, MAP_DYNAMIC, MAP_ANIMAL, MAP_COVER, MAP_VEHICLE</CompositeFlags1>
+      <CompositeFlags2>VEHICLE_NOT_BVH, VEHICLE_BVH, PED, RAGDOLL, ANIMAL, ANIMAL_RAGDOLL, OBJECT, PLANT, PROJECTILE, EXPLOSION, FORKLIFT_FORKS, TEST_WEAPON, TEST_CAMERA, TEST_AI, TEST_SCRIPT, TEST_VEHICLE_WHEEL, GLASS</CompositeFlags2>'''
+
+def box_child(b, mid):
+    x0, y0, z0, x1, y1, z1 = b
+    c = ((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
+    hx, hy, hz = (x1 - x0) / 2, (y1 - y0) / 2, (z1 - z0) / 2
+    r = math.sqrt(hx * hx + hy * hy + hz * hz)
+    vol = 8 * hx * hy * hz
+    return f'''     <Item type="Box">
+      {vec('BoxMin', (-hx, -hy, -hz))}
+      {vec('BoxMax', (hx, hy, hz))}
+      <BoxCenter x="0" y="0" z="0" />
+      <SphereCenter x="0" y="0" z="0" />
+      <SphereRadius value="{f(r)}" />
+      <Margin value="0.0055" />
+      <Volume value="{f(vol)}" />
+      <Inertia x="1" y="1" z="1" />
+      <MaterialIndex value="{mid}" />
+      {COMMON_FLAGS}
+      <UnkType value="2" />
+      <CompositeTransform>
+       1 0 0 0
+       0 1 0 0
+       0 0 1 0
+       {f(c[0])} {f(c[1])} {f(c[2])} 1
+      </CompositeTransform>
+      {CFLAGS}
+     </Item>'''
+
+def mesh_child(faces, mid):
+    cverts, cindex, polys = [], {}, []
+    for item in faces:
+        q = item[1]
+        for a, b, cc in ((0, 1, 2), (0, 2, 3)):
+            if len({q[a], q[b], q[cc]}) == 3:
+                vi = []
+                for p in (q[a], q[b], q[cc]):
+                    if p not in cindex:
+                        cindex[p] = len(cverts); cverts.append(p)
+                    vi.append(cindex[p])
+                polys.append(f'       <Triangle m="0" v1="{vi[0]}" v2="{vi[1]}" v3="{vi[2]}" f1="0" f2="0" f3="0" />')
+    mn = tuple(min(p[i] for p in cverts) for i in range(3)); mx = tuple(max(p[i] for p in cverts) for i in range(3))
+    c = tuple((mn[i] + mx[i]) / 2 for i in range(3))
+    cv = '\n'.join(f'       {f(p[0])}, {f(p[1])}, {f(p[2])}' for p in cverts)
+    return f'''     <Item type="Geometry">
+      {vec('BoxMin', mn)}
+      {vec('BoxMax', mx)}
+      {vec('BoxCenter', c)}
+      {vec('SphereCenter', c)}
+      <SphereRadius value="{f(math.dist(mn, mx) / 2)}" />
+      <Margin value="0.0055" />
+      <Volume value="{f((mx[0] - mn[0]) * (mx[1] - mn[1]) * (mx[2] - mn[2]))}" />
+      <Inertia x="1" y="1" z="1" />
+      <MaterialIndex value="0" />
+      {COMMON_FLAGS}
+      <UnkType value="1" />
+      <CompositeTransform>
+       1 0 0 0
+       0 1 0 0
+       0 0 1 0
+       0 0 0 1
+      </CompositeTransform>
+      {CFLAGS}
+      {vec('GeometryCenter', c)}
+      <UnkFloat1 value="0" />
+      <UnkFloat2 value="0.0025" />
+      <Materials>
+       <Item>
+        <Type value="{mid}" />
+        <ProceduralID value="0" />
+        <RoomID value="0" />
+        <PedDensity value="0" />
+        <Flags>NONE</Flags>
+        <MaterialColourIndex value="0" />
+        <Unk value="0" />
+       </Item>
+      </Materials>
+      <Vertices>
+{cv}
+      </Vertices>
+      <Polygons>
+{chr(10).join(polys)}
+      </Polygons>
+     </Item>'''
+
+def shader(tex):
+    return f'''   <Item>
+    <Name>normal</Name>
+    <FileName>normal.sps</FileName>
+    <RenderBucket value="0" />
+    <Parameters>
+     <Item name="DiffuseSampler" type="Texture">
+      <Name>{tex}</Name>
+     </Item>
+     <Item name="BumpSampler" type="Texture">
+      <Name>{tex}_n</Name>
+     </Item>
      <Item name="HardAlphaBlend" type="Vector" x="1" y="0" z="0" w="0" />
      <Item name="useTessellation" type="Vector" x="0" y="0" z="0" w="0" />
      <Item name="wetnessMultiplier" type="Vector" x="1" y="0" z="0" w="0" />
+     <Item name="bumpiness" type="Vector" x="1.2" y="0" z="0" w="0" />
+     <Item name="specularIntensityMult" type="Vector" x="{'0.25' if 'metal' in tex else '0.04'}" y="0" z="0" w="0" />
+     <Item name="specularFalloffMult" type="Vector" x="{'40' if 'metal' in tex else '90'}" y="0" z="0" w="0" />
+     <Item name="specularFresnel" type="Vector" x="0.9" y="0" z="0" w="0" />
      <Item name="globalAnimUV1" type="Vector" x="0" y="1" z="0" w="0" />
-     <Item name="globalAnimUV0" type="Vector" x="1" y="0" z="0" w="0" />'''
+     <Item name="globalAnimUV0" type="Vector" x="1" y="0" z="0" w="0" />
+    </Parameters>
+   </Item>'''
 
 # flags 32 and physicsDictionary = the model itself: the game then uses the
 # collision inside the model file (without it, you walk through).
 archetypes = []
 for model, look, solid, mid in PIECES:
-    # the size the game sees is the collision's (unchanged), whatever the details
-    mn, mx = extent(solid)
+    mn, mx = extent_parts(solid)   # the size the game sees: the collision's (unchanged)
     c = tuple((mn[i] + mx[i]) / 2 for i in range(3))
     r = math.dist(mn, mx) / 2
     groups = {}
@@ -625,28 +870,18 @@ for model, look, solid, mid in PIECES:
         groups.setdefault(tex, []).append((n, q))
     shaders, geoms = [], []
     for si, (tex, faces) in enumerate(groups.items()):
-        shaders.append(f'''   <Item>
-    <Name>default</Name>
-    <FileName>default.sps</FileName>
-    <RenderBucket value="0" />
-    <Parameters>
-     <Item name="DiffuseSampler" type="Texture">
-      <Name>{tex}</Name>
-     </Item>
-{SHADER_PARAMS}
-    </Parameters>
-   </Item>''')
+        shaders.append(shader(tex))
         verts, idx = [], []
         for n, q in faces:
             base = len(verts)
             for p in q:
-                verts.append((p, n, uv(p, n)))
+                verts.append((p, n, uv(p, n), tangent(n)))
             for a, b, cc in ((0, 1, 2), (0, 2, 3)):
                 if len({q[a], q[b], q[cc]}) == 3:
                     idx += [base + a, base + b, base + cc]
         gmn = tuple(min(v[0][i] for v in verts) for i in range(3)); gmx = tuple(max(v[0][i] for v in verts) for i in range(3))
-        rows = '\n'.join(f'       {f(p[0])} {f(p[1])} {f(p[2])}   {f(nn[0])} {f(nn[1])} {f(nn[2])}   255 255 255 255   {f(t[0])} {f(t[1])}'
-                         for p, nn, t in verts)
+        rows = '\n'.join(f'       {f(p[0])} {f(p[1])} {f(p[2])}   {f(nn[0])} {f(nn[1])} {f(nn[2])}   255 255 255 255   {f(t[0])} {f(t[1])}   {f(tg[0])} {f(tg[1])} {f(tg[2])} 1'
+                         for p, nn, t, tg in verts)
         ids = '\n'.join('       ' + ' '.join(str(i) for i in idx[k:k + 24]) for k in range(0, len(idx), 24))
         geoms.append(f'''    <Item>
      <ShaderIndex value="{si}" />
@@ -659,6 +894,7 @@ for model, look, solid, mid in PIECES:
        <Normal />
        <Colour0 />
        <TexCoord0 />
+       <Tangent />
       </Layout>
       <Data>
 {rows}
@@ -670,30 +906,10 @@ for model, look, solid, mid in PIECES:
       </Data>
      </IndexBuffer>
     </Item>''')
-    # collision triangles
-    cverts, cindex, polys = [], {}, []
-    for tri in tris_of(solid):
-        vi = []
-        for p in tri:
-            if p not in cindex:
-                cindex[p] = len(cverts); cverts.append(p)
-            vi.append(cindex[p])
-        polys.append(f'     <Triangle m="0" v1="{vi[0]}" v2="{vi[1]}" v3="{vi[2]}" f1="1" f2="1" f3="1" />')
-    cv = '\n'.join(f'     {f(p[0])}, {f(p[1])}, {f(p[2])}' for p in cverts)
+    children = []
+    for kind, data in solid:
+        children.append(box_child(data, mid) if kind == 'box' else mesh_child(data, mid))
     vol = (mx[0] - mn[0]) * (mx[1] - mn[1]) * (mx[2] - mn[2])
-    common = f'''{vec('BoxMin', mn)}
-  {vec('BoxMax', mx)}
-  {vec('BoxCenter', c)}
-  {vec('SphereCenter', c)}
-  <SphereRadius value="{f(r)}" />'''
-    flags = '''  <MaterialIndex value="0" />
-  <MaterialColourIndex value="0" />
-  <ProceduralID value="0" />
-  <RoomID value="0" />
-  <PedDensity value="0" />
-  <UnkFlags value="0" />
-  <PolyFlags value="0" />
-  <UnkType value="1" />'''
     xml = f'''<?xml version="1.0" encoding="UTF-8"?>
 <Drawable>
  <Name>{model}</Name>
@@ -727,47 +943,24 @@ for model, look, solid, mid in PIECES:
   </Item>
  </DrawableModelsHigh>
  <Bounds type="Composite">
-  {common}
+  {vec('BoxMin', mn)}
+  {vec('BoxMax', mx)}
+  {vec('BoxCenter', c)}
+  {vec('SphereCenter', c)}
+  <SphereRadius value="{f(r)}" />
   <Margin value="0" />
   <Volume value="{f(vol)}" />
   <Inertia x="1" y="1" z="1" />
-{flags}
+  <MaterialIndex value="0" />
+  <MaterialColourIndex value="0" />
+  <ProceduralID value="0" />
+  <RoomID value="0" />
+  <PedDensity value="0" />
+  <UnkFlags value="0" />
+  <PolyFlags value="0" />
+  <UnkType value="2" />
   <Children>
-   <Item type="Geometry">
-  {common}
-    <Margin value="0.04" />
-    <Volume value="{f(vol)}" />
-    <Inertia x="1" y="1" z="1" />
-{flags}
-    <CompositeTransform>
-     1 0 0 0
-     0 1 0 0
-     0 0 1 0
-     0 0 0 1
-    </CompositeTransform>
-    <CompositeFlags1>MAP_WEAPON, MAP_DYNAMIC, MAP_ANIMAL, MAP_COVER, MAP_VEHICLE</CompositeFlags1>
-    <CompositeFlags2>VEHICLE_NOT_BVH, VEHICLE_BVH, PED, RAGDOLL, ANIMAL, ANIMAL_RAGDOLL, OBJECT, PLANT, PROJECTILE, EXPLOSION, FORKLIFT_FORKS, TEST_WEAPON, TEST_CAMERA, TEST_AI, TEST_SCRIPT, TEST_VEHICLE_WHEEL, GLASS</CompositeFlags2>
-    {vec('GeometryCenter', c)}
-    <UnkFloat1 value="0" />
-    <UnkFloat2 value="0.0025" />
-    <Materials>
-     <Item>
-      <Type value="{mid}" />
-      <ProceduralID value="0" />
-      <RoomID value="0" />
-      <PedDensity value="0" />
-      <Flags>NONE</Flags>
-      <MaterialColourIndex value="0" />
-      <Unk value="0" />
-     </Item>
-    </Materials>
-    <Vertices>
-{cv}
-    </Vertices>
-    <Polygons>
-{chr(10).join(polys)}
-    </Polygons>
-   </Item>
+{chr(10).join(children)}
   </Children>
  </Bounds>
  <Lights />
@@ -783,7 +976,7 @@ for model, look, solid, mid in PIECES:
    {vec('bbMax', mx)}
    {vec('bsCentre', c)}
    <bsRadius value="{f(r)}" />
-   <hdTextureDist value="30" />
+   <hdTextureDist value="60" />
    <name>{model}</name>
    <textureDictionary>{TXD}</textureDictionary>
    <clipDictionary />
@@ -798,4 +991,4 @@ with open(os.path.join(OUT, 'wl_buildprops.ytyp.xml'), 'w', encoding='utf-8') as
     fh.write('<?xml version="1.0" encoding="UTF-8"?>\n<CMapTypes>\n <extensions />\n <archetypes>\n' + '\n'.join(archetypes)
              + '\n </archetypes>\n <name>wl_buildprops</name>\n <dependencies />\n <compositeEntityTypes itemType="CCompositeEntityType" />\n</CMapTypes>\n')
 
-print(len(PIECES), 'models,', len(TEXTURES), 'textures written to', OUT)
+print(len(PIECES), 'models,', len(ALL_TEX), 'textures written to', OUT)
