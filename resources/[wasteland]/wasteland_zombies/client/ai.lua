@@ -531,6 +531,15 @@ function Brain.defense(ped, b)
         end
         if touching then
             ApplyDamageToPed(ped, math.max(1, math.floor(d.damage * 0.5 + 0.5)), false)
+            if d.shock and t >= (b.nextShock or 0) then
+                -- an electric fence: sparks and the zombie is thrown back from it
+                b.nextShock = t + 1500
+                pcall(function() exports.wasteland_basebuilding:Sparks(here) end)
+                local h = math.rad(d.wire.heading)
+                local side = ((here.x - d.x) * -math.sin(h) + (here.y - d.y) * math.cos(h)) >= 0 and 1.0 or -1.0
+                SetPedToRagdoll(ped, 1500, 2000, 0, false, false, false)
+                ApplyForceToEntity(ped, 1, -math.sin(h) * side * 6.0, math.cos(h) * side * 6.0, 2.0, 0.0, 0.0, 0.0, 0, false, true, true, false, true)
+            end
             if (d.slow or 1) < 1 then slowed[ped] = { rate = d.slow, untilT = t + 700 } end
             if t >= (b.nextTouch or 0) then
                 b.nextTouch = t + 1000

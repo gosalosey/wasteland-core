@@ -15,6 +15,7 @@ local props = {}       -- id -> { id, cupboard_id, category, piece, model, coord
 local carry = {}       -- cupboard id -> { material = owed fraction }
 local meleeCooldown, lockCooldown, picking = {}, {}, {}
 local adminBuild = {} -- source -> true: /adminbuild (admins build, upgrade and repair for free)
+local PoweredAt       -- (coords) -> boolean, set with the power code below
 local snapRules = Rules.snapRules()
 local runToken = nil
 
@@ -148,7 +149,7 @@ local function clientConfig()
             interactDistance = p.interactDistance, passThrough = p.passThrough, altModels = p.altModels,
             contactDamage = p.contactDamage, slow = p.slow, wearPerTouch = p.wearPerTouch, touchRadius = p.touchRadius, scale = p.scale,
             ladder = p.ladder, wireDamage = p.wireDamage, wireFrom = p.wireFrom, wireTo = p.wireTo, wireReach = p.wireReach,
-            generator = p.generator, light = p.light }
+            generator = p.generator, light = p.light, needsPower = p.needsPower, shock = p.shock }
     end
     local upgrades = {}
     for key, u in pairs(c.upgrades) do upgrades[key] = { next = u.next, cost = u.cost } end
@@ -462,6 +463,7 @@ local function touchWire(src, id)
     if not piece or not piece.wireDamage then return end
     local at = playerCoords(src)
     if not at or not onWire(p, piece, at) then return end
+    if piece.needsPower and not (PoweredAt and PoweredAt(p.coords)) then return end
     local t = GetGameTimer()
     if t - (wireHurt[src] or 0) < 900 then return end
     wireHurt[src] = t
@@ -470,7 +472,8 @@ local function touchWire(src, id)
     if (piece.wireBleed or 0) > 0 and math.random() < piece.wireBleed then
         pcall(function() exports.wasteland_survival:AddBleeding(src, 1) end)
     end
-    TriggerClientEvent('wasteland:basebuilding:client:notice', src, 'Barbed wire!')
+    TriggerClientEvent('wasteland:basebuilding:client:notice', src, piece.shock and 'Zapped!' or 'Barbed wire!')
+    if piece.shock then TriggerClientEvent('wasteland:basebuilding:client:shocked', src, id) end
 end
 
 -------------------------------------------------------------------------------
@@ -543,6 +546,7 @@ local function isPowered(at)
     end
     return false
 end
+PoweredAt = isPowered
 exports('IsPowered', function(coords)
     if not (M and M.active) or type(coords) ~= 'table' then return false end
     return isPowered({ x = coords.x, y = coords.y, z = coords.z or 0 })
@@ -1004,6 +1008,8 @@ M = Wasteland.DefineModule({
                 wireFrom = { type = 'number', min = 0, max = 50, description = 'Barbed wire: from this height (m above the base)' },
                 wireTo = { type = 'number', min = 0, max = 50, description = 'Barbed wire: up to this height' },
                 wireReach = { type = 'number', min = 0.1, max = 5, description = 'Barbed wire: this close to the wall line counts' },
+                needsPower = { type = 'boolean', description = 'Only works while a running generator is in range (electric fence)' },
+                shock = { type = 'boolean', description = 'Touching it shocks: players stagger, zombies are thrown back' },
                 generator = { type = 'table', nullable = true, fields = {
                     tankLitres = { type = 'number', default = 20, min = 1, max = 1000 },
                     litresPerHour = { type = 'number', default = 2, min = 0, max = 1000 },

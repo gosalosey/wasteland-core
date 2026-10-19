@@ -292,6 +292,16 @@ def write_dds(img, path):
             f.write(Image.merge('RGBA', (b, g, r, a)).tobytes())
     return len(mips)
 
+def plain(seed, dark, light, grime=0.35):
+    """A plain material with fine speckle and dirt (ceramic, copper)."""
+    g = fbm(TEX, seed, base=8, octaves=4)
+    img = colorize(g, dark, light)
+    dirt = fbm(TEX, seed + 3, base=3, octaves=4)
+    img = mul(img, dirt.point(lambda v: min(255, v + 90)), grime)
+    return img, Image.new('L', (TEX, TEX), 128)
+
+ceramic_d, ceramic_h = plain(66, (176, 172, 160), (232, 228, 216))
+copper_d, copper_h = plain(88, (96, 58, 30), (176, 112, 64), 0.25)
 wood_d, wood_h = weathered_wood(11)
 beam_d, beam_h = beam_wood(55)
 metal_d, metal_h = corrugated(22)
@@ -303,8 +313,11 @@ TEXTURES = {
     'wlbp_metal': grunge(metal_d, 202, blood=1, spray=0),
     'wlbp_stone': grunge(stone_d, 303, blood=1, spray=1),
     'wlbp_darkmetal': grunge(dark_d, 404, blood=1, spray=0),
+    'wlbp_ceramic': ceramic_d,
+    'wlbp_copper': copper_d,
 }
-HEIGHTS = {'wlbp_wood': wood_h, 'wlbp_beam': beam_h, 'wlbp_metal': metal_h, 'wlbp_stone': stone_h, 'wlbp_darkmetal': dark_h}
+HEIGHTS = {'wlbp_wood': wood_h, 'wlbp_beam': beam_h, 'wlbp_metal': metal_h, 'wlbp_stone': stone_h, 'wlbp_darkmetal': dark_h,
+           'wlbp_ceramic': ceramic_h, 'wlbp_copper': copper_h}
 ALL_TEX = dict(TEXTURES)
 for k, hgt in HEIGHTS.items():
     ALL_TEX[k + '_n'] = normal_map(hgt, 4.0 if k == 'wlbp_metal' else 3.0)
@@ -931,6 +944,32 @@ def hanging_lamp():
     out += box(-0.12, -0.12, -0.6, 0.12, 0.12, -0.55, METAL)
     out += box(-0.05, -0.05, -0.74, 0.05, 0.05, -0.68, BEAM)              # bulb holder
     return out
+
+
+# ---------------------------------------------------------------------------
+# Electric fence: steel posts and rails, six copper wires on ceramic
+# insulators, a junction box with a cable to the ground. 4 m, chains.
+# ---------------------------------------------------------------------------
+
+EF_W, EF_H = 4.0, 2.6
+
+def efence():
+    out = []
+    w2 = EF_W / 2
+    for x in (-w2, w2 - 0.1):
+        out += box(x, -0.05, 0, x + 0.1, 0.05, EF_H, DARK)
+        out += box(x - 0.02, -0.07, EF_H, x + 0.12, 0.07, EF_H + 0.05, DARK)
+    out += box(-w2, -0.03, EF_H - 0.08, w2, 0.03, EF_H - 0.02, DARK)
+    out += box(-w2, -0.03, 0.1, w2, 0.03, 0.16, DARK)
+    for i in range(6):
+        z = 0.35 + i * 0.38
+        for x in (-w2 + 0.1, w2 - 0.1):
+            out += box(x - 0.05, -0.1, z - 0.04, x + 0.05, -0.05, z + 0.04, 'wlbp_ceramic')
+        out += box(-w2 + 0.15, -0.085, z - 0.022, w2 - 0.15, -0.07, z - 0.008, 'wlbp_copper')
+    out += box(-w2 + 0.1, -0.2, 1.3, -w2 + 0.42, -0.06, 1.75, METAL)
+    out += box(-w2 + 0.13, -0.21, 1.6, -w2 + 0.22, -0.2, 1.7, DARK)
+    out += box(-w2 + 0.2, -0.16, 0.0, -w2 + 0.24, -0.12, 1.3, DARK)
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -1005,6 +1044,9 @@ PIECES += [
     # the wall, and a thin box over the wire (so you touch it, not slip through)
     ('wl_bp_extwall', extwall(77), cbox(-EXT_W / 2, -0.1, 0, EXT_W / 2, EXT_T / 2, EXT_H)
         + cbox(-EXT_W / 2, -0.4, EXT_H, EXT_W / 2, 0.05, WIRE_TO - 0.05), 56),
+    # electric fence: posts, and one thin panel over the wires (you touch them, not slip through)
+    ('wl_bp_efence', efence(), cbox(-EF_W / 2, -0.07, 0, -EF_W / 2 + 0.1, 0.07, EF_H + 0.05) + cbox(EF_W / 2 - 0.1, -0.07, 0, EF_W / 2, 0.07, EF_H + 0.05)
+        + cbox(-EF_W / 2 + 0.1, -0.1, 0.1, EF_W / 2 - 0.1, 0.03, EF_H - 0.02), 56),
     ('wl_bp_generator', generator(), cbox(-0.75, -0.38, 0, 0.75, 0.38, 1.0), 56),
     ('wl_bp_worklight', worklight(), cbox(-0.3, -0.3, 0, 0.3, 0.3, 1.95), 56),
     ('wl_bp_lamp', hanging_lamp(), cbox(-0.18, -0.18, -0.74, 0.18, 0.18, 0.0), 56),

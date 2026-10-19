@@ -158,6 +158,12 @@ return {
             light = { height = 1.85, range = 22.0, intensity = 8.0, color = { 255, 236, 205 } } },
         lamp = { label = 'Hanging Lamp', model = 'wl_bp_lamp', category = 'power', cost = { scrap_metal = 2 }, health = 150, material = 'metal',
             light = { height = -0.72, range = 12.0, intensity = 5.0, color = { 255, 210, 150 } } },
+        -- Electric fence: live only while a running generator is in range (its
+        -- powerRadius). Touching any part of it shocks: wireDamage, a stagger for
+        -- players, zombies thrown back. Chains like the external wall.
+        efence = { label = 'Electric Fence', model = 'wl_bp_efence', category = 'defense', cost = { metal_sheet = 4, scrap_metal = 8 },
+            health = 1200, material = 'metal', needsPower = true, shock = true,
+            wireDamage = 15, wireBleed = 0, wireFrom = 0.0, wireTo = 2.65, wireReach = 0.6 },
         spikes = { label = 'Spike Strip', model = 'p_stinger_piece_01', scale = 2.0,
             category = 'defense', cost = { scrap_metal = 6 }, health = 400, material = 'metal',
             contactDamage = 25, slow = 0.8, wearPerTouch = 6, touchRadius = 2.5 },

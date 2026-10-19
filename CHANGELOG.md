@@ -1,5 +1,9 @@
 # Changelog
 
+## Electric fence (owner)
+* New defense: Electric Fence (4 metal sheet, 8 scrap metal): 4 m sections of steel posts and rails with six copper wires on ceramic insulators and a junction box. Sections chain like the external wall.
+* Live only while a running generator is in range (its powerRadius). Touching it then shocks: 15 damage, sparks, a short stagger for players; zombies are thrown back. Without power it is just a fence.
+
 ## Power: generator and lights (owner)
 * New Power section in the build menu. Generator (6 metal sheet, 10 scrap metal): Left Alt > Add fuel takes fuel from your fullest jerry can (20 L tank), Turn on / off, Check fuel. It burns 2 L an hour (a full tank lasts 10 hours) and stops when empty. It is loud: while it runs, zombies within 30 m come to look.
 * Work Light (a floodlight on a tripod) and Hanging Lamp (for ceilings) light up for real while a running generator is within 40 m.

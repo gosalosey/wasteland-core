@@ -13,6 +13,7 @@ local myBlips = {}
 local isPlacing, picking = false, false
 local movingId = nil -- the placed piece being moved (hidden; not a snap anchor)
 local StartPlacement   -- defined below (used by the Left Alt Move option above it)
+local PoweredAt        -- (coords) -> boolean: a running generator powers this spot (set below)
 local warnedModels = {}
 local KEY_E, KEY_BACK = 38, 194
 local WALL_LIKE = { wall = true, doorway = true, windowframe = true, halfwall = true }
@@ -235,7 +236,8 @@ Citizen.CreateThread(function()
             local pos = GetEntityCoords(ped)
             for id, data in pairs(propCache) do
                 local piece = cfg.pieces[data.piece]
-                if piece and piece.wireDamage and #(pos.xy - data.coords.xy) < 6.0 then
+                if piece and piece.wireDamage and #(pos.xy - data.coords.xy) < 6.0
+                    and not (piece.needsPower and not (PoweredAt and PoweredAt(data.coords))) then
                     sleep = 200
                     local lx, ly, lz = wireLocal(data, pos)
                     -- the ped's position is about 1 m above its feet: hands reach above
@@ -251,6 +253,28 @@ Citizen.CreateThread(function()
         Wait(sleep)
     end
 end)
+
+-- Sparks at a spot (electric fence contact).
+local function sparks(at)
+    RequestNamedPtfxAsset('core')
+    local until_ = GetGameTimer() + 500
+    while not HasNamedPtfxAssetLoaded('core') and GetGameTimer() < until_ do Wait(0) end
+    if not HasNamedPtfxAssetLoaded('core') then return end
+    UseParticleFxAssetNextCall('core')
+    StartParticleFxNonLoopedAtCoord('ent_brk_sparking_wires', at.x, at.y, at.z, 0.0, 0.0, 0.0, 1.2, false, false, false)
+end
+
+-- Shocked by an electric fence: sparks, a jolt and a short stagger.
+RegisterNetEvent('wasteland:basebuilding:client:shocked', function(id)
+    local ped = PlayerPedId()
+    local at = GetEntityCoords(ped)
+    Citizen.CreateThread(function() sparks(at) end)
+    ShakeGameplayCam('SMALL_EXPLOSION_SHAKE', 0.4)
+    if not IsPedInAnyVehicle(ped, false) then SetPedToRagdoll(ped, 900, 1200, 0, false, false, false) end
+end)
+
+--- Sparks(coords): for other scripts (zombies touching a live fence)
+exports('Sparks', function(c) if type(c) == 'table' or type(c) == 'vector3' then Citizen.CreateThread(function() sparks(vector3(c.x, c.y, c.z)) end) end end)
 
 RegisterNetEvent('wasteland:basebuilding:client:wireHurt', function(amount)
     ApplyDamageToPed(PlayerPedId(), math.floor(tonumber(amount) or 0), false)
@@ -624,6 +648,8 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+PoweredAt = powered
 
 RegisterNetEvent('wasteland:basebuilding:client:propMoved', function(id, patch)
     local data = propCache[id]
@@ -1093,9 +1119,11 @@ exports('GetDefensesNear', function(coords, radius)
         if piece and piece.contactDamage and #(d.coords - at) <= (radius or 10.0) then
             out[#out + 1] = { id = id, x = d.coords.x, y = d.coords.y, z = d.coords.z, damage = piece.contactDamage,
                 slow = piece.slow or 1.0, touch = piece.touchRadius or 1.8 }
-        elseif piece and piece.wireDamage and #(d.coords - at) <= (radius or 10.0) + 3.0 then
+        elseif piece and piece.wireDamage and #(d.coords - at) <= (radius or 10.0) + 3.0
+            and not (piece.needsPower and not (PoweredAt and PoweredAt(d.coords))) then
             -- barbed wire on a wall: only its strip along the top hurts
             out[#out + 1] = { id = id, x = d.coords.x, y = d.coords.y, z = d.coords.z, damage = piece.wireDamage, slow = 1.0,
+                shock = piece.shock or nil,
                 wire = { heading = d.heading or 0.0, half = 2.05, reach = piece.wireReach or 0.75,
                     from = piece.wireFrom or 3.5, to = piece.wireTo or 4.7 } }
         end

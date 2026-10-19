@@ -337,4 +337,25 @@ describe('base building', function()
         expect(last[#last].args[2].is_open).toBe(false)
         expect(BB({ x = 10.0, y = 3.0, z = 30.0 })).toBe(false)
     end)
+
+    it('electric fence: harmless without power, zaps while a generator runs nearby', function()
+        I('AddItem', a, 'metal_sheet', 10); I('AddItem', a, 'scrap_metal', 18); I('AddItem', a, 'jerry_can', 1, { fuel = 10 }); server:advance(200)
+        place(a, 'efence', 6.0, -4.0)
+        local fence = lastProp(a)
+        expect(fence.piece).toBe('efence')
+        local zaps = function() return #server:clientEventsFor(a, 'wasteland:basebuilding:client:shocked') end
+        server.players[a].coords = { x = 6.5, y = -4.2, z = 31.0 }
+        act(a, 'wire', fence.id); server:advance(1000)
+        expect(zaps()).toBe(0)                                   -- no generator running
+        server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
+        place(a, 'generator', 1.0, -3.0)
+        local gen = lastProp(a)
+        act(a, 'generatorFuel', gen.id); act(a, 'generator', gen.id)
+        expect(note(a)).toBe('Generator on.')
+        server.players[a].coords = { x = 6.5, y = -4.2, z = 31.0 }
+        act(a, 'wire', fence.id)
+        expect(note(a)).toBe('Zapped!')
+        expect(zaps()).toBe(1)
+        server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
+    end)
 end)
