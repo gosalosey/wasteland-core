@@ -1224,7 +1224,6 @@ Citizen.CreateThread(function()
             end
             if now ~= sheltered then
                 sheltered = now
-                print(('[wasteland_basebuilding] %s'):format(sheltered and 'under a roof: no rain here' or 'outside: weather as normal'))
                 if not sheltered then
                     -- back to the server's weather (the world module re-applies it)
                     SetRainLevel(-1.0)
