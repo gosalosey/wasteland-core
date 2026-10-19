@@ -75,7 +75,7 @@ return {
         props      = true,
 
         -- Base building: tool cupboards, snapping walls, doors, storage,
-        -- upkeep, raids. Needs the sinor-buildingProps-v2 props pack.
+        -- upkeep, raids. Uses the free wasteland_buildprops models.
         basebuilding = true,
 
         -- Base building: switched off for now (the props need a better look).

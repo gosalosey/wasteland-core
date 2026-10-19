@@ -21,7 +21,7 @@
 
 That's it. Wasteland creates its own database tables. The recipe also installs the database driver (oxmysql), voice chat (pma-voice), the zombie sounds and a ready `server.cfg`.
 
-> **Base building needs a paid props pack.** The building pieces (walls, doors, gates, foundations and so on) come from **sinor-buildingProps-v2** by SinorSystem. It is **not free** and **not included**. Buy it from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/), then install it on your server (see [docs/INSTALL.md](docs/INSTALL.md#base-building-props-optional)). Without it, everything else works, but base pieces are invisible. **Or use your own building props**, or GTA's: see [docs/INSTALL.md](docs/INSTALL.md#using-your-own-building-props-instead-of-the-paid-pack). To switch base building off, set `basebuilding = false` in `modules.lua`.
+> **Base building props are included and free.** The building pieces (foundations, walls, doorways, window frames, ceilings, ramps, doors, gates, garage doors, window bars) come from **wasteland_buildprops**: original models and textures made for Wasteland, in wood, stone and metal. Nothing to buy. Own the paid sinor-buildingProps-v2 pack, or have your own props? You can still use them: see [docs/INSTALL.md](docs/INSTALL.md#using-other-building-props). To switch base building off, set `basebuilding = false` in `modules.lua`.
 
 Installing by hand, adding admins, or updating: see **[docs/INSTALL.md](docs/INSTALL.md)**.
 
@@ -117,7 +117,7 @@ Wasteland uses the **[Total Apocalypse](https://github.com/SparksScripts/Total-A
 
 ### Optional extras
 
-* **Base building props (paid, required for base building):** **sinor-buildingProps-v2** by SinorSystem. It is not free and not included. Get it from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/). Install steps: [docs/INSTALL.md](docs/INSTALL.md#base-building-props-optional).
+* **Other building props (optional):** base building uses the free, included wasteland_buildprops. The paid **sinor-buildingProps-v2** pack by SinorSystem ([Tebex store](https://sinorsystem.tebex.io/)) or your own props also work: [docs/INSTALL.md](docs/INSTALL.md#using-other-building-props).
 * **Your own zombie models:** put them in `resources/[wasteland]/wasteland_zombiemodels/stream` and list them in `zombies.lua`.
 
 ### Something not working?
@@ -172,6 +172,6 @@ txadmin/    txAdmin recipe and server.cfg
 
 **Zombie sounds** (`wasteland_zombiesounds`) are from the free **Zombie Sound Pack** by Catastic, plus a few extra zombie clips.
 
-**Other software** used and not included: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (MIT, by AvarianKnight). The standard map is [Total Apocalypse](https://github.com/SparksScripts/Total-Apocalypse) (GPL-3.0) by SparksScripts and the mappers credited in its README. Base building uses the **sinor-buildingProps-v2** props pack by SinorSystem, a paid pack you buy yourself from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/).
+**Other software** used and not included: [FiveM / FXServer](https://fivem.net), [oxmysql](https://github.com/overextended/oxmysql) and [pma-voice](https://github.com/AvarianKnight/pma-voice) (MIT, by AvarianKnight). The standard map is [Total Apocalypse](https://github.com/SparksScripts/Total-Apocalypse) (GPL-3.0) by SparksScripts and the mappers credited in its README. The base building props (`wasteland_buildprops`) are original to Wasteland Core, made with [CodeWalker](https://github.com/dexyfex/CodeWalker) (MIT) tools; see `tools/buildprops`.
 
 If you are an author of any of these pictures or sounds and want them credited differently or removed, please open an issue.

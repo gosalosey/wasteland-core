@@ -47,7 +47,7 @@ Update `wasteland_zombies`; older versions threw away kill reports. Kills made b
 ## Base building
 
 **Pieces are invisible, or "model ... is not in the game: is the props pack running?" in F8.**
-* For the normal building pieces: install the **sinor-buildingProps-v2** pack (paid, from the [SinorSystem Tebex store](https://sinorsystem.tebex.io/)), keep its folder name exactly like that, and put `ensure sinor-buildingProps-v2` before `ensure wasteland_basebuilding`. It only works on a server whose licence key belongs to the account that owns the pack. Using your own props instead? Check `propsResource` and every piece's `model` in `basebuilding.lua` ([docs/INSTALL.md](INSTALL.md#using-your-own-building-props-instead-of-the-paid-pack)).
+* For the normal building pieces: check that `wasteland_buildprops` is in `resources` and that `ensure wasteland_buildprops` comes before `ensure wasteland_basebuilding`. Using another props pack? Check `propsResource` and every piece's `model` in `basebuilding.lua` ([docs/INSTALL.md](INSTALL.md#using-other-building-props)).
 * For a defence piece: its GTA model can't be spawned. Change its `model` in `basebuilding.lua`. Only models whose names start with `prop_` or `p_` can reliably be placed.
 
 **"Place a Tool Cupboard first".**

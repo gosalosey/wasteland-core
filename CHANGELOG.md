@@ -1,5 +1,10 @@
 # Changelog
 
+## Free building props of our own: base building no longer needs a paid pack (owner)
+* New resource wasteland_buildprops: 32 original models made for Wasteland: foundation, wall, half wall, doorway, window frame, ceiling, garage frame and ramp in wood, stone and metal; wooden and metal doors, a garage door, a gate frame and gate, wooden and metal window bars, and the tool cupboard. Each has its own collision (with wood, stone or metal surface sounds and bullet effects) and uses four textures painted by code (weathered planks, rusty corrugated metal, stone blocks, dark metal). Grid 4 m, walls 3 m tall; doors pivot on their hinges.
+* basebuilding.lua now uses them (propsResource = 'wasteland_buildprops'); the paid sinor-buildingProps-v2 pack still works if you set it back. server.cfg ensures wasteland_buildprops before wasteland_basebuilding.
+* tools/buildprops rebuilds the models from a script (no Blender, no GTA V needed): gen_buildprops.py writes them, a small converter on CodeWalker.Core (MIT) turns them into GTA files.
+
 ## HUD and toilet tweaks (owner)
 * The id, name and cash line is bigger and bolder; the armour bar is as long as the health bar and taller.
 * Pee and poop fill half as fast (bladderPerHour 25, bowelPerHour 12; drinking and eating add half as much).
