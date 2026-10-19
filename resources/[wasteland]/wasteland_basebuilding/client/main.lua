@@ -9,6 +9,7 @@ local LOCKPICK = 'bbLockpick'
 local cfg = nil
 local cupboardCache, propCache = {}, {}      -- id -> data (coords as vector3)
 local spawnedCupboards, spawnedProps = {}, {} -- id -> { obj, targets }
+local propOfEntity = {}                        -- entity -> piece id (shelter checks)
 local myBlips = {}
 local isPlacing, picking = false, false
 local movingId = nil -- the placed piece being moved (hidden; not a snap anchor)
@@ -490,11 +491,13 @@ local function SpawnProp(id)
     local scaled = cfg.pieces[data.piece] and cfg.pieces[data.piece].scale
     if scaled then scaleEntity(obj, scaled) end
     spawnedProps[id] = { obj = obj, targets = addTargets(obj, id, false) }
+    propOfEntity[obj] = id
 end
 
 local function DespawnProp(id)
     local e = spawnedProps[id]
     if e then
+        propOfEntity[e.obj] = nil
         removeTargets(e.targets)
         if DoesEntityExist(e.obj) then DeleteEntity(e.obj) end
     end
@@ -1129,6 +1132,54 @@ exports('GetDefensesNear', function(coords, radius)
         end
     end
     return out
+end)
+
+-------------------------------------------------------------------------------
+-- Shelter: under a roof you built (a ceiling, a ladder hatch, a foundation of
+-- the floor above, stairs) no rain falls on you, you dry off, and the cold of
+-- the rain does not reach you (wasteland_survival asks IsSheltered).
+-------------------------------------------------------------------------------
+
+local sheltered = false
+local ROOF = { ceiling = true, hatch = true, foundation = true, stairs = true }
+
+local function roofAbove(ped)
+    local from = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0) -- head
+    local ray = StartShapeTestRay(from.x, from.y, from.z + 0.1, from.x, from.y, from.z + 12.0, 16, ped, 4)
+    local _, hit, _, _, entity = GetShapeTestResult(ray)
+    if hit ~= 1 or not entity or entity == 0 then return false end
+    local id = propOfEntity[entity]
+    local data = id and propCache[id]
+    local piece = data and cfg.pieces[data.piece]
+    if not piece then return false end
+    local family = piece.family or data.piece
+    return ROOF[family] == true or ROOF[data.piece] == true
+end
+
+Citizen.CreateThread(function()
+    while true do
+        Wait(500)
+        if cfg then
+            local ped = PlayerPedId()
+            local now = not IsPedInAnyVehicle(ped, false) and roofAbove(ped)
+            if now ~= sheltered then
+                sheltered = now
+                -- no rain drawn while under your own roof; back to the weather outside
+                SetRainLevel(sheltered and 0.0 or -1.0)
+            end
+            if sheltered then
+                ClearPedWetness(ped)
+                SetPedWetnessHeight(ped, 0.0)
+            end
+        end
+    end
+end)
+
+--- IsSheltered() -> boolean: the player stands under a roof built with base building
+exports('IsSheltered', function() return sheltered end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() and sheltered then SetRainLevel(-1.0) end
 end)
 
 -------------------------------------------------------------------------------

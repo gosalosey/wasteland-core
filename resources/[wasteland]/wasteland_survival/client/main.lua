@@ -489,6 +489,11 @@ local function environment()
     local z = GetEntityCoords(ped).z
     if z > 300 then temp = temp - (z - 300) / 100 end
     local sheltered = IsPedInAnyVehicle(ped, false) or GetInteriorFromEntity(ped) ~= 0
+    -- under a roof built with base building counts too
+    if not sheltered and GetResourceState('wasteland_basebuilding') == 'started' then
+        local ok, yes = pcall(function() return exports.wasteland_basebuilding:IsSheltered() end)
+        sheltered = ok and yes == true
+    end
     if sheltered then temp = math.max(temp, 15) end
     local wet = IsEntityInWater(ped) or IsPedSwimming(ped) or (WET_WEATHER[weather] == true and not sheltered)
     return math.max(-40, math.min(60, temp)), wet

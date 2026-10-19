@@ -1,5 +1,8 @@
 # Changelog
 
+## No rain inside your base (owner)
+* Under a roof you built (a ceiling, a ladder hatch, the floor above, stairs) rain stops for you, you dry off, and survival counts it as shelter (no rain chill, at least 15 C) like vehicles and buildings. Outside it rains as before. Export IsSheltered().
+
 ## Electric fence (owner)
 * New defense: Electric Fence (4 metal sheet, 8 scrap metal): 4 m sections of steel posts and rails with six copper wires on ceramic insulators and a junction box. Sections chain like the external wall.
 * Live only while a running generator is in range (its powerRadius). Touching it then shocks: 15 damage, sparks, a short stagger for players; zombies are thrown back. Without power it is just a fence.
