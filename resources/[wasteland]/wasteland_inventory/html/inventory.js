@@ -244,7 +244,7 @@
     // needs its own column (about 330 px) next to the worn items (about 330).
     function cellSize(viewW, viewH, rows, cols, looting) {
         const byH = Math.floor((viewH - 230) / Math.max(1, rows));
-        const byW = Math.floor((viewW - (looting ? 560 : 480)) / Math.max(1, cols));
+        const byW = Math.floor((viewW - (looting ? 640 : 480)) / Math.max(1, cols));
         return Math.max(24, Math.min(50, byH, byW));
     }
 
@@ -858,7 +858,7 @@
         '.wli-header { display: flex; align-items: baseline; gap: 18px; }',
         '.wli-header__hint { flex: 1; }',
         '.wli-columns { flex: 1; display: flex; gap: 22px; align-items: flex-start; overflow-x: hidden; overflow-y: auto; }',
-        '.wli-col--side { flex: 1 1 0; min-width: 300px; max-width: 460px; }',
+        '.wli-col--side { flex: 0 0 auto; min-width: 300px; }',
         '.wli-col { display: flex; flex-direction: column; gap: 16px; }',
         '.wli-col--main { flex: 0 0 auto; flex-direction: column; align-items: flex-start; }',
         '.wli-baghint { max-width: 180px; align-self: flex-start; padding: 10px; border: 1px dashed var(--wl-border); border-radius: 6px; }',

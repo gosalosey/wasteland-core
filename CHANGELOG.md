@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: wide trunks spilled past their panel (owner)
+* The looting column was capped at 460 px, so a wide grid (an 18-wide truck trunk) ran past the panel background. The column now grows with its grid; cells shrink a little more when looting so it still fits the screen.
+
 ## Inventory layout (owner)
 * The open backpack now sits under Pockets instead of beside them. The ground drop zone and the Health panel moved to the left column, under the hotbar. The right side is left for whatever is being looted (stashes, trunks, crates). Cell size is worked out for the new stacked layout.
 
