@@ -301,7 +301,7 @@ def plain(seed, dark, light, grime=0.35):
     return img, Image.new('L', (TEX, TEX), 128)
 
 ceramic_d, ceramic_h = plain(66, (176, 172, 160), (232, 228, 216))
-copper_d, copper_h = plain(88, (96, 58, 30), (176, 112, 64), 0.25)
+copper_d, copper_h = plain(88, (62, 38, 24), (142, 86, 52), 0.55)
 
 def fabric(seed):
     """Stained mattress / blanket cloth: a fine weave, stains, a seam grid."""
@@ -1152,44 +1152,145 @@ def pipe(a, b, r, tex):
     pitch = math.degrees(math.atan2(dz, math.hypot(dx, dy)))
     return rbox((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2, length, r, r, tex, ry=-pitch, rz=yaw)
 
+def _norm(v):
+    l = math.sqrt(sum(c * c for c in v)) or 1.0
+    return tuple(c / l for c in v)
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+def _facen(q):
+    a, b, c = q[0], q[1], q[2] if q[2] != q[1] else q[3]
+    if q[0] == q[1]: a, b, c = q[1], q[2], q[3]
+    return _norm(_cross(tuple(b[i] - a[i] for i in range(3)), tuple(c[i] - a[i] for i in range(3))))
+
+def lathe(cx, cy, profile, tex, sides=32):
+    """A smooth round shape turned from a profile [(radius, z), ...] going up."""
+    m = len(profile)
+    segn = []
+    for k in range(m - 1):
+        (r0, z0), (r1, z1) = profile[k], profile[k + 1]
+        segn.append(_norm((z1 - z0, -(r1 - r0))))           # (radial, up) outward
+    pn = []
+    for k in range(m):
+        a = segn[max(0, k - 1)]; b = segn[min(m - 2, k)]
+        pn.append(_norm((a[0] + b[0], a[1] + b[1])))
+    arc = [0.0]
+    for k in range(1, m):
+        arc.append(arc[-1] + math.hypot(profile[k][0] - profile[k - 1][0], profile[k][1] - profile[k - 1][1]))
+    rmax = max(r for r, _ in profile)
+    out = []
+    for k in range(m - 1):
+        for j in range(sides):
+            a0, a1 = 2 * math.pi * j / sides, 2 * math.pi * (j + 1) / sides
+            pts, ns, uvs = [], [], []
+            for kk, aa, jj in ((k, a0, j), (k, a1, j + 1), (k + 1, a1, j + 1), (k + 1, a0, j)):
+                r, z = profile[kk]
+                ca, sa = math.cos(aa), math.sin(aa)
+                pts.append((cx + r * ca, cy + r * sa, z))
+                nr, nz = pn[kk]
+                ns.append((nr * ca, nr * sa, nz))
+                uvs.append((jj / sides * 2 * math.pi * rmax * UV_SCALE, -arc[kk] * UV_SCALE))
+            if len(set(pts)) < 3: continue
+            out.append((_facen(pts), pts, tex, ns, uvs))
+    return out
+
+def tube(path, r, tex, sides=12):
+    """A round pipe along a list of points (bends follow the points)."""
+    m = len(path)
+    ts = []
+    for k in range(m):
+        a = path[max(0, k - 1)]; b = path[min(m - 1, k + 1)]
+        ts.append(_norm(tuple(b[i] - a[i] for i in range(3))))
+    ref = (0, 0, 1) if abs(ts[0][2]) < 0.9 else (1, 0, 0)
+    n = _norm(_cross(ts[0], ref))
+    frames = []
+    for k in range(m):
+        t = ts[k]
+        d = sum(n[i] * t[i] for i in range(3))
+        n = _norm(tuple(n[i] - d * t[i] for i in range(3)))
+        frames.append((n, _cross(t, n)))
+    L = [0.0]
+    for k in range(1, m): L.append(L[-1] + math.dist(path[k], path[k - 1]))
+    def ring(k, j):
+        a = 2 * math.pi * j / sides
+        n, b = frames[k]
+        d = tuple(n[i] * math.cos(a) + b[i] * math.sin(a) for i in range(3))
+        return tuple(path[k][i] + d[i] * r for i in range(3)), d
+    out = []
+    for k in range(m - 1):
+        for j in range(sides):
+            corners = [ring(k, j), ring(k, j + 1), ring(k + 1, j + 1), ring(k + 1, j)]
+            uvs = [(j / sides * 0.3, -L[k] * UV_SCALE), ((j + 1) / sides * 0.3, -L[k] * UV_SCALE),
+                   ((j + 1) / sides * 0.3, -L[k + 1] * UV_SCALE), (j / sides * 0.3, -L[k + 1] * UV_SCALE)]
+            pts = [c[0] for c in corners]
+            out.append((_facen(pts), pts, tex, [c[1] for c in corners], uvs))
+    return out
+
+def bezier(a, c, b, steps=12):
+    return [tuple((1 - t) ** 2 * a[i] + 2 * (1 - t) * t * c[i] + t * t * b[i] for i in range(3))
+            for t in (s / steps for s in range(steps + 1))]
+
+def barrel(cx, cy, z0, z1, r, bulge, tex, hoop, hoops=(0.12, 0.88), top=None):
+    """A wooden barrel: bulging staves, iron hoops, a closed (or `top` coloured) lid."""
+    prof = [(0.0, z0), (r - 0.01, z0), (r, z0 + 0.01)]
+    for k in range(1, 8):
+        t = k / 8
+        prof.append((r + bulge * math.sin(math.pi * t), z0 + (z1 - z0) * t))
+    prof += [(r, z1 - 0.01), (r - 0.012, z1), (r - 0.03, z1 - 0.02)]
+    out = lathe(cx, cy, prof, tex, 28)
+    out += lathe(cx, cy, [(r - 0.03, z1 - 0.02), (0.0, z1 - 0.02)], top or tex, 28)
+    for h in hoops:
+        z = z0 + (z1 - z0) * h
+        rr = r + bulge * math.sin(math.pi * h) + 0.006
+        out += lathe(cx, cy, [(rr - 0.004, z - 0.022), (rr, z - 0.02), (rr, z + 0.02), (rr - 0.004, z + 0.022)], hoop, 28)
+    return out
+
 def moonshine_still():
     COP = 'wlbp_copper'
     out = []
-    # brick firebox with a dark mouth and a few logs
+    # brick firebox: a square stone base, a dark iron fire door, logs in the mouth
     out += box(-0.48, -0.48, 0, 0.48, 0.48, 0.45, STONE)
-    out += box(-0.2, -0.49, 0.05, 0.2, -0.47, 0.3, DARK)
+    out += box(-0.5, -0.5, 0.42, 0.5, 0.5, 0.47, STONE)
+    out += box(-0.19, -0.495, 0.06, 0.19, -0.475, 0.32, DARK)
+    out += tube([(-0.12, -0.5, 0.29), (0.12, -0.5, 0.29)], 0.012, METAL, 8)     # door handle bar
     for k in range(3):
-        out += rbox(0, -0.42 + k * 0.02, 0.1 + k * 0.06, 0.34, 0.07, 0.07, BEAM, rz=8 * (k - 1))
-    # copper pot, bands, cap (onion head) and a little thermometer
-    out += cyl(0, 0, 0.45, 1.12, 0.42, COP, 12)
-    for z in (0.55, 0.85, 1.08):
-        out += cyl(0, 0, z, z + 0.035, 0.435, DARK, 12, 0.012)
-    out += cyl(0, 0, 1.12, 1.2, 0.3, COP, 12)
-    out += cyl(0, 0, 1.2, 1.42, 0.2, COP, 10)
-    out += cyl(0, 0, 1.42, 1.5, 0.12, COP, 8)
-    out += box(-0.03, -0.43, 0.8, 0.03, -0.41, 0.95, METAL)
-    # lyne arm down to the thump keg
-    out += pipe((0.05, 0, 1.46), (0.95, 0, 1.02), 0.045, COP)
-    # thump keg: a wooden barrel on a little stand
-    for x in (0.8, 1.1):
-        out += box(x, -0.2, 0, x + 0.05, 0.2, 0.32, BEAM)
-    out += cyl(0.98, 0, 0.32, 0.98, 0.22, WOOD, 10)
-    for z in (0.42, 0.88):
-        out += cyl(0.98, 0, z, z + 0.03, 0.228, DARK, 10, 0.012)
-    out += cyl(0.98, 0, 0.98, 1.04, 0.06, COP, 8)
-    # pipe over to the condenser barrel
-    out += pipe((0.98, 0, 1.03), (1.75, 0, 1.03), 0.04, COP)
-    out += pipe((1.75, 0, 1.03), (1.75, 0, 0.92), 0.04, COP)
-    # condenser: a taller barrel with the copper worm coiled on top
-    out += cyl(1.75, 0, 0.0, 0.9, 0.32, WOOD, 12)
-    for z in (0.12, 0.45, 0.78):
-        out += cyl(1.75, 0, z, z + 0.035, 0.328, DARK, 12, 0.012)
-    for k in range(3):
-        out += cyl(1.75, 0, 0.9 + k * 0.05, 0.93 + k * 0.05, 0.2 - k * 0.03, COP, 10, 0.025)
-    # spout and a mason jar catching it
-    out += pipe((2.07, 0, 0.22), (2.25, 0, 0.18), 0.03, COP)
-    out += cyl(2.3, 0, 0.0, 0.16, 0.065, 'wlbp_ceramic', 8, 0.01)
-    out += cyl(2.3, 0, 0.16, 0.19, 0.05, METAL, 8, 0.01)
+        out += tube([(-0.16, -0.46 + k * 0.03, 0.1 + k * 0.05), (0.16, -0.43 + k * 0.03, 0.1 + k * 0.05)], 0.035, BEAM, 8)
+    # copper pot: round-bellied, a rolled rim, then the onion head (cap)
+    pot = [(0.0, 0.47), (0.30, 0.47), (0.37, 0.50), (0.42, 0.58), (0.445, 0.70), (0.45, 0.82), (0.44, 0.93),
+           (0.40, 1.02), (0.33, 1.09), (0.24, 1.13), (0.16, 1.15)]
+    out += lathe(0, 0, pot, COP, 36)
+    out += lathe(0, 0, [(0.155, 1.14), (0.175, 1.15), (0.175, 1.175), (0.155, 1.185)], DARK, 36)    # flange
+    cap = [(0.15, 1.18), (0.19, 1.22), (0.215, 1.28), (0.21, 1.34), (0.18, 1.40), (0.13, 1.45), (0.075, 1.485),
+           (0.035, 1.50), (0.0, 1.505)]
+    out += lathe(0, 0, cap, COP, 32)
+    for a in range(0, 360, 30):                                                    # rivets round the belly
+        ca, sa = math.cos(math.radians(a)), math.sin(math.radians(a))
+        out += rbox(ca * 0.447, sa * 0.447, 0.76, 0.02, 0.02, 0.02, DARK, rz=a)
+    out += tube([(0.0, -0.44, 0.88), (0.0, -0.5, 0.92)], 0.012, METAL, 8)         # thermometer stem
+    out += lathe(0, -0.52, [(0.0, 0.9), (0.035, 0.905), (0.035, 0.94), (0.0, 0.945)], METAL, 16)
+    # lyne arm: from the top of the cap, curving down into the thump keg
+    out += tube(bezier((0.0, 0, 1.47), (0.55, 0, 1.6), (0.98, 0, 1.04), 16), 0.032, COP)
+    # thump keg on a little wooden stand
+    for x in (0.8, 1.16):
+        out += box(x - 0.025, -0.2, 0, x + 0.025, 0.2, 0.32, BEAM)
+    out += box(0.75, -0.2, 0.3, 1.21, 0.2, 0.33, BEAM)
+    out += barrel(0.98, 0, 0.33, 0.98, 0.2, 0.03, WOOD, DARK, (0.1, 0.5, 0.9))
+    out += lathe(0.98, 0, [(0.05, 0.96), (0.05, 1.02), (0.06, 1.03), (0.06, 1.05), (0.0, 1.05)], COP, 16)
+    # pipe over and down into the condenser
+    out += tube(bezier((0.98, 0, 1.03), (1.4, 0, 1.25), (1.72, 0, 0.98), 14), 0.03, COP)
+    # condenser: a tall barrel of water with the copper worm coiled inside, poking out the top
+    out += barrel(1.75, 0, 0.0, 0.86, 0.3, 0.035, WOOD, DARK, (0.08, 0.4, 0.72), top=DARK)
+    helix = []
+    for k in range(73):
+        a = k / 72 * 2 * math.pi * 3
+        helix.append((1.75 + math.cos(a) * 0.17, math.sin(a) * 0.17, 0.98 - k / 72 * 0.3))
+    out += tube(helix, 0.022, COP, 10)
+    # spout from the bottom of the condenser into a mason jar
+    out += tube(bezier((2.06, 0, 0.24), (2.2, 0, 0.24), (2.27, 0, 0.19), 8), 0.018, COP, 10)
+    jar = [(0.0, 0.0), (0.055, 0.0), (0.065, 0.01), (0.068, 0.12), (0.06, 0.145), (0.05, 0.155)]
+    out += lathe(2.3, 0, jar, 'wlbp_ceramic', 20)
+    out += lathe(2.3, 0, [(0.05, 0.155), (0.054, 0.16), (0.054, 0.18), (0.0, 0.18)], METAL, 20)
     return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
@@ -1445,16 +1546,20 @@ for model, look, solid, mid in PIECES:
     c = tuple((mn[i] + mx[i]) / 2 for i in range(3))
     r = math.dist(mn, mx) / 2
     groups = {}
-    for n, q, tex in look:
-        groups.setdefault(tex, []).append((n, q))
+    for item in look:
+        groups.setdefault(item[2], []).append(item)
     shaders, geoms = [], []
     for si, (tex, faces) in enumerate(groups.items()):
         shaders.append(shader(tex))
         verts, idx = [], []
-        for n, q in faces:
+        for item in faces:
+            n, q = item[0], item[1]
+            vn = item[3] if len(item) > 3 else None    # smooth (per corner) normals: round parts
+            vt = item[4] if len(item) > 4 else None    # their own texture mapping
             base = len(verts)
-            for p in q:
-                verts.append((p, n, uv(p, n), tangent(n)))
+            for k, p in enumerate(q):
+                nn = vn[k] if vn else n
+                verts.append((p, nn, vt[k] if vt else uv(p, n), tangent(nn)))
             for a, b, cc in ((0, 1, 2), (0, 2, 3)):
                 if len({q[a], q[b], q[cc]}) == 3:
                     idx += [base + a, base + b, base + cc]

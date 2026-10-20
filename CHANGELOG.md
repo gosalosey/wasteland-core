@@ -1,5 +1,8 @@
 # Changelog
 
+## Moonshine still: rounder, more realistic model (owner)
+* The still is rebuilt from smooth round shapes instead of boxes: a bellied copper pot with a rolled flange, rivets and an onion-head cap; a curved copper lyne arm; a bulging wooden thump keg and condenser barrel with iron hoops; a real coiled copper worm; a mason jar with a lid. Smooth shading on the round parts. The copper is darker and weathered (also on electric fence wires). The generator now supports per-corner normals (round parts) alongside the flat boxes.
+
 ## Moonshine (owner)
 * New module wasteland_moonshine. A moonshine still (our own model: a brick firebox under a copper pot still with a cap and lyne arm, a thump keg and a condenser barrel with copper coils, and a jar under the spout) is crafted (6 metal sheets, 10 scrap metal, 4 wood planks) and placed anywhere. Saved (wl_moonshine_stills); the brewing time left survives a restart.
 * Seven flavours from farmed crops: corn, strawberry, cucumber, blueberry, cranberry, potato, watermelon. Each takes 2 sugar, 1 water bottle, 1 firewood plus its crop; a 2-minute run gives 2 jars. New items: sugar (food loot, General trader), moonshine still, 7 moonshine jars.
