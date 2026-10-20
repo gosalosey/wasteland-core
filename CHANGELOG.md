@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: sometimes no HUD and no control after a server restart (owner)
+* Right after joining, a screen's script could fail to load once. The page dropped the screen but the game still thought it was open: the HUD never appeared (updates went to a screen that did not exist), and a focused screen kept the mouse and keyboard. Screen scripts are now tried up to 5 times; if one still fails, the page tells the game, which forgets the screen and gives focus back, and its owner opens it again (the HUD on its next update, the character screen by asking for the list again).
+* The character list counted as received even when the UI was not running yet, so the character screen could never appear (frozen, nothing on screen). It now keeps asking until a screen shows it.
+
 ## Fix: wide trunks spilled past their panel (owner)
 * The looting column was capped at 460 px, so a wide grid (an 18-wide truck trunk) ran past the panel background. The column now grows with its grid; cells shrink a little more when looting so it still fits the screen.
 

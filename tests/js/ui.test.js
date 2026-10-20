@@ -32,6 +32,7 @@ function fakeShell(scripts) {
         removeContainer: (el) => { el.removed = true; },
         post: (endpoint, body) => { posts.push({ endpoint, body }); return Promise.resolve({ ok: true }); },
         log: (level, message) => log.push(level + ': ' + message),
+        wait: () => Promise.resolve(), // retries without real delays
     };
     shell = createShell(env);
     return { shell, log, containers, posts };
@@ -188,4 +189,34 @@ test('clampToRanges keeps values inside what the game reports', () => {
     assert.deepStrictEqual(out.components[0], { id: 11, drawable: 200, texture: 3 });
     assert.strictEqual(out.props[0].drawable, -1);
     assert.strictEqual(a.hair.style, 50); // input untouched
+});
+
+test('a script that never loads is reported, so the game forgets the screen (and gives focus back)', async () => {
+    const f = fakeShell({});
+    await f.shell.handle({ wl: true, type: 'open', screen: 'gone', script: 'missing.js', data: {} });
+    assert.ok(!f.shell.isOpen('gone'));
+    assert.deepStrictEqual(f.posts.filter((p) => p.endpoint === 'failed').map((p) => p.body.screen), ['gone']);
+});
+
+test('a script that loads on a later try is mounted normally', async () => {
+    const calls = [];
+    let attempt = 0;
+    const posts = [];
+    let shell;
+    shell = createShell({
+        loadScript: () => new Promise((resolve, reject) => setImmediate(() => {
+            attempt++;
+            if (attempt < 3) return reject(new Error('not yet'));
+            shell.registerScreen('late', recorder(calls));
+            resolve();
+        })),
+        createContainer: (name) => ({ name }), removeContainer: () => {},
+        post: (endpoint, body) => { posts.push(endpoint); return Promise.resolve(); },
+        log: () => {}, wait: () => Promise.resolve(),
+    });
+    await shell.handle({ wl: true, type: 'open', screen: 'late', script: 'late.js', data: { ok: 1 } });
+    assert.strictEqual(attempt, 3);
+    assert.ok(shell.isOpen('late'));
+    assert.deepStrictEqual(calls[0], ['mount', { ok: 1 }]);
+    assert.ok(!posts.includes('failed'));
 });

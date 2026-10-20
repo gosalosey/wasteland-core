@@ -50,26 +50,42 @@
             env.removeContainer(s.el);
         }
 
+        // A screen that cannot be shown is reported back, so the game does
+        // not think it is open (and keep the mouse/keyboard on it).
+        function failed(name, why) {
+            env.log('error', why);
+            env.post('failed', { screen: name });
+        }
+
+        // Right after joining, a resource's files can briefly be unavailable:
+        // try a script a few times before giving up.
+        const RETRIES = env.retries === undefined ? 4 : env.retries;
+        const wait = env.wait || ((ms) => new Promise((r) => setTimeout(r, ms)));
+        function loadWithRetry(url, attempt) {
+            return env.loadScript(url).catch((err) => {
+                if (attempt >= RETRIES) throw err;
+                return wait(1000 * (attempt + 1)).then(() => loadWithRetry(url, attempt + 1));
+            });
+        }
+
         function open(msg) {
             const name = msg.screen;
             unmount(name);
             if (definitions[name]) { mount(name, msg.data); return Promise.resolve(); }
-            pending[name] = { data: msg.data, updates: [] };
-            if (!loading[msg.script]) loading[msg.script] = env.loadScript(msg.script);
+            const p = { data: msg.data, updates: [] };
+            pending[name] = p;
+            if (!loading[msg.script]) loading[msg.script] = loadWithRetry(msg.script, 0);
             return loading[msg.script].then(() => {
-                const p = pending[name];
-                if (!p) return; // closed while loading
+                if (pending[name] !== p) return; // closed or opened again while loading
                 delete pending[name];
-                if (!definitions[name]) {
-                    env.log('error', 'screen script ' + msg.script + ' did not register screen "' + name + '"');
-                    return;
-                }
+                if (!definitions[name]) return failed(name, 'screen script ' + msg.script + ' did not register screen "' + name + '"');
                 mount(name, p.data);
                 p.updates.forEach((d) => update(name, d));
             }, (err) => {
+                delete loading[msg.script]; // the next open tries again
+                if (pending[name] !== p) return;
                 delete pending[name];
-                delete loading[msg.script]; // allow a retry
-                env.log('error', 'could not load ' + msg.script + ': ' + (err && err.message || err));
+                failed(name, 'could not load ' + msg.script + ': ' + (err && err.message || err));
             });
         }
 

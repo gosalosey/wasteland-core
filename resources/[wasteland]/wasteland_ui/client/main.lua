@@ -45,6 +45,19 @@ RegisterNUICallback('ready', function(_, cb)
     cb({ ok = true })
 end)
 
+-- The page could not show a screen (its script did not load): forget it,
+-- so focus is given back and its owner opens it again on its next update.
+RegisterNUICallback('failed', function(data, cb)
+    local name = type(data) == 'table' and data.screen
+    if type(name) == 'string' and screens[name] then
+        print(('[wasteland_ui] screen "%s" could not be shown; closed it'):format(name))
+        screens[name] = nil
+        refreshFocus()
+        TriggerEvent('wasteland:ui:client:failed', name)
+    end
+    cb({ ok = true })
+end)
+
 RegisterNUICallback('action', function(data, cb)
     if type(data) ~= 'table' or type(data.screen) ~= 'string' or type(data.action) ~= 'string' then
         cb({ ok = false, error = 'bad request' })

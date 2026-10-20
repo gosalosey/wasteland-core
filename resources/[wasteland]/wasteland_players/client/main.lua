@@ -101,9 +101,10 @@ Citizen.CreateThread(function()
 end)
 
 RegisterNetEvent('wasteland:players:client:characters', function(data)
-    if type(data) ~= 'table' then return end
+    if type(data) ~= 'table' or loaded then return end
+    -- Only counts once a screen shows it: until then the request is repeated.
+    if not uiRunning() then return end
     listReceived = true
-    if loaded or not uiRunning() then return end
     if exports.wasteland_ui:IsOpen(SCREEN) then
         exports.wasteland_ui:Update(SCREEN, { list = data })
     else
@@ -122,6 +123,11 @@ RegisterNetEvent('wasteland:players:client:result', function(result)
         -- Play the new character straight away (the appearance creator follows).
         TriggerServerEvent('wasteland:players:server:selectCharacter', result.slot)
     end
+end)
+
+-- The screen could not be shown (its script failed to load): ask again.
+AddEventHandler('wasteland:ui:client:failed', function(screen)
+    if screen == SCREEN and not loaded then listReceived = false end
 end)
 
 AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
