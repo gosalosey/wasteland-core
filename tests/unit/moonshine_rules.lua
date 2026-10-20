@@ -20,8 +20,10 @@ describe('moonshine rules', function()
         local st = { drunk = 30, blind = 100, masked = true }
         Rules.decay(st, 5, CFG)
         expect(st.blind).toBe(50); expect(st.masked).toBe(true)
+        expect(st.drunk).toBe(30) -- still drunk while masked
         Rules.decay(st, 1.5, CFG)
         expect(st.masked).toBe(false)
+        expect(st.drunk).toBe(0)  -- sober the moment they can smell you
         Rules.drink(st, JAR)
         expect(st.masked).toBe(false) -- topping up below full does not mask again
     end)

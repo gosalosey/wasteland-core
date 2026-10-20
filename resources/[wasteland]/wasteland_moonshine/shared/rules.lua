@@ -18,9 +18,10 @@ end
 
 --- Time passes (minutes): both wear off; below the line zombies smell you again.
 function Rules.decay(st, minutes, cfg)
-    st.drunk = clamp((st.drunk or 0) - cfg.soberPerMinute * minutes)
+    if not st.masked then st.drunk = clamp((st.drunk or 0) - cfg.soberPerMinute * minutes) end -- stays drunk while zombies cannot smell you
     st.blind = clamp((st.blind or 0) - cfg.blindPerMinute * minutes)
-    if st.masked and st.blind < cfg.unmaskBelow then st.masked = false end
+    if st.masked and st.blind < cfg.unmaskBelow then st.masked = false; st.drunk = 0 end -- sober when they can smell you again
+    if st.blind <= 0 then st.drunk = 0 end
     return st
 end
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## Moonshine: 2 jars fill the Zombie Blind meter; drunk ends with it (owner)
+* A jar now adds 50 to the meter, so any 2 jars fill it. While zombies cannot smell you, being drunk does not wear off; the moment the meter drops below the line (about 6 minutes) you are sober again. Without a full meter, drunk wears off on its own and is gone when the meter empties.
+
 ## Moonshine: brew several runs at once (owner)
 * The still screen has a - / + picker per flavour: brew 1 to 10 runs at once. Each run takes a full set of ingredients and gives 2 jars; each extra run adds half a run's time (1 run 2 min, 2 runs 3 min, 10 runs 11 min). The ingredient list and time update as you pick; + stops at what you can afford. Settings: moonshine.lua maxBatch, batchSecondsFactor.
 

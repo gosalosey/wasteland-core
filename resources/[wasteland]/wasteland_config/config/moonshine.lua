@@ -32,9 +32,10 @@ return {
 
     -- one jar: health back (of 100), infection taken off, thirst, and how
     -- much drunk (0 - 100) and Zombie Blind (0 - 100) it adds
-    drink = { health = 3, infection = 3, thirst = 4, drunk = 18, blind = 34 },
+    drink = { health = 3, infection = 3, thirst = 4, drunk = 18, blind = 50 },   -- 2 jars fill the meter
 
-    -- drunk wears off this much a minute
+    -- drunk wears off this much a minute, and is gone the moment the
+    -- Zombie Blind ends (or the meter empties)
     soberPerMinute = 6,
     -- Zombie Blind: drains this much a minute; zombies ignore you once it is
     -- full (100), until it drains below unmaskBelow
