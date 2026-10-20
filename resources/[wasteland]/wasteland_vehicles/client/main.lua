@@ -45,7 +45,12 @@ local function apply(veh, s)
     -- Damage only the first time this state is applied (by any client):
     -- after that the entity carries newer damage than the saved state.
     if s.acked ~= s.seq then
-        if (s.body or 0) >= 990 then SetVehicleDeformationFixed(veh) end
+        if (s.body or 0) >= 990 then
+            -- repaired to full: the looks too (glass, lights, doors, bumpers,
+            -- dents); the health and wheels below are then set as saved
+            SetVehicleFixed(veh)
+            SetVehicleDeformationFixed(veh)
+        end
         SetVehicleEngineHealth(veh, (s.engine or 1000) + 0.0)
         SetVehicleBodyHealth(veh, (s.body or 1000) + 0.0)
     end

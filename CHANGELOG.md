@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: repaired vehicles still looked damaged (owner)
+* A repair back to full body health now also fixes the looks (SetVehicleFixed: glass, lights, doors, bumpers) as well as the dents. A partial repair leaves the damage showing.
+
 ## Rain catcher (owner)
 * New craftable item (8 wood planks, 4 scrap metal, 3 rags), placed outdoors only (the server refuses a spot under a roof): a metal drum under a tarp funnel on four posts. It fills only while it rains: 0.35 L a minute, up to 10 L. Left Alt > Collect water turns it into water bottles (0.5 L each, so a full catcher gives 20); Check water; Pick up (owner, group, admins). Saved (wl_farm_catchers). Settings: farming.lua rainCatcher (capacityLitres, litresPerMinute, litresPerBottle, maxPerPlayer).
 
