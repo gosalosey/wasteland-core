@@ -174,14 +174,14 @@ describe('moving, rotating, merging and splitting', function()
     end)
 
     it('merges stacks up to the stack size and splits them again', function()
-        -- bandages: light, stack 100 in the config
-        give(server, id, 'bandage', 101) -- 2 + 101: tops up to 100, new stack of 3
+        -- bandages: light, stack 250 in the config
+        give(server, id, 'bandage', 251) -- 2 + 251: tops up to 250, new stack of 3
         local s = snap(server, id)
         local stacks = {}
         for _, it in ipairs(inv(s, 'player:1').items) do if it.name == 'bandage' then stacks[#stacks + 1] = it end end
         expect(#stacks).toBe(2)
         table.sort(stacks, function(a, b) return a.count > b.count end)
-        expect(stacks[1].count).toBe(100); expect(stacks[2].count).toBe(3)
+        expect(stacks[1].count).toBe(250); expect(stacks[2].count).toBe(3)
         op(server, id, 'merge', stacks[2].uid, 'player:1', stacks[1].uid, 'player:1', 1)
         expect(lastError(server, id)).toContain('stack is full')
         op(server, id, 'split', stacks[1].uid, 'player:1', 3)
@@ -189,8 +189,8 @@ describe('moving, rotating, merging and splitting', function()
         local after = {}
         for _, it in ipairs(inv(snap(server, id), 'player:1').items) do if it.name == 'bandage' then after[#after + 1] = it.count end end
         table.sort(after)
-        expect(after).toEqual({ 2, 3, 98 })
-        expect(rowCount(server, 'bandage')).toBe(103)
+        expect(after).toEqual({ 2, 3, 248 })
+        expect(rowCount(server, 'bandage')).toBe(253)
     end)
 
     it('refuses splits of 0 or the whole stack', function()

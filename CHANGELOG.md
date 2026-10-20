@@ -1,5 +1,8 @@
 # Changelog
 
+## Bigger stacks (owner)
+* Every stackable item now stacks to 250 (was 5 to 200 depending on the item; the default for items without a size is now 250 too), so pockets and storage do not fill with many small stacks. Items that never stack (weapons, tools with durability, clothing, backpacks, placeables) are unchanged; cash still stacks to 1,000,000. Weight still counts per unit.
+
 ## Moonshine: 2 jars fill the Zombie Blind meter; drunk ends with it (owner)
 * A jar now adds 50 to the meter, so any 2 jars fill it. While zombies cannot smell you, being drunk does not wear off; the moment the meter drops below the line (about 6 minutes) you are sober again. Without a full meter, drunk wears off on its own and is gone when the meter empties.
 
