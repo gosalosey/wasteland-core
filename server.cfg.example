@@ -59,6 +59,7 @@ ensure wasteland_hunting
 ensure wasteland_skills
 ensure wasteland_guide
 ensure wasteland_props
+ensure wasteland_farming
 # Base building uses the free wasteland_buildprops models. (Own the paid
 # sinor-buildingProps-v2 pack instead? See basebuilding.lua propsResource.)
 ensure wasteland_buildprops

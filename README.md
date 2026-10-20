@@ -37,6 +37,7 @@ Installing by hand, adding admins, or updating: see **[docs/INSTALL.md](docs/INS
 | **Fight the dead** | Walkers, runners, stalkers that follow you, sleepers lying in the road, packs that surround you, screamers that call the horde, brutes, spitters and more. They hear gunshots (use a suppressor), see you in the open, and break through wooden walls. |
 | **Loot** | Search dumpsters, fridges, cars, bodies and supply drops. Press **E** to take everything at once. |
 | **Craft** | Rags from old clothes, bandages, and blueprints for weapons, gun parts and ammo. Weapon attachments: suppressor, scope, flashlight, grip, extended magazine. |
+| **Farm** | Craft farm plots (small, medium, large) and place them anywhere. Grow 16 crops from seeds (carrots, potatoes, tomatoes, corn, strawberries, bananas, pumpkins, watermelons and more), each its own food. Water them with water bottles, or let the rain do it outdoors. |
 | **Hunt** | Deer and boar. Harvest them with a knife and cook the meat on a campfire. |
 | **Trade** | Safe camps with traders (who buy anything), a medic and jobs. Trade face to face with other players. |
 | **Drive** | Fix up wrecks with batteries, wheels, engine parts and fuel. New players start with a **Full vehicle repair** for a quick first car. |

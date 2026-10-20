@@ -1,5 +1,11 @@
 # Changelog
 
+## Farming (owner)
+* New module wasteland_farming. Farm plots in three sizes (small 1 spot, medium 4, large 9) are crafted (wood planks, scrap metal) and placed anywhere, inside or outside, with a see-through preview. Our own models: wooden planter boxes of soil, and plants that grow visibly (sprout, young, grown, ripe with fruit in the crop's colour).
+* 16 crops, each with its own seed, growing time, yield and food: lettuce, strawberries, carrots, cucumbers, onions, tomatoes, bell peppers, bananas, blueberries, cranberries, beetroot, corn, potatoes, cabbage, watermelon, pumpkin. New food items with their own hunger/thirst values (survival.lua). Seeds in loot (food, survivor caches) and at the General trader; harvests sometimes give seeds back.
+* Plants grow only while the plot has water: water bottles add water (more for small plots); a plot outdoors (no roof built over it) is watered by rain. Left Alt on a plot opens it: each spot's crop, progress, time left until harvest, the water left, and Plant / Water / Harvest / Pull up / Pick up plot.
+* Saved in wl_farm_plots. Settings: config/farming.lua. Base building gained an IsRoofed(coords) export.
+
 ## Fix: head at the pillow end in bed (owner)
 * bed.lie.turn is now 270 (was 90): you lie with your head on the pillow.
 

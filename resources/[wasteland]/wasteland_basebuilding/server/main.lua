@@ -560,6 +560,28 @@ local function isPowered(at)
     return false
 end
 PoweredAt = isPowered
+
+--- IsRoofed(coords) -> boolean: a roof built with base building (a ceiling,
+--- a ladder hatch, a floor or stairs above) is over this spot (farming: no rain)
+local ROOF = { ceiling = true, hatch = true, foundation = true, stairs = true }
+exports('IsRoofed', function(coords)
+    if not (M and M.active) or type(coords) ~= 'table' then return false end
+    for _, p in pairs(props) do
+        local piece = M.config.pieces[p.piece]
+        local family = piece and (piece.family or p.piece)
+        if piece and (ROOF[family] or ROOF[p.piece]) then
+            local dz = p.coords.z - coords.z
+            if dz > 0.8 and dz < 9.0 then
+                local dx, dy = coords.x - p.coords.x, coords.y - p.coords.y
+                local h = math.rad(p.heading or 0.0)
+                local lx = dx * math.cos(h) + dy * math.sin(h)
+                local ly = -dx * math.sin(h) + dy * math.cos(h)
+                if math.abs(lx) <= 2.1 and math.abs(ly) <= 2.1 then return true end
+            end
+        end
+    end
+    return false
+end)
 exports('IsPowered', function(coords)
     if not (M and M.active) or type(coords) ~= 'table' then return false end
     return isPowered({ x = coords.x, y = coords.y, z = coords.z or 0 })

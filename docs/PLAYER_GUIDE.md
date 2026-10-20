@@ -66,6 +66,13 @@ Kill a deer or boar, then hold **Left Alt** on it with a knife in your pockets t
 * **Upkeep:** keep wood, stone and metal in the cupboard's supplies, or your base slowly decays.
 * **No cupboard?** You can still build walls, doors and defences to barricade an old building. They're yours only, and they disappear after 12 hours unless a cupboard claims them.
 
+## Farming
+
+* **Farm plots:** craft a small (1 spot), medium (4) or large (9) farm plot, then use it to place it anywhere: in your base or out in the open.
+* **Seeds:** found while looting (kitchens, survivor caches) and sold by the General trader. 16 crops: lettuce, strawberries, carrots, cucumbers, onions, tomatoes, bell peppers, bananas, blueberries, cranberries, beetroot, corn, potatoes, cabbage, watermelon and pumpkin. Each is its own food: watermelon and cucumber quench thirst, pumpkin, cabbage and corn fill you up.
+* **Water:** plants only grow while the soil is wet. Use water bottles on the plot. A plot **outdoors waters itself while it rains**; under a roof you water it by hand.
+* **Left Alt on a plot** opens it: what grows in each spot, how far along it is, the time left until harvest, and the water left. Plant, water, harvest or pull up from there. Harvesting sometimes gives seeds back.
+
 ## Playing with others
 
 * **F6** opens your group: invite players, see each other on the map, and talk on your group's own radio (**Caps Lock**).

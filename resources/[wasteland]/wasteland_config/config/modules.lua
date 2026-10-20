@@ -74,6 +74,9 @@ return {
         -- Prop placer: admins place saved props anywhere (/propplacer).
         props      = true,
 
+        -- Farming: farm plots, seeds, watering (or rain), harvest food.
+        farming    = true,
+
         -- Base building: tool cupboards, snapping walls, doors, storage,
         -- upkeep, raids. Uses the free wasteland_buildprops models.
         basebuilding = true,

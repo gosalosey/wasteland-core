@@ -31,6 +31,13 @@ return {
         campfire = { label = 'Campfire', result = { name = 'campfire', count = 1 },
             ingredients = { { name = 'scrap_metal', count = 3 } }, seconds = 5 },
         -- Base building (wasteland_basebuilding)
+        -- Farming: planter boxes (farming.lua)
+        farm_plot_small = { label = 'Small farm plot', result = { name = 'farm_plot_small', count = 1 },
+            ingredients = { { name = 'wood_planks', count = 6 } }, seconds = 6 },
+        farm_plot_medium = { label = 'Medium farm plot', result = { name = 'farm_plot_medium', count = 1 },
+            ingredients = { { name = 'wood_planks', count = 12 }, { name = 'scrap_metal', count = 2 } }, seconds = 9 },
+        farm_plot_large = { label = 'Large farm plot', result = { name = 'farm_plot_large', count = 1 },
+            ingredients = { { name = 'wood_planks', count = 20 }, { name = 'scrap_metal', count = 4 } }, seconds = 12 },
         building_plan = { label = 'Building plan', result = { name = 'building_plan', count = 1 },
             ingredients = { { name = 'rag', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 4 },
         metal_sheet = { label = 'Metal sheet', result = { name = 'metal_sheet', count = 1 },

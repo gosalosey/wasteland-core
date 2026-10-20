@@ -320,6 +320,35 @@ def fabric(seed):
     return desaturate(img, 0.15), h
 
 fabric_d, fabric_h = fabric(121)
+
+def soil(seed):
+    g = fbm(TEX, seed, base=16, octaves=5)
+    img = colorize(g, (34, 24, 16), (92, 70, 48))
+    clumps = fbm(TEX, seed + 1, base=40, octaves=2).point(lambda v: max(0, (v - 170) * 4))
+    img = over(img, colorize(g, (60, 46, 32), (120, 96, 66)), clumps)
+    return img, g.point(lambda v: 60 + v // 2)
+
+def leaf(seed):
+    g = fbm(TEX, seed, base=10, octaves=5)
+    img = colorize(g, (34, 70, 24), (96, 150, 60))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(seed)
+    for _ in range(60):  # veins
+        x, y = rnd.randint(0, TEX), rnd.randint(0, TEX)
+        d.line((x, y, x + rnd.randint(-60, 60), y + rnd.randint(-60, 60)), fill=(120, 170, 80), width=2)
+    return img, g.point(lambda v: 100 + v // 3)
+
+def fruit(rgb):
+    """A small glossy fruit colour."""
+    S = 128
+    g = Image.radial_gradient('L').resize((S, S)).point(lambda v: 255 - v // 2)
+    img = Image.merge('RGB', [g.point(lambda v, c=c: int(c * (0.55 + 0.45 * v / 255))) for c in rgb])
+    return img, Image.new('L', (S, S), 128)
+
+soil_d, soil_h = soil(141)
+leaf_d, leaf_h = leaf(151)
+FRUITS = {'red': (200, 40, 36), 'orange': (230, 120, 30), 'yellow': (230, 200, 60), 'green': (70, 140, 50),
+          'purple': (110, 30, 70), 'blue': (60, 70, 150), 'brown': (130, 92, 56), 'white': (226, 214, 180)}
 wood_d, wood_h = weathered_wood(11)
 beam_d, beam_h = beam_wood(55)
 metal_d, metal_h = corrugated(22)
@@ -334,9 +363,16 @@ TEXTURES = {
     'wlbp_ceramic': ceramic_d,
     'wlbp_copper': copper_d,
     'wlbp_fabric': grunge(fabric_d, 505, blood=1, spray=0),
+    'wlbp_soil': soil_d,
+    'wlbp_leaf': leaf_d,
 }
+for _k, _rgb in FRUITS.items():
+    TEXTURES['wlbp_fruit_' + _k] = fruit(_rgb)[0]
 HEIGHTS = {'wlbp_wood': wood_h, 'wlbp_beam': beam_h, 'wlbp_metal': metal_h, 'wlbp_stone': stone_h, 'wlbp_darkmetal': dark_h,
-           'wlbp_ceramic': ceramic_h, 'wlbp_copper': copper_h, 'wlbp_fabric': fabric_h}
+           'wlbp_ceramic': ceramic_h, 'wlbp_copper': copper_h, 'wlbp_fabric': fabric_h,
+           'wlbp_soil': soil_h, 'wlbp_leaf': leaf_h}
+for _k, _rgb in FRUITS.items():
+    HEIGHTS['wlbp_fruit_' + _k] = fruit(_rgb)[1]
 ALL_TEX = dict(TEXTURES)
 for k, hgt in HEIGHTS.items():
     ALL_TEX[k + '_n'] = normal_map(hgt, 4.0 if k == 'wlbp_metal' else 3.0)
@@ -1010,6 +1046,60 @@ def bed():
     out += rbox(-0.25, 0.01, 0.445, 1.32, 0.96, 0.03, 'wlbp_fabric', rz=2)  # blanket
     out += rbox(0.42, 0.0, 0.47, 0.12, 0.96, 0.05, 'wlbp_fabric', rz=2)     # its folded edge
     return out
+
+
+# ---------------------------------------------------------------------------
+# Farming: planter boxes (1, 2, 3 m square; soil top at 0.3 m) and plants
+# at each stage (origin at the soil surface).
+# ---------------------------------------------------------------------------
+
+PLOT_SIZES = {'small': 1, 'medium': 2, 'large': 3}
+
+def planter_box(n):
+    w2 = n / 2.0
+    out = []
+    for z in (0.0, 0.12, 0.24):                       # boards round the sides
+        out += box(-w2, -w2, z, w2, -w2 + 0.05, z + 0.115, WOOD)
+        out += box(-w2, w2 - 0.05, z, w2, w2, z + 0.115, WOOD)
+        out += box(-w2, -w2 + 0.05, z, -w2 + 0.05, w2 - 0.05, z + 0.115, WOOD)
+        out += box(w2 - 0.05, -w2 + 0.05, z, w2, w2 - 0.05, z + 0.115, WOOD)
+    for cx in (-w2, w2 - 0.08):                       # corner posts
+        for cy in (-w2, w2 - 0.08):
+            out += box(cx, cy, 0, cx + 0.08, cy + 0.08, 0.4, BEAM)
+    out += box(-w2 + 0.05, -w2 + 0.05, 0.0, w2 - 0.05, w2 - 0.05, 0.3, 'wlbp_soil')
+    for k in range(1, n):                             # row dividers
+        c = -w2 + k
+        out += box(c - 0.02, -w2 + 0.05, 0.3, c + 0.02, w2 - 0.05, 0.33, BEAM)
+    return out
+
+def plant_stage(stage, color=None, seed=1):
+    rnd = random.Random(seed)
+    out = []
+    if stage == 'sprout':
+        for i in range(3):
+            a = i * 120 + rnd.uniform(-20, 20)
+            out += rbox(math.cos(math.radians(a)) * 0.04, math.sin(math.radians(a)) * 0.04, 0.06, 0.07, 0.025, 0.12, 'wlbp_leaf', rx=20, rz=a)
+        return out
+    height = {'young': 0.3, 'grown': 0.55, 'ripe': 0.6}[stage]
+    out += box(-0.012, -0.012, 0, 0.012, 0.012, height, 'wlbp_leaf')         # stem
+    layers = 2 if stage == 'young' else 4
+    for l in range(layers):
+        z = height * (0.35 + 0.6 * l / max(1, layers - 1))
+        spread = 0.16 if stage == 'young' else 0.24
+        for i in range(5):
+            a = i * 72 + l * 30 + rnd.uniform(-15, 15)
+            r = spread * (1.0 - 0.25 * l / layers)
+            out += rbox(math.cos(math.radians(a)) * r * 0.6, math.sin(math.radians(a)) * r * 0.6, z,
+                        r * 1.1, 0.08, 0.025, 'wlbp_leaf', ry=-25, rz=a)
+    if stage == 'ripe':
+        tex = 'wlbp_fruit_' + color
+        for i in range(6):
+            a = i * 60 + rnd.uniform(-20, 20)
+            r = rnd.uniform(0.08, 0.18)
+            z = rnd.uniform(0.15, 0.45)
+            sz = rnd.uniform(0.06, 0.09)
+            out += rbox(math.cos(math.radians(a)) * r, math.sin(math.radians(a)) * r, z, sz, sz, sz * 1.1, tex, rz=a)
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -1092,6 +1182,14 @@ PIECES += [
     ('wl_bp_worklight', worklight(), cbox(-0.3, -0.3, 0, 0.3, 0.3, 1.95), 56),
     ('wl_bp_lamp', hanging_lamp(), cbox(-0.18, -0.18, -0.74, 0.18, 0.18, 0.0), 56),
     ('wl_bp_stash_small', crate(), cbox(-0.5, -0.31, 0, 0.5, 0.31, 0.64), 70),
+]
+for _name, _n in PLOT_SIZES.items():
+    PIECES.append((f'wl_farm_plot_{_name}', planter_box(_n), cbox(-_n / 2, -_n / 2, 0, _n / 2, _n / 2, 0.3), 70))
+for _st in ('sprout', 'young', 'grown'):
+    PIECES.append((f'wl_farm_plant_{_st}', plant_stage(_st), cbox(-0.03, -0.03, 0, 0.03, 0.03, 0.03), 70))
+for _c in FRUITS:
+    PIECES.append((f'wl_farm_plant_ripe_{_c}', plant_stage('ripe', _c, seed=hash(_c) % 97), cbox(-0.03, -0.03, 0, 0.03, 0.03, 0.03), 70))
+PIECES += [
     ('wl_bp_stash_large', container(), cbox(-0.8, -0.37, 0, 0.8, 0.35, 1.14), 56),
     ('wl_bp_weaponlocker', locker(), cbox(-0.4, -0.26, 0, 0.4, 0.24, 1.9), 56),
 ]
