@@ -1,7 +1,7 @@
 // wasteland_moonshine :: html/still.js
 // The moonshine still: pick a flavour (what it needs, what you have), the
 // run in progress (time left), jars ready to collect. Esc closes.
-// Data: { id, flavours = [{ key, label, image, needs = [{ label, count, have }], canBrew }], jars, seconds,
+// Data: { id, flavours = [{ key, label, image, needs = [{ label, count, have }], canBrew, most }], jars, seconds, times = { [runs] = seconds },
 //         brewing = { label, left } | nil, ready = { label, count, image } | nil, canPickUp }
 
 (function () {
@@ -17,6 +17,7 @@
     const UI = window.WastelandUI;
     const h = UI.h;
     let st = null;
+    const picked = {}; // flavour -> how many runs
 
     function post(action, extra) { st.api.post(action, Object.assign({ id: st.v.id }, extra || {})); }
 
@@ -30,21 +31,30 @@
                 UI.button('Collect', () => post('collect'), 'primary')));
         } else if (v.brewing) {
             st.left = v.brewing.left;
-            const txt = h('div', { class: 'wms-busy__text', text: 'Brewing ' + v.brewing.label + ': ' + timeLeft(st.left) + ' left' });
+            const txt = h('div', { class: 'wms-busy__text', text: 'Brewing ' + ((v.brewing.runs || 1) * v.jars) + '× ' + v.brewing.label + ': ' + timeLeft(st.left) + ' left' });
             st.busyText = txt;
             st.body.appendChild(h('div', { class: 'wms-busy' }, h('div', { class: 'wms-flame' }), txt));
         } else {
-            st.body.appendChild(h('div', { class: 'wl-hint', text: 'Each run gives ' + v.jars + ' jars and takes ' + timeLeft(v.seconds) + '.' }));
+            st.body.appendChild(h('div', { class: 'wl-hint', text: 'Each run gives ' + v.jars + ' jars. Pick how many runs to brew at once (- / +); each extra run adds a little time.' }));
             const list = h('div', { class: 'wms-list' });
             v.flavours.forEach((f) => {
                 const needs = h('div', { class: 'wms-needs' });
-                f.needs.forEach((n) => needs.appendChild(h('span', { class: 'wms-need' + (n.have >= n.count ? '' : ' is-short'),
-                    text: n.count + '× ' + n.label + ' (' + n.have + ')' })));
-                const btn = UI.button('Brew', () => post('brew', { flavour: f.key }), 'primary');
+                const most = Math.max(1, f.most || 0);
+                const runs = Math.max(1, Math.min(most, picked[f.key] || 1));
+                f.needs.forEach((n) => needs.appendChild(h('span', { class: 'wms-need' + (n.have >= n.count * runs ? '' : ' is-short'),
+                    text: (n.count * runs) + '× ' + n.label + ' (' + n.have + ')' })));
+                const step = (d) => { picked[f.key] = Math.max(1, Math.min(most, runs + d)); render(); };
+                const minus = UI.button('−', () => step(-1)); minus.disabled = runs <= 1;
+                const plus = UI.button('+', () => step(1)); plus.disabled = runs >= most;
+                const secs = (v.times && v.times[runs - 1]) || v.seconds * runs;
+                const btn = UI.button('Brew ' + (runs * v.jars) + ' jars', () => post('brew', { flavour: f.key, runs: runs }), 'primary');
                 btn.disabled = !f.canBrew;
+                const qty = h('div', { class: 'wms-qty' }, minus, h('span', { class: 'wms-runs', text: runs + (runs === 1 ? ' run' : ' runs') }), plus);
                 list.appendChild(h('div', { class: 'wms-row' + (f.canBrew ? '' : ' is-off') },
                     f.image ? h('img', { class: 'wms-img', src: f.image, draggable: false }) : h('span'),
-                    h('div', {}, h('div', { class: 'wms-name', text: f.label }), needs), btn));
+                    h('div', {}, h('div', { class: 'wms-name', text: f.label }), needs,
+                        h('div', { class: 'wms-time', text: timeLeft(secs) + (f.canBrew ? '' : ' · not enough to brew') })),
+                    h('div', { class: 'wms-actions' }, qty, btn)));
             });
             st.body.appendChild(list);
         }
@@ -66,7 +76,7 @@
             st.timer = setInterval(() => {
                 if (st && st.v.brewing && st.busyText) {
                     st.left = Math.max(0, st.left - 1);
-                    st.busyText.textContent = 'Brewing ' + st.v.brewing.label + ': ' + timeLeft(st.left) + ' left';
+                    st.busyText.textContent = 'Brewing ' + ((st.v.brewing.runs || 1) * st.v.jars) + '× ' + st.v.brewing.label + ': ' + timeLeft(st.left) + ' left';
                     if (st.left <= 0) post('refresh');
                 }
             }, 1000);
@@ -97,6 +107,11 @@
         '  border: 1px solid rgba(127,199,90,0.45); }',
         '.wms-ready img { width: 52px; height: 52px; object-fit: contain; }',
         '.wms-ready__text { flex: 1; font-weight: 700; }',
+        '.wms-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }',
+        '.wms-qty { display: flex; align-items: center; gap: 6px; }',
+        '.wms-qty button { min-width: 30px; padding: 2px 8px; }',
+        '.wms-runs { min-width: 52px; text-align: center; font-weight: 700; }',
+        '.wms-time { font-size: 11px; color: #9d958a; margin-top: 4px; }',
         '.wms-foot { display: flex; justify-content: flex-end; margin-top: 12px; }',
     ].join('\n');
 })();

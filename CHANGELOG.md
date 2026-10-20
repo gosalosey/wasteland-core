@@ -1,5 +1,8 @@
 # Changelog
 
+## Moonshine: brew several runs at once (owner)
+* The still screen has a - / + picker per flavour: brew 1 to 10 runs at once. Each run takes a full set of ingredients and gives 2 jars; each extra run adds half a run's time (1 run 2 min, 2 runs 3 min, 10 runs 11 min). The ingredient list and time update as you pick; + stops at what you can afford. Settings: moonshine.lua maxBatch, batchSecondsFactor.
+
 ## Sugar easier to find (owner)
 * Sugar now also turns up in trash, crates, survivor caches and supply drops (as well as fridges), and the General trader at every camp sells it ($8, 20 in stock).
 

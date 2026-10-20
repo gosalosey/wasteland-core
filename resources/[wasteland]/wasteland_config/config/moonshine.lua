@@ -12,6 +12,10 @@ return {
     streamDistance = 150,
     brewSeconds = 120,          -- one run
     jarsPerRun = 2,
+    -- brew several runs at once (each uses a full set of ingredients and
+    -- gives jarsPerRun); every extra run adds this share of brewSeconds
+    maxBatch = 10,
+    batchSecondsFactor = 0.5,
     -- what every run needs besides the flavour's crop
     base = { { name = 'sugar', count = 2 }, { name = 'water_bottle', count = 1 }, { name = 'firewood', count = 1 } },
 

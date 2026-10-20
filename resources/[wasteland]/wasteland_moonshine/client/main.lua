@@ -96,7 +96,7 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     payload = type(payload) == 'table' and payload or {}
     local id = tonumber(payload.id)
     if action == 'close' then exports.wasteland_ui:Close(STILL_SCREEN)
-    elseif action == 'brew' and id and type(payload.flavour) == 'string' then TriggerServerEvent('wasteland:moonshine:server:brew', id, payload.flavour)
+    elseif action == 'brew' and id and type(payload.flavour) == 'string' then TriggerServerEvent('wasteland:moonshine:server:brew', id, payload.flavour, math.max(1, math.floor(tonumber(payload.runs) or 1)))
     elseif action == 'collect' and id then TriggerServerEvent('wasteland:moonshine:server:collect', id)
     elseif action == 'pickup' and id then TriggerServerEvent('wasteland:moonshine:server:pickup', id)
     elseif action == 'refresh' and id then TriggerServerEvent('wasteland:moonshine:server:open', id) end

@@ -7,7 +7,7 @@
 
 local Rules = WLM.Rules
 local M
-local stills = {}    -- id -> { id, owner, coords, heading, brew = { flavour, left (seconds) } | nil, ready = { item, count } | nil }
+local stills = {}    -- id -> { id, owner, coords, heading, brew = { flavour, left (seconds), runs } | nil, ready = { item, count } | nil }
 local states = {}    -- source -> { drunk, blind, masked }
 local runToken = nil
 local ticks = 0
@@ -75,22 +75,26 @@ local function needs(f)
     return list
 end
 
+local function batchSeconds(runs) return math.floor(M.config.brewSeconds * (1 + (runs - 1) * M.config.batchSecondsFactor) + 0.5) end
+
 local function view(src, s)
     local fl = {}
     for key, f in pairs(M.config.flavours) do
-        local parts, ok = {}, true
+        local parts, most = {}, M.config.maxBatch
         for _, n in ipairs(needs(f)) do
             local have = inv():GetItemCount(src, n.name) or 0
-            if have < n.count then ok = false end
+            most = math.min(most, math.floor(have / n.count))
             parts[#parts + 1] = { label = label(n.name), count = n.count, have = have }
         end
-        fl[#fl + 1] = { key = key, label = f.label, image = imageUrl(f.item), needs = parts, canBrew = ok }
+        fl[#fl + 1] = { key = key, label = f.label, image = imageUrl(f.item), needs = parts, canBrew = most >= 1, most = most }
     end
     table.sort(fl, function(a, b) return a.label < b.label end)
-    local v = { id = s.id, flavours = fl, jars = M.config.jarsPerRun, seconds = M.config.brewSeconds }
+    local times = {}
+    for r = 1, M.config.maxBatch do times[r] = batchSeconds(r) end
+    local v = { id = s.id, flavours = fl, jars = M.config.jarsPerRun, seconds = M.config.brewSeconds, times = times }
     if s.brew then
         local f = M.config.flavours[s.brew.flavour]
-        v.brewing = { label = f and f.label or s.brew.flavour, left = math.max(0, math.ceil(s.brew.left or 0)) }
+        v.brewing = { runs = s.brew.runs or 1, label = f and f.label or s.brew.flavour, left = math.max(0, math.ceil(s.brew.left or 0)) }
     end
     if s.ready then v.ready = { label = label(s.ready.item), count = s.ready.count, image = imageUrl(s.ready.item) } end
     local cid = characterOf(src)
@@ -106,26 +110,28 @@ local function stillFor(src, id)
     return s
 end
 
-local function brew(src, id, key)
+local function brew(src, id, key, runs)
     local s = stillFor(src, id)
     local f = M.config.flavours[key]
     if not s or not f then return end
+    runs = math.max(1, math.min(M.config.maxBatch, math.floor(tonumber(runs) or 1)))
     if s.brew then notice(src, 'The still is already running.'); return end
     if s.ready then notice(src, 'Collect the jars first.'); return end
     for _, n in ipairs(needs(f)) do
-        if (inv():GetItemCount(src, n.name) or 0) < n.count then notice(src, ('You need %d %s.'):format(n.count, label(n.name))); return end
+        if (inv():GetItemCount(src, n.name) or 0) < n.count * runs then notice(src, ('You need %d %s.'):format(n.count * runs, label(n.name))); return end
     end
     local taken = {}
     for _, n in ipairs(needs(f)) do
-        if not inv():RemoveItem(src, n.name, n.count) then
+        if not inv():RemoveItem(src, n.name, n.count * runs) then
             for _, t in ipairs(taken) do give(src, t.name, t.count) end
             return
         end
-        taken[#taken + 1] = n
+        taken[#taken + 1] = { name = n.name, count = n.count * runs }
     end
-    s.brew = { flavour = key, left = M.config.brewSeconds }
+    local secs = batchSeconds(runs)
+    s.brew = { flavour = key, left = secs, runs = runs }
     save(s); broadcast(s); sendView(src, s)
-    notice(src, ('The still is running: %s, ready in %d seconds.'):format(f.label, M.config.brewSeconds))
+    notice(src, ('The still is running: %d jars of %s, ready in %d seconds.'):format(runs * M.config.jarsPerRun, f.label, secs))
 end
 
 local function collect(src, id)
@@ -226,7 +232,7 @@ local function tick()
         if s.brew and ticks % 15 == 0 and s.brew.left > 0 then save(s) end -- keep the time left if the server stops
         if s.brew and s.brew.left <= 0 then
             local f = M.config.flavours[s.brew.flavour]
-            s.ready = f and { item = f.item, count = M.config.jarsPerRun } or nil
+            s.ready = f and { item = f.item, count = M.config.jarsPerRun * math.max(1, tonumber(s.brew.runs) or 1) } or nil
             s.brew = nil
             save(s); broadcast(s)
         end
@@ -266,6 +272,8 @@ M = Wasteland.DefineModule({
             streamDistance = { type = 'number', default = 150, min = 20, max = 1000 },
             brewSeconds = { type = 'number', default = 120, min = 1, max = 86400 },
             jarsPerRun = { type = 'integer', default = 2, min = 1, max = 100 },
+            maxBatch = { type = 'integer', default = 10, min = 1, max = 100 },
+            batchSecondsFactor = { type = 'number', default = 0.5, min = 0, max = 10 },
             base = ITEMS,
             flavours = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = { type = 'table', fields = {
                 label = { type = 'string', required = true, maxLength = 48 },
@@ -358,8 +366,9 @@ M.netEvent('wasteland:moonshine:server:open', { args = { ID }, rateLimit = RATE 
     local s = stillFor(src, id)
     if s then sendView(src, s) end
 end)
-M.netEvent('wasteland:moonshine:server:brew', { args = { ID, { type = 'string', required = true, pattern = '^[%w_]+$', maxLength = 32 } }, rateLimit = RATE },
-    function(src, id, key) brew(src, id, key) end)
+M.netEvent('wasteland:moonshine:server:brew', { args = { ID, { type = 'string', required = true, pattern = '^[%w_]+$', maxLength = 32 },
+    { type = 'integer', min = 1, max = 100 } }, rateLimit = RATE },
+    function(src, id, key, runs) brew(src, id, key, runs) end)
 M.netEvent('wasteland:moonshine:server:collect', { args = { ID }, rateLimit = RATE }, function(src, id) collect(src, id) end)
 M.netEvent('wasteland:moonshine:server:pickup', { args = { ID }, rateLimit = RATE }, function(src, id) pickUp(src, id) end)
 

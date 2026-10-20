@@ -97,6 +97,24 @@ describe('moonshine', function()
         expect(I('GetItemCount', id, 'moonshine_corn')).toBe(3)
     end)
 
+    it('brews several runs at once: ingredients and jars times the runs, a little longer', function()
+        I('AddItem', id, 'corn', 12); I('AddItem', id, 'sugar', 6); I('AddItem', id, 'water_bottle', 3); server:advance(100)
+        act('open', still.id)
+        local fl = last('wasteland:moonshine:client:view').args[1].flavours[1]
+        expect(fl.most >= 3).toBe(true)
+        act('brew', still.id, 'corn', 3)
+        expect(I('GetItemCount', id, 'corn')).toBe(0)
+        expect(I('GetItemCount', id, 'sugar')).toBe(0)
+        expect(last('wasteland:moonshine:client:view').args[1].brewing.runs).toBe(3)
+        server:advance(4000)                                -- 4 s x (1 + 2 x 0.5) = 8 s: not yet
+        act('collect', still.id)
+        expect(note()).toContain('not done')
+        server:advance(6000)
+        act('collect', still.id)
+        expect(I('GetItemCount', id, 'moonshine_corn')).toBe(12) -- 3 + 3 runs x 3 jars
+        I('RemoveItem', id, 'moonshine_corn', 9); server:advance(100)
+    end)
+
     it('drinking fills the meter; full = zombies cannot smell you; it drains and they can again', function()
         drink('moonshine_corn')
         expect(I('GetItemCount', id, 'moonshine_corn')).toBe(2)

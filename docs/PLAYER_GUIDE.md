@@ -76,7 +76,7 @@ Kill a deer or boar, then hold **Left Alt** on it with a knife in your pockets t
 
 ## Moonshine
 * **Craft a moonshine still** (6 metal sheets, 10 scrap metal, 4 wood planks) and place it anywhere. Left Alt on it opens it.
-* **Brew:** every flavour takes 2 sugar, 1 water bottle and 1 firewood, plus its crop: 4 corn, 6 strawberries, 4 cucumbers, 8 blueberries, 8 cranberries, 4 potatoes or 1 watermelon. A run takes 2 minutes and gives 2 jars. Sugar is found in food loot and sold by the General trader.
+* **Brew:** every flavour takes 2 sugar, 1 water bottle and 1 firewood, plus its crop: 4 corn, 6 strawberries, 4 cucumbers, 8 blueberries, 8 cranberries, 4 potatoes or 1 watermelon. A run takes 2 minutes and gives 2 jars. Use - / + to brew up to 10 runs at once (more ingredients, more jars; each extra run adds 1 minute). Sugar is found in food loot and sold by the General trader.
 * **Drink a jar:** it heals a little, eases the zombie infection a little, and quenches some thirst. Drink several and you get drunk (staggering, blurry, swaying camera). It wears off.
 * **The Zombie Blind meter** appears at the top of the screen when you drink. Fill it to 100% (3 jars) and it turns green: **SAFE, zombies can't smell you**. They ignore you until it drains below the line (40%). Then it turns red: **NOT SAFE**.
 
