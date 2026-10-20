@@ -60,6 +60,7 @@ return {
                 { name = 'water_bottle', buy = 12, sell = 5, stock = 10, restock = 2 },
                 { name = 'soda_can', buy = 7, sell = 3, stock = 10, restock = 2 },
                 { name = 'canned_beans', buy = 15, sell = 6, stock = 8, restock = 2 },
+                { name = 'sugar', buy = 8, sell = 3, stock = 20, restock = 6 },
                 { name = 'seeds_lettuce', buy = 8, sell = 2, stock = 6, restock = 2 },
                 { name = 'seeds_strawberry', buy = 8, sell = 2, stock = 6, restock = 2 },
                 { name = 'seeds_carrot', buy = 8, sell = 2, stock = 6, restock = 2 },

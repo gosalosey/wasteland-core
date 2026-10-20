@@ -31,6 +31,9 @@ return {
         campfire = { label = 'Campfire', result = { name = 'campfire', count = 1 },
             ingredients = { { name = 'scrap_metal', count = 3 } }, seconds = 5 },
         -- Base building (wasteland_basebuilding)
+        -- Moonshine (moonshine.lua)
+        moonshine_still = { label = 'Moonshine still', result = { name = 'moonshine_still', count = 1 },
+            ingredients = { { name = 'metal_sheet', count = 6 }, { name = 'scrap_metal', count = 10 }, { name = 'wood_planks', count = 4 } }, seconds = 12 },
         -- Farming: planter boxes and a rain catcher (farming.lua)
         rain_catcher = { label = 'Rain catcher', result = { name = 'rain_catcher', count = 1 },
             ingredients = { { name = 'wood_planks', count = 8 }, { name = 'scrap_metal', count = 4 }, { name = 'rag', count = 3 } }, seconds = 8 },

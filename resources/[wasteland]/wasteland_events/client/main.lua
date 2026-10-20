@@ -203,7 +203,7 @@ local function nearestPlayer(ped, range)
     for _, pl in ipairs(GetActivePlayers()) do
         local p = GetPlayerPed(pl)
         local ps = Player(GetPlayerServerId(pl)).state
-        if p ~= 0 and not IsEntityDead(p) and not safe(p) and not (ps and ps.wlProtected) then
+        if p ~= 0 and not IsEntityDead(p) and not safe(p) and not (ps and (ps.wlProtected or ps.wlMasked)) then
             local d = #(GetEntityCoords(p) - here)
             if d < bestD then best, bestD = p, d end
         end

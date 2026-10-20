@@ -247,7 +247,7 @@ local function hit(src, netId, victim)
     local z = zombieByNet(netId)
     if not z or z.dead then return end
     local ps = Player(victim) and Player(victim).state
-    if ps and ps.wlProtected then return end -- making a character / choosing where to start
+    if ps and (ps.wlProtected or ps.wlMasked) then return end -- making a character / choosing where to start
     if NetworkGetEntityOwner(z.handle) ~= src then
         M.log:warn('player %d reported a hit by zombie %d it does not run', src, netId)
         return

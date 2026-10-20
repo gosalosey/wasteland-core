@@ -103,7 +103,7 @@ local function sense(ped, b, ai, phaseName, phase, night)
     for _, pl in ipairs(GetActivePlayers()) do
         local target = GetPlayerPed(pl)
         local ps = Player(GetPlayerServerId(pl)).state
-        if target ~= 0 and not IsEntityDead(target) and not (ps and ps.wlProtected) then
+        if target ~= 0 and not IsEntityDead(target) and not (ps and (ps.wlProtected or ps.wlMasked)) then
             list[#list + 1] = { ped = target, pos = GetEntityCoords(target) }
         end
     end

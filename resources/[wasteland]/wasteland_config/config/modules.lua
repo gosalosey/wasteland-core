@@ -76,6 +76,7 @@ return {
 
         -- Farming: farm plots, seeds, watering (or rain), harvest food.
         farming    = true,
+        moonshine  = true,
 
         -- Base building: tool cupboards, snapping walls, doors, storage,
         -- upkeep, raids. Uses the free wasteland_buildprops models.

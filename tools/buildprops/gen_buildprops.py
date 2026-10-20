@@ -1127,6 +1127,70 @@ def raincatcher():
     for k, (cx, cy, rz) in enumerate(((0, -0.42, 0), (0, 0.42, 180), (-0.42, 0, 270), (0.42, 0, 90))):
         out += rbox(cx, cy, 1.38, 1.5 - 0.0, 0.75, 0.02, 'wlbp_fabric', rx=-28, rz=rz)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Moonshine still: brick firebox, copper pot and cap, lyne arm into a thump
+# keg, a copper worm in a wooden condenser barrel, and a jar at the spout.
+# Origin under the pot; the line of barrels runs along +x.
+# ---------------------------------------------------------------------------
+
+def cyl(cx, cy, z0, z1, r, tex, sides=10, thick=0.03):
+    out = []
+    w = 2 * r * math.tan(math.pi / sides) + 0.004
+    for i in range(sides):
+        a = i * 360.0 / sides
+        out += rbox(cx + math.cos(math.radians(a)) * r, cy + math.sin(math.radians(a)) * r, (z0 + z1) / 2, w, thick, z1 - z0, tex, rz=a + 90)
+    out += rbox(cx, cy, z1 - 0.005, r * 1.6, r * 1.6, 0.01, tex, rz=360.0 / sides / 2)   # top
+    return out
+
+def pipe(a, b, r, tex):
+    """A straight pipe from point a to point b."""
+    dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+    length = math.sqrt(dx * dx + dy * dy + dz * dz)
+    yaw = math.degrees(math.atan2(dy, dx))
+    pitch = math.degrees(math.atan2(dz, math.hypot(dx, dy)))
+    return rbox((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2, length, r, r, tex, ry=-pitch, rz=yaw)
+
+def moonshine_still():
+    COP = 'wlbp_copper'
+    out = []
+    # brick firebox with a dark mouth and a few logs
+    out += box(-0.48, -0.48, 0, 0.48, 0.48, 0.45, STONE)
+    out += box(-0.2, -0.49, 0.05, 0.2, -0.47, 0.3, DARK)
+    for k in range(3):
+        out += rbox(0, -0.42 + k * 0.02, 0.1 + k * 0.06, 0.34, 0.07, 0.07, BEAM, rz=8 * (k - 1))
+    # copper pot, bands, cap (onion head) and a little thermometer
+    out += cyl(0, 0, 0.45, 1.12, 0.42, COP, 12)
+    for z in (0.55, 0.85, 1.08):
+        out += cyl(0, 0, z, z + 0.035, 0.435, DARK, 12, 0.012)
+    out += cyl(0, 0, 1.12, 1.2, 0.3, COP, 12)
+    out += cyl(0, 0, 1.2, 1.42, 0.2, COP, 10)
+    out += cyl(0, 0, 1.42, 1.5, 0.12, COP, 8)
+    out += box(-0.03, -0.43, 0.8, 0.03, -0.41, 0.95, METAL)
+    # lyne arm down to the thump keg
+    out += pipe((0.05, 0, 1.46), (0.95, 0, 1.02), 0.045, COP)
+    # thump keg: a wooden barrel on a little stand
+    for x in (0.8, 1.1):
+        out += box(x, -0.2, 0, x + 0.05, 0.2, 0.32, BEAM)
+    out += cyl(0.98, 0, 0.32, 0.98, 0.22, WOOD, 10)
+    for z in (0.42, 0.88):
+        out += cyl(0.98, 0, z, z + 0.03, 0.228, DARK, 10, 0.012)
+    out += cyl(0.98, 0, 0.98, 1.04, 0.06, COP, 8)
+    # pipe over to the condenser barrel
+    out += pipe((0.98, 0, 1.03), (1.75, 0, 1.03), 0.04, COP)
+    out += pipe((1.75, 0, 1.03), (1.75, 0, 0.92), 0.04, COP)
+    # condenser: a taller barrel with the copper worm coiled on top
+    out += cyl(1.75, 0, 0.0, 0.9, 0.32, WOOD, 12)
+    for z in (0.12, 0.45, 0.78):
+        out += cyl(1.75, 0, z, z + 0.035, 0.328, DARK, 12, 0.012)
+    for k in range(3):
+        out += cyl(1.75, 0, 0.9 + k * 0.05, 0.93 + k * 0.05, 0.2 - k * 0.03, COP, 10, 0.025)
+    # spout and a mason jar catching it
+    out += pipe((2.07, 0, 0.22), (2.25, 0, 0.18), 0.03, COP)
+    out += cyl(2.3, 0, 0.0, 0.16, 0.065, 'wlbp_ceramic', 8, 0.01)
+    out += cyl(2.3, 0, 0.16, 0.19, 0.05, METAL, 8, 0.01)
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -1212,6 +1276,7 @@ PIECES += [
 ]
 for _name, _n in PLOT_SIZES.items():
     PIECES.append((f'wl_farm_plot_{_name}', planter_box(_n), cbox(-_n / 2, -_n / 2, 0, _n / 2, _n / 2, 0.3), 70))
+PIECES.append(('wl_moonshine_still', moonshine_still(), cbox(-0.48, -0.48, 0, 0.48, 0.48, 1.5) + cbox(0.75, -0.25, 0, 1.22, 0.25, 1.04) + cbox(1.42, -0.34, 0, 2.38, 0.34, 1.05), 56))
 PIECES.append(('wl_farm_raincatcher', raincatcher(), cbox(-0.36, -0.36, 0, 0.36, 0.36, 0.92), 56))
 for _st in ('sprout', 'young', 'grown'):
     PIECES.append((f'wl_farm_plant_{_st}', plant_stage(_st), cbox(-0.03, -0.03, 0, 0.03, 0.03, 0.03), 70))

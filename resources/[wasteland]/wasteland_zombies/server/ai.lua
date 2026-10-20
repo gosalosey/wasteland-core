@@ -158,7 +158,7 @@ local function spit(src, netId, victim)
     local t = GetGameTimer()
     if spits[z.handle] and t < spits[z.handle] then return end
     local ps = Player(victim) and Player(victim).state
-    if ps and ps.wlProtected then return end
+    if ps and (ps.wlProtected or ps.wlMasked) then return end
     local ped, at = playerCoords(victim)
     if not ped or Srv().survival('IsDead', victim) then return end
     if WLZ.Rules.dist3d(at, Srv().coordsOf(z.handle)) > sp.range + 3.0 then return end -- too far

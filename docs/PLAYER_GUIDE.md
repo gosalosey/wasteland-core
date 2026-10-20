@@ -74,6 +74,12 @@ Kill a deer or boar, then hold **Left Alt** on it with a knife in your pockets t
 * **Rain catcher:** craft one and place it outdoors. While it rains it fills with water (up to 10 L); Left Alt > **Collect water** fills water bottles from it (a full catcher gives 20).
 * **Left Alt on a plot** opens it: what grows in each spot, how far along it is, the time left until harvest, and the water left. Plant, water, harvest or pull up from there. Harvesting sometimes gives seeds back.
 
+## Moonshine
+* **Craft a moonshine still** (6 metal sheets, 10 scrap metal, 4 wood planks) and place it anywhere. Left Alt on it opens it.
+* **Brew:** every flavour takes 2 sugar, 1 water bottle and 1 firewood, plus its crop: 4 corn, 6 strawberries, 4 cucumbers, 8 blueberries, 8 cranberries, 4 potatoes or 1 watermelon. A run takes 2 minutes and gives 2 jars. Sugar is found in food loot and sold by the General trader.
+* **Drink a jar:** it heals a little, eases the zombie infection a little, and quenches some thirst. Drink several and you get drunk (staggering, blurry, swaying camera). It wears off.
+* **The Zombie Blind meter** appears at the top of the screen when you drink. Fill it to 100% (3 jars) and it turns green: **SAFE, zombies can't smell you**. They ignore you until it drains below the line (40%). Then it turns red: **NOT SAFE**.
+
 ## Playing with others
 
 * **F6** opens your group: invite players, see each other on the map, and talk on your group's own radio (**Caps Lock**).

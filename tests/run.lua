@@ -79,6 +79,7 @@ function _G.newServer(opts)
     server:addResource('wasteland_guide', RESOURCES .. '/wasteland_guide')
     server:addResource('wasteland_props', RESOURCES .. '/wasteland_props')
     server:addResource('wasteland_farming', RESOURCES .. '/wasteland_farming')
+    server:addResource('wasteland_moonshine', RESOURCES .. '/wasteland_moonshine')
     server:addResource('wasteland_basebuilding', RESOURCES .. '/wasteland_basebuilding')
     server:addResource('wasteland_bases', RESOURCES .. '/wasteland_bases')
     server.db = {

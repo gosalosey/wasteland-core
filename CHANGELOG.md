@@ -1,5 +1,11 @@
 # Changelog
 
+## Moonshine (owner)
+* New module wasteland_moonshine. A moonshine still (our own model: a brick firebox under a copper pot still with a cap and lyne arm, a thump keg and a condenser barrel with copper coils, and a jar under the spout) is crafted (6 metal sheets, 10 scrap metal, 4 wood planks) and placed anywhere. Saved (wl_moonshine_stills); the brewing time left survives a restart.
+* Seven flavours from farmed crops: corn, strawberry, cucumber, blueberry, cranberry, potato, watermelon. Each takes 2 sugar, 1 water bottle, 1 firewood plus its crop; a 2-minute run gives 2 jars. New items: sugar (food loot, General trader), moonshine still, 7 moonshine jars.
+* Drinking a jar heals 3, takes 3 off the infection, gives 4 thirst, and adds to being drunk (drunk walk, blur, camera sway; wears off) and to the Zombie Blind meter. With the meter full zombies ignore you (state bag wlMasked, checked wherever zombies pick a target, bite or spit) until it drains below 40%. The meter on screen shows SAFE (green) or NOT SAFE (red). Export IsMasked(source).
+* Settings: moonshine.lua (brewSeconds, jarsPerRun, base ingredients, flavours, drink effects, how fast drunk and the meter wear off, unmaskBelow).
+
 ## Fix: plants left behind after harvesting / picking up a plot (owner)
 * Redrawing a plot's plants waits for models to load; a second update meanwhile drew a second set that was never tracked (ghost plants). Each redraw is now numbered: an older one that finds a newer one started (or the plot gone) places nothing.
 

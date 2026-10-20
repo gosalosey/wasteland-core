@@ -3512,3 +3512,11 @@ farm_plot_small
 farm_plot_medium
 farm_plot_large
 rain_catcher
+moonshine_corn
+moonshine_strawberry
+moonshine_cucumber
+moonshine_blueberry
+moonshine_cranberry
+moonshine_potato
+moonshine_watermelon
+moonshine_still

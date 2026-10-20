@@ -86,6 +86,7 @@ return {
             { name = 'water_bottle', min = 1, max = 1, weight = 25 },
             { name = 'soda_can', min = 1, max = 2, weight = 25 },
             { name = 'canned_beans', min = 1, max = 1, weight = 15 },
+            { name = 'sugar', min = 1, max = 2, weight = 10 },
             { name = 'canned_peaches', min = 1, max = 1, weight = 15 },
             { name = 'energy_bar', min = 1, max = 2, weight = 15 },
             { name = 'canned_tuna', min = 1, max = 1, weight = 12 },
