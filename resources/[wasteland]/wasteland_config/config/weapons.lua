@@ -23,6 +23,10 @@ return {
         weapon_battleaxe = { hash = 'WEAPON_BATTLEAXE', noise = 9 },
         weapon_knuckle = { hash = 'WEAPON_KNUCKLE', noise = 4 },
         weapon_switchblade = { hash = 'WEAPON_SWITCHBLADE', noise = 4 },
+        -- Throwables are their own ammo: every throw uses one of the item.
+        weapon_molotov = { hash = 'WEAPON_MOLOTOV', ammo = 'weapon_molotov', wear = 0, noise = 60 },
+        weapon_grenade = { hash = 'WEAPON_GRENADE', ammo = 'weapon_grenade', wear = 0, noise = 400 },
+        weapon_stickybomb = { hash = 'WEAPON_STICKYBOMB', ammo = 'weapon_stickybomb', wear = 0, noise = 400 },
 
         weapon_pistol = { hash = 'WEAPON_PISTOL', ammo = 'ammo_9mm', noise = 120 },
         weapon_revolver = { hash = 'WEAPON_REVOLVER', ammo = 'ammo_44', noise = 150 },

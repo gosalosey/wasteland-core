@@ -99,6 +99,14 @@ return {
         weapon_assaultrifle = { label = 'Assault rifle', result = { name = 'weapon_assaultrifle', count = 1 },
             ingredients = { { name = 'gun_parts', count = 10 }, { name = 'scrap_metal', count = 10 }, { name = 'duct_tape', count = 3 } }, seconds = 30, blueprint = 'blueprint_assaultrifle' },
 
+        -- Explosives (base raiding). Molotovs need no blueprint.
+        weapon_molotov = { label = 'Molotov', result = { name = 'weapon_molotov', count = 1 },
+            ingredients = { { name = 'whiskey', count = 1 }, { name = 'rag', count = 1 } }, seconds = 5 },
+        weapon_grenade = { label = 'Grenade', result = { name = 'weapon_grenade', count = 1 },
+            ingredients = { { name = 'gunpowder', count = 4 }, { name = 'scrap_metal', count = 2 }, { name = 'duct_tape', count = 1 } }, seconds = 10, blueprint = 'blueprint_explosives' },
+        weapon_stickybomb = { label = 'Sticky bomb', result = { name = 'weapon_stickybomb', count = 1 },
+            ingredients = { { name = 'gunpowder', count = 10 }, { name = 'gun_parts', count = 2 }, { name = 'duct_tape', count = 2 }, { name = 'scrap_metal', count = 2 } }, seconds = 15, blueprint = 'blueprint_explosives' },
+
         -- Ammo (blueprints)
         ammo_9mm = { label = '9mm rounds', result = { name = 'ammo_9mm', count = 10 },
             ingredients = { { name = 'gunpowder', count = 1 }, { name = 'scrap_metal', count = 1 } }, seconds = 4, blueprint = 'blueprint_ammo_pistol' },

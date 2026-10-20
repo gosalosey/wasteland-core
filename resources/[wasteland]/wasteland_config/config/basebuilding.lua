@@ -242,6 +242,13 @@ return {
             metal = { [2] = 200, [4] = 200, [43] = 200 },
         },
         explosionRadius = 4.0,
+        -- Only blasts from explosives a player threw count (molotov, grenade,
+        -- sticky bomb items: wasteland_weapons), thrown within throwRange metres
+        -- in the last throwSeconds (sticky bombs: stickySeconds, they wait for G).
+        -- Each piece takes one blast at a time, however many players see it.
+        requireThrow = true,
+        thrown = { weapon_grenade = 0, weapon_stickybomb = 2, weapon_molotov = 3 },
+        throwRange = 80.0, throwSeconds = 30, stickySeconds = 1800,
         melee = { enabled = true, cooldownMs = 850, woodDamage = 5 },   -- wood only
         -- Zombies hit walls, doors and gates that stand between them and a
         -- player (needs wasteland_zombies ai.barricades). Damage per hit by

@@ -410,6 +410,17 @@ return {
         blueprint_ammo_rifle = { label = 'Blueprint: rifle ammo', image = '1-blank-blurprint', category = 'misc', width = 1, height = 1, weight = 0.025,
             description = 'Use to learn how to make 5.56, 7.62 and .308 rounds.' },
 
+        -- Explosives: thrown (hold one like a weapon, attack to throw). Each
+        -- throw uses one. For raiding bases (basebuilding.lua raid).
+        weapon_molotov = { label = 'Molotov', image = 'weapon_molotov', category = 'weapon', width = 1, height = 2, weight = 0.5,
+            description = 'A bottle of fuel with a burning rag. Burns wooden base pieces.' },
+        weapon_grenade = { label = 'Grenade', image = 'weapon_grenade', category = 'weapon', width = 1, height = 1, weight = 0.4,
+            description = 'Pull the pin, throw. Damages wooden and stone base pieces.' },
+        weapon_stickybomb = { label = 'Sticky bomb', image = 'weapon_stickybomb', category = 'weapon', width = 1, height = 1, weight = 0.6,
+            description = 'Sticks where it lands; press G to set it off. Breaks wood, stone and metal base pieces.' },
+        blueprint_explosives = { label = 'Blueprint: explosives', image = '1-blank-blurprint', category = 'misc', width = 1, height = 1, weight = 0.025,
+            description = 'Use to learn how to make grenades and sticky bombs.' },
+
         -- Gun crafting materials
         gun_parts = { label = 'Gun parts', image = 'trigger', category = 'material', width = 1, height = 1, weight = 0.15, stack = 250,
             description = 'Springs, pins, triggers and barrels. For crafting guns.' },

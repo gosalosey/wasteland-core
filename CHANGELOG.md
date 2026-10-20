@@ -1,5 +1,12 @@
 # Changelog
 
+## Explosives for raiding: molotovs, grenades, sticky bombs (owner)
+* New thrown weapons. Hold one like any weapon (hotbar or Use) and attack to throw; every throw uses one, and the next stack is picked up automatically. Sticky bombs stick where they land and go off when you press G (also after the last one is thrown).
+* Base damage (basebuilding.lua raid.explosionDamage, unchanged): molotov burns wood (100); grenade hurts wood and stone (30); sticky bomb breaks wood (250), stone (200) and metal (200).
+* Crafting: molotov (1 whiskey + 1 rag, no blueprint); grenade (4 gunpowder, 2 scrap metal, 1 duct tape) and sticky bomb (10 gunpowder, 2 gun parts, 2 duct tape, 2 scrap metal) need the new Blueprint: explosives.
+* Loot: molotovs in crates, bandit stashes, survivor caches and supply drops; grenades in heli crashes, military loot, supply drops and bandit stashes; sticky bombs and the explosives blueprint in heli crashes and military loot (sticky bombs also in supply drops).
+* Raid fixes: one blast is counted once per piece (before, every nearby player reported it and it did damage once per player), and only blasts from explosives a player really threw nearby count, so a cheated report does nothing (raid.requireThrow, thrown, throwRange, throwSeconds, stickySeconds).
+
 ## Fix: sometimes no HUD and no control after a server restart (owner)
 * Right after joining, a screen's script could fail to load once. The page dropped the screen but the game still thought it was open: the HUD never appeared (updates went to a screen that did not exist), and a focused screen kept the mouse and keyboard. Screen scripts are now tried up to 5 times; if one still fails, the page tells the game, which forgets the screen and gives focus back, and its owner opens it again (the HUD on its next update, the character screen by asking for the list again).
 * The character list counted as received even when the UI was not running yet, so the character screen could never appear (frozen, nothing on screen). It now keeps asking until a screen shows it.

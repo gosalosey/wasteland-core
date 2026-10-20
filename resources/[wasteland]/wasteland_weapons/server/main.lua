@@ -54,10 +54,21 @@ local function holster(src, quiet)
     if not quiet then TriggerEvent('wasteland:weapons:holstered', src) end
 end
 
+-- Throwables (molotovs, grenades, sticky bombs) are their own ammo: when
+-- the stack in hand is used up, keep holding the next stack of them.
+local function nextStack(src, h)
+    local w = M.config.weapons[h.item]
+    if not w or w.ammo ~= h.item then return nil end
+    local list = inv():FindItems(src, h.item) or {}
+    if not list[1] then return nil end
+    h.uid = list[1].uid
+    return inv():FindItem(src, h.uid)
+end
+
 local function sendState(src)
     local h = held[src]
     if not h then return end
-    local stack = inv():FindItem(src, h.uid)
+    local stack = inv():FindItem(src, h.uid) or nextStack(src, h)
     if not stack then
         holster(src)
         return
@@ -174,7 +185,7 @@ local function used(src, count, coords)
     local h = held[src]
     if not h then return end
     local w = M.config.weapons[h.item]
-    local stack = inv():FindItem(src, h.uid)
+    local stack = inv():FindItem(src, h.uid) or nextStack(src, h)
     if not stack then holster(src); return end
     local d = inv():GetItemDefinition(h.item)
     local max = d and d.durability or 0
@@ -228,7 +239,7 @@ end
 AddEventHandler('wasteland:inventory:playerUpdated', function(src)
     local h = held[src]
     if not h or not (M and M.active) then return end
-    local stack = inv():FindItem(src, h.uid)
+    local stack = inv():FindItem(src, h.uid) or nextStack(src, h)
     if not stack then
         holster(src)
         return

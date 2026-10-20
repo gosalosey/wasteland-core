@@ -778,10 +778,40 @@ local function damage(id, amount)
     end
 end
 
+-- Explosives somebody really threw (wasteland_weapons): a blast only counts
+-- if one of that kind was thrown near it lately (sticky bombs can wait).
+local recentThrows = {}   -- { kind, at, t }
+local blastSeen = {}      -- piece key -> time of the last blast counted
+AddEventHandler('wasteland:weapons:used', function(src, item, n, _, coords)
+    local thrown = M and M.config.raid.thrown
+    local kind = thrown and thrown[item]
+    if kind == nil or type(coords) ~= 'table' then return end
+    recentThrows[#recentThrows + 1] = { kind = kind, at = { x = tonumber(coords.x) or 0, y = tonumber(coords.y) or 0, z = tonumber(coords.z) or 0 }, t = os.time() }
+    if #recentThrows > 200 then table.remove(recentThrows, 1) end
+end)
+
+local function wasThrown(kind, where)
+    local r = M.config.raid
+    if not r.requireThrow then return true end
+    local t = os.time()
+    for i = #recentThrows, 1, -1 do
+        local e = recentThrows[i]
+        local keep = e.kind == 2 and r.stickySeconds or r.throwSeconds
+        if t - e.t <= keep and e.kind == kind and Rules.dist(e.at, where) <= r.throwRange then return true end
+    end
+    return false
+end
+
 local function explosion(src, id, kind, at, isCupboard)
     if not M.config.raid.enabled or type(at) ~= 'table' then return end
     local target = isCupboard and cupboards[id] or props[id]
     if not target then return end
+    -- every player nearby sees (and reports) the same blast: count it once
+    local key = (isCupboard and 'c' or 'p') .. id
+    local t = now()
+    if blastSeen[key] and t - blastSeen[key] < 1500 then return end
+    if not wasThrown(kind, target.coords) then return end
+    blastSeen[key] = t
     local where = { x = tonumber(at.x) or 0, y = tonumber(at.y) or 0, z = tonumber(at.z) or 0 }
     if Rules.dist(where, target.coords) > M.config.raid.explosionRadius then return end
     local rules = M.config.raid.explosionDamage[isCupboard and 'wood' or target.material]
@@ -1141,6 +1171,12 @@ M = Wasteland.DefineModule({
         c.raid = c.raid or {}
         c.raid.explosionDamage = c.raid.explosionDamage or {}
         c.raid.explosionRadius = c.raid.explosionRadius or 4.0
+        -- only blasts from explosives a player threw count (item -> explosion type)
+        if c.raid.requireThrow == nil then c.raid.requireThrow = true end
+        c.raid.thrown = c.raid.thrown or { weapon_grenade = 0, weapon_stickybomb = 2, weapon_molotov = 3 }
+        c.raid.throwRange = c.raid.throwRange or 80.0
+        c.raid.throwSeconds = c.raid.throwSeconds or 30
+        c.raid.stickySeconds = c.raid.stickySeconds or 1800
         c.raid.melee = c.raid.melee or { enabled = false, cooldownMs = 850, woodDamage = 5 }
         c.raid.repair = c.raid.repair or { amount = {}, cost = {} }
         -- zombies hitting walls, doors and gates (wasteland_zombies `ai.barricades`)

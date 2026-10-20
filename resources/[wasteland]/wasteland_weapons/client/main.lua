@@ -65,10 +65,12 @@ RegisterNetEvent('wasteland:weapons:client:hold', function(s)
     current, hash = s, GetHashKey(s.hash)
     unreported = 0
     give()
+    if hash == STICKY then notice('Throw it at a wall or door, then press ~INPUT_DETONATE~ (G) to set it off.') end
 end)
 
 RegisterNetEvent('wasteland:weapons:client:state', function(s)
-    if type(s) ~= 'table' or not current or s.uid ~= current.uid then return end
+    -- (a throwable moves on to its next stack: same item, new uid)
+    if type(s) ~= 'table' or not current or (s.uid ~= current.uid and s.item ~= current.item) then return end
     -- attachments taken off since the last state come off the ped's gun too
     local now = {}
     for _, c in ipairs(s.components or {}) do now[c] = true end
@@ -101,6 +103,10 @@ end)
 
 -- GTA weapon selection controls (wheel, scroll, number keys for weapon
 -- slots): weapons come only from the inventory.
+local STICKY = GetHashKey('WEAPON_STICKYBOMB')
+local DETONATE = 47 -- G
+local stickyOut = false -- sticky bombs placed and not yet set off
+
 local SELECT_CONTROLS = { 12, 13, 14, 15, 16, 17, 37, 157, 158, 159, 160, 161, 162, 163, 164, 165, 261, 262 }
 local ATTACK_CONTROLS = { 24, 25, 140, 141, 142, 257, 263, 264 }
 
@@ -118,7 +124,10 @@ Citizen.CreateThread(function()
             end
             if not current.melee then
                 local now = GetAmmoInPedWeapon(ped, hash)
-                if now < lastAmmo then unreported = unreported + (lastAmmo - now) end
+                if now < lastAmmo then
+                    unreported = unreported + (lastAmmo - now)
+                    if hash == STICKY then stickyOut = true end
+                end
                 lastAmmo = now
             end
             if selected ~= hash and selected ~= UNARMED then
@@ -126,6 +135,13 @@ Citizen.CreateThread(function()
             end
         elseif selected ~= UNARMED then
             RemoveAllPedWeapons(ped, true) -- picked up or given by something else
+        end
+
+        -- G sets off your sticky bombs, also once the last one is thrown
+        -- (and the weapon is no longer in your hands).
+        if stickyOut and IsControlJustPressed(0, DETONATE) then
+            ExplodeProjectiles(ped, STICKY, false)
+            stickyOut = false
         end
 
         sinceReport = sinceReport + GetFrameTime() * 1000

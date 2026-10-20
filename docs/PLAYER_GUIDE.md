@@ -66,6 +66,11 @@ Kill a deer or boar, then hold **Left Alt** on it with a knife in your pockets t
 * **Upkeep:** keep wood, stone and metal in the cupboard's supplies, or your base slowly decays.
 * **No cupboard?** You can still build walls, doors and defences to barricade an old building. They're yours only, and they disappear after 12 hours unless a cupboard claims them.
 
+## Raiding with explosives
+* **Molotov** (craft: 1 whiskey + 1 rag): burns wooden base pieces.
+* **Grenade** and **sticky bomb** (craft after using a Blueprint: explosives, found in military loot and heli crashes): grenades hurt wood and stone; sticky bombs break wood, stone and even metal.
+* Hold one like a weapon and attack to throw. A sticky bomb sticks where it lands: press **G** to set it off.
+
 ## Farming
 
 * **Farm plots:** craft a small (1 spot), medium (4) or large (9) farm plot, then use it to place it anywhere: in your base or out in the open.

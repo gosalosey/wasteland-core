@@ -187,6 +187,21 @@ describe('base building', function()
         expect(I('GetItemCount', a, 'wood_planks')).toBe(planks - 3)
     end)
 
+    it('explosives: only a blast from something really thrown counts, once however many players report it', function()
+        local hits = #server:clientEventsFor(a, 'wasteland:basebuilding:client:propHealth')
+        local at = { x = door.coords.x, y = door.coords.y, z = door.coords.z }
+        act(c, 'explosion', door.id, 2, at, false)          -- nobody threw a sticky bomb: ignored
+        expect(#server:clientEventsFor(a, 'wasteland:basebuilding:client:propHealth')).toBe(hits)
+        server:triggerEvent('wasteland_weapons', 'wasteland:weapons:used', c, 'weapon_stickybomb', 1, 400, { x = 2.0, y = 0.0, z = 30.0 })
+        server:advance(50)
+        act(c, 'explosion', door.id, 2, at, false)
+        act(b, 'explosion', door.id, 2, at, false)          -- the same blast seen by another player
+        local l = server:clientEventsFor(a, 'wasteland:basebuilding:client:propHealth')
+        expect(#l).toBe(hits + 1)
+        expect(l[#l].args[2]).toBe(350)                     -- wood door 600 - 250 (sticky bomb)
+        server:advance(1600)
+    end)
+
     it('upkeep is paid from the supplies; without them the pieces decay', function()
         server:createThread('wasteland_basebuilding', function()
             local s = I('EnsureStash', 'bb_supply_' .. cupboardId, { width = 8, height = 6, maxWeight = 300 })
