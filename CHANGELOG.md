@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: plants left behind after harvesting / picking up a plot (owner)
+* Redrawing a plot's plants waits for models to load; a second update meanwhile drew a second set that was never tracked (ghost plants). Each redraw is now numbered: an older one that finds a newer one started (or the plot gone) places nothing.
+
 ## Fix: repaired vehicles still looked damaged (owner)
 * A repair back to full body health now also fixes the looks (SetVehicleFixed: glass, lights, doors, bumpers) as well as the dents. A partial repair leaves the damage showing.
 

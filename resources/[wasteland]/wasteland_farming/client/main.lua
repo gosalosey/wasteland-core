@@ -52,6 +52,7 @@ end
 local function despawn(id)
     local e = spawned[id]
     if not e then return end
+    e.gen = (e.gen or 0) + 1
     if e.targets and GetResourceState('wasteland_target') == 'started' then
         for _, t in ipairs(e.targets) do pcall(function() exports.wasteland_target:Remove(t) end) end
     end
@@ -60,26 +61,35 @@ local function despawn(id)
     spawned[id] = nil
 end
 
+-- Redraw a plot's plants. Loading a model can wait, and another update can
+-- arrive meanwhile: each redraw is numbered, and an older one that finds a
+-- newer one started deletes what it made (no plants left behind).
 local function plantsFor(p, e)
-    for _, ent in pairs(e.plants) do if DoesEntityExist(ent) then DeleteEntity(ent) end end
-    e.plants = {}
+    e.gen = (e.gen or 0) + 1
+    local my = e.gen
     local list = spots(p.size)
+    local wanted = {}
     for i, slot in pairs(p.slots) do
         local model = slot and modelFor(slot)
-        local spot = list[i]
-        if model and spot then
-            local hash = loadModel(model)
-            if hash then
-                local ox, oy = rotate(spot.x, spot.y, p.heading)
-                local ent = CreateObjectNoOffset(hash, p.coords.x + ox, p.coords.y + oy, p.coords.z + spot.z, false, false, false)
-                SetEntityHeading(ent, (p.heading + i * 47) % 360.0)
-                FreezeEntityPosition(ent, true)
-                SetEntityCollision(ent, false, false)
-                SetModelAsNoLongerNeeded(hash)
-                e.plants[i] = ent
-            end
+        if model and list[i] then wanted[i] = model end
+    end
+    for _, model in pairs(wanted) do loadModel(model) end      -- may wait
+    if e.gen ~= my or spawned[p.id] ~= e then return end      -- a newer redraw, or gone
+    for _, ent in pairs(e.plants) do if DoesEntityExist(ent) then DeleteEntity(ent) end end
+    e.plants = {}
+    for i, model in pairs(wanted) do
+        local hash = GetHashKey(model)
+        if HasModelLoaded(hash) then
+            local spot = list[i]
+            local ox, oy = rotate(spot.x, spot.y, p.heading)
+            local ent = CreateObjectNoOffset(hash, p.coords.x + ox, p.coords.y + oy, p.coords.z + spot.z, false, false, false)
+            SetEntityHeading(ent, (p.heading + i * 47) % 360.0)
+            FreezeEntityPosition(ent, true)
+            SetEntityCollision(ent, false, false)
+            e.plants[i] = ent
         end
     end
+    for _, model in pairs(wanted) do SetModelAsNoLongerNeeded(GetHashKey(model)) end
 end
 
 local function signature(p)
