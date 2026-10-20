@@ -1,5 +1,8 @@
 # Changelog
 
+## Double carry weight (owner)
+* Pockets now hold 200 kg (was 100), the small backpack 400 kg (was 200), the hiking backpack 750 kg (was 375). Backpacks already in the world get the new limit when loaded. Storage (stashes, trunks, base boxes) is unchanged.
+
 ## Bigger stacks (owner)
 * Every stackable item now stacks to 250 (was 5 to 200 depending on the item; the default for items without a size is now 250 too), so pockets and storage do not fill with many small stacks. Items that never stack (weapons, tools with durability, clothing, backpacks, placeables) are unchanged; cash still stacks to 1,000,000. Weight still counts per unit.
 

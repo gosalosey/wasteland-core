@@ -8,7 +8,7 @@ return {
     -- Taking something off is refused while the smaller pockets could not
     -- hold what is in them.
     pockets = {
-        width = 3, height = 3, maxWeight = 100.0,
+        width = 3, height = 3, maxWeight = 200.0,
         maxWidth = 10, maxHeight = 10,
         bonus = {
             torso = { width = 2, height = 2 },   -- a shirt / top
@@ -420,9 +420,9 @@ return {
             description = 'Repairs the weapon in your hands.' },
 
         backpack_small = { label = 'Small backpack', image = 'bag', category = 'container', width = 3, height = 3, weight = 0.4,
-            equip = 'back', container = { width = 8, height = 8, maxWeight = 200 } },
+            equip = 'back', container = { width = 8, height = 8, maxWeight = 400 } },
         backpack_large = { label = 'Hiking backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 0.9,
-            equip = 'back', container = { width = 12, height = 10, maxWeight = 375 } },
+            equip = 'back', container = { width = 12, height = 10, maxWeight = 750 } },
 
         clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.25, equip = 'torso', warmth = 6, durability = 100 },
         clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.25, equip = 'legs', warmth = 4, durability = 100 },
