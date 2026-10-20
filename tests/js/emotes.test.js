@@ -61,9 +61,9 @@ const invUi = require(path.join(R, 'wasteland_inventory', 'html', 'inventory.js'
 
 test('inventory cells shrink to fit big grids on the screen', () => {
     assert.strictEqual(invUi.cellSize(1920, 1080, 4, 6, false), 50);
-    // 10 x 10 pockets next to a 15 x 15 bag on 1600 x 830: the health panel still fits beside them
-    const c = invUi.cellSize(1600, 830, 15, 25, false);
-    assert.ok(330 + 25 * c + 70 + 330 + 2 * 22 + 110 <= 1600, 'fits: ' + c);
+    // 10 x 10 pockets with the 12 x 10 hiking bag under them on 1920 x 1080: both fit top to bottom
+    const c = invUi.cellSize(1920, 1080, 10 + 10 + 2, 12, false);
+    assert.ok(22 * c + 230 <= 1080, 'fits: ' + c);
     assert.ok(c >= 24);
 });
 

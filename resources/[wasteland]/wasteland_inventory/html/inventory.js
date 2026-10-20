@@ -244,7 +244,7 @@
     // needs its own column (about 330 px) next to the worn items (about 330).
     function cellSize(viewW, viewH, rows, cols, looting) {
         const byH = Math.floor((viewH - 230) / Math.max(1, rows));
-        const byW = Math.floor((viewW - (looting ? 560 : 900)) / Math.max(1, cols));
+        const byW = Math.floor((viewW - (looting ? 560 : 480)) / Math.max(1, cols));
         return Math.max(24, Math.min(50, byH, byW));
     }
 
@@ -514,9 +514,10 @@
         if (!st.snap.backpack) st.bagOpen = false; // taken off
         const bag = st.snap.backpack && st.bagOpen ? invById(st.snap.backpack) : null;
         const others = (st.snap.secondary || []).map(invById).filter(Boolean);
-        const shown = [pockets, bag].concat(others).filter(Boolean);
-        const rows = Math.max.apply(null, shown.map((i) => i.height).concat([1]));
-        const cols = (pockets ? pockets.width : 0) + (bag ? bag.width : 0) + Math.max(0, ...others.map((i) => i.width));
+        // Pockets with the backpack under them; anything being looted to the right.
+        const stacked = (pockets ? pockets.height : 0) + (bag ? bag.height + 2 : 0);
+        const rows = Math.max(stacked, ...others.map((i) => i.height), 1);
+        const cols = Math.max(pockets ? pockets.width : 0, bag ? bag.width : 0) + Math.max(0, ...others.map((i) => i.width));
         CELL = cellSize(window.innerWidth, window.innerHeight, rows, cols, others.length > 0);
         if (pockets) st.middle.appendChild(gridPanel(pockets, 'Pockets'));
         if (bag) {
@@ -527,13 +528,13 @@
         } else if (st.snap.backpack) {
             st.middle.appendChild(h('div', { class: 'wl-hint wli-baghint', text: 'Right-click your backpack (Back slot) and choose Open backpack to use it.' }));
         }
-        // Health under what is being looted (that comes first).
-        (st.snap.secondary || []).forEach((id) => { const inv = invById(id); if (inv) st.right.appendChild(gridPanel(inv, null, true)); });
-        st.right.appendChild(st.vitalsEl);
-        renderVitals();
+        // Left: worn, hotbar, the ground, health. Right: only what is being looted.
         const ground = h('div', { class: 'wli-ground', text: 'Drop here to put items on the ground' });
         ground.dataset.ground = '1';
-        st.right.appendChild(ground);
+        st.left.appendChild(ground);
+        st.left.appendChild(st.vitalsEl);
+        renderVitals();
+        (st.snap.secondary || []).forEach((id) => { const inv = invById(id); if (inv) st.right.appendChild(gridPanel(inv, null, true)); });
     }
 
     // ---------------------------------------------------------------- drag
@@ -859,7 +860,7 @@
         '.wli-columns { flex: 1; display: flex; gap: 22px; align-items: flex-start; overflow-x: hidden; overflow-y: auto; }',
         '.wli-col--side { flex: 1 1 0; min-width: 300px; max-width: 460px; }',
         '.wli-col { display: flex; flex-direction: column; gap: 16px; }',
-        '.wli-col--main { flex: 0 0 auto; flex-direction: row; align-items: flex-start; }',
+        '.wli-col--main { flex: 0 0 auto; flex-direction: column; align-items: flex-start; }',
         '.wli-baghint { max-width: 180px; align-self: flex-start; padding: 10px; border: 1px dashed var(--wl-border); border-radius: 6px; }',
         '.wli-section__head .wl-btn { padding: 2px 10px; font-size: 12px; margin-left: 8px; }',
         '.wli-section { background: var(--wl-bg); border: 1px solid var(--wl-border); border-radius: var(--wl-radius); padding: 10px 12px 12px; }',

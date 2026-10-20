@@ -1,5 +1,8 @@
 # Changelog
 
+## Inventory layout (owner)
+* The open backpack now sits under Pockets instead of beside them. The ground drop zone and the Health panel moved to the left column, under the hotbar. The right side is left for whatever is being looted (stashes, trunks, crates). Cell size is worked out for the new stacked layout.
+
 ## Double carry weight (owner)
 * Pockets now hold 200 kg (was 100), the small backpack 400 kg (was 200), the hiking backpack 750 kg (was 375). Backpacks already in the world get the new limit when loaded. Storage (stashes, trunks, base boxes) is unchanged.
 
