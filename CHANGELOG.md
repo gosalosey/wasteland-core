@@ -1,5 +1,8 @@
 # Changelog
 
+## Sugar easier to find (owner)
+* Sugar now also turns up in trash, crates, survivor caches and supply drops (as well as fridges), and the General trader at every camp sells it ($8, 20 in stock).
+
 ## Moonshine still: rounder, more realistic model (owner)
 * The still is rebuilt from smooth round shapes instead of boxes: a bellied copper pot with a rolled flange, rivets and an onion-head cap; a curved copper lyne arm; a bulging wooden thump keg and condenser barrel with iron hoops; a real coiled copper worm; a mason jar with a lid. Smooth shading on the round parts. The copper is darker and weathered (also on electric fence wires). The generator now supports per-corner normals (round parts) alongside the flat boxes.
 
