@@ -1,5 +1,8 @@
 # Changelog
 
+## Rain catcher (owner)
+* New craftable item (8 wood planks, 4 scrap metal, 3 rags), placed outdoors only (the server refuses a spot under a roof): a metal drum under a tarp funnel on four posts. It fills only while it rains: 0.35 L a minute, up to 10 L. Left Alt > Collect water turns it into water bottles (0.5 L each, so a full catcher gives 20); Check water; Pick up (owner, group, admins). Saved (wl_farm_catchers). Settings: farming.lua rainCatcher (capacityLitres, litresPerMinute, litresPerBottle, maxPerPlayer).
+
 ## Farming (owner)
 * New module wasteland_farming. Farm plots in three sizes (small 1 spot, medium 4, large 9) are crafted (wood planks, scrap metal) and placed anywhere, inside or outside, with a see-through preview. Our own models: wooden planter boxes of soil, and plants that grow visibly (sprout, young, grown, ripe with fruit in the crop's colour).
 * 16 crops, each with its own seed, growing time, yield and food: lettuce, strawberries, carrots, cucumbers, onions, tomatoes, bell peppers, bananas, blueberries, cranberries, beetroot, corn, potatoes, cabbage, watermelon, pumpkin. New food items with their own hunger/thirst values (survival.lua). Seeds in loot (food, survivor caches) and at the General trader; harvests sometimes give seeds back.

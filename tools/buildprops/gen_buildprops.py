@@ -1100,6 +1100,33 @@ def plant_stage(stage, color=None, seed=1):
             sz = rnd.uniform(0.06, 0.09)
             out += rbox(math.cos(math.radians(a)) * r, math.sin(math.radians(a)) * r, z, sz, sz, sz * 1.1, tex, rz=a)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Rain catcher: a metal drum under a tarp funnel on four posts, with a tap.
+# ---------------------------------------------------------------------------
+
+def raincatcher():
+    out = []
+    # drum: an 8-sided barrel of thin panels with two bands
+    r, hgt = 0.32, 0.9
+    for i in range(8):
+        a = i * 45
+        out += rbox(math.cos(math.radians(a)) * r, math.sin(math.radians(a)) * r, hgt / 2, 0.27, 0.03, hgt, METAL, rz=a + 90)
+    for z in (0.2, 0.7):
+        for i in range(8):
+            a = i * 45
+            out += rbox(math.cos(math.radians(a)) * (r + 0.015), math.sin(math.radians(a)) * (r + 0.015), z, 0.28, 0.02, 0.05, DARK, rz=a + 90)
+    out += box(-0.27, -0.27, hgt - 0.02, 0.27, 0.27, hgt, DARK)            # lid with a hole (dark)
+    out += box(0.3, -0.04, 0.12, 0.42, 0.04, 0.18, DARK)                   # tap
+    out += box(0.4, -0.02, 0.06, 0.44, 0.02, 0.14, DARK)
+    # four posts and the tarp funnel sloping down to the drum
+    for x in (-0.75, 0.68):
+        for y in (-0.75, 0.68):
+            out += box(x, y, 0, x + 0.07, y + 0.07, 1.75, BEAM)
+    for k, (cx, cy, rz) in enumerate(((0, -0.42, 0), (0, 0.42, 180), (-0.42, 0, 270), (0.42, 0, 90))):
+        out += rbox(cx, cy, 1.38, 1.5 - 0.0, 0.75, 0.02, 'wlbp_fabric', rx=-28, rz=rz)
+    return out
 # ---------------------------------------------------------------------------
 # Collision: solid boxes (like GTA's own thin props: bullets and players hit
 # them), a triangle mesh only for the ramp's slope. Sizes never change.
@@ -1185,6 +1212,7 @@ PIECES += [
 ]
 for _name, _n in PLOT_SIZES.items():
     PIECES.append((f'wl_farm_plot_{_name}', planter_box(_n), cbox(-_n / 2, -_n / 2, 0, _n / 2, _n / 2, 0.3), 70))
+PIECES.append(('wl_farm_raincatcher', raincatcher(), cbox(-0.36, -0.36, 0, 0.36, 0.36, 0.92), 56))
 for _st in ('sprout', 'young', 'grown'):
     PIECES.append((f'wl_farm_plant_{_st}', plant_stage(_st), cbox(-0.03, -0.03, 0, 0.03, 0.03, 0.03), 70))
 for _c in FRUITS:

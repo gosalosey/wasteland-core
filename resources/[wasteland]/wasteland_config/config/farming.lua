@@ -14,6 +14,12 @@ return {
     seedBackChance = 0.6,      -- chance a harvest also gives 1 - 2 seeds back
     rainWeathers = { 'RAIN', 'THUNDER' }, -- a plot outdoors (no roof over it) is watered in these
 
+    -- Rain catcher: crafted, placed outdoors (not under a roof). Fills only
+    -- while it rains (litresPerMinute), up to capacityLitres; Left Alt >
+    -- Collect water turns it into water bottles (litresPerBottle each).
+    rainCatcher = { item = 'rain_catcher', model = 'wl_farm_raincatcher', capacityLitres = 10, litresPerMinute = 0.35,
+        litresPerBottle = 0.5, maxPerPlayer = 6 },
+
     -- size: spots per side (1 = 1 spot, 2 = 4 spots, 3 = 9 spots);
     -- waterPerBottle: minutes of water one bottle gives the whole plot.
     plots = {

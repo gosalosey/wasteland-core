@@ -10,6 +10,8 @@ local SQL = WLF.SQL
 local M
 local plots = {}     -- id -> { id, owner, size, coords, heading, water, slots = { [i] = { crop, growth } | false } }
 local runToken = nil
+local catchers = {}  -- id -> { id, owner, coords, heading, litres }
+local catcherList     -- () -> list for clients (defined below)
 
 local function inv() return exports.wasteland_inventory end
 local function players() return exports.wasteland_players end
@@ -265,12 +267,102 @@ local function pickUp(src, id)
 end
 
 -------------------------------------------------------------------------------
+-- Rain catchers: fill while it rains (outdoors only), emptied into bottles
+-------------------------------------------------------------------------------
+
+local function catcherInfo(c) return { id = c.id, coords = c.coords, heading = c.heading, litres = c.litres } end
+local function catcherBroadcast(c) TriggerClientEvent('wasteland:farming:client:catcher', -1, catcherInfo(c)) end
+local function catcherSave(c)
+    Citizen.CreateThread(function() WDB.update(SQL.catcherUpdate, { c.litres, c.id }) end)
+end
+
+local function useCatcherItem(src)
+    if not characterOf(src) then return false end
+    TriggerClientEvent('wasteland:farming:client:place', src, 'catcher')
+    return 0 -- taken when it is placed
+end
+
+local function placeCatcher(src, x, y, z, heading)
+    local cid = characterOf(src)
+    local rc = M.config.rainCatcher
+    if not cid then return end
+    local coords = { x = x, y = y, z = z }
+    if not near(src, coords, 8.0) then notice(src, 'Too far away to place that.'); return end
+    if not outdoors({ coords = coords }) then notice(src, 'A rain catcher has to be outdoors: there is a roof over this spot.'); return end
+    local mine = 0
+    for _, c in pairs(catchers) do
+        if c.owner == cid then mine = mine + 1 end
+        if dist(c.coords, coords) < 1.6 then notice(src, 'There is already a rain catcher there.'); return end
+    end
+    if mine >= rc.maxPerPlayer then notice(src, ('You have %d rain catchers already (the most allowed).'):format(mine)); return end
+    if not inv():RemoveItem(src, rc.item, 1) then notice(src, 'You need a ' .. label(rc.item) .. '.'); return end
+    heading = (tonumber(heading) or 0.0) % 360.0
+    Citizen.CreateThread(function()
+        local id, err = WDB.insert(SQL.catcherInsert, { cid, x, y, z, heading, os.time() })
+        if not id then give(src, rc.item, 1); notice(src, 'The rain catcher could not be saved. Try again.'); M.log:warn('catcher: %s', tostring(err)); return end
+        local c = { id = id, owner = cid, coords = coords, heading = heading, litres = 0 }
+        catchers[id] = c
+        catcherBroadcast(c)
+        notice(src, 'Rain catcher placed. It fills while it rains.')
+    end)
+end
+
+local function catcherFor(src, id)
+    local c = catchers[id]
+    if not c or not characterOf(src) then return nil end
+    if not near(src, c.coords, 3.5) then notice(src, 'Get closer to the rain catcher.'); return nil end
+    return c
+end
+
+local function catcherCheck(src, id)
+    local c = catcherFor(src, id)
+    if not c then return end
+    local rc = M.config.rainCatcher
+    local bottles = math.floor(c.litres / rc.litresPerBottle + 1e-6)
+    notice(src, ('Rain catcher: %.1f / %d L (%d %s).%s'):format(c.litres, rc.capacityLitres, bottles, label(M.config.waterItem),
+        raining() and ' It is raining: it is filling.' or ' It fills while it rains.'))
+end
+
+local function catcherCollect(src, id)
+    local c = catcherFor(src, id)
+    if not c then return end
+    local rc = M.config.rainCatcher
+    local bottles = math.floor(c.litres / rc.litresPerBottle + 1e-6)
+    if bottles < 1 then notice(src, 'There is not enough water in it yet.'); return end
+    c.litres = math.max(0, c.litres - bottles * rc.litresPerBottle)
+    give(src, M.config.waterItem, bottles)
+    notice(src, ('You fill %d %s.'):format(bottles, label(M.config.waterItem)))
+    catcherSave(c); catcherBroadcast(c)
+end
+
+local function catcherPickUp(src, id)
+    local c = catcherFor(src, id)
+    if not c then return end
+    local cid = characterOf(src)
+    if not (c.owner == cid or sameGroup(cid, c.owner) or isAdmin(src)) then notice(src, 'This is not your rain catcher.'); return end
+    catchers[id] = nil
+    Citizen.CreateThread(function() WDB.update(SQL.catcherDelete, { id }) end)
+    TriggerClientEvent('wasteland:farming:client:catcherRemove', -1, id)
+    give(src, M.config.rainCatcher.item, 1)
+    notice(src, 'Rain catcher picked up.')
+end
+
+-------------------------------------------------------------------------------
 -- Growing
 -------------------------------------------------------------------------------
 
 local function tick()
     local wet = raining()
     local dt = M.config.tickSeconds / 60
+    if wet then
+        local rc = M.config.rainCatcher
+        for _, c in pairs(catchers) do
+            if c.litres < rc.capacityLitres and outdoors(c) then
+                c.litres = math.min(rc.capacityLitres, c.litres + rc.litresPerMinute * dt)
+                catcherSave(c); catcherBroadcast(c)
+            end
+        end
+    end
     for _, p in pairs(plots) do
         local rained = wet and outdoors(p)
         local before = p.water
@@ -330,6 +422,14 @@ M = Wasteland.DefineModule({
                 waterPerBottle = { type = 'number', default = 30, min = 1, max = 100000 },
             } } },
             stages = { type = 'map', default = {}, keys = { type = 'string' }, values = { type = 'string' } },
+            rainCatcher = { type = 'table', default = {}, fields = {
+                item = { type = 'string', default = 'rain_catcher', pattern = '^[%w_]+$' },
+                model = { type = 'string', default = 'wl_farm_raincatcher', pattern = '^[%w_]+$' },
+                capacityLitres = { type = 'number', default = 10, min = 0.1, max = 100000 },
+                litresPerMinute = { type = 'number', default = 0.35, min = 0, max = 100000, description = 'Filling while it rains' },
+                litresPerBottle = { type = 'number', default = 0.5, min = 0.01, max = 1000 },
+                maxPerPlayer = { type = 'integer', default = 6, min = 1, max = 1000 },
+            } },
             crops = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' }, values = CROP },
         } },
     },
@@ -346,7 +446,8 @@ M = Wasteland.DefineModule({
             if c.yield[1] > c.yield[2] then return false, ('farming.lua crop %s: yield min is above max'):format(key) end
         end
         if not known(M.config.waterItem) then return false, 'farming.lua: waterItem is not in inventory.lua items' end
-        plots = {}
+        if not known(M.config.rainCatcher.item) then return false, 'farming.lua: rainCatcher.item is not in inventory.lua items' end
+        plots, catchers = {}, {}
         local token = {}
         runToken = token
         Citizen.CreateThread(function()
@@ -369,6 +470,13 @@ M = Wasteland.DefineModule({
                     plots[p.id] = p
                 end
             end
+            local crows = WDB.query(SQL.catcherSelect, {}) or {}
+            for _, r in ipairs(crows) do
+                catchers[r.id] = { id = r.id, owner = r.owner_id, heading = r.heading + 0.0, litres = tonumber(r.litres) or 0,
+                    coords = { x = r.x + 0.0, y = r.y + 0.0, z = r.z + 0.0 } }
+            end
+            local okC, errC = inv():RegisterUsable(M.config.rainCatcher.item, useCatcherItem)
+            if not okC then M.log:warn('could not register %s: %s', M.config.rainCatcher.item, tostring(errC)) end
             for key, k in pairs(M.config.plots) do
                 local okU, errU = inv():RegisterUsable(k.item, usePlotItem(key))
                 if not okU then M.log:warn('could not register %s: %s', k.item, tostring(errU)) end
@@ -381,6 +489,7 @@ M = Wasteland.DefineModule({
                 for _, p in pairs(plots) do list[#list + 1] = info(p) end
                 return list
             end)())
+            TriggerClientEvent('wasteland:farming:client:catchers', -1, catcherList())
             Citizen.CreateThread(function() loop(token) end)
             M.ready()
         end)
@@ -396,7 +505,15 @@ M = Wasteland.DefineModule({
 function M.clientConfig()
     local kinds = {}
     for key, k in pairs(M.config.plots) do kinds[key] = { label = k.label, model = k.model, size = k.size } end
-    return { plots = kinds, stages = M.config.stages, streamDistance = M.config.streamDistance }
+    local rc = M.config.rainCatcher
+    return { plots = kinds, stages = M.config.stages, streamDistance = M.config.streamDistance,
+        catcher = { label = label(rc.item), model = rc.model, capacity = rc.capacityLitres } }
+end
+
+catcherList = function()
+    local list = {}
+    for _, c in pairs(catchers) do list[#list + 1] = catcherInfo(c) end
+    return list
 end
 
 local function syncTo(src)
@@ -404,6 +521,7 @@ local function syncTo(src)
     local list = {}
     for _, p in pairs(plots) do list[#list + 1] = info(p) end
     TriggerClientEvent('wasteland:farming:client:sync', src, M.clientConfig(), list)
+    TriggerClientEvent('wasteland:farming:client:catchers', src, catcherList())
 end
 
 local ID = { type = 'integer', required = true, min = 1 }
@@ -415,7 +533,12 @@ M.netEvent('wasteland:farming:server:sync', { rateLimit = { burst = 2, perSecond
 M.netEvent('wasteland:farming:server:place', {
     args = { { type = 'string', required = true, pattern = '^[%w_]+$', maxLength = 24 }, COORD, COORD, COORD, { type = 'number', required = true, min = -720, max = 720 } },
     rateLimit = { burst = 3, perSecond = 1 },
-}, function(src, kind, x, y, z, h) placePlot(src, kind, x, y, z, h) end)
+}, function(src, kind, x, y, z, h)
+    if kind == 'catcher' then placeCatcher(src, x, y, z, h) else placePlot(src, kind, x, y, z, h) end
+end)
+M.netEvent('wasteland:farming:server:catcherCheck', { args = { ID }, rateLimit = RATE }, function(src, id) catcherCheck(src, id) end)
+M.netEvent('wasteland:farming:server:catcherCollect', { args = { ID }, rateLimit = RATE }, function(src, id) catcherCollect(src, id) end)
+M.netEvent('wasteland:farming:server:catcherPickup', { args = { ID }, rateLimit = RATE }, function(src, id) catcherPickUp(src, id) end)
 M.netEvent('wasteland:farming:server:open', { args = { ID }, rateLimit = RATE }, function(src, id)
     local p = plotFor(src, id)
     if p then sendView(src, p) end

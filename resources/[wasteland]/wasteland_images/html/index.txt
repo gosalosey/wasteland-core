@@ -3511,3 +3511,4 @@ seeds_beetroot
 farm_plot_small
 farm_plot_medium
 farm_plot_large
+rain_catcher

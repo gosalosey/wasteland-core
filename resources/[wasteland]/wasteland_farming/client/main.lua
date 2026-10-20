@@ -8,6 +8,8 @@ local cfg = nil
 local plots = {}        -- id -> info from the server
 local spawned = {}      -- id -> { obj, plants = { [slot] = entity }, targets, sig }
 local placing = false
+local catchers = {}     -- id -> info
+local catcherSpawned = {} -- id -> { obj, targets }
 
 local function uiRunning() return GetResourceState('wasteland_ui') == 'started' end
 
@@ -128,6 +130,49 @@ RegisterNetEvent('wasteland:farming:client:remove', function(id)
     despawn(id)
 end)
 
+-- Rain catchers ---------------------------------------------------------------
+
+local function catcherDespawn(id)
+    local e = catcherSpawned[id]
+    if not e then return end
+    if e.targets and GetResourceState('wasteland_target') == 'started' then
+        for _, t in ipairs(e.targets) do pcall(function() exports.wasteland_target:Remove(t) end) end
+    end
+    if DoesEntityExist(e.obj) then DeleteEntity(e.obj) end
+    catcherSpawned[id] = nil
+end
+
+local function catcherSpawn(c)
+    local hash = cfg.catcher and loadModel(cfg.catcher.model)
+    if not hash then return end
+    local obj = CreateObjectNoOffset(hash, c.coords.x, c.coords.y, c.coords.z, false, false, false)
+    SetEntityHeading(obj, c.heading)
+    FreezeEntityPosition(obj, true)
+    SetModelAsNoLongerNeeded(hash)
+    local e = { obj = obj }
+    if GetResourceState('wasteland_target') == 'started' then
+        e.targets = { exports.wasteland_target:AddEntity(obj, {
+            { label = 'Collect water', icon = '💧', distance = 3.0, onSelect = function() TriggerServerEvent('wasteland:farming:server:catcherCollect', c.id) end },
+            { label = 'Check water', icon = '◔', distance = 3.0, onSelect = function() TriggerServerEvent('wasteland:farming:server:catcherCheck', c.id) end },
+            { label = 'Pick up', icon = '✕', distance = 3.0, onSelect = function() TriggerServerEvent('wasteland:farming:server:catcherPickup', c.id) end },
+        }) }
+    end
+    catcherSpawned[c.id] = e
+end
+
+RegisterNetEvent('wasteland:farming:client:catchers', function(list)
+    for id in pairs(catcherSpawned) do catcherDespawn(id) end
+    catchers = {}
+    for _, c in ipairs(type(list) == 'table' and list or {}) do catchers[c.id] = c end
+end)
+RegisterNetEvent('wasteland:farming:client:catcher', function(c)
+    if type(c) == 'table' and c.id then catchers[c.id] = c end
+end)
+RegisterNetEvent('wasteland:farming:client:catcherRemove', function(id)
+    catchers[id] = nil
+    catcherDespawn(id)
+end)
+
 -- Show the plots near the player.
 Citizen.CreateThread(function()
     Wait(2500)
@@ -141,6 +186,11 @@ Citizen.CreateThread(function()
                 if d <= r and not spawned[id] then spawn(p)
                 elseif d > r + 20.0 and spawned[id] then despawn(id) end
             end
+            for id, c in pairs(catchers) do
+                local d = #(me - vector3(c.coords.x, c.coords.y, c.coords.z))
+                if d <= r and not catcherSpawned[id] then catcherSpawn(c)
+                elseif d > r + 20.0 and catcherSpawned[id] then catcherDespawn(id) end
+            end
         end
         Wait(1000)
     end
@@ -149,6 +199,7 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     for id in pairs(spawned) do despawn(id) end
+    for id in pairs(catcherSpawned) do catcherDespawn(id) end
     if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end
 end)
 
@@ -199,7 +250,7 @@ end
 
 RegisterNetEvent('wasteland:farming:client:place', function(kindKey)
     if placing or not cfg then return end
-    local kind = cfg.plots[kindKey]
+    local kind = kindKey == 'catcher' and cfg.catcher or cfg.plots[kindKey]
     local hash = kind and loadModel(kind.model)
     if not hash then notify('That farm plot cannot be shown right now.'); return end
     if uiRunning() and exports.wasteland_ui:IsOpen('inventory') then pcall(function() exports.wasteland_inventory:Close() end) end

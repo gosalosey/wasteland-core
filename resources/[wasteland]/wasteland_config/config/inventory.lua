@@ -139,6 +139,8 @@ return {
         bread = { label = 'Bread', image = 'bread', category = 'food', width = 1, height = 1, weight = 0.15,
             description = 'Hard as a brick, still edible.' },
         -- Farming (farming.lua): farm plots, seeds and what they grow.
+        rain_catcher = { label = 'Rain catcher', image = 'rain_catcher', category = 'tool', width = 2, height = 3, weight = 2.5, stack = 1,
+            description = 'A drum under a tarp funnel. Place it outdoors: it fills with water while it rains.' },
         farm_plot_small = { label = 'Small farm plot', image = 'farm_plot_small', category = 'tool', width = 2, height = 2, weight = 1.5, stack = 1,
             description = 'A small planter box (1 spot). Use it to place it, inside or outside.' },
         farm_plot_medium = { label = 'Medium farm plot', image = 'farm_plot_medium', category = 'tool', width = 2, height = 2, weight = 2.5, stack = 1,

@@ -6,6 +6,7 @@ local CFG = {
     ['players.lua'] = 'return { restoreDelayMs = 200 }',
     ['farming.lua'] = [[return {
         tickSeconds = 6, maxWaterMinutes = 10, seedBackChance = 0,
+        rainCatcher = { capacityLitres = 2, litresPerMinute = 5, litresPerBottle = 0.5 },
         plots = { small = { label = 'Small farm plot', item = 'farm_plot_small', model = 'wl_farm_plot_small', size = 1, waterPerBottle = 2 },
                   medium = { label = 'Medium farm plot', item = 'farm_plot_medium', model = 'wl_farm_plot_medium', size = 2, waterPerBottle = 2 } },
         stages = { sprout = 'a', young = 'b', grown = 'c', ripe = 'd_%s' },
@@ -38,6 +39,27 @@ local function teachDatabase(server)
         d.data.wl_farm_plots[p[1]] = nil
         return { affectedRows = 1 }
     end)
+    db.data.wl_farm_catchers = {}
+    local nextC = 0
+    db:on(SQL.catcherSelect, function(d)
+        local rows = {}
+        for _, r in pairs(d.data.wl_farm_catchers) do rows[#rows + 1] = r end
+        return rows
+    end)
+    db:on(SQL.catcherInsert, function(d, p)
+        nextC = nextC + 1
+        d.data.wl_farm_catchers[nextC] = { id = nextC, owner_id = p[1], x = p[2], y = p[3], z = p[4], heading = p[5], litres = 0 }
+        return { insertId = nextC, affectedRows = 1 }
+    end)
+    db:on(SQL.catcherUpdate, function(d, p)
+        local r = d.data.wl_farm_catchers[p[2]]
+        if r then r.litres = p[1] end
+        return { affectedRows = 1 }
+    end)
+    db:on(SQL.catcherDelete, function(d, p)
+        d.data.wl_farm_catchers[p[1]] = nil
+        return { affectedRows = 1 }
+    end)
 end
 
 local function defaults(model)
@@ -49,7 +71,7 @@ end
 describe('farming', function()
     local server = newServer({ config = CFG })
     teachDatabase(server)
-    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_farming' })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_world', 'wasteland_farming' })
     local id = server:connectAndJoin({ name = 'P-farm', license = 'farm' })
     server:advance(200)
     server:command(id, 'character create Fern Grower'); server:advance(300)
@@ -110,6 +132,28 @@ describe('farming', function()
         act('pickup', plot.id)
         expect(I('GetItemCount', id, 'farm_plot_small')).toBe(1)
         expect(next(server.db.backend.data.wl_farm_plots)).toBe(nil)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+
+    it('rain catcher: placed outdoors, fills only while it rains, emptied into water bottles', function()
+        server:export('wasteland_world', 'SetWeather', 'CLEAR')
+        I('AddItem', id, 'rain_catcher', 1); server:advance(100)
+        act('place', 'catcher', -2.0, 0.0, 30.0, 0.0)
+        local c = last('wasteland:farming:client:catcher').args[1]
+        expect(c.litres).toBe(0)
+        expect(I('GetItemCount', id, 'rain_catcher')).toBe(0)
+        server:advance(13000)
+        act('catcherCollect', c.id)
+        expect(note()).toContain('not enough water')       -- no rain, no water
+        server:export('wasteland_world', 'SetWeather', 'RAIN')
+        server:advance(13000)                               -- 5 L a minute: 0.5 L a 6 s tick, capped at 2 L
+        local bottles = I('GetItemCount', id, 'water_bottle')
+        act('catcherCollect', c.id)
+        expect(note()).toContain('You fill')
+        expect(I('GetItemCount', id, 'water_bottle') > bottles).toBe(true)
+        server:export('wasteland_world', 'SetWeather', 'CLEAR')
+        act('catcherPickup', c.id)
+        expect(I('GetItemCount', id, 'rain_catcher')).toBe(1)
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
