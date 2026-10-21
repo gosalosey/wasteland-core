@@ -95,7 +95,12 @@ end
 local missingModels = {}  -- model name -> true: a player's game does not have it
 
 local function spawnAt(point, kind)
-    local pool = Rules.modelPool(M.config.kinds[kind], M.config.models, missingModels)
+    -- Special infected (zombies.lua ai.specials) may have their own models.
+    local uid = newUid()
+    local probe = { uid = uid }
+    local sp = WLZ.ServerAI and WLZ.ServerAI.specialOf(probe)
+    local pool = Rules.modelPool(sp, {}, missingModels)
+    if #pool == 0 then pool = Rules.modelPool(M.config.kinds[kind], M.config.models, missingModels) end
     if #pool == 0 then pool = { 'u_m_y_zombie_01' } end -- GTA's own zombie: always there
     local model = pool[math.random(1, #pool)]
     local handle = CreatePed(4, GetHashKey(model), point.x + 0.0, point.y + 0.0, point.z + 0.0, math.random() * 360.0, true, true)
@@ -103,10 +108,10 @@ local function spawnAt(point, kind)
         M.log:warn('could not create a zombie (%s) at %.0f %.0f', model, point.x, point.y)
         return nil
     end
-    local uid = newUid()
     Entity(handle).state:set('wlZombie', { kind = kind, uid = uid }, true)
     local z = { handle = handle, netId = NetworkGetNetworkIdFromEntity(handle), kind = kind, spawnedAt = now(),
-        hp = GetEntityHealth(handle), uid = uid }
+        hp = GetEntityHealth(handle), uid = uid,
+        specialChecked = probe.specialChecked, special = probe.special, specialName = probe.specialName }
     zombies[handle] = z
     return z
 end
@@ -503,6 +508,7 @@ local function clientConfig()
     local function add(list) for _, m in ipairs(list or {}) do if not seen[m] then seen[m] = true; all[#all + 1] = m end end end
     add(M.config.models)
     for _, k in pairs(M.config.kinds) do add(k.models) end
+    for _, k in pairs((M.config.ai or {}).specials or {}) do if type(k) == 'table' then add(k.models) end end
     return { detection = M.config.detection, attack = M.config.attack, kinds = M.config.kinds, models = all,
         ai = WLZ.AI.settings(M.config.ai), sounds = M.config.sounds, hitReaction = M.config.hitReaction }
 end

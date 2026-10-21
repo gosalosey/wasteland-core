@@ -1,5 +1,9 @@
 # Changelog
 
+## Special infected can have their own models
+
+- `zombies.lua` `ai.specials.<name>.models = { ... }`: that special spawns with one of these models (missing ones fall back to the kind/general list).
+
 ## Fix: HUD missing after choosing a character (owner)
 * Survival now double-checks: once a character is in the world, the client waits for its stats (which bring the HUD) and, if none arrive within 4 seconds, asks the server every 3 seconds for up to a minute. The server loads the character into survival if it was missed (and logs a warning naming the player, to find the cause) or just sends the stats again.
 
