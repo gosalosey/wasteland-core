@@ -1,5 +1,11 @@
 # Changelog
 
+## Updater: private repository, settings you never edited, zombie models
+
+- `tools/update.ps1` works with a private repository: it asks once for a GitHub token and saves it in `github_token.txt` (not in git).
+- Settings files you never edited are now updated (before, every settings file that differed from the new version was kept, so new settings never arrived). Edited ones are still kept, with `<name>.lua.new` next to them.
+- `peds.meta`: the new version's zombie models are added to yours.
+
 ## Zombie model files in the repo
 
 - `wasteland_zombiemodels/stream`: The Undead pack (`ywr_zombies`, 23 looks) and 6 Walking Dead zombies (`wlz_twd_*`), so servers installed from git get them.

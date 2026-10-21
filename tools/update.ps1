@@ -11,10 +11,12 @@
 #   * backs up the database (if mysqldump / mariadb-dump is found) and the
 #     whole resources\[wasteland] folder (server folder\backups\),
 #   * replaces resources\[wasteland] with the new version, but KEEPS:
-#       - your settings (wasteland_config\config\*.lua); when the new version
-#         changed one of them, its new file is saved next to yours as
-#         <name>.lua.new so you can compare;
-#       - your zombie models (wasteland_zombiemodels\stream and peds.meta),
+#       - settings you edited (wasteland_config\config\*.lua); when the new
+#         version changed one of them, its new file is saved next to yours as
+#         <name>.lua.new so you can compare. Settings files you never edited
+#         are simply updated;
+#       - your own zombie models (wasteland_zombiemodels\stream; peds.meta
+#         gets the new version's models added),
 #   * adds settings files that are new in this version,
 #   * checks server.cfg has an "ensure" line for every Wasteland resource
 #     (and offers to add missing ones),
@@ -24,6 +26,11 @@
 #          -Ref <branch or tag>                    (default: main)
 #          -Yes                                    (answer yes to every question)
 #          -SkipDatabaseBackup
+#
+# Private repository: the script asks once for a GitHub token (github.com >
+# Settings > Developer settings > Fine-grained tokens, read-only "Contents" on
+# the repository) and saves it in github_token.txt next to this script. The
+# environment variable WASTELAND_GITHUB_TOKEN works too.
 
 param(
     [string]$ServerPath = '',
@@ -92,7 +99,27 @@ if (Test-Path -LiteralPath $versionFile) { $installed = (Get-Content -LiteralPat
 
 # --- what is new ------------------------------------------------------------
 $headers = @{ 'User-Agent' = 'wasteland-update' }
-$commits = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/commits?sha=$Ref&per_page=40" -Headers $headers
+$tokenFile = Join-Path $PSScriptRoot 'github_token.txt'
+$token = $env:WASTELAND_GITHUB_TOKEN
+if (-not $token -and (Test-Path -LiteralPath $tokenFile)) { $token = (Get-Content -LiteralPath $tokenFile -TotalCount 1).Trim() }
+if ($token) { $headers['Authorization'] = "Bearer $token" }
+$commits = $null
+try {
+    $commits = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/commits?sha=$Ref&per_page=40" -Headers $headers
+} catch {
+    $code = 0
+    if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
+    if ($code -ne 404 -and $code -ne 401) { throw }
+    Say "GitHub did not let this script see $Repo (private repository, or the saved token is wrong)." Yellow
+    Say 'Paste a GitHub token that can read it (github.com > Settings > Developer settings > Fine-grained tokens;' Yellow
+    Say "repository access: $Repo; permission Contents: Read-only). It is saved in github_token.txt." Yellow
+    $token = (Read-Host 'Token').Trim()
+    if (-not $token) { throw 'No token given.' }
+    $headers['Authorization'] = "Bearer $token"
+    $commits = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/commits?sha=$Ref&per_page=40" -Headers $headers
+    Set-Content -LiteralPath $tokenFile -Value $token -Encoding ASCII
+    Say 'Token works; saved for next time.' Green
+}
 $latest = $commits[0].sha
 if ($installed -eq $latest) {
     Say "You already have the newest version ($($latest.Substring(0,7)))." Green
@@ -153,9 +180,24 @@ $tmp = Join-Path $env:TEMP "wl_update_$stamp"
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 $zip = Join-Path $tmp 'wasteland.zip'
 Say 'Downloading the new version...'
-Invoke-WebRequest -Uri "https://codeload.github.com/$Repo/zip/$Ref" -OutFile $zip -UseBasicParsing -Headers $headers
-Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force
-$root = Get-ChildItem -LiteralPath $tmp -Directory | Select-Object -First 1
+Invoke-WebRequest -Uri "https://api.github.com/repos/$Repo/zipball/$latest" -OutFile $zip -UseBasicParsing -Headers $headers
+$newDir = Join-Path $tmp 'new'
+Expand-Archive -LiteralPath $zip -DestinationPath $newDir -Force
+$root = Get-ChildItem -LiteralPath $newDir -Directory | Select-Object -First 1
+# The version you have, to tell settings you edited from ones you did not.
+$oldShippedCfg = $null
+if ($installed -match '^[0-9a-f]{40}$') {
+    try {
+        $oldZip = Join-Path $tmp 'installed.zip'
+        Invoke-WebRequest -Uri "https://api.github.com/repos/$Repo/zipball/$installed" -OutFile $oldZip -UseBasicParsing -Headers $headers
+        $oldDir = Join-Path $tmp 'installed'
+        Expand-Archive -LiteralPath $oldZip -DestinationPath $oldDir -Force
+        $oldRoot = Get-ChildItem -LiteralPath $oldDir -Directory | Select-Object -First 1
+        $oldShippedCfg = Join-Path $oldRoot.FullName 'resources\[wasteland]\wasteland_config\config'
+    } catch {
+        Say 'Could not download the version you have; every settings file that differs is kept.' Yellow
+    }
+}
 $newWl = Join-Path $root.FullName 'resources\[wasteland]'
 if (-not (Test-Path -LiteralPath $newWl)) { throw 'The download does not contain resources\[wasteland].' }
 
@@ -171,7 +213,13 @@ Get-ChildItem -LiteralPath $newCfg -Filter '*.lua' | ForEach-Object {
     $mine = Join-Path $oldCfg $_.Name
     if (Test-Path -LiteralPath $mine) {
         $a = (Get-FileHash -LiteralPath $mine).Hash; $b = (Get-FileHash -LiteralPath $_.FullName).Hash
-        if ($a -ne $b) {
+        $shipped = $null
+        if ($oldShippedCfg) { $shipped = Join-Path $oldShippedCfg $_.Name }
+        $untouched = $false
+        if ($shipped -and (Test-Path -LiteralPath $shipped)) {
+            $untouched = ((Get-FileHash -LiteralPath $shipped).Hash -eq $a)
+        }
+        if ($a -ne $b -and -not $untouched) {
             Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $newCfg ($_.Name + '.new')) -Force
             Copy-Item -LiteralPath $mine -Destination $_.FullName -Force
             $changedSettings += $_.Name
@@ -195,8 +243,19 @@ if (Test-Path -LiteralPath (Join-Path $oldModels 'stream')) {
         Copy-Item -LiteralPath $_.FullName -Destination $dest -Recurse -Force
     }
 }
-if (Test-Path -LiteralPath (Join-Path $oldModels 'peds.meta')) {
-    Copy-Item -LiteralPath (Join-Path $oldModels 'peds.meta') -Destination (Join-Path $newModels 'peds.meta') -Force
+# peds.meta: yours, plus the new version's models you do not have yet.
+$oldMeta = Join-Path $oldModels 'peds.meta'
+$newMeta = Join-Path $newModels 'peds.meta'
+if ((Test-Path -LiteralPath $oldMeta) -and (Test-Path -LiteralPath $newMeta)) {
+    $mine = [IO.File]::ReadAllText($oldMeta)
+    $theirs = [IO.File]::ReadAllText($newMeta)
+    $add = ''
+    foreach ($m in [regex]::Matches($theirs, '(?s)[ \t]*<Item type="CPedModelInfo__InitData">.*?</Item>\r?\n?')) {
+        $name = [regex]::Match($m.Value, '<Name>([^<]+)</Name>').Groups[1].Value
+        if ($name -and $mine -notmatch ('<Name>' + [regex]::Escape($name) + '</Name>')) { $add += $m.Value }
+    }
+    if ($add -and $mine -match '</InitDatas>') { $mine = $mine.Replace('</InitDatas>', $add + '  </InitDatas>') }
+    [IO.File]::WriteAllText($newMeta, $mine)
 }
 
 # --- swap -----------------------------------------------------------------------

@@ -10,3 +10,7 @@ backups/
 resources/*/wasteland_core/VERSION.txt
 
 
+
+# updater GitHub token (private repo)
+tools/github_token.txt
+github_token.txt
