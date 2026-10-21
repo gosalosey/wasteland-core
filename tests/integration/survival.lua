@@ -87,6 +87,16 @@ describe('survival stats', function()
         expect(stats(server, id).temperature < 37).toBe(true)
         expect(stats(server, id).ambient).toBe(-30)
     end)
+
+    it('a character survival missed (no stats, no HUD) is loaded when the client asks', function()
+        server:triggerEvent('wasteland_players', 'wasteland:players:characterUnloading', id, { id = 1 })
+        server:advance(100)
+        local before = #events(server, id, 'wasteland:survival:client:stats')
+        server:advance(15000)
+        expect(#events(server, id, 'wasteland:survival:client:stats')).toBe(before) -- forgotten: nothing sent
+        server:clientEvent(id, 'wasteland:survival:server:sync'); server:advance(200)
+        expect(#events(server, id, 'wasteland:survival:client:stats') > before).toBe(true)
+    end)
 end)
 
 describe('food, drink and medicine through the inventory', function()

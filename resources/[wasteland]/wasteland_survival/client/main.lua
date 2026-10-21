@@ -117,6 +117,25 @@ local function hudData()
     }
 end
 
+-- Once a character is in the world the stats (and the HUD) must arrive;
+-- if they do not, ask the server again until they do.
+local statsAt = 0
+local function watchStats()
+    local since = GetGameTimer()
+    Citizen.CreateThread(function()
+        Citizen.Wait(4000)
+        for _ = 1, 20 do
+            if statsAt > since then return end
+            TriggerServerEvent('wasteland:survival:server:sync')
+            Citizen.Wait(3000)
+        end
+    end)
+end
+RegisterNetEvent('wasteland:players:client:characterLoaded', function() watchStats() end)
+AddEventHandler('onClientResourceStart', function(res)
+    if res == GetCurrentResourceName() and LocalPlayer.state.wlCharacterId then watchStats() end
+end)
+
 local function ensureHud()
     if not uiRunning() or not active then return end
     if exports.wasteland_ui:IsOpen(HUD) then
@@ -161,6 +180,7 @@ RegisterNetEvent('wasteland:survival:client:stats', function(s)
         elseif (s[field] or 0) < 90 then toldFull[field] = nil end
     end
     stats = s
+    statsAt = GetGameTimer()
     ensureHud()
 end)
 

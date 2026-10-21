@@ -1,5 +1,8 @@
 # Changelog
 
+## Fix: HUD missing after choosing a character (owner)
+* Survival now double-checks: once a character is in the world, the client waits for its stats (which bring the HUD) and, if none arrive within 4 seconds, asks the server every 3 seconds for up to a minute. The server loads the character into survival if it was missed (and logs a warning naming the player, to find the cause) or just sends the stats again.
+
 ## Explosives for raiding: molotovs, grenades, sticky bombs (owner)
 * New thrown weapons. Hold one like any weapon (hotbar or Use) and attack to throw; every throw uses one, and the next stack is picked up automatically. Sticky bombs stick where they land and go off when you press G (also after the last one is thrown).
 * Base damage (basebuilding.lua raid.explosionDamage, unchanged): molotov burns wood (100); grenade hurts wood and stone (30); sticky bomb breaks wood (250), stone (200) and metal (200).

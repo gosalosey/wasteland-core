@@ -571,6 +571,19 @@ M.netEvent('wasteland:survival:server:armorHit', { args = { { type = 'number', r
     if cid and states[cid] and not states[cid].dead and amount > 0 then wearPlate(src, amount) end
 end)
 
+-- The client has a character but no stats yet: load it if it was missed
+-- (it loaded while this module was not ready), else just send them.
+M.netEvent('wasteland:survival:server:sync', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
+    local cid = characterOf(src)
+    if not cid then return end
+    if not states[cid] then
+        M.log:warn('player %d (character %d) had no survival state: loading it now', src, cid)
+        load(src, cid)
+    else
+        sendStats(src, cid)
+    end
+end)
+
 M.netEvent('wasteland:survival:server:died', { rateLimit = { burst = 2, perSecond = 0.2 } }, function(src)
     local cid = characterOf(src)
     if cid then die(src, cid, 'reported by client') end
