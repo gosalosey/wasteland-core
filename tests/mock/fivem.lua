@@ -710,6 +710,7 @@ function Mock:buildEnv(r)
         local c = p and p.coords or { x = 0.0, y = 0.0, z = 0.0 }
         return { x = c.x, y = c.y, z = c.z }
     end
+    env.SetPedComponentVariation = function() end
     env.GetEntityHeading = function(ent)
         local e = mock:entity(ent)
         if e then return e.heading end

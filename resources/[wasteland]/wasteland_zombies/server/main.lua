@@ -94,7 +94,7 @@ end
 
 local missingModels = {}  -- model name -> true: a player's game does not have it
 
-local function spawnAt(point, kind)
+local function spawnAt(point, kind, forced)
     -- Special infected (zombies.lua ai.specials) may have their own models.
     local uid = newUid()
     local probe = { uid = uid }
@@ -102,12 +102,14 @@ local function spawnAt(point, kind)
     local pool = Rules.modelPool(sp, {}, missingModels)
     if #pool == 0 then pool = Rules.modelPool(M.config.kinds[kind], M.config.models, missingModels) end
     if #pool == 0 then pool = { 'u_m_y_zombie_01' } end -- GTA's own zombie: always there
-    local model = pool[math.random(1, #pool)]
+    local entry = forced or pool[math.random(1, #pool)]
+    local model, head, textures = Rules.modelEntry(entry)
     local handle = CreatePed(4, GetHashKey(model), point.x + 0.0, point.y + 0.0, point.z + 0.0, math.random() * 360.0, true, true)
     if not handle or handle == 0 or not DoesEntityExist(handle) then
         M.log:warn('could not create a zombie (%s) at %.0f %.0f', model, point.x, point.y)
         return nil
     end
+    if head then SetPedComponentVariation(handle, 0, head, math.random(0, textures - 1), 0) end
     Entity(handle).state:set('wlZombie', { kind = kind, uid = uid }, true)
     local z = { handle = handle, netId = NetworkGetNetworkIdFromEntity(handle), kind = kind, spawnedAt = now(),
         hp = GetEntityHealth(handle), uid = uid,
@@ -417,7 +419,7 @@ local KIND = { type = 'table', fields = {
     infection = RANGE(6, 12), bleedingChance = NUM(0.15, 0, 1),
     chance = NUM(0, 0, 100), nightChance = NUM(0, 0, 100),
     shamble = { type = 'boolean', default = false, description = 'Stagger like a drunk when walking' },
-    models = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' },
+    models = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+[:%d]*$' },
         description = 'Models for this kind only (empty = the general models list)' },
 } }
 local commandRegistered = false
@@ -445,7 +447,7 @@ M = Wasteland.DefineModule({
                     runner = { speed = 2.6, chance = 15, nightChance = 30, damage = { 5, 8 }, infectionChance = 0.2, infection = { 5, 10 },
                         bleedingChance = 0.2 },
                 } },
-            models = { type = 'array', minItems = 1, default = { 'u_m_y_zombie_01' }, items = { type = 'string', pattern = '^[%w_]+$' } },
+            models = { type = 'array', minItems = 1, default = { 'u_m_y_zombie_01' }, items = { type = 'string', pattern = '^[%w_]+[:%d]*$' } },
             detection = { type = 'table', fields = {
                 sightDay = NUM(35, 0, 200), sightNight = NUM(18, 0, 200), hearSprint = NUM(25, 0, 200),
                 hearWalk = NUM(9, 0, 200), hearCrouch = NUM(3, 0, 200), loseSeconds = INT(10, 1, 120),
@@ -505,7 +507,12 @@ M = Wasteland.DefineModule({
 local function clientConfig()
     -- Every model a zombie may use, so clients can say which they do not have.
     local all, seen = {}, {}
-    local function add(list) for _, m in ipairs(list or {}) do if not seen[m] then seen[m] = true; all[#all + 1] = m end end end
+    local function add(list)
+        for _, e in ipairs(list or {}) do
+            local m = Rules.modelEntry(e)
+            if not seen[m] then seen[m] = true; all[#all + 1] = m end
+        end
+    end
     add(M.config.models)
     for _, k in pairs(M.config.kinds) do add(k.models) end
     for _, k in pairs((M.config.ai or {}).specials or {}) do if type(k) == 'table' then add(k.models) end end
@@ -599,6 +606,26 @@ WLZ.Server = {
 -------------------------------------------------------------------------------
 -- Exports (zombies api 0.1)
 -------------------------------------------------------------------------------
+
+-- /zmodel <model[:head[:textures]]>: admins spawn a zombie with that look
+-- 4 m in front of them, to see what each model in zombies.lua looks like.
+RegisterCommand('zmodel', function(src, args)
+    src = tonumber(src)
+    if not src or src <= 0 then print('/zmodel is for players in game') return end
+    local allowed = IsPlayerAceAllowed(tostring(src), 'wasteland.admin')
+    if not (allowed == true or allowed == 1) then return end
+    if not (M and M.active) then return end
+    local entry = args[1]
+    if not entry or not entry:match('^[%w_]+[:%d]*$') then
+        TriggerClientEvent('chat:addMessage', src, { args = { 'zmodel', 'Use: /zmodel ywr_zombies:5  (or any model name)' } })
+        return
+    end
+    local ped = GetPlayerPed(tostring(src))
+    local c, h = GetEntityCoords(ped), math.rad(GetEntityHeading(ped))
+    local point = { x = c.x - math.sin(h) * 4.0, y = c.y + math.cos(h) * 4.0, z = c.z }
+    local z = spawnAt(point, 'walker', entry)
+    TriggerClientEvent('chat:addMessage', src, { args = { 'zmodel', z and ('Spawned ' .. entry) or ('Could not spawn ' .. entry) } })
+end, false)
 
 --- GetZombieCount() -> total, alive
 exports('GetZombieCount', function() return count(false), count(true) end)

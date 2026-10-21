@@ -24,9 +24,11 @@ return {
     --   models = { ... }      models for this kind only (else the list below)
     kinds = {
         walker = { speed = 1.15, damage = { 7, 11 }, infectionChance = 0.25, infection = { 6, 12 }, bleedingChance = 0.15,
-            shamble = true },
+            shamble = true,
+            models = { 'wlz_twd_01', 'wlz_twd_02', 'wlz_twd_03', 'wlz_twd_04', 'wlz_twd_05', 'wlz_twd_woman',
+                'ywr_zombies:0:2', 'ywr_zombies:1:2', 'ywr_zombies:2:2', 'ywr_zombies:3:2', 'ywr_zombies:4:2', 'ywr_zombies:5:2', 'ywr_zombies:6:2', 'ywr_zombies:7:2', 'ywr_zombies:8:2' } },
         runner = { speed = 2.7, chance = 25, nightChance = 45, damage = { 6, 9 }, infectionChance = 0.2, infection = { 5, 10 },
-            bleedingChance = 0.2 },
+            bleedingChance = 0.2, models = { 'ywr_zombies:9:2', 'ywr_zombies:10:2', 'ywr_zombies:11:2', 'ywr_zombies:22:2' } },
 
         -- An example of your own kind (remove the -- to use it): a slow,
         -- hard-hitting brute with its own models (custom models: put them in
@@ -131,15 +133,17 @@ return {
         -- Special infected (percent of zombies each; 0 = off). They keep the
         -- zombie's normal model. Bosses (juggernaut, alpha, butcher,
         -- nightterror) are off until you give them a chance.
+        -- Each special has its own look (see one in game: /zmodel ywr_zombies:12).
         specials = {
             enabled = true,
-            screamer = { chance = 3 },     -- screams when it spots you: brings the others
-            brute = { chance = 3 },        -- 3x health, slower, slow heavy swings
-            howler = { chance = 1 },       -- a long call that brings a horde from far away
-            spitter = { chance = 2 },      -- retches, then spits at you from up to 14 m
-            hunter = { chance = 2 },       -- stalks players who are on their own
-            crawler = { chance = 0 },
-            juggernaut = { chance = 0 }, alpha = { chance = 0 }, butcher = { chance = 0 }, nightterror = { chance = 0 },
+            screamer = { chance = 3, models = { 'ywr_zombies:12:2' } },     -- screams when it spots you: brings the others
+            brute = { chance = 3, models = { 'ywr_zombies:13:3' } },        -- 3x health, slower, slow heavy swings
+            howler = { chance = 1, models = { 'ywr_zombies:14:2' } },       -- a long call that brings a horde from far away
+            spitter = { chance = 2, models = { 'ywr_zombies:15:3' } },      -- retches, then spits at you from up to 14 m
+            hunter = { chance = 2, models = { 'ywr_zombies:16:4' } },       -- stalks players who are on their own
+            crawler = { chance = 0, models = { 'ywr_zombies:17:2' } },
+            juggernaut = { chance = 0, models = { 'ywr_zombies:18:2' } }, alpha = { chance = 0, models = { 'ywr_zombies:19:2' } },
+            butcher = { chance = 0, models = { 'ywr_zombies:20:3' } }, nightterror = { chance = 0, models = { 'ywr_zombies:21:2' } },
         },
 
         -- How many zombies answer one noise (the nearest), and repeated

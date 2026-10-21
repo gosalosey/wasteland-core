@@ -1,5 +1,12 @@
 # Changelog
 
+## Custom zombie models for every zombie type
+
+- Model entries can pick one look of a multi-look ped: `'ywr_zombies:5:2'` (look 5, 2 textures).
+- Walkers, runners and each special infected have their own models in `zombies.lua` (The Undead pack + Walking Dead peds; files stay on the server, not in git).
+- `peds.meta` registers `ywr_zombies` and `wlz_twd_01`-`05`, `wlz_twd_woman`.
+- Admin command `/zmodel <model[:look]>` spawns a zombie with that look in front of you.
+
 ## Special infected can have their own models
 
 - `zombies.lua` `ai.specials.<name>.models = { ... }`: that special spawns with one of these models (missing ones fall back to the kind/general list).

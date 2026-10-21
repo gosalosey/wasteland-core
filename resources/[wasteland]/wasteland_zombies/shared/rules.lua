@@ -65,12 +65,21 @@ function Rules.compareSync(expected, seen, known)
     return missing, ghosts
 end
 
+--- A model entry is a model name, or 'name:head:textures' for one look of a
+--- ped with many (head drawable number, how many textures it has).
+--- -> name, head (or nil), textures
+function Rules.modelEntry(entry)
+    local name, head, tex = tostring(entry):match('^([^:]+):?(%d*):?(%d*)$')
+    if not name then return tostring(entry), nil, 1 end
+    return name, tonumber(head), math.max(1, tonumber(tex) or 1)
+end
+
 --- The models a new zombie of `kind` may use: the kind's own list, else the
 --- general list; without the ones no player's game has (missing).
 function Rules.modelPool(kind, general, missing)
     local function usable(list)
         local out = {}
-        for _, m in ipairs(list or {}) do if not missing[m] then out[#out + 1] = m end end
+        for _, m in ipairs(list or {}) do if not missing[(Rules.modelEntry(m))] then out[#out + 1] = m end end
         return out
     end
     local own = usable(kind and kind.models)
