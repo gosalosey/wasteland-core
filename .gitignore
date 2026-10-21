@@ -10,5 +10,3 @@ backups/
 resources/*/wasteland_core/VERSION.txt
 
 
-# zombie model files: third-party, kept on the server only
-resources/*/wasteland_zombiemodels/stream/*/

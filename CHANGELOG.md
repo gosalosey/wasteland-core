@@ -1,5 +1,10 @@
 # Changelog
 
+## Zombie model files in the repo
+
+- `wasteland_zombiemodels/stream`: The Undead pack (`ywr_zombies`, 23 looks) and 6 Walking Dead zombies (`wlz_twd_*`), so servers installed from git get them.
+- `/zcheck` (F8): shows whether this game has the custom zombie models.
+
 ## Fix: every zombie look showed as the same zombie
 
 - The look of a multi-look ped (`ywr_zombies:5`) is now applied by every player's game (it was set on the server, where it did not stick).
