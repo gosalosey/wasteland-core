@@ -1,5 +1,9 @@
 # Changelog
 
+## Custom zombie models taken out of spawns (game crashes)
+
+- `zombies.lua` is back to GTA models for every zombie type while the crash is tracked down. The model files stay streamed; `/zmodel` still spawns one to test.
+
 ## Updater: private repository, settings you never edited, zombie models
 
 - `tools/update.ps1` works with a private repository: it asks once for a GitHub token and saves it in `github_token.txt` (not in git).
