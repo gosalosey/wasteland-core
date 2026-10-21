@@ -430,3 +430,25 @@ exports('GetZombieMode', function(ped)
     local b = brains[ped]
     return b and b.configured and b.mode or nil
 end)
+
+-- /zcheck: does this game have the custom zombie models (F8 shows the result)?
+RegisterCommand('zcheck', function()
+    for _, m in ipairs({ 'ywr_zombies', 'wlz_twd_01', 'wlz_twd_02', 'wlz_twd_03', 'wlz_twd_04', 'wlz_twd_05', 'wlz_twd_woman' }) do
+        local hash = GetHashKey(m)
+        local line = ('[zcheck] %s: in game %s, valid %s'):format(m, tostring(IsModelInCdimage(hash)), tostring(IsModelValid(hash)))
+        if IsModelInCdimage(hash) then
+            RequestModel(hash)
+            local t = GetGameTimer() + 5000
+            while not HasModelLoaded(hash) and GetGameTimer() < t do Citizen.Wait(0) end
+            line = line .. ', loaded ' .. tostring(HasModelLoaded(hash))
+            if HasModelLoaded(hash) then
+                local c = GetEntityCoords(PlayerPedId())
+                local ped = CreatePed(4, hash, c.x, c.y, c.z - 20.0, 0.0, false, false)
+                line = line .. (', looks %d'):format(GetNumberOfPedDrawableVariations(ped, 0))
+                DeleteEntity(ped)
+                SetModelAsNoLongerNeeded(hash)
+            end
+        end
+        print(line)
+    end
+end, false)
