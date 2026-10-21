@@ -105,8 +105,19 @@ end
 -- How a zombie looks: blood and the stagger. Not shared over the network,
 -- so every game applies it to every zombie it shows (not only the game that
 -- runs the zombie), and all players see the same zombie.
-local function dressUp(ped, kind)
+local warnedLook = {}
+local function dressUp(ped, kind, look)
     zombieRelations(ped)
+    if type(look) == 'table' and tonumber(look[1]) then
+        local head, tex = math.floor(look[1]), math.floor(tonumber(look[2]) or 0)
+        local n = GetNumberOfPedDrawableVariations(ped, 0)
+        if head < n then
+            SetPedComponentVariation(ped, 0, head, tex, 0)
+        elseif not warnedLook[head] then
+            warnedLook[head] = true
+            print(('[wasteland_zombies] zombie look %d not available: this model has %d looks (are its files streamed?)'):format(head, n))
+        end
+    end
     ApplyPedDamagePack(ped, 'BigHitByVehicle', 0.0, 9.0)
     ApplyPedDamagePack(ped, 'SCR_Dumpster', 0.0, 9.0)
     local k = cfg and cfg.kinds and cfg.kinds[kind]
@@ -354,7 +365,7 @@ Citizen.CreateThread(function()
                         if not b then b = { mode = 'idle' }; brains[ped] = b end
                         if not b.dressed then
                             b.dressed = true
-                            dressUp(ped, info.kind)
+                            dressUp(ped, info.kind, info.look)
                             if WLZ.Brain then WLZ.Brain.dress(ped, info) end
                         end
                         if IsPedDeadOrDying(ped, true) then

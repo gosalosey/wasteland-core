@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: every zombie look showed as the same zombie
+
+- The look of a multi-look ped (`ywr_zombies:5`) is now applied by every player's game (it was set on the server, where it did not stick).
+
 ## Custom zombie models for every zombie type
 
 - Model entries can pick one look of a multi-look ped: `'ywr_zombies:5:2'` (look 5, 2 textures).

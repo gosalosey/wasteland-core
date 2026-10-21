@@ -109,8 +109,9 @@ local function spawnAt(point, kind, forced)
         M.log:warn('could not create a zombie (%s) at %.0f %.0f', model, point.x, point.y)
         return nil
     end
-    if head then SetPedComponentVariation(handle, 0, head, math.random(0, textures - 1), 0) end
-    Entity(handle).state:set('wlZombie', { kind = kind, uid = uid }, true)
+    -- One look of a multi-look ped: every game applies it (client dressUp).
+    local look = head and { head, math.random(0, textures - 1) } or nil
+    Entity(handle).state:set('wlZombie', { kind = kind, uid = uid, look = look }, true)
     local z = { handle = handle, netId = NetworkGetNetworkIdFromEntity(handle), kind = kind, spawnedAt = now(),
         hp = GetEntityHealth(handle), uid = uid,
         specialChecked = probe.specialChecked, special = probe.special, specialName = probe.specialName }
