@@ -1,5 +1,10 @@
 # Changelog
 
+## Undead zombie pack removed (crashed the game); Walking Dead zombies in use
+
+- `ywr_zombies` crashed players' games (build 3570) as soon as one appeared: removed from `stream` and `peds.meta`.
+- Walkers and runners (and the special infected) use the 6 Walking Dead zombies (`wlz_twd_*`).
+
 ## Custom zombie models taken out of spawns (game crashes)
 
 - `zombies.lua` is back to GTA models for every zombie type while the crash is tracked down. The model files stay streamed; `/zmodel` still spawns one to test.

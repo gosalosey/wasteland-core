@@ -24,9 +24,11 @@ return {
     --   models = { ... }      models for this kind only (else the list below)
     kinds = {
         walker = { speed = 1.15, damage = { 7, 11 }, infectionChance = 0.25, infection = { 6, 12 }, bleedingChance = 0.15,
-            shamble = true },
+            shamble = true,
+            -- Custom models (wasteland_zombiemodels). Special infected use their kind's models.
+            models = { 'wlz_twd_01', 'wlz_twd_02', 'wlz_twd_03', 'wlz_twd_04', 'wlz_twd_05', 'wlz_twd_woman' } },
         runner = { speed = 2.7, chance = 25, nightChance = 45, damage = { 6, 9 }, infectionChance = 0.2, infection = { 5, 10 },
-            bleedingChance = 0.2 },
+            bleedingChance = 0.2, models = { 'wlz_twd_01', 'wlz_twd_02', 'wlz_twd_03', 'wlz_twd_04', 'wlz_twd_05', 'wlz_twd_woman' } },
 
         -- An example of your own kind (remove the -- to use it): a slow,
         -- hard-hitting brute with its own models (custom models: put them in

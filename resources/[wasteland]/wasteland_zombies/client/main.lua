@@ -433,7 +433,7 @@ end)
 
 -- /zcheck: does this game have the custom zombie models (F8 shows the result)?
 RegisterCommand('zcheck', function()
-    for _, m in ipairs({ 'ywr_zombies', 'wlz_twd_01', 'wlz_twd_02', 'wlz_twd_03', 'wlz_twd_04', 'wlz_twd_05', 'wlz_twd_woman' }) do
+    for _, m in ipairs({ 'wlz_twd_01', 'wlz_twd_02', 'wlz_twd_03', 'wlz_twd_04', 'wlz_twd_05', 'wlz_twd_woman' }) do
         local hash = GetHashKey(m)
         local line = ('[zcheck] %s: in game %s, valid %s'):format(m, tostring(IsModelInCdimage(hash)), tostring(IsModelValid(hash)))
         if IsModelInCdimage(hash) then
