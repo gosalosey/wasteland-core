@@ -1,5 +1,9 @@
 # Changelog
 
+## GTA interiors: bob74_ipl
+
+- The recipe installs bob74_ipl 2.7.1 (MIT) into `resources/[standalone]` and `server.cfg` ensures it: GTA's hidden interiors (story houses, online apartments, bunkers, offices) are loaded. If you add a Pillbox interior map (such as `hospital_map`), set `PillboxHospital.Enable(false)` in `bob74_ipl/client.lua`.
+
 ## Undead zombie pack removed (crashed the game); Walking Dead zombies in use
 
 - `ywr_zombies` crashed players' games (build 3570) as soon as one appeared: removed from `stream` and `peds.meta`.
