@@ -1,5 +1,14 @@
 # Changelog
 
+## Zombie aggro and combat feel
+
+- Anyone within 10 m is noticed whatever they do (`detection.proximity`). Hearing and sight are shorter: walking 15 m, sprinting 25 m, sight 45 m (25 at night). Engines carry 45 m; horns 80 m (new noise).
+- Zombies give up when their target is more than 60 m away (`ai.memory.loseDistance`).
+- Walkers shamble about but run at you once they have you (`chaseSpeed` 2.2).
+- Zombie attack animations (4, picked at random; `attack.anims`).
+- A hit can knock the player down (15%; brute 45%).
+- Zombies hit players in vehicles through the door: the engine takes damage, and 20% of hits (brute 40%) drag the player out.
+
 ## Wandering zombie hordes; more zombies around
 
 - Wandering hordes (`zombies.lua` `hordes`): up to 2 groups of 12-20 zombies (18-28 at night) roam the map, drifting through where players are. Far away a horde is only a moving point; its zombies appear when a player is within 170 m and walk on together.

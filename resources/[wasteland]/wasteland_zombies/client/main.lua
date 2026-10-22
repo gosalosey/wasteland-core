@@ -10,7 +10,7 @@ local Rules = WLZ.Rules
 local cfg = nil        -- detection / attack / kinds, from the server
 local brains = {}      -- ped handle -> { mode, target, lastSeen, nextTask, nextAttack, configured, investigate, reported }
 
-local ATTACK_DICT, ATTACK_ANIM = 'melee@unarmed@streamed_variations', 'plyr_takedown_front_slap'
+local ATTACK_DICT, ATTACK_ANIM = 'melee@unarmed@streamed_variations', 'plyr_takedown_front_slap' -- fallback
 local WALK_CLIPSET = 'move_m@drunk@verydrunk'
 local zombieGroup = nil
 
@@ -212,12 +212,15 @@ local function sense(ped, night)
 end
 
 -- Does a swing that lands now hit `target`? Within reach, in front of the
--- zombie (about 60 degrees either side), a clear line, not in a vehicle.
+-- zombie (about 60 degrees either side), a clear line. Someone in a vehicle
+-- is hit through the door / window (a little further: vehicleReach).
 local function landed(ped, target)
-    if not target or not DoesEntityExist(target) or IsEntityDead(target) or IsPedInAnyVehicle(target, false) then return false end
+    if not target or not DoesEntityExist(target) or IsEntityDead(target) then return false end
     local zc, pc = GetEntityCoords(ped), GetEntityCoords(target)
-    local reach = cfg.attack.hitReach or 1.7
+    local inVehicle = IsPedInAnyVehicle(target, false)
+    local reach = inVehicle and (cfg.attack.vehicleReach or 3.0) or (cfg.attack.hitReach or 1.7)
     if #(pc - zc) > reach then return false end
+    if inVehicle then return true end
     local fwd = GetEntityForwardVector(ped)
     local to = pc - zc
     local len = math.sqrt(to.x * to.x + to.y * to.y)
@@ -225,12 +228,61 @@ local function landed(ped, target)
     return HasEntityClearLosToEntity(ped, target, 17)
 end
 
-local function playAttack(ped)
+-- A random zombie attack (zombies.lua attack.anims); headingOffset turns
+-- the zombie so a sideways animation still swings at the target.
+local function playAttack(ped, target)
+    local a = cfg.attack
+    local list = a.anims or {}
+    local pick = #list > 0 and list[math.random(1, #list)] or nil
+    local dict = a.animDict
+    if pick and dict then
+        RequestAnimDict(dict)
+        local untilT = GetGameTimer() + 300
+        while not HasAnimDictLoaded(dict) and GetGameTimer() < untilT do Citizen.Wait(0) end
+        if HasAnimDictLoaded(dict) then
+            if target and DoesEntityExist(target) and (pick.headingOffset or 0) ~= 0 then
+                local zc, pc = GetEntityCoords(ped), GetEntityCoords(target)
+                SetEntityHeading(ped, GetHeadingFromVector_2d(pc.x - zc.x, pc.y - zc.y) + pick.headingOffset)
+            end
+            TaskPlayAnim(ped, dict, pick.name, 8.0, -8.0, -1, 48, 0.0, false, false, false)
+            return
+        end
+    end
     RequestAnimDict(ATTACK_DICT)
     if HasAnimDictLoaded(ATTACK_DICT) then
         TaskPlayAnim(ped, ATTACK_DICT, ATTACK_ANIM, 8.0, -8.0, 900, 48, 0.0, false, false, false)
     end
 end
+
+-- A zombie knocked this player down.
+RegisterNetEvent('wasteland:zombies:client:knockdown', function(ms)
+    ms = math.max(300, math.min(5000, tonumber(ms) or 1500))
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then return end
+    SetPedToRagdoll(ped, ms, ms, 0, false, false, false)
+end)
+
+-- A zombie hit this player's vehicle: the engine takes damage, and it may
+-- drag them out (then they fall).
+RegisterNetEvent('wasteland:zombies:client:vehicleHit', function(engineDamage, pullOut, ragdollMs)
+    local ped = PlayerPedId()
+    local veh = GetVehiclePedIsIn(ped, false)
+    if veh == 0 then return end
+    engineDamage = math.max(0.0, math.min(1000.0, tonumber(engineDamage) or 0.0))
+    if engineDamage > 0 and GetPedInVehicleSeat(veh, -1) == ped then
+        SetVehicleEngineHealth(veh, math.max(-100.0, GetVehicleEngineHealth(veh) - engineDamage))
+    end
+    if pullOut then
+        TaskLeaveVehicle(ped, veh, 4160) -- thrown out right away
+        local ms = math.max(0, math.min(5000, tonumber(ragdollMs) or 1500))
+        if ms > 0 then
+            SetTimeout(700, function()
+                local p = PlayerPedId()
+                if not IsPedInAnyVehicle(p, false) then SetPedToRagdoll(p, ms, ms, 0, false, false, false) end
+            end)
+        end
+    end
+end)
 
 -- Chasing within reach: the swing (it hits only if the target is still in
 -- reach, in front, with nothing in between, when it lands) or keep after
@@ -256,7 +308,7 @@ local function chaseStep(ped, b, dist, speed, mods)
             -- Start a swing; whether it hits is decided when it lands.
             b.nextAttack = t + cfg.attack.cooldownMs * (mods.cooldownMult or 1)
             TaskTurnPedToFaceEntity(ped, b.target, 300)
-            playAttack(ped)
+            playAttack(ped, b.target)
             b.swing = { target = b.target, at = t + (cfg.attack.windupMs or 450) * (mods.windupMult or 1) }
         end
     elseif t >= (b.nextTask or 0) then

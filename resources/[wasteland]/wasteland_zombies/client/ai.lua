@@ -122,6 +122,8 @@ local function sense(ped, b, ai, phaseName, phase, night)
             local sight = AI.sightRange(ai.senses, { base = night and d.sightNight or d.sightDay, phaseSight = phase.sight,
                 specialSight = specialSight, inFront = AI.inFront(ai.senses, fwd, zc, p.pos), speed = speed,
                 sprinting = IsPedSprinting(p.ped) })
+            -- anyone this close is noticed, whatever they do (detection.proximity)
+            if b.mode ~= 'sleep' then hear = math.max(hear, d.proximity or 0) end
             if b.mode == 'sleep' then
                 -- asleep: only someone very close (or a loud noise) wakes it
                 hear, sight = (pers.wakeRadius or 7) * (crouching and 0.5 or 1), 0
@@ -320,7 +322,9 @@ function Brain.think(ped, b, info, investigate, night)
     -- lost them, or they got away
     if ALERT[b.mode] then
         local gone = not b.target or not DoesEntityExist(b.target) or IsEntityDead(b.target)
-        if gone or AI.giveUp(ai.memory, b.chase, t, tbl(here)) then
+        -- they got too far away from it (memory.loseDistance)
+        local tooFar = not gone and ai.memory.loseDistance and #(GetEntityCoords(b.target) - here) > ai.memory.loseDistance
+        if gone or tooFar or AI.giveUp(ai.memory, b.chase, t, tbl(here)) then
             giveUp(b)
         elseif C().safe(b.target) or (not target and t - (b.lastSeen or 0) > 1500) then
             -- hiding in a base or behind its walls: break through if a wall,
@@ -349,7 +353,7 @@ function Brain.think(ped, b, info, investigate, night)
     if mode == 'chase' then
         local tp = GetEntityCoords(b.target)
         local dist = #(tp - here)
-        local speed = k.speed * speedMul
+        local speed = (k.chaseSpeed or k.speed) * speedMul -- zombies run at you once they have you
         if b.personality == 'sprinter' then
             if b.sprintUntil and t < b.sprintUntil then speed = math.max(speed, pers.sprintSpeed * (phase.speed or 1))
             elseif b.sprintUntil then b.sprintUntil, b.recoverUntil = nil, t + pers.cooldownSeconds * 1000
@@ -575,6 +579,7 @@ end)
 -- server uses the player's real position).
 -------------------------------------------------------------------------------
 
+local nextHorn = 0
 Citizen.CreateThread(function()
     local lastSpeed, nextReport = 0.0, 0
     while true do
@@ -582,6 +587,11 @@ Citizen.CreateThread(function()
         local ped = PlayerPedId()
         local veh = GetVehiclePedIsIn(ped, false)
         if cfg and cfg.ai and cfg.ai.enabled and veh ~= 0 and GetPedInVehicleSeat(veh, -1) == ped then
+            -- the horn carries a long way
+            if IsHornActive(veh) and GetGameTimer() >= (nextHorn or 0) then
+                nextHorn = GetGameTimer() + 1500
+                TriggerServerEvent('wasteland:zombies:server:horn')
+            end
             local speed = GetEntitySpeed(veh)
             if lastSpeed - speed > 6.0 and HasEntityCollidedWithAnything(veh) and GetGameTimer() >= nextReport then
                 nextReport = GetGameTimer() + 3000

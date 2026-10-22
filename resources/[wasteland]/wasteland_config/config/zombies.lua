@@ -24,7 +24,7 @@ return {
     --   models = { ... }      models for this kind only (else the list below)
     kinds = {
         walker = { speed = 1.15, damage = { 7, 11 }, infectionChance = 0.25, infection = { 6, 12 }, bleedingChance = 0.15,
-            shamble = true },
+            shamble = true, chaseSpeed = 2.2 }, -- shambles about; runs at you once it has you
         runner = { speed = 2.7, chance = 25, nightChance = 45, damage = { 6, 9 }, infectionChance = 0.2, infection = { 5, 10 },
             bleedingChance = 0.2 },
 
@@ -68,8 +68,9 @@ return {
 
     -- How zombies notice players (metres). Sight needs a clear line.
     detection = {
-        sightDay = 70, sightNight = 40,
-        hearSprint = 45, hearWalk = 18, hearCrouch = 6,
+        sightDay = 45, sightNight = 25,
+        hearSprint = 25, hearWalk = 15, hearCrouch = 5,
+        proximity = 10,            -- anyone this close is noticed, whatever they do
         loseSeconds = 25,          -- give up a target not seen or heard this long
         alertRadius = 25,          -- a zombie that spots a player brings the others this close (0 = off)
     },
@@ -77,7 +78,11 @@ return {
     -- A zombie this close (range) starts a swing; windupMs later the swing
     -- lands and hits only if you are still within hitReach, in front of it,
     -- with nothing in between. Step back in time and it misses.
-    attack = { range = 2.2, hitReach = 1.7, windupMs = 450, cooldownMs = 1100 },
+    -- A hit can knock the player down; someone in a vehicle is hit through the
+    -- door: the engine is damaged and they may be dragged out.
+    attack = { range = 2.2, hitReach = 1.7, windupMs = 450, cooldownMs = 1100,
+        knockdownChance = 0.15, knockdownMs = 1500,
+        vehicleReach = 3.0, vehicleEngineDamage = 120, pullOutChance = 0.2 },
 
     -- Gunshots (and other weapon noise, weapons.lua `noise`): zombies within
     -- the noise radius walk to it.
@@ -156,7 +161,7 @@ return {
         specials = {
             enabled = true,
             screamer = { chance = 3 },     -- screams when it spots you: brings the others
-            brute = { chance = 3 },        -- 3x health, slower, slow heavy swings
+            brute = { chance = 3, knockdownChance = 0.45, pullOutChance = 0.4 },        -- 3x health, slower, slow heavy swings
             howler = { chance = 1 },       -- a long call that brings a horde from far away
             spitter = { chance = 2 },      -- retches, then spits at you from up to 14 m
             hunter = { chance = 2 },       -- stalks players who are on their own

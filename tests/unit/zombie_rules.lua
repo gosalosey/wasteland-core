@@ -76,6 +76,16 @@ describe('wandering hordes', function()
     end)
 end)
 
+describe('combat feel (shipped)', function()
+    it('notices anyone within 10 m, knocks down sometimes, hits people in vehicles', function()
+        expect(cfg.detection.proximity).toBe(10)
+        expect(cfg.attack.knockdownChance).toBe(0.15)
+        expect(cfg.attack.pullOutChance).toBe(0.2)
+        expect(cfg.attack.vehicleEngineDamage).toBe(120)
+        expect(cfg.kinds.walker.chaseSpeed > cfg.kinds.walker.speed).toBe(true)
+    end)
+end)
+
 describe('spawn points', function()
     local me = { x = 0, y = 0, z = 30 }
     local players = { { source = 1, coords = me }, { source = 2, coords = { x = 300, y = 0, z = 30 } } }

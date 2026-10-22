@@ -120,8 +120,8 @@ describe('zombie ai: senses', function()
         expect(h({ crouching = true })).toBe(6)
         expect(h({ running = true })).toBe(45)
         expect(h({ still = true })).toBe(6)
-        expect(h({ vehicle = true, vehicleMoving = true })).toBe(35) -- a moving engine (35) is louder than walking (18)
-        expect(h({ still = true, vehicle = true })).toBe(21)          -- an idling engine: 60 % of 35
+        expect(h({ vehicle = true, vehicleMoving = true })).toBe(45) -- a moving engine (45) is louder than walking (18)
+        expect(h({ still = true, vehicle = true })).toBe(27)          -- an idling engine: 60 % of 45
     end)
 end)
 

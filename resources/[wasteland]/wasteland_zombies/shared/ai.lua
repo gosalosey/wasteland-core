@@ -49,7 +49,7 @@ AI.DEFAULTS = {
         peripheral = 0.4,        -- sight outside that cone (share)
         stationary = 0.6,        -- sight on someone standing still (share)
         sprinting = 1.3,         -- sight on someone running
-        vehicleEngine = 35,      -- hears a running engine this far (metres; moving: full, idling: 60%)
+        vehicleEngine = 45,      -- hears a running engine this far (metres; moving: full, idling: 60%)
     },
 
     -- Barricades (base building walls, doors and gates): a zombie whose
@@ -66,6 +66,7 @@ AI.DEFAULTS = {
     memory = {
         searchSeconds = 20,      -- looks around the last place it saw you
         searchRadius = 12,
+        loseDistance = 60,       -- gives up when its target is this far from it
         maxChaseSeconds = 120,   -- gives up a chase after this long ...
         maxChaseDistance = 160,  -- ... or this far from where it started
     },
@@ -77,6 +78,7 @@ AI.DEFAULTS = {
         gunshot = { radiusScale = 1.0, intensity = 2, cooldownMs = 400 },
         explosion = { radius = 120, intensity = 3, cooldownMs = 2000 },
         crash = { radius = 45, intensity = 2, cooldownMs = 3000 },
+        horn = { radius = 80, intensity = 2, cooldownMs = 1500 },
         scream = { radius = 60, intensity = 2, cooldownMs = 5000 },
         howl = { radius = 180, intensity = 3, cooldownMs = 20000 },
         other = { radiusScale = 1.0, intensity = 1, cooldownMs = 400 },

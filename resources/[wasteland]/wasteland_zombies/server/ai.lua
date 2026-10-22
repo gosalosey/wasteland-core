@@ -129,6 +129,14 @@ local function crash(src)
     SAI.alert(at, nil, 'crash')
 end
 
+-- A horn: the noise is where the player really is.
+local function horn(src)
+    if not SAI.enabled() then return end
+    local ped, at = playerCoords(src)
+    if not ped or GetVehiclePedIsIn(ped, false) == 0 then return end
+    SAI.alert(at, nil, 'horn')
+end
+
 -- A screamer / howler / alpha calls: checked (it is that special, the
 -- caller runs it, its own cooldown), then a horde alert from where it is.
 local SHOUTS = { screamer = 'scream', howler = 'howl', alpha = 'howl' }
@@ -206,6 +214,7 @@ local function register()
     local m = M()
     if not m then return end
     m.netEvent('wasteland:zombies:server:crash', { rateLimit = { burst = 2, perSecond = 0.3 } }, function(src) crash(src) end)
+    m.netEvent('wasteland:zombies:server:horn', { rateLimit = { burst = 2, perSecond = 1 } }, function(src) horn(src) end)
     m.netEvent('wasteland:zombies:server:shout', {
         args = { { type = 'integer', required = true, min = 1 }, { type = 'string', required = true, pattern = '^%a+$', maxLength = 8 } },
         rateLimit = { burst = 3, perSecond = 0.5 },

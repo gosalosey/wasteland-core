@@ -267,9 +267,20 @@ local function hit(src, netId, victim)
     if not ped or ped == 0 or not DoesEntityExist(ped) or survival('IsDead', victim) then return end
     -- The game reports a hit only when the swing landed within reach; allow
     -- for movement while the message travels, nothing more.
-    if Rules.dist3d(coordsOf(z.handle), coordsOf(ped)) > M.config.attack.hitReach + 1.0 then return end
+    local a = M.config.attack
+    local veh = GetVehiclePedIsIn(ped, false)
+    local inVehicle = veh and veh ~= 0
+    if Rules.dist3d(coordsOf(z.handle), coordsOf(ped)) > (inVehicle and a.vehicleReach or a.hitReach) + 1.0 then return end
     if inSafeZone(coordsOf(ped)) then return end
     z.lastHit = t
+    if inVehicle then
+        -- Through the door: the vehicle takes it, and it may drag them out.
+        local pull = math.random() < ((sp and sp.pullOutChance) or a.pullOutChance)
+        TriggerClientEvent('wasteland:zombies:client:vehicleHit', victim, a.vehicleEngineDamage * ((sp and sp.damageMult) or 1),
+            pull, a.knockdownMs)
+        TriggerEvent('wasteland:zombies:hit', victim, z.netId, { damage = 0, infection = 0, bleeding = 0, vehicle = true, pulledOut = pull })
+        return
+    end
     local r = Rules.hit(M.config.kinds[z.kind], {
         damage = math.random(), infection = math.random(), infectionAmount = math.random(), bleeding = math.random(),
     })
@@ -279,6 +290,11 @@ local function hit(src, netId, victim)
     r.absorbed = absorbed == true
     if r.infection > 0 then survival('AddInfection', victim, r.infection) end
     if r.bleeding > 0 and not r.absorbed then survival('AddBleeding', victim, r.bleeding) end
+    -- Some hits knock the player down (special infected: their own chance).
+    if math.random() < ((sp and sp.knockdownChance) or a.knockdownChance) then
+        r.knockedDown = true
+        TriggerClientEvent('wasteland:zombies:client:knockdown', victim, a.knockdownMs)
+    end
     TriggerEvent('wasteland:zombies:hit', victim, z.netId, r)
 end
 
@@ -423,6 +439,7 @@ local RANGE = function(a, b) return { type = 'array', default = { a, b }, minIte
 -- A kind of zombie (zombies.lua `kinds`; any name, 'walker' is required).
 local KIND = { type = 'table', fields = {
     speed = NUM(1.0, 0.5, 4), damage = RANGE(6, 10), infectionChance = NUM(0.25, 0, 1),
+    chaseSpeed = { type = 'number', min = 0.5, max = 4, description = 'Speed once it is after someone (default: speed)' },
     infection = RANGE(6, 12), bleedingChance = NUM(0.15, 0, 1),
     chance = NUM(0, 0, 100), nightChance = NUM(0, 0, 100),
     shamble = { type = 'boolean', default = false, description = 'Stagger like a drunk when walking' },
@@ -459,12 +476,26 @@ M = Wasteland.DefineModule({
                 sightDay = NUM(35, 0, 200), sightNight = NUM(18, 0, 200), hearSprint = NUM(25, 0, 200),
                 hearWalk = NUM(9, 0, 200), hearCrouch = NUM(3, 0, 200), loseSeconds = INT(10, 1, 120),
                 alertRadius = NUM(0, 0, 100), -- a zombie that spots a player brings the others this close
+                proximity = NUM(10, 0, 50),   -- anyone this close is noticed, whatever they do
             } },
             attack = { type = 'table', fields = {
                 range = NUM(2.2, 0.5, 5),            -- a zombie this close starts a swing
                 hitReach = NUM(1.7, 0.5, 4),         -- the swing hits only if the player is still this close
                 windupMs = INT(450, 0, 3000),        -- from the start of the swing to when it lands
                 cooldownMs = INT(1500, 200, 10000),
+                knockdownChance = NUM(0.15, 0, 1),   -- a hit knocks the player down
+                knockdownMs = INT(1500, 0, 5000),
+                vehicleReach = NUM(3.0, 1, 6),       -- reaching someone in a vehicle
+                vehicleEngineDamage = NUM(120, 0, 1000),
+                pullOutChance = NUM(0.2, 0, 1),      -- a hit on a vehicle drags them out
+                animDict = { type = 'string', default = 'anim@ingame@melee@unarmed@streamed_core_zombie' },
+                anims = { type = 'array', default = {
+                    { name = 'low_attack_90', headingOffset = 90 }, { name = 'shove', headingOffset = 0 },
+                    { name = 'short_0_punch', headingOffset = 0 }, { name = 'walking_punch', headingOffset = 0 },
+                }, items = { type = 'table', fields = {
+                    name = { type = 'string', required = true, pattern = '^[%w_]+$' },
+                    headingOffset = NUM(0, -180, 180),
+                } } },
             } },
             noise = { type = 'table', fields = { investigateSeconds = INT(40, 1, 600) } },
             loot = { type = 'table', fields = {

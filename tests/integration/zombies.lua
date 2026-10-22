@@ -388,3 +388,4 @@ describe('wandering hordes', function()
         expect(#server:entityList('wlZombie')).toBe(before)
     end)
 end)
+
