@@ -1,5 +1,10 @@
 # Changelog
 
+## Zombies use GTA's own models again
+
+- The add-on zombie model packs are removed (from the repository and its history): every zombie kind uses the GTA models in `zombies.lua`. `wasteland_zombiemodels` stays as the place for your own models (see its README).
+- `/zcheck [model ...]` checks any model names (default `u_m_y_zombie_01`).
+
 ## GTA interiors: bob74_ipl
 
 - The recipe installs bob74_ipl 2.7.1 (MIT) into `resources/[standalone]` and `server.cfg` ensures it: GTA's hidden interiors (story houses, online apartments, bunkers, offices) are loaded. If you add a Pillbox interior map (such as `hospital_map`), set `PillboxHospital.Enable(false)` in `bob74_ipl/client.lua`.

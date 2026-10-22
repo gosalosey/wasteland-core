@@ -431,9 +431,9 @@ exports('GetZombieMode', function(ped)
     return b and b.configured and b.mode or nil
 end)
 
--- /zcheck: does this game have the custom zombie models (F8 shows the result)?
-RegisterCommand('zcheck', function()
-    for _, m in ipairs({ 'wlz_twd_01', 'wlz_twd_02', 'wlz_twd_03', 'wlz_twd_04', 'wlz_twd_05', 'wlz_twd_woman' }) do
+-- /zcheck [model ...]: does this game have these zombie models (F8 shows the result)?
+RegisterCommand('zcheck', function(_, args)
+    for _, m in ipairs(#args > 0 and args or { 'u_m_y_zombie_01' }) do
         local hash = GetHashKey(m)
         local line = ('[zcheck] %s: in game %s, valid %s'):format(m, tostring(IsModelInCdimage(hash)), tostring(IsModelValid(hash)))
         if IsModelInCdimage(hash) then

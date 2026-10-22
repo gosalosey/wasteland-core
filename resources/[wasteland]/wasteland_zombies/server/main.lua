@@ -618,7 +618,7 @@ RegisterCommand('zmodel', function(src, args)
     if not (M and M.active) then return end
     local entry = args[1]
     if not entry or not entry:match('^[%w_]+[:%d]*$') then
-        TriggerClientEvent('chat:addMessage', src, { args = { 'zmodel', 'Use: /zmodel ywr_zombies:5  (or any model name)' } })
+        TriggerClientEvent('chat:addMessage', src, { args = { 'zmodel', 'Use: /zmodel my_zombie:5  (or any model name)' } })
         return
     end
     local ped = GetPlayerPed(tostring(src))
