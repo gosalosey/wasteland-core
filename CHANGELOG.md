@@ -1,5 +1,12 @@
 # Changelog
 
+## Wandering zombie hordes; more zombies around
+
+- Wandering hordes (`zombies.lua` `hordes`): up to 2 groups of 12-20 zombies (18-28 at night) roam the map, drifting through where players are. Far away a horde is only a moving point; its zombies appear when a player is within 170 m and walk on together.
+- Players within 120 m get a warning with the distance and direction (once per horde every 3 minutes).
+- Admins: `/zombies horde` starts one heading for you.
+- More zombies everywhere: 12 per player by day (was 8), 18 at night; world cap 90 (was 60). Hordes come on top.
+
 ## Zombies use GTA's own models again
 
 - The add-on zombie model packs are removed (from the repository and its history): every zombie kind uses the GTA models in `zombies.lua`. `wasteland_zombiemodels` stays as the place for your own models (see its README).

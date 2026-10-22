@@ -1,9 +1,9 @@
 -- Zombies: how many, what kinds, how they find you, what a hit does.
 return {
     population = {
-        perPlayer = 8,             -- zombies kept around each player (day)
+        perPlayer = 12,            -- zombies kept around each player (day)
         nightMultiplier = 1.5,     -- more at night (21:00 - 06:00)
-        maxTotal = 60,             -- in the whole world (server and client load)
+        maxTotal = 90,             -- in the whole world (server and client load; hordes come on top)
         spawnMin = 70,             -- metres from the player: never closer
         spawnMax = 140,            -- ... and never further
         spawnBatch = 3,            -- at most this many per player per round
@@ -33,6 +33,28 @@ return {
         -- resources/[wasteland]/wasteland_zombiemodels/stream).
         -- brute = { speed = 1.3, chance = 5, nightChance = 8, damage = { 15, 22 }, infectionChance = 0.3,
         --     infection = { 8, 14 }, bleedingChance = 0.4, models = { 'u_m_y_zombie_01' } },
+    },
+
+    -- Wandering hordes: groups that roam the map (only a moving point until a
+    -- player comes within activateDistance; then the zombies appear and walk
+    -- on together). Players within warnDistance get a warning.
+    -- Admins: /zombies horde   starts one heading for you.
+    hordes = {
+        enabled = true,
+        max = 2,                   -- at once in the world
+        checkSeconds = 60,         -- how often a new one may start ...
+        chance = 0.35,             -- ... and the chance it does (while fewer than max)
+        size = { 12, 20 },         -- zombies in a horde (day)
+        nightSize = { 18, 28 },    -- ... at night
+        runnerShare = 0.15,        -- share that are runners
+        speed = 1.2,               -- metres per second while roaming
+        startMin = 350,            -- starts this far from a player ...
+        startMax = 550,            -- ... at most this far
+        activateDistance = 170,    -- its zombies appear when a player is this close
+        warnDistance = 120,        -- players this close are warned
+        warnCooldownSeconds = 180, -- once per horde per this long
+        lifetimeMinutes = 25,      -- then it fades away (when nobody is near it)
+        spread = 18,               -- metres: how spread out the group is
     },
 
     -- What zombies look like (ambient GTA models; the first is GTA's zombie).

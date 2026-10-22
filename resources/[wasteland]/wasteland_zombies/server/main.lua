@@ -126,7 +126,7 @@ local function requestSpawns(list)
     for _, p in ipairs(list) do
         local near = 0
         for _, z in pairs(zombies) do
-            if not z.dead and DoesEntityExist(z.handle) and Rules.dist2d(coordsOf(z.handle), p.coords) <= pop.despawnDistance then
+            if not z.dead and not z.horde and DoesEntityExist(z.handle) and Rules.dist2d(coordsOf(z.handle), p.coords) <= pop.despawnDistance then
                 near = near + 1
             end
         end
@@ -402,6 +402,12 @@ local function adminCommand(src, args)
         pending[src] = { n = n, ring = { spawnMin = 15, spawnMax = 35 } }
         TriggerClientEvent('wasteland:zombies:client:findSpawns', src, n, 15, 35)
         reply(string.format('Spawning up to %d zombies 15-35 m around you.', n))
+    elseif what == 'horde' and src ~= 0 then
+        if not WLZ.Hordes or not M.config.hordes.enabled then reply('Wandering hordes are off (zombies.lua hordes.enabled).') return end
+        local c = GetEntityCoords(GetPlayerPed(tostring(src)))
+        local h = WLZ.Hordes.startNear({ x = c.x, y = c.y, z = c.z })
+        reply(string.format('Wandering horde #%d of %d zombies started %d-%d m away, heading for you.', h.id, h.size,
+            M.config.hordes.startMin, M.config.hordes.startMax))
     else
         reply(string.format('%d zombies (%d alive). Usage: %s count | clear | spawn <n> | sync', count(false), count(true), M.config.adminCommand))
     end
@@ -475,6 +481,15 @@ M = Wasteland.DefineModule({
             hitReaction = { type = 'table', allowUnknown = true, fields = { enabled = { type = 'boolean', default = true } } },
             -- Zombie sounds (client/sounds.lua has every setting and its default).
             sounds = { type = 'table', allowUnknown = true, fields = { enabled = { type = 'boolean', default = true } } },
+            -- Wandering hordes (server/hordes.lua).
+            hordes = { type = 'table', fields = {
+                enabled = { type = 'boolean', default = true },
+                max = INT(2, 0, 10), checkSeconds = INT(60, 10, 3600), chance = NUM(0.35, 0, 1),
+                size = RANGE(12, 20), nightSize = RANGE(18, 28), runnerShare = NUM(0.15, 0, 1),
+                speed = NUM(1.2, 0.2, 5), startMin = NUM(350, 100, 2000), startMax = NUM(550, 150, 3000),
+                activateDistance = NUM(170, 50, 400), warnDistance = NUM(120, 0, 500),
+                warnCooldownSeconds = INT(180, 10, 3600), lifetimeMinutes = INT(25, 1, 240), spread = NUM(18, 5, 60),
+            } },
         } },
     },
     onInit = function(mod)
@@ -492,6 +507,8 @@ M = Wasteland.DefineModule({
             commandRegistered = true
         end
         if WLZ.ServerAI then WLZ.ServerAI.init() end
+        if M.config.hordes.startMin >= M.config.hordes.startMax then return false, 'zombies.lua: hordes.startMin must be below startMax' end
+        if WLZ.Hordes then WLZ.Hordes.start() end
         local token = {}
         runToken = token
         Citizen.CreateThread(function() loop(token) end)
@@ -499,6 +516,7 @@ M = Wasteland.DefineModule({
     end,
     onShutdown = function()
         runToken = nil
+        if WLZ.Hordes then WLZ.Hordes.stop() end
         for _, z in pairs(zombies) do remove(z) end
         zombies, pending = {}, {}
     end,
@@ -602,6 +620,8 @@ WLZ.Server = {
     coordsOf = coordsOf,
     inSafeZone = inSafeZone,
     survival = survival,
+    spawnAt = function(point, kind) return spawnAt(point, kind) end,
+    isNight = isNight,
 }
 
 -------------------------------------------------------------------------------

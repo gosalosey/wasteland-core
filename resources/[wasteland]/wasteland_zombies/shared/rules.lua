@@ -65,6 +65,23 @@ function Rules.compareSync(expected, seen, known)
     return missing, ghosts
 end
 
+--- Which way `to` is from `from`: 'north', 'north-east', ... (GTA: +y is north).
+function Rules.compass(from, to)
+    local dx, dy = to.x - from.x, to.y - from.y
+    if dx == 0 and dy == 0 then return 'north' end
+    local deg = math.deg(math.atan(dx, dy)) % 360
+    local names = { 'north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west' }
+    return names[math.floor((deg + 22.5) / 45) % 8 + 1]
+end
+
+--- `p` moved `dist` metres toward `target` (not past it). -> { x, y }
+function Rules.moveToward(p, target, dist)
+    local dx, dy = target.x - p.x, target.y - p.y
+    local d = math.sqrt(dx * dx + dy * dy)
+    if d <= dist or d == 0 then return { x = target.x, y = target.y } end
+    return { x = p.x + dx / d * dist, y = p.y + dy / d * dist }
+end
+
 --- A model entry is a model name, or 'name:head:textures' for one look of a
 --- ped with many (head drawable number, how many textures it has).
 --- -> name, head (or nil), textures

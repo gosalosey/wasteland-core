@@ -21,6 +21,7 @@ server_scripts {
     '@wasteland_core/sdk/module.lua',
     'server/main.lua',
     'server/ai.lua',
+    'server/hordes.lua',
 }
 
 client_scripts {

@@ -346,3 +346,45 @@ describe('zombie hits need the swing to reach', function()
     end)
 end)
 
+
+describe('wandering hordes', function()
+    local server = world()
+    local id = player(server, 'horde', { x = 2000.0, y = 2000.0, z = 30.0 })
+    local zm = server.resources.wasteland_zombies.env
+
+    it('starts far away as a moving point, warns and appears when a player is close', function()
+        expect(states(server).zombies).toBe('running')
+        local h = zm.WLZ.Hordes.startNear({ x = 2000.0, y = 2000.0, z = 30.0 })
+        expect(h.live).toBe(false)
+        local before = #server:entityList('wlZombie')
+        -- bring the player to it
+        server.players[id].coords = { x = h.x + 60, y = h.y, z = 30.0 }
+        server:advance(2500)
+        local warn = last(events(server, id, 'wasteland:zombies:client:hordeWarning'))
+        expect(warn ~= nil).toBe(true)
+        expect(warn.args[1]:find('wandering horde') ~= nil).toBe(true)
+        local req = last(events(server, id, 'wasteland:zombies:client:findHordeSpawns'))
+        expect(req.args[1]).toBe(h.id)
+        local c, points = req.args[2], {}
+        for i = 1, req.args[3] do points[i] = { x = c.x + (i % 5) * 2, y = c.y + math.floor(i / 5) * 2, z = 30.0 } end
+        points[#points + 1] = { x = c.x + 500, y = c.y, z = 30.0 } -- too far from the horde: ignored
+        server:clientEvent(id, 'wasteland:zombies:server:hordeSpawns', h.id, points)
+        server:advance(100)
+        expect(h.live).toBe(true)
+        expect(#server:entityList('wlZombie') - before).toBe(h.size)
+        -- they are sent walking together
+        local zs = server:entityList('wlZombie')
+        expect(zs[#zs].state.wlInvestigate ~= nil).toBe(true)
+    end)
+
+    it('warns once per cooldown, and only the asked player may answer', function()
+        local n = #events(server, id, 'wasteland:zombies:client:hordeWarning')
+        server:advance(4000)
+        expect(#events(server, id, 'wasteland:zombies:client:hordeWarning')).toBe(n)
+        local h = zm.WLZ.Hordes.startNear({ x = 2000.0, y = 2000.0, z = 30.0 })
+        local before = #server:entityList('wlZombie')
+        server:clientEvent(id, 'wasteland:zombies:server:hordeSpawns', h.id, { { x = h.x, y = h.y, z = 30.0 } })
+        server:advance(100)
+        expect(#server:entityList('wlZombie')).toBe(before)
+    end)
+end)

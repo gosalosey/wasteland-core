@@ -58,6 +58,36 @@ RegisterNetEvent('wasteland:zombies:client:findSpawns', function(n, minDist, max
     TriggerServerEvent('wasteland:zombies:server:spawns', points)
 end)
 
+-- Spawn points for a wandering horde: around its centre.
+RegisterNetEvent('wasteland:zombies:client:findHordeSpawns', function(id, center, n, spread)
+    if type(center) ~= 'table' then return end
+    n = math.max(0, math.min(30, math.tointeger(tonumber(n)) or 0))
+    spread = math.max(5.0, math.min(60.0, tonumber(spread) or 18.0))
+    local points, tries = {}, 0
+    while #points < n and tries < n * 6 do
+        tries = tries + 1
+        local angle, d = math.random() * math.pi * 2, math.random() * spread
+        local x, y = center.x + math.cos(angle) * d, center.y + math.sin(angle) * d
+        local z = groundAt(x, y, center.z)
+        if z then
+            local ok, safe = GetSafeCoordForPed(x, y, z + 1.0, true, 16)
+            local p = ok and safe or vector3(x, y, z)
+            if #(vector2(p.x, p.y) - vector2(center.x, center.y)) <= spread + 10.0 and not GetWaterHeight(p.x, p.y, p.z) then
+                points[#points + 1] = { x = p.x, y = p.y, z = p.z }
+            end
+        end
+    end
+    TriggerServerEvent('wasteland:zombies:server:hordeSpawns', id, points)
+end)
+
+-- A wandering horde is near.
+RegisterNetEvent('wasteland:zombies:client:hordeWarning', function(message)
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName(tostring(message))
+    EndTextCommandThefeedPostTicker(true, false)
+    PlaySoundFrontend(-1, 'Beep_Red', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
+end)
+
 -------------------------------------------------------------------------------
 -- AI
 -------------------------------------------------------------------------------
