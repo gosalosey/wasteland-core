@@ -377,6 +377,32 @@ exports('SetItemMetadata', function(src, uid, patch)
     return Inv.setMetadata(tonumber(src), uid, patch)
 end)
 
+--- GetArmorPlates(source) -> list of { uid, name, metadata, durability (max), label }, slots
+--- The plates in the worn armor vest (in order); slots: how many fit.
+exports('GetArmorPlates', function(src)
+    local c = Inv.characterOf(tonumber(src))
+    if not c or not c.loaded then return {}, 0 end
+    local vest = Inv.vest(c)
+    local grid = vest and WLI.invs['item:' .. vest.uid]
+    if not grid then return {}, 0 end
+    local out = {}
+    for _, s in pairs(grid.items) do
+        local d = WLI.defs[s.name]
+        out[#out + 1] = { uid = s.uid, name = s.name, metadata = Inv.copy(s.metadata or {}), durability = d and d.durability or 0,
+            label = d and d.label or s.name, x = s.x or 0, y = s.y or 0 }
+    end
+    table.sort(out, function(a, b) if a.x ~= b.x then return a.x < b.x end return a.uid < b.uid end)
+    local vd = WLI.defs[vest.name]
+    local slots = vd.container.slots or math.max(1, vd.container.width)
+    return out, slots
+end)
+
+--- DestroyItem(source, uid) -> ok, err   (removes a carried stack for good: a plate that broke)
+exports('DestroyItem', function(src, uid)
+    if inactive() then return false, 'inventory module is not running' end
+    return Inv.destroyOwn(tonumber(src), uid)
+end)
+
 --- IsLoaded(source) -> boolean
 exports('IsLoaded', function(src)
     local c = Inv.characterOf(tonumber(src))

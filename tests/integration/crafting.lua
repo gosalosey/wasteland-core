@@ -57,7 +57,7 @@ describe('crafting', function()
         for _, r in ipairs(d.recipes) do names[#names + 1] = r.name end
         table.sort(names)
         expect(table.concat(names, ',')).toBe('armor_repair_kit,bandage,building_plan,campfire,farm_plot_large,farm_plot_medium,farm_plot_small,lockpick,metal_sheet,moonshine_still,rag,rag_hat,rag_pants,rag_shoes,rain_catcher,sewing_kit,weapon_molotov')
-        expect(d.unknown).toBe(29)
+        expect(d.unknown).toBe(30)
     end)
 
     it('needs the materials', function()

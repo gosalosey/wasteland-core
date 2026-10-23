@@ -46,11 +46,13 @@ WLI.ITEM_SCHEMA = {
             description = 'Picture from wasteland_images (file name without .webp); default: the item name' },
         container = {
             type = 'table', nullable = true,
-            description = 'Wearing this item adds a grid (backpacks)',
+            description = 'Wearing this item adds a grid (backpacks; an armor vest\'s plate slots)',
             fields = {
                 width = { type = 'integer', required = true, min = 1, max = 20 },
                 height = { type = 'integer', required = true, min = 1, max = 20 },
                 maxWeight = { type = 'number', required = true, min = 0, max = 1000 },
+                accepts = { type = 'array', items = { type = 'string', pattern = '^[%w_]+$' },
+                    description = 'Only these items go in (armor vest: its plates)' },
             },
         },
         color = { type = 'string', pattern = '^#%x%x%x%x%x%x$', description = 'Tile colour in the UI' },
@@ -77,8 +79,8 @@ function WLI.validateItem(Schema, name, raw)
         local e = errors[1]
         return nil, string.format('item "%s": %s: %s', name, e.path ~= '' and e.path or 'definition', e.message)
     end
-    if def.container and def.equip ~= 'back' then
-        return nil, string.format('item "%s": a container must be worn on the back (equip = "back")', name)
+    if def.container and def.equip ~= 'back' and not (def.equip == 'armor' and def.container.accepts) then
+        return nil, string.format('item "%s": a container must be worn on the back (equip = "back"), or be armor that only takes some items (accepts)', name)
     end
     local unstackable = def.durability > 0 or def.container ~= nil or def.equip ~= nil
     if def.stack == nil then def.stack = unstackable and 1 or WLI.DEFAULT_STACK end

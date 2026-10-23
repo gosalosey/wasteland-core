@@ -147,13 +147,16 @@ return {
         repairItems = { sewing_kit = { percent = 50 } },
     },
 
-    -- Armor plates (items worn in the Armor slot): while a plate holds, all
-    -- incoming damage is stopped (and zombie hits cannot cause bleeding;
-    -- infection still can). The plate loses wearPerDamage durability per
-    -- point of damage it stops (0.25: a new plate stops about 400 damage).
-    -- Repair items: how much one use repairs (percent of new).
+    -- Armor (the vest worn in the Armor slot, and the plates in its slots):
+    -- incoming damage goes to the plates first, then the vest, then you.
+    -- While anything holds, zombie hits cannot cause bleeding (infection
+    -- still can). The vest loses wearPerDamage durability per point of damage
+    -- it stops (0.25: a new vest stops about 400); a plate loses
+    -- plateWearPerDamage (0.5: about 200). A plate that is used up breaks and
+    -- is gone; the vest can be repaired (repairItems: percent of new per use).
     armor = {
         wearPerDamage = 0.25,
+        plateWearPerDamage = 0.5,
         repairItems = { armor_repair_kit = { percent = 40 } },
     },
 }

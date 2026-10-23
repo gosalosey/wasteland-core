@@ -272,10 +272,45 @@ local function wornPlate(src)
     return nil
 end
 
---- The plate takes `damage`; true if a plate was there to take it.
+-- The plates in the worn vest take damage first, in order; a plate that is
+-- used up breaks (destroyed). Returns the damage they did not stop.
+local function wearInserts(src, damage)
+    local ok, plates = pcall(function() return exports.wasteland_inventory:GetArmorPlates(src) end)
+    if not ok or type(plates) ~= 'table' then return damage end
+    local per = M.config.armor.plateWearPerDamage
+    for _, p in ipairs(plates) do
+        if damage <= 0 then break end
+        local max = p.durability > 0 and p.durability or 100
+        local current = currentOf(p, max) - (plateCarry[p.uid] or 0)
+        if current > 0 and per > 0 then
+            local take = math.min(damage, current / per)
+            local left = current - take * per
+            damage = damage - take
+            if left <= 1e-6 then
+                plateCarry[p.uid] = nil
+                exports.wasteland_inventory:DestroyItem(src, p.uid)
+                notice(src, 'An armor plate broke. Put a new one in your vest.')
+            else
+                local whole = math.ceil(left - 1e-6)
+                plateCarry[p.uid] = whole - left
+                if whole ~= currentOf(p, max) then
+                    exports.wasteland_inventory:SetItemMetadata(src, p.uid, { durability = whole })
+                end
+            end
+        elseif per <= 0 and current > 0 then
+            damage = 0
+        end
+    end
+    return damage
+end
+
+--- Armor takes `damage`: plates first, then the vest. Returns true when it
+--- stopped all of it; false and what is left otherwise.
 local function wearPlate(src, damage)
+    damage = wearInserts(src, damage)
+    if damage <= 0 then return true end
     local w = wornPlate(src)
-    if not w then return false end
+    if not w then return false, damage end
     local loss = damage * M.config.armor.wearPerDamage + (plateCarry[w.uid] or 0)
     local whole = math.floor(loss)
     plateCarry[w.uid] = loss - whole
@@ -298,6 +333,7 @@ local function repairTarget(src, category, targetUid)
         local s = inv:FindItem(src, targetUid)
         local d = s and inv:GetItemDefinition(s.name)
         if not d or d.category ~= category or (d.durability or 0) <= 0 then return nil, 'That cannot be repaired with this.' end
+        if category == 'armor' and d.equip ~= 'armor' then return nil, 'Armor plates cannot be repaired. Replace it when it breaks.' end
         return { uid = s.uid, label = d.label, current = currentOf(s, d.durability), max = d.durability }
     end
     local best
@@ -313,7 +349,7 @@ local function repairTarget(src, category, targetUid)
     for _, it in ipairs(inv:GetItemList()) do
         if it.category == category then
             local d = inv:GetItemDefinition(it.name)
-            if d and (d.durability or 0) > 0 then
+            if d and (d.durability or 0) > 0 and (category ~= 'armor' or d.equip == 'armor') then
                 for _, s in ipairs(inv:FindItems(src, it.name)) do consider(s.uid, d.label, currentOf(s, d.durability), d.durability) end
             end
         end
@@ -337,7 +373,7 @@ local function useRepairItem(src, stack, _, targetUid)
     if not category then return false, 'Nothing happens.' end
     local cloth = category == 'clothing'
     local t, err = repairTarget(src, category, targetUid)
-    if not t then return false, err or (cloth and 'Nothing you wear or carry needs mending.' or 'You have no damaged armor plate.') end
+    if not t then return false, err or (cloth and 'Nothing you wear or carry needs mending.' or 'You have no damaged armor vest.') end
     if t.current >= t.max then return false, string.format('Your %s does not need %s.', t.label:lower(), cloth and 'mending' or 'repairs') end
     local after = math.min(t.max, t.current + math.ceil(t.max * percent / 100))
     local ok, e = exports.wasteland_inventory:SetItemMetadata(src, t.uid, { durability = after })
@@ -523,6 +559,7 @@ M = Wasteland.DefineModule({
             } },
             armor = { type = 'table', fields = {
                 wearPerDamage = num(0.25, 0, 10),
+                plateWearPerDamage = num(0.5, 0, 10),
                 repairItems = { type = 'map', default = { armor_repair_kit = { percent = 40 } }, keys = { type = 'string', pattern = '^[a-z][a-z0-9_]*$' },
                     values = { type = 'table', fields = { percent = { type = 'number', default = 40, min = 1, max = 100 } } } },
             } },
@@ -737,8 +774,10 @@ exports('Damage', function(src, amount)
     if not s or s.dead or amount <= 0 then return false end
     local ps = Player(tonumber(src)) and Player(tonumber(src)).state
     if ps and ps.wlProtected then return false end -- making a character / choosing where to start
-    if wearPlate(tonumber(src), amount) then return true, true end -- the armor plate took it
-    TriggerClientEvent('wasteland:survival:client:damage', tonumber(src), math.min(amount, 400))
+    local stopped, left = wearPlate(tonumber(src), amount)
+    if stopped then return true, true end -- the armor took it
+    -- plates stopped part of it: the rest gets through
+    TriggerClientEvent('wasteland:survival:client:damage', tonumber(src), math.min(math.ceil(left or amount), 400))
     return true, false
 end)
 

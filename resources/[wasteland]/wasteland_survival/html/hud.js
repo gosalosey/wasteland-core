@@ -47,6 +47,8 @@
         if (data.mode === 'off' || s.dead) return [];
         const all = [];
         if (typeof data.health === 'number') all.push({ key: 'health', label: 'Health', fill: clamp(data.health) });
+        // plates (in the vest) above the vest's own bar
+        if (typeof data.plates === 'number') all.push({ key: 'plates', label: 'Plates', fill: clamp(data.plates) });
         if (typeof data.armor === 'number') all.push({ key: 'armor', label: 'Armor', fill: clamp(data.armor) });
         if (typeof s.hunger === 'number') all.push({ key: 'food', label: 'Food', fill: clamp(s.hunger) });
         if (typeof s.thirst === 'number') all.push({ key: 'drink', label: 'Drink', fill: clamp(s.thirst) });
@@ -155,6 +157,7 @@
     const GLYPHS = {
         health: { fill: 'M12 20.5s-7.2-4.4-9.4-8.8A5.1 5.1 0 0 1 12 6.4a5.1 5.1 0 0 1 9.4 5.3c-2.2 4.4-9.4 8.8-9.4 8.8z' },
         armor: { fill: 'M12 2.8l7.6 2.9v5.9c0 5-3.3 8.3-7.6 9.6-4.3-1.3-7.6-4.6-7.6-9.6V5.7z' },
+        plates: { fill: 'M7 3h10l2 3v13l-2 2H7l-2-2V6zM8.5 11h7v2h-7z' },
         food: { stroke: 'M7 3v7.5a2 2 0 0 0 4 0V3M9 12.5V21M16.5 21V3c-2.2 1-3.5 4-3.5 7.5 0 1.6.9 2.5 2.2 2.5h1.3' },
         drink: { fill: 'M12 2.8s-6.2 7.3-6.2 11.5a6.2 6.2 0 0 0 12.4 0C18.2 10.1 12 2.8 12 2.8z' },
         temp: { stroke: 'M10 13.6V5a2 2 0 0 1 4 0v8.6a4.2 4.2 0 1 1-4 0zM12 9v7.5', dot: true },
@@ -287,10 +290,11 @@
             })
             : data;
         const list = icons(shown);
-        const bars = list.filter((i) => i.key === 'health' || i.key === 'armor');
-        const dials = list.filter((i) => i.key !== 'health' && i.key !== 'armor');
+        const BAR = { health: true, armor: true, plates: true };
+        const bars = list.filter((i) => BAR[i.key]);
+        const dials = list.filter((i) => !BAR[i.key]);
         const panel = h('div', { class: 'wlh-panel' });
-        bars.forEach((i) => panel.appendChild(barEl(i, i.key === 'armor')));
+        bars.forEach((i) => panel.appendChild(barEl(i, i.key !== 'health')));
         if (dials.length) {
             const row = h('div', { class: 'wlh-row' });
             dials.forEach((i) => row.appendChild(badgeEl(i)));
@@ -374,6 +378,8 @@
         '  box-shadow: inset 0 1px 0 rgba(255,230,190,0.1); color: #d2261c; }',
         '.is-thin .wlh-plate__icon { width: calc(21px * var(--wlh-scale)); height: calc(21px * var(--wlh-scale)); }',
         '.wlh-plate--armor .wlh-plate__icon { color: #8fa8b8; }',
+        '.wlh-plate--plates .wlh-plate__icon { color: #c9a24a; }',
+        '.wlh-plate--plates .wlh-bar__fill { background: linear-gradient(180deg, #ecd28c, #b88a2c 55%, #6b4f16); box-shadow: 0 0 8px rgba(201,162,74,0.45); }',
         '.wlh-plate__icon .wlh-glyph { width: 72%; height: 72%; filter: drop-shadow(0 0 3px currentColor); }',
         '.wlh-bar { position: relative; flex: 1; height: 58%; border-radius: 3px; overflow: hidden; background: #0a0807;',
         '  box-shadow: inset 0 2px 4px rgba(0,0,0,0.9), 0 1px 0 rgba(255,230,190,0.06); }',

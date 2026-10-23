@@ -87,6 +87,17 @@ function Inv.backpack(c)
     return nil
 end
 
+--- The worn armor vest that holds plates (armor slot, container), or nil.
+function Inv.vest(c)
+    local equip = WLI.invs[c.equip]
+    if not equip then return nil end
+    for _, s in pairs(equip.items) do
+        local d = WLI.defs[s.name]
+        if s.slot == 'armor' and d and d.container then return s end
+    end
+    return nil
+end
+
 --- Container inventory for a bag stack (created empty if new).
 function Inv.containerFor(stack)
     local d = WLI.defs[stack.name]
@@ -110,11 +121,14 @@ function Inv.containerFor(stack)
             end
         end
         inv.maxWeight = d.container.maxWeight
+        inv.accepts = d.container.accepts
         return inv
     end
-    return Inv.create(id, 'grid', {
+    local inv = Inv.create(id, 'grid', {
         label = d.label, width = d.container.width, height = d.container.height, maxWeight = d.container.maxWeight,
     })
+    if inv then inv.accepts = d.container.accepts end
+    return inv
 end
 
 --- A bag's grid with its stored items. If the bag got smaller in the
@@ -161,6 +175,8 @@ function Inv.access(src, id)
     if id == c.pockets or id == c.equip then return inv end
     local bag = Inv.backpack(c)
     if bag and id == 'item:' .. bag.uid then return inv end
+    local vest = Inv.vest(c)
+    if vest and id == 'item:' .. vest.uid then return inv end
     if WLI.views[src] and WLI.views[src][id] then
         local okRange, why = WLI.Drops.inRange(src, inv)
         if not okRange then return nil, why end
@@ -202,8 +218,14 @@ local function needsGrid(inv)
 end
 
 local function bagCheck(def, to, uid)
-    if def.container and to.id:sub(1, 5) == 'item:' then return 'a bag cannot go inside another bag' end
     if to.id == 'item:' .. tostring(uid) then return 'a bag cannot go inside itself' end
+    -- plate slots of an armor vest: plates only
+    if to.accepts then
+        for _, n in ipairs(to.accepts) do if n == def.name then return nil end end
+        return 'only armor plates go in there'
+    end
+    -- a vest (with its plates) may go in a bag; a bag may not
+    if def.container and not def.container.accepts and to.id:sub(1, 5) == 'item:' then return 'a bag cannot go inside another bag' end
     return nil
 end
 
@@ -875,6 +897,8 @@ function Inv.ownInventories(c)
     local out = { c.pockets, c.equip }
     local bag = Inv.backpack(c)
     if bag then out[#out + 1] = 'item:' .. bag.uid end
+    local vest = Inv.vest(c)
+    if vest then out[#out + 1] = 'item:' .. vest.uid end
     return out
 end
 
@@ -1077,8 +1101,8 @@ function Inv.takeAll(src, fromId)
     local ok, err = Inv.run(src, 'take all', function()
         local from, e = Inv.access(src, fromId); if not from then return nil, e end
         local c = Inv.characterOf(src)
-        local bag = Inv.backpack(c)
-        if fromId == c.pockets or fromId == c.equip or (bag and fromId == 'item:' .. bag.uid) then
+        local bag, vest = Inv.backpack(c), Inv.vest(c)
+        if fromId == c.pockets or fromId == c.equip or (bag and fromId == 'item:' .. bag.uid) or (vest and fromId == 'item:' .. vest.uid) then
             return nil, 'that is already yours'
         end
         if from.kind ~= 'grid' then return nil, 'there is nothing to take' end
@@ -1139,6 +1163,18 @@ function Inv.findOwn(src, uid)
         if inv and inv.items[uid] then return inv.items[uid], id end
     end
     return nil
+end
+
+--- Destroy one stack the player carries (an armor plate that broke).
+function Inv.destroyOwn(src, uid)
+    return Inv.run(src, 'destroy', function()
+        local s, invId = Inv.findOwn(src, uid)
+        if not s then return nil, 'that item is no longer in your inventory' end
+        WLI.invs[invId].items[uid] = nil
+        local c = Inv.characterOf(src)
+        if c then for i = 1, 8 do if c.hotbar[i] == uid then c.hotbar[i] = nil end end end
+        return { statements = { Store.delete(uid) }, changed = changedSet(invId) }
+    end)
 end
 
 --- Merge `patch` into the metadata of a stack the player carries.

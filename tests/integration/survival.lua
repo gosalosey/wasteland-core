@@ -359,7 +359,7 @@ describe('armor plates', function()
     it('a broken plate says so and stops nothing', function()
         S(server, 'Damage', id, 400)
         expect(cond(plate())).toBe(0)
-        expect(last(events(server, id, 'wasteland:survival:client:notice')).args[1]).toBe('Your armor plate broke. Repair it with an armor repair kit.')
+        expect(last(events(server, id, 'wasteland:survival:client:notice')).args[1]).toBe('Your armor vest broke. Repair it with an armor repair kit.')
         local before = #events(server, id, 'wasteland:survival:client:damage')
         local _, absorbed = S(server, 'Damage', id, 5)
         expect(absorbed).toBe(false)
@@ -373,11 +373,78 @@ describe('armor plates', function()
         expect(I('GetItemCount', id, 'sewing_kit')).toBe(1)
         local kit, from = find(invSnap(server, id), 'armor_repair_kit')
         server:clientEvent(id, 'wasteland:inventory:server:use', kit.uid, from); server:advance(200)
-        expect(last(events(server, id, 'wasteland:inventory:client:notice')).args[1]).toBe('You repair your armor plate (0% -> 40%).')
+        expect(last(events(server, id, 'wasteland:inventory:client:notice')).args[1]).toBe('You repair your armor vest (0% -> 40%).')
         expect(cond(plate())).toBe(40)
         expect(I('GetItemCount', id, 'armor_repair_kit')).toBe(1)
         local _, absorbed = S(server, 'Damage', id, 4)
         expect(absorbed).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+
+describe('armor vest plates', function()
+    local server = world()
+    local id = player(server, 'plates')
+    local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+    local function vest()
+        for _, w in ipairs(I('GetWornItems', id)) do if w.slot == 'armor' then return w end end
+    end
+    local function cond(w) return w.metadata.durability or w.durability end
+    local function vestGrid() return invSnap(server, id).vest end
+
+    it('the worn vest has 3 plate slots that only take plates', function()
+        I('AddItem', id, 'armor_plate', 1); server:advance(100)
+        local p, from = find(invSnap(server, id), 'armor_plate')
+        server:clientEvent(id, 'wasteland:inventory:server:equip', p.uid, from, 'armor'); server:advance(300)
+        expect(vestGrid()).toBe('item:' .. vest().uid)
+        I('AddItem', id, 'armor_insert', 4); I('AddItem', id, 'bandage', 1); server:advance(100)
+        local b, bfrom = find(invSnap(server, id), 'bandage')
+        server:clientEvent(id, 'wasteland:inventory:server:move', b.uid, bfrom, vestGrid(), 0, 0, false); server:advance(200)
+        expect(#I('GetArmorPlates', id)).toBe(0) -- the bandage stayed out
+        local plates, slots = I('GetArmorPlates', id)
+        expect(#plates).toBe(0); expect(slots).toBe(3)
+        for x = 0, 2 do
+            local snap = invSnap(server, id)
+            local ins, ifrom
+            for _, inv in ipairs(snap.inventories) do
+                if inv.id ~= snap.vest then
+                    for _, it in ipairs(inv.items) do if it.name == 'armor_insert' and not ins then ins, ifrom = it, inv.id end end
+                end
+            end
+            server:clientEvent(id, 'wasteland:inventory:server:move', ins.uid, ifrom, vestGrid(), x, 0, false); server:advance(1500)
+        end
+        plates = I('GetArmorPlates', id)
+        expect(#plates).toBe(3)
+    end)
+
+    it('damage goes to the plates first (0.5 per point), then the vest', function()
+        local _, absorbed = S(server, 'Damage', id, 20)
+        expect(absorbed).toBe(true)
+        local plates = I('GetArmorPlates', id)
+        expect(cond(plates[1])).toBe(90)
+        expect(cond(plates[2])).toBe(100)
+        expect(cond(vest())).toBe(100)
+    end)
+
+    it('a used-up plate breaks and is gone; the rest goes to the next plate', function()
+        S(server, 'Damage', id, 200) -- 180 empties the first plate, 20 more go to the second
+        local plates = I('GetArmorPlates', id)
+        expect(#plates).toBe(2)
+        expect(cond(plates[1])).toBe(90)
+        expect(I('GetItemCount', id, 'armor_insert')).toBe(1) -- the spare (plates in the vest are not counted)
+        local found = false
+        for _, e in ipairs(events(server, id, 'wasteland:survival:client:notice')) do
+            if e.args[1] == 'An armor plate broke. Put a new one in your vest.' then found = true end
+        end
+        expect(found).toBe(true)
+    end)
+
+    it('plates cannot be repaired; the vest can', function()
+        I('AddItem', id, 'armor_repair_kit', 1); server:advance(100)
+        local kit, from = find(invSnap(server, id), 'armor_repair_kit')
+        local plates = I('GetArmorPlates', id)
+        server:clientEvent(id, 'wasteland:inventory:server:use', kit.uid, from, plates[1].uid); server:advance(200)
+        expect(I('GetItemCount', id, 'armor_repair_kit')).toBe(1)
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)

@@ -62,7 +62,8 @@ end
 local cashItem, cash = nil, nil
 
 local itemDefs = {}
-local plate = nil      -- worn armor plate { current, max } (nil = none)
+local plate = nil      -- worn armor vest { current, max } (nil = none)
+local inserts = nil    -- plates in the vest { current, max } (total over its slots; nil = no vest)
 
 RegisterNetEvent('wasteland:inventory:client:definitions', function(defs)
     if type(defs) == 'table' and type(defs.cashItem) == 'string' then cashItem = defs.cashItem end
@@ -80,6 +81,20 @@ RegisterNetEvent('wasteland:inventory:client:sync', function(snap)
                     plate = { current = (s.metadata and tonumber(s.metadata.durability)) or d.durability, max = d.durability }
                 end
             end
+        end
+    end
+    -- the plates in the vest: full bar = every slot holds a new plate
+    inserts = nil
+    for _, inv in ipairs(snap.inventories) do
+        if snap.vest and inv.id == snap.vest then
+            local slots = math.max(1, tonumber(inv.width) or 3)
+            local current, each = 0, 100
+            for _, s in ipairs(inv.items or {}) do
+                local d = itemDefs[s.name]
+                each = (d and d.durability and d.durability > 0) and d.durability or each
+                current = current + ((s.metadata and tonumber(s.metadata.durability)) or each)
+            end
+            inserts = { current = current, max = slots * each }
         end
     end
     local name = cashItem or 'cash'
@@ -106,6 +121,7 @@ local function hudData()
         health = healthPercent(ped),
         stamina = staminaPercent(),
         armor = plate and math.max(0, math.min(100, math.floor(plate.current / plate.max * 100 + 0.5))) or nil,
+        plates = inserts and math.max(0, math.min(100, math.floor(inserts.current / inserts.max * 100 + 0.5))) or nil,
         stats = stats,
         layout = hudLayout,
         editing = hudEditing,
@@ -595,7 +611,8 @@ Citizen.CreateThread(function()
     while true do
         local ped = PlayerPedId()
         if ped ~= lastPed then lastPed, holding = ped, false end
-        local working = plate ~= nil and plate.current > 0 and not (stats and stats.dead) and not IsEntityDead(ped)
+        local working = ((plate ~= nil and plate.current > 0) or (inserts ~= nil and inserts.current > 0))
+            and not (stats and stats.dead) and not IsEntityDead(ped)
             and not IsScreenFadedOut()
         if working then
             local a = GetPedArmour(ped)

@@ -509,6 +509,9 @@
         st.middle.innerHTML = '';
         st.right.innerHTML = '';
         st.left.appendChild(equipmentPanel());
+        // The worn vest's plate slots (armor plates only).
+        const vest = st.snap.vest ? invById(st.snap.vest) : null;
+        if (vest) st.left.appendChild(gridPanel(vest, 'Armor plates (' + vest.items.length + ' / ' + vest.width + ')'));
         st.left.appendChild(hotbarPanel());
         const pockets = invById(st.snap.pockets);
         if (!st.snap.backpack) st.bagOpen = false; // taken off

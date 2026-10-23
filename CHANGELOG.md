@@ -1,5 +1,14 @@
 # Changelog
 
+## Armor vests with plate slots
+
+- The worn armor is now the **Armor vest** (item `armor_plate`, same item, renamed). It has 3 slots for **Armor plates** (new item `armor_insert`), shown in the inventory under the worn items.
+- Damage goes to the plates first (in order), then the vest, then the player. A plate loses 0.5 durability per point (`survival.lua` `armor.plateWearPerDamage`): about 200 damage each.
+- A used-up plate breaks and is gone (cannot be repaired). The vest can still be repaired with an armor repair kit.
+- HUD: a gold Plates bar above the Armor bar (full = 3 new plates).
+- Plates: crafted with the armor blueprint (4 scrap metal, 1 duct tape), sold by the trader that sells vests, found where vests are found.
+- Inventory: containers can be limited to some items (`container.accepts`); such a container may be worn as armor and may go in a bag.
+
 ## Fix: logging in on a base floor put you inside it
 
 - Players who logged out standing on a base floor or foundation are held until it appears (up to 12 s), then put on it; before, they were put on the ground under it and ended up stuck in the floor.

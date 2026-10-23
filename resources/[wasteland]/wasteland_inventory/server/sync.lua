@@ -29,9 +29,11 @@ function Sync.player(src)
     local c = Inv.characterOf(src)
     if not c or not c.loaded then return end
     local bag = Inv.backpack(c)
+    local vest = Inv.vest(c)
     local payload = {
         pockets = c.pockets, equip = c.equip,
         backpack = bag and ('item:' .. bag.uid) or nil,
+        vest = vest and ('item:' .. vest.uid) or nil,
         secondary = {}, hotbar = c.hotbar, inventories = {},
     }
     local function add(id)
@@ -41,6 +43,7 @@ function Sync.player(src)
     add(c.pockets)
     add(c.equip)
     if payload.backpack then add(payload.backpack) end
+    if payload.vest then add(payload.vest) end
     for id in pairs(WLI.views[src] or {}) do
         if WLI.invs[id] then
             payload.secondary[#payload.secondary + 1] = id
@@ -63,6 +66,8 @@ local function watchers(id, out)
         for _, c in pairs(WLI.chars) do
             local bag = c.loaded and Inv.backpack(c)
             if bag and bag.uid == rest and c.source then out[c.source] = true end
+            local vest = c.loaded and Inv.vest(c)
+            if vest and vest.uid == rest and c.source then out[c.source] = true end
         end
     end
     for src, v in pairs(WLI.views) do
