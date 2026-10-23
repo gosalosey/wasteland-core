@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: logging in on a base floor put you inside it
+
+- Players who logged out standing on a base floor or foundation are held until it appears (up to 12 s), then put on it; before, they were put on the ground under it and ended up stuck in the floor.
+
 ## Zombie aggro and combat feel
 
 - Anyone within 10 m is noticed whatever they do (`detection.proximity`). Hearing and sight are shorter: walking 15 m, sprinting 25 m, sight 45 m (25 at night). Engines carry 45 m; horns 80 m (new noise).

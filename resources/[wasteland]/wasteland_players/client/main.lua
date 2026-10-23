@@ -180,6 +180,18 @@ local function teleport(pos)
         if found and math.abs(gz - z) < 3.0 then ground = gz; break end
         Citizen.Wait(50)
     end
+    -- They logged out standing above that ground: on something built (a base
+    -- floor or foundation) that has not appeared yet. Wait for it, so they are
+    -- not put on the dirt under it (and end up stuck inside the floor).
+    local feet = z - 1.0
+    if ground and feet - ground > 0.4 then
+        local untilT = GetGameTimer() + 12000
+        while GetGameTimer() < untilT do
+            local found, gz = GetGroundZFor_3dCoord(x, y, z + 1.0, false)
+            if found and math.abs(gz - feet) < 0.8 then ground = gz; break end
+            Citizen.Wait(200)
+        end
+    end
     if not ground then
         -- not right under them: the highest ground there (outside, most likely)
         local found, gz = GetGroundZFor_3dCoord(x, y, z + 150.0, false)
