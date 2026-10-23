@@ -445,7 +445,7 @@ return {
         armor_plate = { label = 'Armor vest', image = 'heavyarmor', category = 'armor', width = 2, height = 2, weight = 1.5,
             equip = 'armor', durability = 100, container = { width = 3, height = 2, maxWeight = 10, accepts = { 'armor_insert' } },
             description = 'Wear it (Armor slot) to stop incoming damage. Holds 3 armor plates, which take hits first. It wears down as it takes hits; repair it with an armor repair kit.' },
-        armor_insert = { label = 'Armor plate', image = 'armor_insert', category = 'armor', width = 1, height = 2, weight = 1.2,
+        armor_insert = { label = 'Armor plate', image = 'iron', category = 'armor', width = 1, height = 2, weight = 1.2,
             durability = 100,
             description = 'Put it in your armor vest (open your inventory: Armor plates). Takes hits before the vest. Cannot be repaired: when it breaks it is gone.' },
         armor_repair_kit = { label = 'Armor repair kit', image = 'repair_kit', category = 'tool', width = 2, height = 1, weight = 0.5,

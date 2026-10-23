@@ -1,5 +1,9 @@
 # Changelog
 
+## Armor plate picture
+
+- Armor plates use the `iron` picture (the drawn `armor_insert` picture is removed).
+
 ## Armor vests with plate slots
 
 - The worn armor is now the **Armor vest** (item `armor_plate`, same item, renamed). It has 3 slots for **Armor plates** (new item `armor_insert`), shown in the inventory under the worn items.
