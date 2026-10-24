@@ -10,6 +10,8 @@ local CFG = {
             bin = { label = 'Trash can', table = 'none', searchSeconds = 1, refillMinutes = 1, models = { 'prop_bin_01a' } },
             body = { label = 'Body', table = 'sure', searchSeconds = 1, refillMinutes = 9999 },
             wreck = { label = 'Wrecked vehicle', table = 'sure', searchSeconds = 1, refillMinutes = 1, reach = 7, models = { 'prop_rub_carwreck_3' } },
+            tree = { label = 'Tree', action = 'Chop', verb = 'Chopping', table = 'sure', searchSeconds = 1, refillMinutes = 1,
+                direct = true, tools = { 'weapon_hatchet' }, anim = 'chop', models = { 'prop_tree_pine_01' } },
         },
         tables = {
             sure = { emptyChance = 0, rolls = { 1, 1 }, items = { { name = 'bandage', min = 3, max = 3, weight = 1 } } },
@@ -220,7 +222,7 @@ describe('props made lootable in the admin panel', function()
         local d = L('GetLootAdminData')
         local names = {}
         for _, c in ipairs(d.containers) do names[#names + 1] = c.name end
-        expect(table.concat(names, ',')).toBe('dumpster,bin,wreck')
+        expect(table.concat(names, ',')).toBe('dumpster,bin,tree,wreck')
         local u = server.resources.wasteland_loot.env.GetHashKey('prop_dumpster_01a') & 0xffffffff
         local dump = u >= 0x80000000 and u - 0x100000000 or u
         expect(d.known[tostring(dump)].type).toBe('dumpster')
@@ -333,6 +335,43 @@ describe('named loot props', function()
     it('odd characters are not kept as a name', function()
         expect(L('AddContainerModel', BARREL, 'dumpster', '<b>bad</b>')).toBe(true)
         expect(last(events(server, -1, 'wasteland:loot:client:config')).args[1].names[tostring(BARREL)] == nil).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)
+
+describe('trees: a tool, and the wood goes straight into the inventory', function()
+    local server = world()
+    local a = player(server, 'logger')
+    local env = server.resources.wasteland_loot.env
+    local TREE = env.GetHashKey('prop_tree_pine_01')
+    local AT = { x = 11.0, y = 10.0, z = 30.0 }
+    local function count(name) return server:export('wasteland_inventory', 'GetItemCount', a, name) end
+
+    it('the option says Chop', function()
+        local c = last(events(server, -1, 'wasteland:loot:client:config')).args[1]
+        expect(c.containers.tree.action).toBe('Chop')
+    end)
+
+    it('without a hatchet: refused', function()
+        server:clientEvent(a, 'wasteland:loot:server:start', TREE, AT); server:advance(200)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]).toBe('You need a hatchet for that.')
+        expect(#events(server, a, 'wasteland:loot:client:search')).toBe(0)
+    end)
+
+    it('with a hatchet: chopping, then the items are in the inventory (no container opens)', function()
+        server:export('wasteland_inventory', 'AddItem', a, 'weapon_hatchet', 1)
+        local before = count('bandage')
+        server:clientEvent(a, 'wasteland:loot:server:start', TREE, AT); server:advance(200)
+        expect(last(events(server, a, 'wasteland:loot:client:search')).args[1].label).toBe('Chopping tree')
+        server:advance(1100)
+        server:clientEvent(a, 'wasteland:loot:server:finish'); server:advance(200)
+        expect(count('bandage')).toBe(before + 3)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]).toBe('You got 3 x Bandage.')
+    end)
+
+    it('the same tree again right away: nothing left for now', function()
+        server:clientEvent(a, 'wasteland:loot:server:start', TREE, AT); server:advance(200)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]:find('Nothing left here right now', 1, true) ~= nil).toBe(true)
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)

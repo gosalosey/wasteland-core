@@ -13,6 +13,8 @@ local ANIMS = {
     bin = { dict = 'amb@prop_human_bum_bin@base', name = 'base', flag = 1 },
     search = { dict = 'mini@repair', name = 'fixing_a_ped', flag = 1 },
     kneel = { dict = 'amb@medic@standing@kneel@base', name = 'base', flag = 1 },
+    chop = { dict = 'melee@large_wpn@streamed_core', name = 'ground_attack_on_spot', flag = 1 },
+    hammer = { dict = 'amb@world_human_hammering@male@base', name = 'base', flag = 1 },
 }
 
 local function uiRunning() return GetResourceState('wasteland_ui') == 'started' end
@@ -55,13 +57,13 @@ local function register()
         for _, m in ipairs(c.models or {}) do
             local n = type(m) == 'number' and names[tostring(m)]
             if n then
-                targetIds[#targetIds + 1] = exports.wasteland_target:AddModel({ m }, { option('Search ' .. n) })
+                targetIds[#targetIds + 1] = exports.wasteland_target:AddModel({ m }, { option((c.action or 'Search') .. ' ' .. n) })
             else
                 plain[#plain + 1] = m
             end
         end
         if #plain > 0 then
-            targetIds[#targetIds + 1] = exports.wasteland_target:AddModel(plain, { option('Search ' .. c.label:lower()) })
+            targetIds[#targetIds + 1] = exports.wasteland_target:AddModel(plain, { option((c.action or 'Search') .. ' ' .. c.label:lower()) })
         end
     end
     if cfg.containers.body then

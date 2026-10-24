@@ -43,6 +43,35 @@ return {
         mailbox = { label = 'Mailbox', table = 'mail', searchSeconds = 3, refillMinutes = 90, grid = { 3, 3 }, anim = 'search',
             models = { 'prop_postbox_01a', 'prop_letterbox_01', 'prop_letterbox_02', 'prop_letterbox_03', 'prop_letterbox_04' } },
 
+        -- Wood (direct: straight into the inventory). Trees need an axe; wooden
+        -- junk needs something to pry it apart with. Each tree / pallet can be
+        -- used again after refillMinutes. VERIFY IN-GAME which tree models
+        -- are on your map (GTA trees: prop_tree_*, test_tree_*, prop_w_r_*).
+        tree = { label = 'Tree', action = 'Chop', verb = 'Chopping', table = 'tree', searchSeconds = 8, refillMinutes = 30,
+            grid = { 4, 3 }, anim = 'chop', reach = 5, direct = true, tools = { 'weapon_hatchet', 'weapon_battleaxe' },
+            models = { 'prop_tree_pine_01', 'prop_tree_pine_02', 'prop_tree_cedar_02', 'prop_tree_cedar_03', 'prop_tree_cedar_04',
+                'prop_tree_cedar_s_01', 'prop_tree_cedar_s_04', 'prop_tree_cedar_s_05', 'prop_tree_cedar_s_06',
+                'prop_tree_oak_01', 'prop_tree_eucalip_01', 'prop_tree_birch_01', 'prop_tree_birch_02', 'prop_tree_birch_03',
+                'prop_tree_birch_03b', 'prop_tree_birch_04', 'prop_tree_maple_02', 'prop_tree_maple_03', 'prop_tree_olive_01',
+                'prop_tree_jacada_01', 'prop_tree_jacada_02', 'prop_tree_lficus_02', 'prop_tree_lficus_03', 'prop_tree_lficus_05',
+                'prop_tree_lficus_06', 'prop_tree_fallen_pine_01', 'prop_tree_log_01', 'prop_tree_log_02', 'prop_tree_stump_01',
+                'prop_w_r_cedar_01', 'prop_w_r_cedar_dead', 'test_tree_cedar_trunk_001', 'test_tree_forest_trunk_01',
+                'test_tree_forest_trunk_04', 'test_tree_forest_trunk_base_01', 'test_tree_forest_trunk_fall_01' } },
+        logpile = { label = 'Log pile', action = 'Take logs from', verb = 'Taking logs from', table = 'logpile', searchSeconds = 5,
+            refillMinutes = 40, grid = { 4, 3 }, anim = 'bin', direct = true,
+            models = { 'prop_logpile_01', 'prop_logpile_02', 'prop_logpile_03', 'prop_logpile_04', 'prop_logpile_05',
+                'prop_logpile_06', 'prop_logpile_06b', 'prop_logpile_07', 'prop_logpile_07b' } },
+        woodjunk = { label = 'Wood', action = 'Break down', verb = 'Breaking down', table = 'woodjunk', searchSeconds = 5,
+            refillMinutes = 30, grid = { 4, 3 }, anim = 'hammer', direct = true,
+            tools = { 'weapon_hammer', 'crowbar', 'weapon_hatchet', 'weapon_battleaxe' },
+            models = { 'prop_pallet_01a', 'prop_pallet_02a', 'prop_pallet_03a', 'prop_pallet_03b', 'prop_pallet_pile_01',
+                'prop_pallet_pile_02', 'prop_woodpile_01a', 'prop_woodpile_01b', 'prop_woodpile_01c', 'prop_woodpile_02a',
+                'prop_woodpile_03a', 'prop_woodpile_04a', 'prop_woodpile_04b', 'prop_cablespool_01a', 'prop_cablespool_01b',
+                'prop_cablespool_02', 'prop_cablespool_03', 'prop_cablespool_04', 'prop_cablespool_05', 'prop_cablespool_06',
+                'prop_fncwood_07a', 'prop_fncwood_08a', 'prop_fncwood_09a', 'prop_fncwood_11a', 'prop_fncwood_12a',
+                'prop_fncwood_13c', 'prop_fncwood_14a', 'prop_fncwood_16a', 'prop_fncwood_17b', 'prop_fncwood_18a',
+                'prop_fncwood_19a', 'prop_rub_planks_01', 'prop_rub_planks_02', 'prop_rub_planks_03', 'prop_rub_planks_04' } },
+
         -- Dead zombies (no models): the body itself is searched. It is gone
         -- with the body (zombies.lua population.corpseSeconds).
         body = { label = 'Body', table = 'zombie', searchSeconds = 3, refillMinutes = 9999, grid = { 4, 4 }, anim = 'kneel' },
@@ -52,6 +81,18 @@ return {
     -- rolls: how many picks; items: { name, min, max, weight } (weight =
     -- how likely compared to the others in the same table).
     tables = {
+        tree = { emptyChance = 0, rolls = { 1, 2 }, items = {
+            { name = 'wood_log', min = 2, max = 3, weight = 10 },
+            { name = 'firewood', min = 1, max = 3, weight = 3 },
+        } },
+        logpile = { emptyChance = 0, rolls = { 1, 1 }, items = {
+            { name = 'wood_log', min = 2, max = 4, weight = 10 },
+        } },
+        woodjunk = { emptyChance = 0, rolls = { 1, 2 }, items = {
+            { name = 'wood_planks', min = 3, max = 6, weight = 10 },
+            { name = 'scrap_metal', min = 1, max = 2, weight = 2 },
+            { name = 'firewood', min = 1, max = 2, weight = 2 },
+        } },
         trash = { emptyChance = 0.55, rolls = { 1, 2 }, items = {
             { name = 'scrap_metal', min = 1, max = 2, weight = 25 },
             { name = 'sewing_kit', min = 1, max = 1, weight = 4 },

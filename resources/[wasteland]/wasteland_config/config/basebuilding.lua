@@ -77,7 +77,7 @@ return {
     interact = { distance = 2.5 },    -- doors open with E within this distance
     targetDistance = 4.0,             -- Left Alt options (remove, upgrade, repair...)
     streamRadius = 150.0,
-    refund = 0.5,                     -- removing gives back this share of the cost
+    refund = 0.75,                    -- removing gives back this share of the cost
 
     placement = {
         rotateStep = 45.0, fineRotateSpeed = 30.0, heightStep = 0.05,

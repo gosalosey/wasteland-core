@@ -1,5 +1,17 @@
 # Changelog
 
+## Getting wood: chop trees, break down wooden junk, saw logs
+
+- **Chop trees** with a hatchet or battle axe (look at a tree: "Chop tree", 8 s): 2-3 logs (sometimes firewood). Each tree can be chopped again after 30 minutes.
+- **Log piles** on the map: take 2-4 logs (no tool).
+- **Break down wooden junk** (pallets, wood piles, cable spools, wooden fences, loose planks) with a hammer, crowbar, hatchet or battle axe: 3-6 planks, 5 s, again after 30 minutes.
+- New item **Log** (`wood_log`). Crafting: saw 1 log into 4 wood planks, or 5 logs into 20.
+- Wood goes straight into the inventory (what does not fit stays there and opens).
+- Removing your own base pieces gives back 75% of the cost (was 50%; `basebuilding.lua` `refund`).
+- Camp trader: wood planks $8 (was $12), stock 120 (was 40), restocks 30 at a time (was 10). Also sells logs ($25) and buys them ($10).
+- loot.lua containers can now have `tools` (one of these items is needed), `action` / `verb` (the option and progress text), `direct` (straight into the inventory) and the animations `chop` and `hammer`.
+- VERIFY IN-GAME: which tree, pallet and fence models are on your map. A model that does not exist is simply never matched; ones that are missing can be added in the loot admin panel.
+
 ## Base building: slivers close themselves when snapping
 
 - When a piece snaps, short rays check each side and the bottom against the real neighbouring pieces. A gap of up to 15 cm (a sliver) is closed by moving the piece onto its neighbour. A piece with a gap on both sides (between two pieces) is left alone on that axis.

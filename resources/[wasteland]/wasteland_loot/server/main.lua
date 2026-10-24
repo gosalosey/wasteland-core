@@ -64,6 +64,24 @@ local function skillBonus(src, skill, key)
     return ok and tonumber(v) or 0
 end
 
+-- Containers with `tools` (trees: an axe) need one of them in the inventory.
+local function hasTool(src, c)
+    if not c.tools or #c.tools == 0 then return true end
+    for _, name in ipairs(c.tools) do
+        if (tonumber(inv():GetItemCount(src, name)) or 0) > 0 then return true end
+    end
+    return false
+end
+
+local function toolNames(c)
+    local names = {}
+    for _, name in ipairs(c.tools or {}) do
+        local def = inv():GetItemDefinition(name)
+        names[#names + 1] = 'a ' .. (def and def.label or name):lower()
+    end
+    return table.concat(names, ' or ')
+end
+
 -- Thread only (loading a stash may read the database).
 local function begin(src, name, typeName, coords, label)
     local busy = searching[src]
@@ -76,13 +94,40 @@ local function begin(src, name, typeName, coords, label)
     if isEmpty(id) and not Rules.needsFill(state[name], true, now(), c.refillMinutes) then
         local left = Rules.minutesLeft(state[name], now(), c.refillMinutes)
         notice(src, typeName == 'body' and 'Already searched. Nothing left.'
+            or c.direct and string.format('Nothing left here right now (check back in about %d min).', left)
             or string.format('Already searched. Nothing left (check back in about %d min).', left))
         return
     end
+    if not hasTool(src, c) then notice(src, 'You need ' .. toolNames(c) .. ' for that.'); return end
     local seconds = c.searchSeconds * (1 - skillBonus(src, 'scavenging', 'searchTime'))
     searching[src] = { name = name, type = typeName, startedAt = now(), coords = coords, id = id, label = label, seconds = seconds }
     TriggerClientEvent('wasteland:loot:client:search', src, { seconds = seconds,
-        label = 'Searching ' .. (label or c.label:lower()), anim = c.anim })
+        label = (c.verb or 'Searching') .. ' ' .. (label or c.label:lower()), anim = c.anim })
+end
+
+-- direct: what is found goes straight into the player's inventory (what
+-- does not fit stays in the container, which opens).
+local function giveDirect(src, s, c)
+    local got, left = {}, false
+    for _, item in ipairs(Rules.roll(M.config.tables[c.table], math.random, math.random)) do
+        local ok = inv():AddItem(src, item.name, item.count)
+        if ok then
+            local def = inv():GetItemDefinition(item.name)
+            got[#got + 1] = string.format('%d x %s', item.count, def and def.label or item.name)
+        else
+            local okStash, err = inv():AddItem(s.id, item.name, item.count)
+            if okStash then left = true
+            else M.log:warn('loot %s: %s x %d: %s', s.name, item.name, item.count, tostring(err)) end
+        end
+    end
+    if #got > 0 then notice(src, 'You got ' .. table.concat(got, ', ') .. '.') end
+    if left then
+        notice(src, 'Your pockets are full: the rest is left here.')
+        inv():OpenStash(src, s.name, stashOpts(c, s.coords, true, s.label))
+    elseif #got == 0 then
+        notice(src, 'You got nothing.')
+    end
+    TriggerEvent('wasteland:loot:searched', src, s.type, s.name, #got > 0 or left)
 end
 
 local function finish(src)
@@ -97,7 +142,14 @@ local function finish(src)
     local p = playerCoords(src)
     if not p or dist(p, s.coords) > reachFor(s.type) + 1.0 then notice(src, 'You moved away.'); return end
     if not inv():GetInventory(s.id) then notice(src, 'That is gone.'); return end
+    if not hasTool(src, c) then notice(src, 'You need ' .. toolNames(c) .. ' for that.'); return end
     local empty = isEmpty(s.id)
+    if c.direct and empty and Rules.needsFill(state[s.name], true, now(), c.refillMinutes) then
+        state[s.name] = { filledAt = now() }
+        searches = searches + 1
+        giveDirect(src, s, c)
+        return
+    end
     if Rules.needsFill(state[s.name], empty, now(), c.refillMinutes) then
         state[s.name] = { filledAt = now() }
         local rolls = 1
@@ -146,7 +198,12 @@ local CONTAINER = { type = 'table', fields = {
     searchSeconds = { type = 'number', default = 4, min = 0.5, max = 60 },
     refillMinutes = { type = 'number', default = 45, min = 1, max = 100000 },
     grid = { type = 'array', default = { 4, 4 }, minItems = 2, maxItems = 2, items = { type = 'integer', min = 1, max = 12 } },
-    anim = { type = 'enum', values = { 'bin', 'search', 'kneel' }, default = 'search' },
+    anim = { type = 'enum', values = { 'bin', 'search', 'kneel', 'chop', 'hammer' }, default = 'search' },
+    action = { type = 'string', maxLength = 24, description = 'What the option says (default "Search")' },
+    verb = { type = 'string', maxLength = 24, description = 'The progress bar (default "Searching")' },
+    tools = { type = 'array', items = { type = 'string', pattern = '^[%w_]+$' },
+        description = 'Items of which the player needs one (e.g. an axe for trees)' },
+    direct = { type = 'boolean', default = false, description = 'What is found goes straight into the inventory' },
     models = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' } },
     reach = { type = 'number', min = 1, max = 20,
         description = 'How close (m) to the middle of the prop a player must be (big props like car wrecks); default: reach' },
@@ -288,7 +345,7 @@ end
 local function clientConfig()
     local out = {}
     for name, c in pairs(M.config.containers) do
-        out[name] = { label = c.label, models = modelsOf(name, c), anim = c.anim, searchSeconds = c.searchSeconds }
+        out[name] = { label = c.label, models = modelsOf(name, c), anim = c.anim, searchSeconds = c.searchSeconds, action = c.action }
     end
     local names = {}
     for h, n in pairs(extraNames) do names[tostring(h)] = n end
@@ -316,6 +373,11 @@ M = Wasteland.DefineModule({
         for name, c in pairs(M.config.containers) do
             local t = M.config.tables[c.table]
             if not t then return false, string.format('loot.lua: container "%s" uses table "%s", which does not exist', name, c.table) end
+            for _, tool in ipairs(c.tools or {}) do
+                if not inv():GetItemDefinition(tool) then
+                    return false, string.format('loot.lua: container "%s" needs tool "%s", which is not in inventory.lua items', name, tool)
+                end
+            end
         end
         for name, t in pairs(M.config.tables) do
             if t.rolls[1] > t.rolls[2] then return false, string.format('loot.lua: table "%s" has rolls min above max', name) end

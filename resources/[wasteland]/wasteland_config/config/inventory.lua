@@ -258,6 +258,8 @@ return {
             description = 'Traders pay for these.' },
         matches = { label = 'Matches', category = 'tool', width = 1, height = 1, weight = 0.005, stack = 250,
             description = 'One match lights a campfire.' },
+        wood_log = { label = 'Log', image = 'log', category = 'material', width = 2, height = 1, weight = 1.5, stack = 50,
+            description = 'Saw it into 4 wood planks (crafting). Chop trees with a hatchet or battle axe.' },
         firewood = { label = 'Firewood', image = 'woodlog_small', category = 'material', width = 2, height = 1, weight = 0.5, stack = 250,
             description = 'Two pieces keep a campfire going.' },
         campfire = { label = 'Campfire', image = 'log', category = 'tool', width = 2, height = 2, weight = 1.5, stack = 1,

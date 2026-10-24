@@ -228,10 +228,10 @@ describe('base building', function()
         expect(#sync.cupboards).toBe(1); expect(#sync.props).toBe(3)
     end)
 
-    it('removing a piece gives half back; only the owner removes the cupboard', function()
+    it('removing a piece gives three quarters back; only the owner removes the cupboard', function()
         local planks = I('GetItemCount', a, 'wood_planks')
         act(a, 'remove', door.id)
-        expect(I('GetItemCount', a, 'wood_planks')).toBe(planks + 5)
+        expect(I('GetItemCount', a, 'wood_planks')).toBe(planks + 7) -- 10 x 0.75, rounded down
         act(b, 'removeCupboard', cupboardId)
         expect(note(b)).toBe('Only the owner can remove this tool cupboard.')
         expect(#server:lines('raised:')).toBe(0)
