@@ -1,5 +1,11 @@
 # Changelog
 
+## Starter tools: cheap hatchet and pickaxe
+
+- **Hatchet**: 2 scrap metal + 1 rag, 5 s, no blueprint needed any more (was 3 scrap metal + 2 duct tape and the hatchet blueprint).
+- **Pickaxe**: 3 scrap metal + 1 rag, 5 s, no blueprint (was 4 scrap metal, 2 wood planks, 1 duct tape).
+- The hatchet blueprint no longer drops as loot (it would teach nothing). Blueprints already in inventories stay, but are useless.
+
 ## Tree / rock zones: no trees or rocks on roads or buildings
 
 - Before a tree or rock spawns, the client checks its spot once (when the player is within 120 m, so the ground and buildings are loaded): on or right next to a road, inside an interior, against a wall, against a prop or base piece, or on a roof (a flat spot with a drop of more than 3 m next to it). Such spots are left empty. Hillsides are fine (walls face sideways, slopes face up).

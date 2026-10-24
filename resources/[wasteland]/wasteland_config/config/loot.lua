@@ -238,7 +238,6 @@ return {
             { name = 'weapon_hatchet', min = 1, max = 1, weight = 4 },
             { name = 'weapon_machete', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_repair_kit', min = 1, max = 1, weight = 3 },
-            { name = 'blueprint_hatchet', min = 1, max = 1, weight = 2 },
             { name = 'blueprint_crowbar', min = 1, max = 1, weight = 2 },
             { name = 'vehicle_repair_kit', min = 1, max = 1, weight = 3 },
             { name = 'engine_parts', min = 1, max = 1, weight = 3 },
