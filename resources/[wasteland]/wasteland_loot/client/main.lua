@@ -19,6 +19,9 @@ local ANIMS = {
     -- Tree zones: swinging an axe (a hatchet in the right hand).
     axe = { dict = 'melee@hatchet@streamed_core', name = 'plyr_rear_takedown_b', flag = 1,
         prop = { model = 'w_me_hatchet', bone = 57005, pos = { 0.1, 0.0, 0.0 }, rot = { -80.0, 0.0, 0.0 } } },
+    -- Rock zones: swinging a pickaxe down at the rock.
+    pickaxe = { dict = 'melee@large_wpn@streamed_core', name = 'ground_attack_on_spot', flag = 1,
+        prop = { model = 'prop_tool_pickaxe', bone = 57005, pos = { 0.18, -0.02, -0.02 }, rot = { 350.0, 100.0, 140.0 } } },
 }
 
 local function uiRunning() return GetResourceState('wasteland_ui') == 'started' end
@@ -94,13 +97,17 @@ AddEventHandler('onClientResourceStart', function(res)
 end)
 
 -------------------------------------------------------------------------------
--- Tree zones: the server says where the choppable trees stand; this client
--- spawns them (local props) when the player is near, puts each on the
--- ground, gives it a "Chop tree" target and a marker, and swaps it for a
--- stump once it is chopped down.
+-- Resource zones (trees and rocks): the server says where they stand; this
+-- client spawns them (local props) when the player is near, puts each on
+-- the ground, gives it a target ("Chop tree" / "Mine rock") and a marker,
+-- and swaps it for a stump (or nothing) once it is used up.
 -------------------------------------------------------------------------------
 
-local zt = nil          -- { trees, zones, models, stump, marker, blips, distance }
+local zt = nil          -- { trees, zones, kinds = { tree|rock = { models, stump, marker, blips, distance, option, blip } } }
+local KIND_LOOK = {
+    tree = { fallback = 'prop_tree_pine_01', sink = 0.3, arrow = 3.2, ring = 2.6, rgb = { 60, 220, 90 }, sprite = 285, colour = 25, icon = '🪓' },
+    rock = { fallback = 'prop_rock_4_big', sink = 0.6, arrow = 4.0, ring = 4.0, rgb = { 240, 160, 50 }, sprite = 1, colour = 47, icon = '⛏' },
+}
 local ztById = {}       -- id -> tree { id, x, y, z, m, down, entity, shown, target, gz }
 local ztBlips = {}
 local SPAWN_RANGE, MARKER_RANGE = 160.0, 35.0
@@ -136,7 +143,8 @@ local function groundAt(t)
 end
 
 local function chopOption(t)
-    return { { label = 'Chop tree', icon = '🪓', distance = zt.distance or 3.5,
+    local k = zt.kinds[t.kind] or {}
+    return { { label = k.option or 'Chop tree', icon = (KIND_LOOK[t.kind] or KIND_LOOK.tree).icon, distance = k.distance or 3.5,
         canInteract = function() return active == nil and not t.down end,
         onSelect = function() TriggerServerEvent('wasteland:loot:server:chopzone', t.id, t.gz) end } }
 end
@@ -145,12 +153,14 @@ local function spawnTree(t)
     if t.gz == nil then t.gz = groundAt(t) end
     if t.gz == nil then return end      -- ground not loaded yet: next pass
     if t.gz == false then t.shown = 'none'; return end
-    local name = t.down and zt.stump or zt.models[t.m] or zt.models[1]
-    if not name or name == '' then t.shown = 'none'; return end
+    local k, look = zt.kinds[t.kind], KIND_LOOK[t.kind] or KIND_LOOK.tree
+    if not k then t.shown = 'none'; return end
+    local name = t.down and k.stump or k.models[t.m] or k.models[1]
+    if not name or name == '' then t.shown = t.down and 'stump' or 'none'; return end
     local hash = loadModel(name)
-    if not hash and not t.down then hash = loadModel('prop_tree_pine_01') end
+    if not hash and not t.down then hash = loadModel(look.fallback) end
     if not hash then t.shown = 'none'; return end
-    local e = CreateObject(hash, t.x, t.y, t.gz - 0.3, false, false, false)
+    local e = CreateObject(hash, t.x, t.y, t.gz - (t.down and 0.3 or look.sink), false, false, false)
     SetModelAsNoLongerNeeded(hash)
     if not e or e == 0 then return end
     SetEntityHeading(e, (t.x * 37.0 + t.y * 11.0) % 360.0)
@@ -170,15 +180,18 @@ end
 
 local function makeBlips()
     clearBlips()
-    if not (zt and zt.blips) then return end
+    if not zt then return end
     for _, z in ipairs(zt.zones) do
-        local area = AddBlipForRadius(z.x, z.y, z.z, z.radius + 0.0)
-        SetBlipColour(area, 25); SetBlipAlpha(area, 90)
-        local b = AddBlipForCoord(z.x, z.y, z.z)
-        SetBlipSprite(b, 285) -- tree / lumber
-        SetBlipColour(b, 25); SetBlipScale(b, 0.8); SetBlipAsShortRange(b, true)
-        BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName('Lumber: ' .. z.label); EndTextCommandSetBlipName(b)
-        ztBlips[#ztBlips + 1] = area; ztBlips[#ztBlips + 1] = b
+        local k, look = zt.kinds[z.kind], KIND_LOOK[z.kind] or KIND_LOOK.tree
+        if k and k.blips then
+            local area = AddBlipForRadius(z.x, z.y, z.z, z.radius + 0.0)
+            SetBlipColour(area, look.colour); SetBlipAlpha(area, 90)
+            local b = AddBlipForCoord(z.x, z.y, z.z)
+            SetBlipSprite(b, look.sprite)
+            SetBlipColour(b, look.colour); SetBlipScale(b, 0.8); SetBlipAsShortRange(b, true)
+            BeginTextCommandSetBlipName('STRING'); AddTextComponentSubstringPlayerName(k.blip .. ': ' .. z.label); EndTextCommandSetBlipName(b)
+            ztBlips[#ztBlips + 1] = area; ztBlips[#ztBlips + 1] = b
+        end
     end
 end
 
@@ -230,17 +243,20 @@ end)
 Citizen.CreateThread(function()
     while true do
         local close = false
-        if zt and zt.marker then
+        if zt then
             local p = GetEntityCoords(PlayerPedId())
             for _, t in pairs(ztById) do
-                if t.shown == 'tree' and not t.down then
+                local k = zt.kinds[t.kind]
+                if t.shown == 'tree' and not t.down and k and k.marker then
                     local d2 = (p.x - t.x) ^ 2 + (p.y - t.y) ^ 2
                     if d2 < MARKER_RANGE * MARKER_RANGE then
                         close = true
-                        DrawMarker(2, t.x, t.y, t.gz + 3.2, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.6, 0.6, 0.6,
-                            60, 220, 90, 200, true, true, 2, false, nil, nil, false)
-                        DrawMarker(25, t.x, t.y, t.gz + 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.6, 2.6, 1.0,
-                            60, 220, 90, 120, false, false, 2, false, nil, nil, false)
+                        local look = KIND_LOOK[t.kind] or KIND_LOOK.tree
+                        local r, g, b = look.rgb[1], look.rgb[2], look.rgb[3]
+                        DrawMarker(2, t.x, t.y, t.gz + look.arrow, 0.0, 0.0, 0.0, 180.0, 0.0, 0.0, 0.6, 0.6, 0.6,
+                            r, g, b, 200, true, true, 2, false, nil, nil, false)
+                        DrawMarker(25, t.x, t.y, t.gz + 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, look.ring, look.ring, 1.0,
+                            r, g, b, 120, false, false, 2, false, nil, nil, false)
                     end
                 end
             end

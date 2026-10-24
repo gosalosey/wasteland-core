@@ -105,6 +105,30 @@ return {
         },
     },
 
+    -- Rock zones: the same for big rocks. Target "Mine rock" with a pickaxe
+    -- (crafting, or the camp trader); gives stone (the `rock` table below).
+    -- A mined rock is gone until it comes back after respawnMinutes.
+    -- Admins: /rockzone add <radius> [rocks] [name], /rockzone remove, /rockzone list.
+    rockZones = {
+        enabled = true,
+        respawnMinutes = 60,
+        chopSeconds = 12,     -- how long mining one rock takes
+        chopDistance = 4.5,
+        spacing = 9,
+        table = 'rock',
+        tools = { 'pickaxe' },
+        models = { 'prop_rock_4_big', 'prop_rock_4_big2', 'prop_rock_4_c', 'prop_rock_1_a' },
+        stump = '',           -- nothing is left of a mined rock
+        marker = true,        -- orange marker over minable rocks close by
+        blips = true,
+        zones = {
+            { label = 'Davis Quartz quarry', coords = vector3(2954.0, 2788.0, 41.5), radius = 100 },
+            { label = 'Grand Senora desert rocks', coords = vector3(2340.0, 3120.0, 48.0), radius = 80 },
+            { label = 'Mount Chiliad summit', coords = vector3(500.0, 5590.0, 795.0), radius = 70 },
+            { label = 'Mount Gordo cliffs', coords = vector3(2850.0, 5950.0, 350.0), radius = 70 },
+        },
+    },
+
     -- Loot tables. emptyChance: chance the container has nothing at all.
     -- rolls: how many picks; items: { name, min, max, weight } (weight =
     -- how likely compared to the others in the same table).
@@ -112,6 +136,9 @@ return {
         tree = { emptyChance = 0, rolls = { 1, 2 }, items = {
             { name = 'wood_log', min = 2, max = 3, weight = 10 },
             { name = 'firewood', min = 1, max = 3, weight = 3 },
+        } },
+        rock = { emptyChance = 0, rolls = { 1, 1 }, items = {
+            { name = 'stone', min = 5, max = 9, weight = 10 },
         } },
         logpile = { emptyChance = 0, rolls = { 1, 1 }, items = {
             { name = 'wood_log', min = 2, max = 4, weight = 10 },

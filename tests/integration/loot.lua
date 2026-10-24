@@ -465,3 +465,60 @@ describe('tree zones: trees planted by the server, chopped, grown back', functio
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe('rock zones: big rocks mined with a pickaxe for stone', function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['loot.lua'] = [[return {
+        containers = {},
+        tables = { rock = { emptyChance = 0, rolls = { 1, 1 }, items = { { name = 'stone', min = 6, max = 6, weight = 1 } } } },
+        treeZones = { enabled = false },
+        rockZones = { respawnMinutes = 1, chopSeconds = 2, zones = { { label = 'Test quarry', coords = vector3(10.0, 10.0, 30.0), radius = 60 } } },
+    }]]
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival', 'wasteland_loot' })
+    local a = player(server, 'miner')
+    local function data() return last(events(server, a, 'wasteland:loot:client:trees')).args[1] end
+    local function count(name) return server:export('wasteland_inventory', 'GetItemCount', a, name) end
+    local r
+
+    it('players get the rocks (30 for a 60 m zone) and how they look', function()
+        server:clientEvent(a, 'wasteland:loot:server:config'); server:advance(200)
+        local d = data()
+        expect(#d.trees).toBe(30)
+        r = d.trees[1]
+        expect(r.kind).toBe('rock')
+        expect(d.kinds.rock.option).toBe('Mine rock')
+        expect(d.kinds.tree.enabled).toBe(false)
+    end)
+
+    it('needs a pickaxe', function()
+        server.players[a].coords = { x = r.x + 2, y = r.y, z = 30.0 }
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', r.id, 30.0); server:advance(200)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]).toBe('You need a pickaxe for that.')
+    end)
+
+    it('mining: pickaxe animation, then stone; the rock is gone and comes back', function()
+        server:export('wasteland_inventory', 'AddItem', a, 'pickaxe', 1)
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', r.id, 30.0); server:advance(200)
+        local s = last(events(server, a, 'wasteland:loot:client:search')).args[1]
+        expect(s.anim).toBe('pickaxe'); expect(s.label).toBe('Mining rock')
+        server:advance(2000)
+        server:clientEvent(a, 'wasteland:loot:server:finish'); server:advance(200)
+        expect(count('stone')).toBe(6)
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', r.id, 30.0); server:advance(200)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]).toBe('This rock has already been mined out.')
+        server:advance(80000)
+        local st = last(events(server, -1, 'wasteland:loot:client:treestate')).args
+        expect(st[1]).toBe(r.id); expect(st[2]).toBe(false)
+    end)
+
+    it('/rockzone add places a rock zone (admins)', function()
+        server.aces[a .. '|wasteland.admin'] = true
+        server.players[a].coords = { x = 900.0, y = 900.0, z = 30.0 }
+        server:command(a, 'rockzone add 50 25 Gravel pit'); server:advance(200)
+        expect(#data().zones).toBe(2)
+        expect(#data().trees).toBe(55)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

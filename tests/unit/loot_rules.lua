@@ -87,4 +87,15 @@ describe('tree zones', function()
         expect(tz.respawnMinutes).toBe(60)
         expect(cfg.tables[tz.table] ~= nil).toBe(true)
     end)
+
+    it('shipped rock zones: 50-100 m, enough rocks, a pickaxe, stone', function()
+        local rz = cfg.rockZones
+        expect(#rz.zones >= 4).toBe(true)
+        for _, z in ipairs(rz.zones) do
+            expect(z.radius >= 50 and z.radius <= 100).toBe(true)
+            expect(#Rules.zoneTrees(z, rz.spacing, #rz.models) >= 25).toBe(true)
+        end
+        expect(rz.tools[1]).toBe('pickaxe')
+        expect(cfg.tables[rz.table].items[1].name).toBe('stone')
+    end)
 end)

@@ -1,5 +1,15 @@
 # Changelog
 
+## Rock zones: mine big rocks with a pickaxe for stone
+
+- New tool **Pickaxe** (`pickaxe`): craft it (4 scrap metal, 2 wood planks, 1 duct tape; no blueprint) or buy it at the camp trader ($60).
+- **Rock zones** (`loot.lua` `rockZones`), the same as tree zones: the server places big rocks (one per 2 m of radius, at least 9 m apart). 4 zones ship: Davis Quartz quarry (100 m), Grand Senora desert rocks (80 m), Mount Chiliad summit (70 m) and Mount Gordo cliffs (70 m).
+- An orange arrow and ring mark minable rocks within 35 m; zones are on the map ("Mining: ...").
+- Target "Mine rock" with a pickaxe: the player turns to the rock and swings (12 s). X, moving, or taking any damage stops it. Gives 5-9 stone (the `rock` table). A mined rock is gone for everyone and comes back after 60 minutes.
+- Admins: `/rockzone add <radius 50-100> [rocks] [name]`, `/rockzone remove`, `/rockzone list`.
+- Tree zones and rock zones now share one system; nothing changes for tree zones.
+- VERIFY IN-GAME: the 4 rock zone spots, the rock models (`prop_rock_4_big`, `prop_rock_4_big2`, `prop_rock_4_c`, `prop_rock_1_a`), and the pickaxe in the hand.
+
 ## Tree zones: planted trees to chop
 
 - **Tree zones** (`loot.lua` `treeZones`): the server plants choppable trees in each zone (one per 2 m of radius, or `trees = n`), at least 6 m apart, the same spots every restart. 7 zones ship: your 4 spots plus Paleto Forest, Raton Canyon woods and the Mount Chiliad trail (radius 70-100 m, 35-50 trees each).

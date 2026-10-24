@@ -97,6 +97,7 @@ return {
                 { name = 'wood_planks', buy = 8, stock = 120, restock = 30 },
                 { name = 'wood_log', buy = 25, sell = 10, stock = 20, restock = 5 },
                 { name = 'stone', buy = 9, stock = 40, restock = 10 },
+                { name = 'pickaxe', buy = 60, sell = 20, stock = 3, restock = 1 },
                 { name = 'building_plan', buy = 30, stock = 3, restock = 1 },
                 { name = 'firewood', buy = 4, stock = 20, restock = 5 },
                 { name = 'campfire', buy = 25, stock = 3, restock = 1 },
