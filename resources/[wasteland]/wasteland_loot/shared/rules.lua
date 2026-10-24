@@ -67,4 +67,35 @@ function Rules.modelIndex(containers, hash)
     return out
 end
 
+--- How many trees a tree zone has: its own `trees`, or one per 2 m of radius.
+function Rules.zoneTreeCount(zone)
+    if zone.trees and zone.trees > 0 then return math.floor(zone.trees) end
+    return math.max(10, math.floor(zone.radius / 2))
+end
+
+--- Where the trees of a zone stand: a list of { x, y, m } (m = which model,
+--- 1..models). The same zone always gets the same trees (seeded from its
+--- middle), at least `spacing` metres apart, inside the radius. Ground
+--- height is found by the client.
+function Rules.zoneTrees(zone, spacing, models)
+    local seed = ((math.floor(zone.coords.x * 10) * 73856093) ~ (math.floor(zone.coords.y * 10) * 19349663)) & 0x7fffffff
+    local function rand() -- LCG: does not touch math.random
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff
+        return seed / 0x80000000
+    end
+    local want, out = Rules.zoneTreeCount(zone), {}
+    local min2 = spacing * spacing
+    for _ = 1, want * 40 do
+        if #out >= want then break end
+        local a, r = rand() * 2 * math.pi, zone.radius * math.sqrt(rand())
+        local x, y = zone.coords.x + r * math.cos(a), zone.coords.y + r * math.sin(a)
+        local free = true
+        for _, t in ipairs(out) do
+            if (t.x - x) ^ 2 + (t.y - y) ^ 2 < min2 then free = false; break end
+        end
+        if free then out[#out + 1] = { x = x, y = y, m = 1 + math.floor(rand() * math.max(1, models)) } end
+    end
+    return out
+end
+
 return Rules

@@ -77,6 +77,34 @@ return {
         body = { label = 'Body', table = 'zombie', searchSeconds = 3, refillMinutes = 9999, grid = { 4, 4 }, anim = 'kneel' },
     },
 
+    -- Tree zones: areas where the server plants trees that can be chopped
+    -- (target "Chop tree" with a hatchet or battle axe; X, moving or taking
+    -- damage stops it). A chopped tree leaves a stump and grows back after
+    -- respawnMinutes. trees = 0: one tree per 2 m of radius (75 m -> 37).
+    -- Admins can also place zones in game: /treezone add <radius> [trees] [name],
+    -- /treezone remove (nearest placed zone), /treezone list.
+    treeZones = {
+        enabled = true,
+        respawnMinutes = 60,
+        chopSeconds = 10,
+        spacing = 6,          -- least metres between two trees
+        table = 'tree',       -- loot table below (what a tree gives)
+        tools = { 'weapon_hatchet', 'weapon_battleaxe' },
+        models = { 'prop_tree_pine_01', 'prop_tree_pine_02', 'prop_tree_cedar_s_04', 'prop_tree_cedar_s_06' },
+        stump = 'prop_tree_stump_01',
+        marker = true,        -- green marker over choppable trees close by
+        blips = true,         -- zones on the map
+        zones = {
+            { label = 'Sandy Shores woods', coords = vector3(1385.98, 3406.79, 45.90), radius = 75 },
+            { label = 'Route 68 woods', coords = vector3(21.16, 3514.90, 56.19), radius = 75 },
+            { label = 'Harmony hills', coords = vector3(38.12, 2576.34, 80.51), radius = 75 },
+            { label = 'Tongva hills', coords = vector3(-2445.60, 1518.15, 266.31), radius = 75 },
+            { label = 'Paleto Forest', coords = vector3(-552.8, 5348.6, 74.7), radius = 100 },
+            { label = 'Raton Canyon woods', coords = vector3(-1520.0, 4600.0, 40.0), radius = 80 },
+            { label = 'Mount Chiliad trail', coords = vector3(-770.0, 5560.0, 33.0), radius = 70 },
+        },
+    },
+
     -- Loot tables. emptyChance: chance the container has nothing at all.
     -- rolls: how many picks; items: { name, min, max, weight } (weight =
     -- how likely compared to the others in the same table).

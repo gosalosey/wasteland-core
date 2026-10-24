@@ -26,6 +26,15 @@ local function now() return GetGameTimer() end
 
 local function notice(src, message) TriggerClientEvent('wasteland:loot:client:notice', src, message) end
 
+local function isAdmin(src)
+    if GetResourceState('wasteland_admin') == 'started' then
+        local ok, yes = pcall(function() return exports.wasteland_admin:IsAdmin(src) end)
+        if ok then return yes == true end
+    end
+    local allowed = IsPlayerAceAllowed(tostring(src), 'wasteland.admin')
+    return allowed == true or allowed == 1
+end
+
 local function playerCoords(src)
     local ped = GetPlayerPed(src)
     if not ped or ped == 0 or not DoesEntityExist(ped) then return nil end
@@ -86,7 +95,7 @@ end
 local function begin(src, name, typeName, coords, label)
     local busy = searching[src]
     -- A search that was never finished or cancelled (lost message) expires.
-    if busy and now() - busy.startedAt < (M.config.containers[busy.type].searchSeconds + 10) * 1000 then return end
+    if busy and now() - busy.startedAt < ((busy.seconds or 0) + 10) * 1000 then return end
     searching[src] = nil
     local c = M.config.containers[typeName]
     local id, err = inv():EnsureStash(name, stashOpts(c, coords, nil, label))
@@ -130,10 +139,13 @@ local function giveDirect(src, s, c)
     TriggerEvent('wasteland:loot:searched', src, s.type, s.name, #got > 0 or left)
 end
 
+local finishZoneTree -- tree zones (below)
+
 local function finish(src)
     local s = searching[src]
     searching[src] = nil
     if not s then return end
+    if s.zoneTree then return finishZoneTree(src, s) end
     local c = M.config.containers[s.type]
     if now() - s.startedAt < (s.seconds or c.searchSeconds) * 1000 - 300 then
         M.log:warn('player %d finished searching %s too early', src, s.name)
@@ -208,6 +220,36 @@ local CONTAINER = { type = 'table', fields = {
     reach = { type = 'number', min = 1, max = 20,
         description = 'How close (m) to the middle of the prop a player must be (big props like car wrecks); default: reach' },
 } }
+local TREEZONE = { type = 'table', fields = {
+    label = { type = 'string', default = 'Tree zone', maxLength = 40 },
+    coords = { type = 'vector3', required = true },
+    radius = { type = 'number', default = 75, min = 10, max = 200 },
+    trees = { type = 'integer', default = 0, min = 0, max = 200, description = '0 = one per 2 m of radius' },
+} }
+local TREEZONES = { type = 'table', fields = {
+    enabled = { type = 'boolean', default = true },
+    respawnMinutes = { type = 'number', default = 60, min = 1, max = 100000 },
+    chopSeconds = { type = 'number', default = 10, min = 1, max = 120 },
+    chopDistance = { type = 'number', default = 3.5, min = 1.5, max = 8 },
+    spacing = { type = 'number', default = 6, min = 2, max = 50, description = 'Least metres between two trees' },
+    table = { type = 'string', default = 'tree', pattern = '^[%a][%w_]*$' },
+    tools = { type = 'array', default = { 'weapon_hatchet', 'weapon_battleaxe' }, items = { type = 'string', pattern = '^[%w_]+$' } },
+    models = { type = 'array', default = { 'prop_tree_pine_01', 'prop_tree_pine_02', 'prop_tree_cedar_s_04', 'prop_tree_cedar_s_06' },
+        minItems = 1, items = { type = 'string', pattern = '^[%w_]+$' } },
+    stump = { type = 'string', default = 'prop_tree_stump_01', pattern = '^[%w_]*$', description = 'Left after chopping ("" = nothing)' },
+    marker = { type = 'boolean', default = true, description = 'A marker over choppable trees close by' },
+    blips = { type = 'boolean', default = true, description = 'Tree zones on the map' },
+    zones = { type = 'array', default = {
+        { label = 'Sandy Shores woods', coords = { x = 1385.98, y = 3406.79, z = 45.90 }, radius = 75 },
+        { label = 'Route 68 woods', coords = { x = 21.16, y = 3514.90, z = 56.19 }, radius = 75 },
+        { label = 'Harmony hills', coords = { x = 38.12, y = 2576.34, z = 80.51 }, radius = 75 },
+        { label = 'Tongva hills', coords = { x = -2445.60, y = 1518.15, z = 266.31 }, radius = 75 },
+        { label = 'Paleto Forest', coords = { x = -552.8, y = 5348.6, z = 74.7 }, radius = 100 },
+        { label = 'Raton Canyon woods', coords = { x = -1520.0, y = 4600.0, z = 40.0 }, radius = 80 },
+        { label = 'Mount Chiliad trail', coords = { x = -770.0, y = 5560.0, z = 33.0 }, radius = 70 },
+    }, items = TREEZONE },
+} }
+
 local TABLE = { type = 'table', fields = {
     emptyChance = { type = 'number', default = 0.5, min = 0, max = 1 },
     rolls = { type = 'array', default = { 1, 1 }, minItems = 2, maxItems = 2, items = { type = 'integer', min = 0, max = 20 } },
@@ -328,6 +370,205 @@ local function saveCustom()
     SetResourceKvp(CUSTOM_KVP, json.encode(out))
 end
 
+-------------------------------------------------------------------------------
+-- Tree zones: areas (loot.lua treeZones.zones, plus zones admins place with
+-- /treezone) where the server puts choppable trees. Every client spawns the
+-- same trees (positions are seeded from the zone); a chopped tree becomes a
+-- stump for everyone and grows back after respawnMinutes. Chopped state is
+-- kept in memory: a server restart grows every tree back.
+-------------------------------------------------------------------------------
+
+local ZONES_KVP = 'treeZones'
+local trees = {}       -- tree id -> { id, zone, x, y, m, downAt, by }
+local treeList = {}    -- ordered tree ids (what clients get)
+local adminZones = {}  -- zones placed with /treezone: { id, label, coords = {x,y,z}, radius, trees }
+local zoneList = {}    -- every zone: { id, label, coords, radius, admin }
+
+local function tz() return M.config.treeZones end
+
+-- The container-like definition giveDirect / stashOpts use.
+local function treeContainer()
+    return { label = 'Tree', table = tz().table, grid = { 4, 3 }, reach = 6 }
+end
+
+local function loadAdminZones()
+    adminZones = {}
+    local ok, raw = pcall(GetResourceKvpString, ZONES_KVP)
+    if not ok or type(raw) ~= 'string' then return end
+    local okJ, list = pcall(json.decode, raw)
+    if not okJ or type(list) ~= 'table' then return end
+    for _, z in ipairs(list) do
+        if type(z) == 'table' and type(z.id) == 'string' and type(z.coords) == 'table' and tonumber(z.coords.x) and tonumber(z.radius) then
+            adminZones[#adminZones + 1] = { id = z.id, label = tostring(z.label or 'Tree zone'),
+                coords = { x = tonumber(z.coords.x), y = tonumber(z.coords.y), z = tonumber(z.coords.z) or 0.0 },
+                radius = num(z.radius, 10, 200, 75), trees = math.floor(num(z.trees, 0, 200, 0)) }
+        end
+    end
+end
+
+local function saveAdminZones() SetResourceKvp(ZONES_KVP, json.encode(adminZones)) end
+
+local function zoneTreeData()
+    local out = {}
+    for _, id in ipairs(treeList) do
+        local t = trees[id]
+        out[#out + 1] = { id = id, x = t.x, y = t.y, z = t.z, m = t.m, down = t.downAt ~= nil }
+    end
+    local zones = {}
+    for _, z in ipairs(zoneList) do zones[#zones + 1] = { label = z.label, x = z.coords.x, y = z.coords.y, z = z.coords.z, radius = z.radius } end
+    local c = tz()
+    return { enabled = c.enabled, trees = out, zones = zones, models = c.models, stump = c.stump, marker = c.marker,
+        blips = c.blips, distance = c.chopDistance }
+end
+
+local function sendTrees(target) TriggerClientEvent('wasteland:loot:client:trees', target or -1, zoneTreeData()) end
+
+-- (Re)builds every zone's trees. Trees that keep their id keep their state.
+local function buildTrees()
+    local old = trees
+    trees, treeList, zoneList = {}, {}, {}
+    local c = tz()
+    if not c.enabled then return end
+    for i, z in ipairs(c.zones) do
+        zoneList[#zoneList + 1] = { id = 'z' .. i, label = z.label, coords = { x = z.coords.x, y = z.coords.y, z = z.coords.z }, radius = z.radius, trees = z.trees }
+    end
+    for _, z in ipairs(adminZones) do
+        zoneList[#zoneList + 1] = { id = z.id, label = z.label, coords = z.coords, radius = z.radius, trees = z.trees, admin = true }
+    end
+    for _, z in ipairs(zoneList) do
+        for n, p in ipairs(Rules.zoneTrees(z, c.spacing, #c.models)) do
+            local id = z.id .. '_' .. n
+            local prev = old[id]
+            trees[id] = { id = id, zone = z.id, x = p.x, y = p.y, z = z.coords.z, m = p.m, downAt = prev and prev.downAt }
+            treeList[#treeList + 1] = id
+        end
+    end
+end
+
+local function setDown(t, down)
+    t.downAt = down and now() or nil
+    t.by = nil
+    TriggerClientEvent('wasteland:loot:client:treestate', -1, t.id, t.downAt ~= nil)
+end
+
+local function chopping(t)
+    local s = t.by and searching[t.by]
+    return s and s.zoneTree == t.id
+end
+
+-- Thread only (the overflow stash may read the database).
+local function beginZoneTree(src, id, groundZ)
+    local t = trees[id]
+    if not t then return end
+    local busy = searching[src]
+    if busy and now() - busy.startedAt < ((busy.seconds or 0) + 10) * 1000 then return end
+    searching[src] = nil
+    local c = tz()
+    local p = playerCoords(src)
+    if not p or (p.x - t.x) ^ 2 + (p.y - t.y) ^ 2 > (c.chopDistance + 1.5) ^ 2 or math.abs(p.z - groundZ) > 6 then
+        notice(src, 'You are too far away.'); return
+    end
+    if t.downAt then notice(src, 'This tree has already been chopped down.'); return end
+    if chopping(t) then notice(src, 'Someone is already chopping this tree.'); return end
+    local tc = treeContainer()
+    tc.tools = c.tools
+    if not hasTool(src, tc) then notice(src, 'You need ' .. toolNames(tc) .. ' for that.'); return end
+    local coords = { x = t.x, y = t.y, z = groundZ }
+    local name = 'loot_tz_' .. id:gsub('[^%w]', '')
+    local stash, err = inv():EnsureStash(name, stashOpts(tc, coords, nil, 'Tree'))
+    if not stash then notice(src, 'That cannot be chopped right now.'); M.log:warn('stash %s: %s', name, tostring(err)); return end
+    local seconds = c.chopSeconds * (1 - skillBonus(src, 'scavenging', 'searchTime'))
+    searching[src] = { name = name, type = 'tree', startedAt = now(), coords = coords, id = stash, seconds = seconds, zoneTree = id }
+    t.by = src
+    TriggerClientEvent('wasteland:loot:client:search', src, { seconds = seconds, label = 'Chopping tree', anim = 'axe',
+        face = { x = t.x, y = t.y, z = groundZ } })
+end
+
+finishZoneTree = function(src, s)
+    local t = trees[s.zoneTree]
+    if t and t.by == src then t.by = nil end
+    if not t then return end
+    if now() - s.startedAt < s.seconds * 1000 - 300 then
+        M.log:warn('player %d finished chopping %s too early', src, t.id)
+        return
+    end
+    local c = tz()
+    local p = playerCoords(src)
+    if not p or (p.x - t.x) ^ 2 + (p.y - t.y) ^ 2 > (c.chopDistance + 2.5) ^ 2 then notice(src, 'You moved away.'); return end
+    if t.downAt then notice(src, 'This tree has already been chopped down.'); return end
+    local tc = treeContainer()
+    tc.tools = c.tools
+    if not hasTool(src, tc) then notice(src, 'You need ' .. toolNames(tc) .. ' for that.'); return end
+    setDown(t, true)
+    searches = searches + 1
+    giveDirect(src, s, tc)
+end
+
+local respawnToken = nil
+local function respawnLoop(token)
+    while respawnToken == token do
+        Citizen.Wait(15000)
+        if respawnToken ~= token then return end
+        local due = tz().respawnMinutes * 60000
+        for _, id in ipairs(treeList) do
+            local t = trees[id]
+            if t and t.downAt and now() - t.downAt >= due then
+                setDown(t, false)
+                inv():DeleteStash('loot_tz_' .. id:gsub('[^%w]', ''))
+            end
+        end
+    end
+end
+
+-- /treezone add <radius 50-100> [trees] [name] | remove | list   (admins)
+local function treeZoneCommand(source, args)
+    local src = tonumber(source) or 0
+    if not (M and M.active) then return end
+    if src ~= 0 and not isAdmin(src) then return end
+    local function say(msg) if src == 0 then print('[treezone] ' .. msg) else notice(src, msg) end end
+    local sub = args[1]
+    if sub == 'add' and src ~= 0 then
+        local radius = math.floor(num(args[2], 50, 100, 75))
+        local count = math.floor(num(args[3], 0, 200, 0))
+        local label = table.concat(args, ' ', 4)
+        if label == '' then label = 'Tree zone' end
+        local p = playerCoords(src)
+        local n = 1
+        for _, z in ipairs(adminZones) do n = math.max(n, (tonumber(z.id:match('^a(%d+)$')) or 0) + 1) end
+        adminZones[#adminZones + 1] = { id = 'a' .. n, label = label:sub(1, 40), coords = p, radius = radius, trees = count }
+        saveAdminZones()
+        buildTrees()
+        sendTrees()
+        say(string.format('Tree zone "%s" placed here: %d m, %d trees.', label, radius, Rules.zoneTreeCount({ radius = radius, trees = count })))
+    elseif sub == 'remove' and src ~= 0 then
+        local p = playerCoords(src)
+        local best, bestD = nil, math.huge
+        for i, z in ipairs(adminZones) do
+            local d = (z.coords.x - p.x) ^ 2 + (z.coords.y - p.y) ^ 2
+            if d < bestD and d <= (z.radius + 50) ^ 2 then best, bestD = i, d end
+        end
+        if not best then say('No tree zone placed with /treezone near you (zones in loot.lua are removed there).'); return end
+        local z = table.remove(adminZones, best)
+        saveAdminZones()
+        buildTrees()
+        sendTrees()
+        say('Tree zone "' .. z.label .. '" removed.')
+    else
+        if #zoneList == 0 then say('No tree zones. /treezone add <radius 50-100> [trees] [name]'); return end
+        for _, z in ipairs(zoneList) do
+            local up, n = 0, 0
+            for _, id in ipairs(treeList) do
+                if trees[id].zone == z.id then n = n + 1; if not trees[id].downAt then up = up + 1 end end
+            end
+            say(string.format('%s%s: %.0f, %.0f, %d m, %d/%d trees standing', z.label, z.admin and ' (placed)' or '',
+                z.coords.x, z.coords.y, z.radius, up, n))
+        end
+        say('/treezone add <radius 50-100> [trees] [name] | /treezone remove')
+    end
+end
+
+local commandRegistered = false
+
 -- Model lists per container type: loot.lua names plus admin-added hashes.
 local function modelsOf(name, c)
     local out = {}
@@ -366,6 +607,7 @@ M = Wasteland.DefineModule({
             reach = { type = 'number', default = 3.0, min = 1, max = 10, description = 'How close (m) a player must be to search' },
             containers = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = CONTAINER },
             tables = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = TABLE },
+            treeZones = TREEZONES,
         } },
     },
     onInit = function(mod)
@@ -388,14 +630,37 @@ M = Wasteland.DefineModule({
                 end
             end
         end
+        local c = M.config.treeZones
+        -- A broken tree zone setting only turns tree zones off.
+        if c.enabled and not M.config.tables[c.table] then
+            M.log:warn('loot.lua: treeZones uses table "%s", which does not exist: tree zones are off', c.table)
+            c.enabled = false
+        end
+        for _, tool in ipairs(c.enabled and c.tools or {}) do
+            if not inv():GetItemDefinition(tool) then
+                M.log:warn('loot.lua: treeZones needs tool "%s", which is not in inventory.lua items: tree zones are off', tool)
+                c.enabled = false
+            end
+        end
         loadCustom()
         loadExtra()
         rebuildIndex()
         state, searching = {}, {}
         TriggerClientEvent('wasteland:loot:client:config', -1, clientConfig())
+        loadAdminZones()
+        buildTrees()
+        sendTrees()
+        local token = {}
+        respawnToken = token
+        Citizen.CreateThread(function() respawnLoop(token) end)
+        if not commandRegistered then
+            commandRegistered = true -- FiveM commands cannot be unregistered
+            RegisterCommand('treezone', treeZoneCommand, false)
+        end
         return true
     end,
     onShutdown = function()
+        respawnToken = nil
         for src in pairs(searching) do TriggerClientEvent('wasteland:loot:client:cancel', src) end
         searching = {}
     end,
@@ -408,7 +673,16 @@ local RATE = { burst = 4, perSecond = 1 }
 
 M.netEvent('wasteland:loot:server:config', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
     TriggerClientEvent('wasteland:loot:client:config', src, clientConfig())
+    sendTrees(src)
 end)
+
+-- Chop a tree in a tree zone: its id and the ground height the client found.
+M.netEvent('wasteland:loot:server:chopzone', { args = { { type = 'string', required = true, maxLength = 24 },
+    { type = 'number', required = true } }, rateLimit = RATE },
+    function(src, id, groundZ)
+        if not trees[id] then return end
+        Citizen.CreateThread(function() beginZoneTree(src, id, groundZ) end)
+    end)
 
 -- Search a world prop: its model and where it stands (the server checks
 -- that the model is a container and that the player is next to it).

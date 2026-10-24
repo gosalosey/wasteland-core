@@ -1,5 +1,15 @@
 # Changelog
 
+## Tree zones: planted trees to chop
+
+- **Tree zones** (`loot.lua` `treeZones`): the server plants choppable trees in each zone (one per 2 m of radius, or `trees = n`), at least 6 m apart, the same spots every restart. 7 zones ship: your 4 spots plus Paleto Forest, Raton Canyon woods and the Mount Chiliad trail (radius 70-100 m, 35-50 trees each).
+- Easy to spot: a green arrow over each choppable tree and a ring at its foot (within 35 m), and every zone is on the map ("Lumber: ...").
+- Target "Chop tree" with a hatchet or battle axe: the player turns to the tree and swings a hatchet (10 s). **X, moving, or taking any damage (health or armour) stops it**; nothing is given.
+- One player per tree at a time. A chopped tree becomes a stump for everyone and grows back after **60 minutes** (`respawnMinutes`). Wood goes straight into the inventory (the `tree` loot table: logs, sometimes firewood).
+- Admins place zones in game: `/treezone add <radius 50-100> [trees] [name]` at your position, `/treezone remove` (nearest placed zone), `/treezone list`. Placed zones are kept across restarts.
+- Chopped state is kept in memory: a server restart grows every tree back.
+- VERIFY IN-GAME: the extra 3 zone spots, that trees sit on the ground (not on roads or roofs), and the hatchet in the hand (position/rotation may need a tweak).
+
 ## Getting wood: chop trees, break down wooden junk, saw logs
 
 - **Chop trees** with a hatchet or battle axe (look at a tree: "Chop tree", 8 s): 2-3 logs (sometimes firewood). Each tree can be chopped again after 30 minutes.

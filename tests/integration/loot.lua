@@ -375,3 +375,93 @@ describe('trees: a tool, and the wood goes straight into the inventory', functio
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe('tree zones: trees planted by the server, chopped, grown back', function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['loot.lua'] = [[return {
+        containers = {},
+        tables = { wood = { emptyChance = 0, rolls = { 1, 1 }, items = { { name = 'bandage', min = 2, max = 2, weight = 1 } } } },
+        treeZones = { respawnMinutes = 1, chopSeconds = 2, table = 'wood', tools = { 'weapon_hatchet' },
+            zones = { { label = 'Test woods', coords = vector3(10.0, 10.0, 30.0), radius = 50, trees = 12 } } },
+    }]]
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival', 'wasteland_loot' })
+    local a = player(server, 'axe')
+    local b = player(server, 'saw')
+    local function trees() return last(events(server, a, 'wasteland:loot:client:trees')).args[1] end
+    local function count(name) return server:export('wasteland_inventory', 'GetItemCount', a, name) end
+    local t
+
+    it('players get the zone and its trees', function()
+        server:clientEvent(a, 'wasteland:loot:server:config'); server:advance(200)
+        local d = trees()
+        expect(d.enabled).toBe(true)
+        expect(#d.zones).toBe(1)
+        expect(#d.trees).toBe(12)
+        t = d.trees[1]
+        expect(t.down).toBe(false)
+    end)
+
+    it('too far away or without a hatchet: refused', function()
+        server.players[a].coords = { x = t.x + 30, y = t.y, z = 30.0 }
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', t.id, 30.0); server:advance(200)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]).toBe('You are too far away.')
+        server.players[a].coords = { x = t.x + 1.5, y = t.y, z = 30.0 }
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', t.id, 30.0); server:advance(200)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]).toBe('You need a hatchet for that.')
+    end)
+
+    it('chopping: axe animation facing the tree; nobody else can chop it meanwhile', function()
+        server:export('wasteland_inventory', 'AddItem', a, 'weapon_hatchet', 1)
+        server:export('wasteland_inventory', 'AddItem', b, 'weapon_hatchet', 1)
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', t.id, 30.0); server:advance(200)
+        local s = last(events(server, a, 'wasteland:loot:client:search')).args[1]
+        expect(s.anim).toBe('axe')
+        expect(s.label).toBe('Chopping tree')
+        expect(s.face.x).toBe(t.x)
+        server.players[b].coords = { x = t.x - 1.5, y = t.y, z = 30.0 }
+        server:clientEvent(b, 'wasteland:loot:server:chopzone', t.id, 30.0); server:advance(200)
+        expect(last(events(server, b, 'wasteland:loot:client:notice')).args[1]).toBe('Someone is already chopping this tree.')
+    end)
+
+    it('cancelled (X / damage): nothing given, the tree still stands', function()
+        local before = count('bandage')
+        server:clientEvent(a, 'wasteland:loot:server:cancel'); server:advance(2100)
+        server:clientEvent(a, 'wasteland:loot:server:finish'); server:advance(200)
+        expect(count('bandage')).toBe(before)
+        expect(#events(server, -1, 'wasteland:loot:client:treestate')).toBe(0)
+    end)
+
+    it('finished: wood in the inventory, the tree is down for everyone', function()
+        local before = count('bandage')
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', t.id, 30.0); server:advance(2100)
+        server:clientEvent(a, 'wasteland:loot:server:finish'); server:advance(200)
+        expect(count('bandage')).toBe(before + 2)
+        local st = last(events(server, -1, 'wasteland:loot:client:treestate')).args
+        expect(st[1]).toBe(t.id); expect(st[2]).toBe(true)
+        server:clientEvent(b, 'wasteland:loot:server:chopzone', t.id, 30.0); server:advance(200)
+        expect(last(events(server, b, 'wasteland:loot:client:notice')).args[1]).toBe('This tree has already been chopped down.')
+    end)
+
+    it('grows back after respawnMinutes', function()
+        server:advance(80000)
+        local st = last(events(server, -1, 'wasteland:loot:client:treestate')).args
+        expect(st[1]).toBe(t.id); expect(st[2]).toBe(false)
+    end)
+
+    it('admins place and remove zones in game (/treezone); others cannot', function()
+        server.players[b].coords = { x = 500.0, y = 500.0, z = 30.0 }
+        server:command(b, 'treezone add 60 20 Pine hill'); server:advance(200)
+        expect(#trees().zones).toBe(1)
+        server.aces[b .. '|wasteland.admin'] = true
+        server:command(b, 'treezone add 60 20 Pine hill'); server:advance(200)
+        local d = trees()
+        expect(#d.zones).toBe(2)
+        expect(#d.trees).toBe(32)
+        expect(d.zones[2].label).toBe('Pine hill')
+        server:command(b, 'treezone remove'); server:advance(200)
+        expect(#trees().zones).toBe(1)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

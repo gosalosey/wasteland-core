@@ -7,7 +7,7 @@ local Rules = env.WLL.Rules
 local function shippedConfig()
     local f = assert(io.open(RESOURCES .. '/wasteland_config/config/loot.lua', 'rb'))
     local src = f:read('a'); f:close()
-    return assert(load(src, '@loot.lua', 't', { math = math }))()
+    return assert(load(src, '@loot.lua', 't', { math = math, vector3 = function(x, y, z) return { x = x, y = y, z = z } end }))()
 end
 local cfg = shippedConfig()
 
@@ -55,5 +55,36 @@ describe('loot tables', function()
             end
         end
         expect(guns > 0 and guns < n * 0.03).toBe(true)
+    end)
+end)
+
+describe('tree zones', function()
+    local zone = { coords = { x = 1385.98, y = 3406.79, z = 45.9 }, radius = 75 }
+
+    it('one tree per 2 m of radius unless the zone says how many', function()
+        expect(Rules.zoneTreeCount(zone)).toBe(37)
+        expect(Rules.zoneTreeCount({ radius = 50, trees = 12 })).toBe(12)
+    end)
+
+    it('trees stand inside the zone, apart from each other, the same every time', function()
+        local a, b = Rules.zoneTrees(zone, 6, 4), Rules.zoneTrees(zone, 6, 4)
+        expect(#a).toBe(37)
+        for i, t in ipairs(a) do
+            expect(t.x).toBe(b[i].x); expect(t.m).toBe(b[i].m)
+            expect((t.x - zone.coords.x) ^ 2 + (t.y - zone.coords.y) ^ 2 <= 75 * 75).toBe(true)
+            expect(t.m >= 1 and t.m <= 4).toBe(true)
+            for j = i + 1, #a do expect((t.x - a[j].x) ^ 2 + (t.y - a[j].y) ^ 2 >= 36).toBe(true) end
+        end
+    end)
+
+    it('shipped zones: 50-100 m, enough trees, models and a wood table', function()
+        local tz = cfg.treeZones
+        expect(#tz.zones >= 7).toBe(true)
+        for _, z in ipairs(tz.zones) do
+            expect(z.radius >= 50 and z.radius <= 100).toBe(true)
+            expect(#Rules.zoneTrees(z, tz.spacing, #tz.models) >= 25).toBe(true)
+        end
+        expect(tz.respawnMinutes).toBe(60)
+        expect(cfg.tables[tz.table] ~= nil).toBe(true)
     end)
 end)
