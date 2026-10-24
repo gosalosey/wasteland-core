@@ -221,6 +221,65 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
     return candidates
 end
 
+-- Slivers left after snapping: model boxes are not exactly the visible
+-- pieces, so a snapped piece can stand a few cm off its neighbour. Short
+-- rays go out from each side (and down from the bottom) of the piece at
+-- `coords`; where another piece's real surface is that close, the piece is
+-- moved onto it. -> world offset (vector3)
+local function GapFill(pieceKey, coords, heading, ghost)
+    local maxGap = cfg.placement.autoFillGap or 0.15
+    if maxGap <= 0 then return vector3(0.0, 0.0, 0.0) end
+    local d = GetModelDims(GetHashKey(cfg.pieces[pieceKey].model))
+    local inset = 0.05
+    local function probe(from, dir)
+        local a = coords + RotateOffset(from, heading)
+        local b = a + dir * (inset + maxGap)
+        local ray = StartExpensiveSynchronousShapeTestLosProbe(a.x, a.y, a.z, b.x, b.y, b.z, 16, ghost, 7)
+        local _, hit, at = GetShapeTestResult(ray)
+        if hit ~= 1 or not at then return nil end
+        local gap = #(at - a) - inset
+        if gap > 0.005 and gap <= maxGap then return gap end
+        return nil
+    end
+    -- the smallest gap seen through a face (points spread over it)
+    local function face(axis, sign)
+        local dir = RotateOffset(axis == 'x' and vector3(sign, 0.0, 0.0) or vector3(0.0, sign, 0.0), heading)
+        local best
+        for _, u in ipairs({ 0.2, 0.5, 0.8 }) do
+            for _, v in ipairs({ 0.25, 0.75 }) do
+                local z = d.min.z + d.size.z * v
+                local from
+                if axis == 'x' then
+                    from = vector3((sign > 0 and d.max.x or d.min.x) - sign * inset, d.min.y + d.size.y * u, z)
+                else
+                    from = vector3(d.min.x + d.size.x * u, (sign > 0 and d.max.y or d.min.y) - sign * inset, z)
+                end
+                local g = probe(from, dir)
+                if g and (not best or g < best) then best = g end
+            end
+        end
+        return best, dir
+    end
+    local offset = vector3(0.0, 0.0, 0.0)
+    for _, axis in ipairs({ 'x', 'y' }) do
+        local gp, dp = face(axis, 1.0)
+        local gn, dn = face(axis, -1.0)
+        -- a gap on one side only (both sides: it sits between two pieces; leave it)
+        if gp and not gn then offset = offset + dp * gp
+        elseif gn and not gp then offset = offset + dn * gn end
+    end
+    -- standing a little above what is under it (a ceiling on walls, a wall on a foundation)
+    local best
+    for _, u in ipairs({ 0.2, 0.5, 0.8 }) do
+        for _, v in ipairs({ 0.2, 0.5, 0.8 }) do
+            local g = probe(vector3(d.min.x + d.size.x * u, d.min.y + d.size.y * v, d.min.z + inset), vector3(0.0, 0.0, -1.0))
+            if g and (not best or g < best) then best = g end
+        end
+    end
+    if best then offset = offset + vector3(0.0, 0.0, -best) end
+    return offset
+end
+
 -------------------------------------------------------------------------------
 -- Barbed wire on top of external walls: touching it hurts (the server checks)
 -------------------------------------------------------------------------------
@@ -946,6 +1005,7 @@ StartPlacement = function(pieceKey, moveId, moveCupboard)
     local lastRefresh, lastKey = GetGameTimer(), nil
     -- Arrow keys slide the piece (on top of where it snapped): Ctrl for fine steps.
     local nudge, arrowHeldSince = vector3(0.0, 0.0, 0.0), {}
+    local fill = vector3(0.0, 0.0, 0.0) -- sliver closed automatically at the snapped spot
 
     local function cleanup()
         if DoesEntityExist(ghost) then DeleteEntity(ghost) end
@@ -1056,8 +1116,11 @@ StartPlacement = function(pieceKey, moveId, moveCupboard)
                 end
                 if best then
                     local key = ('%.2f,%.2f,%.2f'):format(best.coords.x, best.coords.y, best.coords.z)
-                    if key ~= lastKey then heading, heightOffset, lastKey, nudge = best.heading, 0.0, key, vector3(0.0, 0.0, 0.0) end
-                    placeCoords = vector3(best.coords.x + nudge.x, best.coords.y + nudge.y, best.coords.z + heightOffset)
+                    if key ~= lastKey then
+                        heading, heightOffset, lastKey, nudge = best.heading, 0.0, key, vector3(0.0, 0.0, 0.0)
+                        fill = GapFill(pieceKey, best.coords, best.heading, ghost)
+                    end
+                    placeCoords = vector3(best.coords.x + fill.x + nudge.x, best.coords.y + fill.y + nudge.y, best.coords.z + fill.z + heightOffset)
                     didSnap = true
                 end
             end

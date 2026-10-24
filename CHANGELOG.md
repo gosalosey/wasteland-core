@@ -1,5 +1,10 @@
 # Changelog
 
+## Base building: slivers close themselves when snapping
+
+- When a piece snaps, short rays check each side and the bottom against the real neighbouring pieces. A gap of up to 15 cm (a sliver) is closed by moving the piece onto its neighbour. A piece with a gap on both sides (between two pieces) is left alone on that axis.
+- Optional `placement.autoFillGap` in basebuilding.lua (metres, default 0.15; 0 turns it off). Ctrl+arrows still fine-tune after that.
+
 ## Base building: move pieces with the arrow keys
 
 - Reverted the ceiling alignment change from "Ceilings line up with the foundations": it made the gaps bigger.
