@@ -1,5 +1,9 @@
 # Changelog
 
+## Ceilings line up with the foundations
+
+- Ceilings snapped onto a wall were placed from the middle of the wall instead of the foundation edge it stands on, so they were shifted by half a wall's thickness. Ceilings snapped from opposite walls left gaps between each other and at the walls. They now line up with the foundation grid. Ceilings already built keep their place: remove and place them again to close the gaps.
+
 ## New login spawn system
 
 - All placing of the player (login, "last known position / camp" choice, /stuck, rescues) now goes through one routine in `wasteland_players` (export `PlaceAt`). Before, three scripts moved the ped at the same time.

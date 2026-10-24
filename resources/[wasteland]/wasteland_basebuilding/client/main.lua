@@ -202,9 +202,17 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
             elseif mode == 'top' then
                 if CEILING_LIKE[pieceKey] then
                     -- on top of a wall: a spot on each side of it (which side is
-                    -- the room depends on how the wall was turned); the closer wins
+                    -- the room depends on how the wall was turned); the closer wins.
+                    -- Measured from the foundation edge the wall stands on (not the
+                    -- wall's middle), so ceilings line up with the foundations and
+                    -- with each other: no gap of a wall's thickness between them.
+                    local inset = P.wallsInset ~= false
+                    local edge
+                    if P.wallFacesOutward then edge = inset and dims.max.y or dims.min.y
+                    else edge = inset and dims.min.y or dims.max.y end
+                    if not WALL_LIKE[family] then edge = 0.0 end
                     for _, side in ipairs({ -1.0, 1.0 }) do
-                        local localOffset = vector3(0.0, side * newDims.size.y / 2.0, dims.max.z - overlap)
+                        local localOffset = vector3(0.0, side * newDims.size.y / 2.0 + edge, dims.max.z - overlap)
                         candidates[#candidates + 1] = { coords = data.coords + RotateOffset(localOffset, data.heading), heading = data.heading, priority = 1 }
                     end
                 else
