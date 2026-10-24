@@ -202,17 +202,9 @@ local function GetSnapCandidates(pieceKey, overlap, opts)
             elseif mode == 'top' then
                 if CEILING_LIKE[pieceKey] then
                     -- on top of a wall: a spot on each side of it (which side is
-                    -- the room depends on how the wall was turned); the closer wins.
-                    -- Measured from the foundation edge the wall stands on (not the
-                    -- wall's middle), so ceilings line up with the foundations and
-                    -- with each other: no gap of a wall's thickness between them.
-                    local inset = P.wallsInset ~= false
-                    local edge
-                    if P.wallFacesOutward then edge = inset and dims.max.y or dims.min.y
-                    else edge = inset and dims.min.y or dims.max.y end
-                    if not WALL_LIKE[family] then edge = 0.0 end
+                    -- the room depends on how the wall was turned); the closer wins
                     for _, side in ipairs({ -1.0, 1.0 }) do
-                        local localOffset = vector3(0.0, side * newDims.size.y / 2.0 + edge, dims.max.z - overlap)
+                        local localOffset = vector3(0.0, side * newDims.size.y / 2.0, dims.max.z - overlap)
                         candidates[#candidates + 1] = { coords = data.coords + RotateOffset(localOffset, data.heading), heading = data.heading, priority = 1 }
                     end
                 else
@@ -952,6 +944,8 @@ StartPlacement = function(pieceKey, moveId, moveCupboard)
     local rampOpts = { rampLevel = 'ground', rampFlip = false }
     local candidates = cfg.snapRules[pieceKey] and GetSnapCandidates(pieceKey, overlap, rampOpts) or nil
     local lastRefresh, lastKey = GetGameTimer(), nil
+    -- Arrow keys slide the piece (on top of where it snapped): Ctrl for fine steps.
+    local nudge, arrowHeldSince = vector3(0.0, 0.0, 0.0), {}
 
     local function cleanup()
         if DoesEntityExist(ghost) then DeleteEntity(ghost) end
@@ -1007,13 +1001,39 @@ StartPlacement = function(pieceKey, moveId, moveCupboard)
                     if IsDisabledControlJustPressed(0, 15) then heading = (heading - P.rotateStep) % 360.0 end
                 end
             end
-            local fine = P.fineRotateSpeed * GetFrameTime()
-            if IsDisabledControlPressed(0, 174) then heading = (heading - fine) % 360.0 end
-            if IsDisabledControlPressed(0, 175) then heading = (heading + fine) % 360.0 end
-            -- Up / Down arrows: raise / lower slowly (fine height)
-            local lift = (P.fineHeightSpeed or 0.15) * GetFrameTime()
-            if IsDisabledControlPressed(0, 172) then heightOffset = heightOffset + lift end
-            if IsDisabledControlPressed(0, 173) then heightOffset = heightOffset - lift end
+            local dt = GetFrameTime()
+            local shift, ctrl = IsDisabledControlPressed(0, 21), IsDisabledControlPressed(0, 36)
+            if shift then
+                -- Shift + Left/Right: turn freely; Shift + Up/Down: raise / lower slowly
+                local fine = P.fineRotateSpeed * dt
+                if IsDisabledControlPressed(0, 174) then heading = (heading - fine) % 360.0 end
+                if IsDisabledControlPressed(0, 175) then heading = (heading + fine) % 360.0 end
+                local lift = (P.fineHeightSpeed or 0.15) * dt
+                if IsDisabledControlPressed(0, 172) then heightOffset = heightOffset + lift end
+                if IsDisabledControlPressed(0, 173) then heightOffset = heightOffset - lift end
+            else
+                -- Arrows: slide left / right / away / toward you (as the camera
+                -- looks). Ctrl: fine - a tap moves 1 cm, holding creeps slowly.
+                local camH = math.rad(GetGameplayCamRot(2).z)
+                local fwd = vector3(-math.sin(camH), math.cos(camH), 0.0)
+                local right = vector3(math.cos(camH), math.sin(camH), 0.0)
+                for control, dir in pairs({ [172] = fwd, [173] = -fwd, [174] = -right, [175] = right }) do
+                    if IsDisabledControlPressed(0, control) then
+                        local t0 = arrowHeldSince[control]
+                        if not t0 then
+                            arrowHeldSince[control] = GetGameTimer()
+                            if ctrl then nudge = nudge + dir * 0.01 end
+                        elseif not ctrl then
+                            nudge = nudge + dir * 1.5 * dt
+                        elseif GetGameTimer() - t0 > 300 then
+                            nudge = nudge + dir * 0.08 * dt
+                        end
+                        if not ctrl and not t0 then nudge = nudge + dir * 1.5 * dt end
+                    else
+                        arrowHeldSince[control] = nil
+                    end
+                end
+            end
 
             local didSnap = false
             if snapEnabled and candidates then
@@ -1036,21 +1056,22 @@ StartPlacement = function(pieceKey, moveId, moveCupboard)
                 end
                 if best then
                     local key = ('%.2f,%.2f,%.2f'):format(best.coords.x, best.coords.y, best.coords.z)
-                    if key ~= lastKey then heading, heightOffset, lastKey = best.heading, 0.0, key end
-                    placeCoords = vector3(best.coords.x, best.coords.y, best.coords.z + heightOffset)
+                    if key ~= lastKey then heading, heightOffset, lastKey, nudge = best.heading, 0.0, key, vector3(0.0, 0.0, 0.0) end
+                    placeCoords = vector3(best.coords.x + nudge.x, best.coords.y + nudge.y, best.coords.z + heightOffset)
                     didSnap = true
                 end
             end
             if not didSnap then
+                if lastKey then nudge = vector3(0.0, 0.0, 0.0) end
                 lastKey = nil
-                placeCoords = vector3(target.x, target.y, target.z + heightOffset)
+                placeCoords = vector3(target.x + nudge.x, target.y + nudge.y, target.z + heightOffset)
             end
             SetEntityCoordsNoOffset(ghost, placeCoords.x, placeCoords.y, placeCoords.z, false, false, false)
             SetEntityHeading(ghost, heading)
             if piece.scale then scaleEntity(ghost, piece.scale) end
             local rampHelp = pieceKey == 'ramp' and ('~n~R: %s   Q: %s'):format(rampOpts.rampFlip and 'facing down' or 'facing up',
                 rampOpts.rampLevel == 'top' and 'on top of the foundation' or 'up onto the foundation') or ''
-            help(('%s%s~n~~INPUT_CONTEXT~ place   ~INPUT_FRONTEND_RRIGHT~ cancel~n~Wheel: turn 45   Left/Right: turn freely~n~Up/Down: raise/lower   Shift+wheel: height   Tab: snapping %s~n~Ctrl+wheel: close gaps (%.2f)%s'):format(
+            help(('%s%s~n~~INPUT_CONTEXT~ place   ~INPUT_FRONTEND_RRIGHT~ cancel~n~Wheel: turn 45   Arrows: move   Ctrl+arrows: fine move~n~Shift+Left/Right: turn freely   Shift+Up/Down or Shift+wheel: height   Tab: snapping %s~n~Ctrl+wheel: close gaps (%.2f)%s'):format(
                 piece.label, didSnap and ' (snapped)' or '', snapEnabled and 'on' or 'off', overlap, rampHelp))
 
             if IsDisabledControlJustReleased(0, KEY_E) then

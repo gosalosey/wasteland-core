@@ -1,5 +1,11 @@
 # Changelog
 
+## Base building: move pieces with the arrow keys
+
+- Reverted the ceiling alignment change from "Ceilings line up with the foundations": it made the gaps bigger.
+- While placing, the arrow keys move the piece left / right / away / toward you (as the camera looks). Hold Ctrl for fine moves: a tap moves 1 cm, holding creeps slowly. Works on top of snapping, so a snapped piece can be pushed into the gap.
+- Turning freely is now Shift + Left/Right; slow raise/lower is Shift + Up/Down (Shift + wheel still changes height).
+
 ## Ceilings line up with the foundations
 
 - Ceilings snapped onto a wall were placed from the middle of the wall instead of the foundation edge it stands on, so they were shifted by half a wall's thickness. Ceilings snapped from opposite walls left gaps between each other and at the walls. They now line up with the foundation grid. Ceilings already built keep their place: remove and place them again to close the gaps.
