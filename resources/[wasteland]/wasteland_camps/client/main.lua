@@ -205,15 +205,21 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     end
 end)
 
--- exact: the saved position (maybe inside a building): put them exactly
--- there. Otherwise (a camp point) find the ground under the point.
+-- exact: the saved position (maybe inside a building or on a base floor).
+-- Otherwise a camp point. wasteland_players does the placing (it waits for
+-- the world, the look and base floors); this is only a fallback without it.
 RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label, exact)
     if type(at) ~= 'table' then return end
+    if GetResourceState('wasteland_ui') == 'started' and exports.wasteland_ui:IsOpen(SPAWN) then exports.wasteland_ui:Close(SPAWN) end
+    local message = label and ('Welcome to ' .. tostring(label) .. '. Good luck out there.') or nil
+    if GetResourceState('wasteland_players') == 'started' then
+        local ok, placed = pcall(function() return exports.wasteland_players:PlaceAt(at, exact == true, message) end)
+        if ok and placed then return end
+    end
     Citizen.CreateThread(function()
         local ped = PlayerPedId()
         DoScreenFadeOut(400)
         while not IsScreenFadedOut() do Citizen.Wait(0) end
-        if GetResourceState('wasteland_ui') == 'started' and exports.wasteland_ui:IsOpen(SPAWN) then exports.wasteland_ui:Close(SPAWN) end
         local x, y, z = at.x + 0.0, at.y + 0.0, at.z + 0.0
         RequestCollisionAtCoord(x, y, z)
         SetEntityCoordsNoOffset(ped, x, y, z, false, false, false)
@@ -237,9 +243,9 @@ RegisterNetEvent('wasteland:camps:client:spawnAt', function(at, label, exact)
         FreezeEntityPosition(ped, false)
         SetEntityInvincible(ped, false)
         DoScreenFadeIn(600)
-        if label then
+        if message then
             BeginTextCommandThefeedPost('STRING')
-            AddTextComponentSubstringPlayerName('Welcome to ' .. tostring(label) .. '. Good luck out there.')
+            AddTextComponentSubstringPlayerName(message)
             EndTextCommandThefeedPostTicker(false, false)
         end
     end)

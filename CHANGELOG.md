@@ -1,5 +1,14 @@
 # Changelog
 
+## New login spawn system
+
+- All placing of the player (login, "last known position / camp" choice, /stuck, rescues) now goes through one routine in `wasteland_players` (export `PlaceAt`). Before, three scripts moved the ped at the same time.
+- The screen stays dark and the player held until, in order: the look is applied (a model change replaces the ped; the old code kept moving the deleted one), the world and collision load, the building loads, and the floor under the saved spot is found.
+- Base floors are found with a ray that sees objects (the old ground check could not see them, so players ended up inside the floor).
+- With the login spawn choice on, the player is no longer first placed at the saved spot and then moved again: the client waits for the choice (players export `HoldPlacement`; after 2 minutes without a choice, the saved spot is used).
+- Fixed: dying within a minute of logging in pulled you back to your login spot after the respawn.
+- After placing, the first 15 seconds are watched: falling through the world tries once more from the highest ground there, then a safe camp.
+
 ## Armor plate picture
 
 - Armor plates use the `iron` picture (the drawn `armor_insert` picture is removed).

@@ -272,6 +272,8 @@ function Characters.load(session, characterId, opts)
     TriggerClientEvent('wasteland:players:client:characterLoaded', session.source, {
         id = char.id, slot = char.slot, firstName = char.firstName, lastName = char.lastName,
         position = Characters.spawnPosition(char), restored = opts.restored == true,
+        -- another module (the spawn choice) places them: the client waits
+        hold = char.holdPlacement == true and not opts.restored,
     })
     return char
 end

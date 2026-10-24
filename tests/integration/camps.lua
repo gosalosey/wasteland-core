@@ -225,6 +225,13 @@ describe('returning characters: last known position or a safe camp', function()
         expect(server.resources.wasteland_camps.env.Player(back).state.wlProtected).toBe(true)
     end)
 
+    it('the client is told to wait for the choice instead of placing them itself', function()
+        local loaded = last(server:clientEventsFor(back, 'wasteland:players:client:characterLoaded')).args[1]
+        expect(loaded.hold).toBe(true)
+        local first = server:clientEventsFor(id, 'wasteland:players:client:characterLoaded')[1].args[1]
+        expect(first.hold).toBe(false) -- a new character: no choice at login
+    end)
+
     it('"last" puts them back where they logged out', function()
         server:clientEvent(back, 'wasteland:camps:server:chooseSpawn', 'last'); server:advance(100)
         local at = last(events(server, back, 'wasteland:camps:client:spawnAt')).args

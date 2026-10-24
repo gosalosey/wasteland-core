@@ -8,6 +8,7 @@ local SCREEN = 'appearanceCreator'
 local current = nil      -- last appearance confirmed by the server
 local editing = nil      -- creator state: { appearance, cancellable, cam, mode, baseHeading }
 local openToken = nil    -- latest openCreator request (a newer one replaces a waiting one)
+local applying = 0       -- looks being applied right now (a model change replaces the ped)
 
 -------------------------------------------------------------------------------
 -- Applying
@@ -107,6 +108,19 @@ end
 
 --- True while the character creator is open (others must not change the ped).
 exports('IsEditing', function() return editing ~= nil end)
+
+--- True while a look is being applied (wasteland_players waits for it
+--- before placing the ped: a model change replaces the ped).
+exports('IsApplying', function() return applying > 0 end)
+
+local function applyNow(a)
+    applying = applying + 1
+    Citizen.CreateThread(function()
+        local ok, err = pcall(apply, a)
+        applying = applying - 1
+        if not ok then print('[wasteland_appearance] applying the look failed: ' .. tostring(err)) end
+    end)
+end
 
 --- Real counts for the creator's pickers, for the ped's current model and choices.
 local function ranges(a)
@@ -255,13 +269,13 @@ end)
 
 RegisterNetEvent('wasteland:appearance:client:apply', function(a)
     current = a
-    Citizen.CreateThread(function() apply(a) end)
+    applyNow(a)
 end)
 
 RegisterNetEvent('wasteland:appearance:client:saved', function(a)
     current = a
     stopCreator()
-    Citizen.CreateThread(function() apply(a) end)
+    applyNow(a)
 end)
 
 RegisterNetEvent('wasteland:appearance:client:saveFailed', function(message)
@@ -295,9 +309,7 @@ end)
 
 -- spawnmanager replaces the model on every (re)spawn: put the look back.
 AddEventHandler('playerSpawned', function()
-    if current and not editing then
-        Citizen.CreateThread(function() apply(current) end)
-    end
+    if current and not editing then applyNow(current) end
 end)
 
 -- This resource (re)started while a character is loaded: ask for the look.

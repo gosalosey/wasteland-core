@@ -344,12 +344,24 @@ AddEventHandler('wasteland:players:characterLoaded', function(src, character, re
     if #list <= 1 then return end
     choosing[src] = { last = last, characterId = character.id }
     protect(src, true)
+    -- The players module must not place them yet: the choice does.
+    pcall(function() exports.wasteland_players:HoldPlacement(src) end)
     -- after the players module has placed the ped (and survival knows if they are dead)
     Citizen.SetTimeout(1500, function()
         if not choosing[src] or choosing[src].characterId ~= character.id then return end
         if GetResourceState('wasteland_survival') == 'started' then
             local okDead, dead = pcall(function() return exports.wasteland_survival:IsDead(src) end)
-            if okDead and dead then choosing[src] = nil; protect(src, false); return end
+            if okDead and dead then
+                -- dead: no choice; they lie where they left (survival takes over)
+                local open = choosing[src]
+                choosing[src] = nil
+                protect(src, false)
+                local c = M.config.camps[1]
+                for _, camp in ipairs(M.config.camps) do if camp.safe then c = camp; break end end
+                local at = open.last or (c and (c.spawn or { x = c.coords.x, y = c.coords.y, z = c.coords.z, heading = 0.0 }))
+                if at then TriggerClientEvent('wasteland:camps:client:spawnAt', src, at, nil, open.last ~= nil) end
+                return
+            end
         end
         TriggerClientEvent('wasteland:camps:client:chooseSpawn', src, list, true)
     end)

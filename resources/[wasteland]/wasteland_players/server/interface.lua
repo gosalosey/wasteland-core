@@ -277,6 +277,18 @@ exports('GetSession', function(src)
     return s and Sessions.describe(s) or nil
 end)
 
+--- HoldPlacement(source): called from a 'wasteland:players:characterLoaded'
+--- handler. The client does not place the character at its saved spot;
+--- the caller places it (on the client: exports.wasteland_players:PlaceAt).
+--- The client places it anyway after 2 minutes without that.
+exports('HoldPlacement', function(src)
+    if inactive() then return false end
+    local s = WLP.sessions[tonumber(src) or -1]
+    if not s or not s.character then return false end
+    s.character.holdPlacement = true
+    return true
+end)
+
 --- GetCharacter(source) -> { id, slot, firstName, lastName, source } | nil
 --- GetSavedPosition(source) -> { x, y, z, heading } | nil   (where the character
 --- was saved; right after loading this is the last logout position)
