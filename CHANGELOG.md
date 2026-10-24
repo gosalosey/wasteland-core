@@ -1,5 +1,12 @@
 # Changelog
 
+## Tree / rock zones: no trees or rocks on roads or buildings
+
+- Before a tree or rock spawns, the client checks its spot once (when the player is within 120 m, so the ground and buildings are loaded): on or right next to a road, inside an interior, against a wall, against a prop or base piece, or on a roof (a flat spot with a drop of more than 3 m next to it). Such spots are left empty. Hillsides are fine (walls face sideways, slopes face up).
+- Only the client decides; nothing changes on the server, and a skipped spot never blocks anything.
+- `/zonecheck` shows how many spots near you spawned and how many were skipped (and why).
+- A zone with many roads or buildings now has fewer trees / rocks; raise its `trees` in loot.lua (or `/treezone add ... <trees>`) if it feels thin.
+
 ## Rock zones: mine big rocks with a pickaxe for stone
 
 - New tool **Pickaxe** (`pickaxe`): craft it (4 scrap metal, 2 wood planks, 1 duct tape; no blueprint) or buy it at the camp trader ($60).

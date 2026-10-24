@@ -149,10 +149,68 @@ local function chopOption(t)
         onSelect = function() TriggerServerEvent('wasteland:loot:server:chopzone', t.id, t.gz) end } }
 end
 
+-- Is this spot a bad place for a tree / rock? Checked once per spot, when
+-- the player is close enough for its collision to be loaded. A bad spot is
+-- simply not spawned (nothing changes on the server). Returns the reason
+-- ('road', 'interior', 'wall', 'object', 'roof') or nil.
+local CHECK_RANGE = 120.0
+local SITE_SIZE = { tree = { road = 1.5, wall = 2.5 }, rock = { road = 2.5, wall = 3.5 } }
+
+local function ray(ax, ay, az, bx, by, bz, flags)
+    local h = StartShapeTestRay(ax, ay, az, bx, by, bz, flags, PlayerPedId(), 7)
+    local deadline = GetGameTimer() + 500
+    while true do
+        local state, hit, pos, normal, ent = GetShapeTestResult(h)
+        if state ~= 1 then return hit == 1, pos, normal, ent end
+        if GetGameTimer() > deadline then return false end
+        Citizen.Wait(0)
+    end
+end
+
+local function siteProblem(t, gz)
+    local size = SITE_SIZE[t.kind] or SITE_SIZE.tree
+    if IsPointOnRoad(t.x, t.y, gz, 0) then return 'road' end
+    for i = 0, 7 do
+        local a = i * math.pi / 4
+        if IsPointOnRoad(t.x + math.cos(a) * size.road, t.y + math.sin(a) * size.road, gz, 0) then return 'road' end
+    end
+    if GetInteriorAtCoords(t.x, t.y, gz + 1.0) ~= 0 then return 'interior' end
+    -- Walls and props (fences, base pieces...) next to the spot. Hillsides
+    -- face up; walls face sideways.
+    for i = 0, 7 do
+        local a = i * math.pi / 4
+        local hit, _, normal, ent = ray(t.x, t.y, gz + 1.2, t.x + math.cos(a) * size.wall, t.y + math.sin(a) * size.wall, gz + 1.2, 1 | 16)
+        if hit then
+            if ent and ent ~= 0 and not ztEntity[ent] and GetEntityType(ent) == 3 then return 'object' end
+            if (not ent or ent == 0) and math.abs(normal.z) < 0.35 then return 'wall' end
+        end
+    end
+    -- Roofs: a flat spot with a big drop right next to it.
+    local hit, _, normal = ray(t.x, t.y, gz + 2.0, t.x, t.y, gz - 2.0, 1)
+    if hit and normal.z > 0.97 then
+        for i = 0, 7 do
+            local a = i * math.pi / 4
+            local ok, z2 = GetGroundZFor_3dCoord(t.x + math.cos(a) * 6.0, t.y + math.sin(a) * 6.0, gz + 2.0, false)
+            if ok and z2 ~= 0.0 and z2 < gz - 3.0 then return 'roof' end
+        end
+    end
+    return nil
+end
+
+local siteSkipped = {} -- reason -> count (/zonecheck)
+
 local function spawnTree(t)
     if t.gz == nil then t.gz = groundAt(t) end
     if t.gz == nil then return end      -- ground not loaded yet: next pass
     if t.gz == false then t.shown = 'none'; return end
+    if t.site == nil then
+        local p = GetEntityCoords(PlayerPedId())
+        if (p.x - t.x) ^ 2 + (p.y - t.y) ^ 2 > CHECK_RANGE * CHECK_RANGE then return end -- closer first
+        local ok, problem = pcall(siteProblem, t, t.gz)
+        t.site = ok and problem or 'ok'
+        if t.site ~= 'ok' then siteSkipped[t.site] = (siteSkipped[t.site] or 0) + 1 end
+    end
+    if t.site ~= 'ok' then t.shown = 'none'; return end
     local k, look = zt.kinds[t.kind], KIND_LOOK[t.kind] or KIND_LOOK.tree
     if not k then t.shown = 'none'; return end
     local name = t.down and k.stump or k.models[t.m] or k.models[1]
@@ -223,6 +281,15 @@ AddEventHandler('onClientResourceStart', function(res)
         if t.entity and t.shown == 'tree' and not t.down then t.target = exports.wasteland_target:AddEntity(t.entity, chopOption(t)) end
     end
 end)
+
+-- /zonecheck: how many tree / rock spots near you were skipped, and why.
+RegisterCommand('zonecheck', function()
+    local parts = {}
+    for reason, n in pairs(siteSkipped) do parts[#parts + 1] = n .. ' ' .. reason end
+    local shown = 0
+    for _, t in pairs(ztById) do if t.entity then shown = shown + 1 end end
+    notice(string.format('Zone spots: %d spawned near you; skipped: %s.', shown, #parts > 0 and table.concat(parts, ', ') or 'none'))
+end, false)
 
 -- Spawning / despawning by distance.
 Citizen.CreateThread(function()
