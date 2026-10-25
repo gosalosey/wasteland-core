@@ -95,7 +95,7 @@ end
 local function begin(src, name, typeName, coords, label)
     local busy = searching[src]
     -- A search that was never finished or cancelled (lost message) expires.
-    if busy and now() - busy.startedAt < ((busy.seconds or 0) + 10) * 1000 then return end
+    if busy and now() - busy.startedAt < ((busy.limit or busy.seconds or 0) + 10) * 1000 then return end
     searching[src] = nil
     local c = M.config.containers[typeName]
     local id, err = inv():EnsureStash(name, stashOpts(c, coords, nil, label))
@@ -238,9 +238,15 @@ local function zonesSchema(d) return { type = 'table', fields = {
     stump = { type = 'string', default = d.stump, pattern = '^[%w_]*$', description = 'Left once used ("" = nothing)' },
     marker = { type = 'boolean', default = true, description = 'A marker over usable ones close by' },
     blips = { type = 'boolean', default = true, description = 'Zones on the map' },
+    minigame = { type = 'table', fields = {
+        enabled = { type = 'boolean', default = true, description = 'Press E in the green zone instead of a timer' },
+        hits = { type = 'integer', default = d.hits, min = 1, max = 20, description = 'Good hits needed' },
+        zone = { type = 'number', default = 0.22, min = 0.05, max = 0.8, description = 'Green zone width (part of the bar)' },
+        speed = { type = 'number', default = 0.8, min = 0.2, max = 4, description = 'Bar lengths per second' },
+    } },
     zones = { type = 'array', default = d.zones, items = TREEZONE },
 } } end
-local TREEZONES = zonesSchema({ seconds = 6, distance = 3.5, spacing = 6, table = 'tree',
+local TREEZONES = zonesSchema({ seconds = 6, hits = 4, distance = 3.5, spacing = 6, table = 'tree',
     tools = { 'weapon_hatchet', 'weapon_battleaxe' }, stump = 'prop_tree_stump_01',
     models = { 'prop_tree_pine_01', 'prop_tree_pine_02', 'prop_tree_cedar_s_04', 'prop_tree_cedar_s_06' },
     zones = {
@@ -252,7 +258,7 @@ local TREEZONES = zonesSchema({ seconds = 6, distance = 3.5, spacing = 6, table 
         { label = 'Raton Canyon woods', coords = { x = -1520.0, y = 4600.0, z = 40.0 }, radius = 80 },
         { label = 'Mount Chiliad trail', coords = { x = -770.0, y = 5560.0, z = 33.0 }, radius = 70 },
     } })
-local ROCKZONES = zonesSchema({ seconds = 7, distance = 4.5, spacing = 9, table = 'rock', tools = { 'pickaxe' }, stump = '',
+local ROCKZONES = zonesSchema({ seconds = 7, hits = 5, distance = 4.5, spacing = 9, table = 'rock', tools = { 'pickaxe' }, stump = '',
     models = { 'prop_rock_4_big', 'prop_rock_4_big2', 'prop_rock_4_c', 'prop_rock_1_a' },
     zones = {
         { label = 'Davis Quartz quarry', coords = { x = 2954.0, y = 2788.0, z = 41.5 }, radius = 100 },
@@ -500,7 +506,7 @@ local function beginZoneTree(src, id, groundZ)
     local t = trees[id]
     if not t then return end
     local busy = searching[src]
-    if busy and now() - busy.startedAt < ((busy.seconds or 0) + 10) * 1000 then return end
+    if busy and now() - busy.startedAt < ((busy.limit or busy.seconds or 0) + 10) * 1000 then return end
     searching[src] = nil
     local c, k = kcfg(t.kind), KINDS[t.kind]
     local p = playerCoords(src)
@@ -516,10 +522,15 @@ local function beginZoneTree(src, id, groundZ)
     local stash, err = inv():EnsureStash(name, stashOpts(nc, coords, nil, k.label))
     if not stash then notice(src, 'That cannot be done right now.'); M.log:warn('stash %s: %s', name, tostring(err)); return end
     local seconds = c.chopSeconds * (1 - skillBonus(src, 'scavenging', 'searchTime'))
-    searching[src] = { name = name, type = t.kind, startedAt = now(), coords = coords, id = stash, seconds = seconds, zoneTree = id }
+    local mg = c.minigame.enabled and { hits = c.minigame.hits, zone = c.minigame.zone, speed = c.minigame.speed } or nil
+    -- With the minigame the player is done when they hit; the server only
+    -- checks it was not impossibly fast (0.35 s a hit), and allows a minute.
+    local least = mg and mg.hits * 0.35 or seconds
+    searching[src] = { name = name, type = t.kind, startedAt = now(), coords = coords, id = stash, seconds = least,
+        zoneTree = id, limit = mg and 60 or nil }
     t.by = src
     TriggerClientEvent('wasteland:loot:client:search', src, { seconds = seconds, label = k.progress, anim = k.anim,
-        face = { x = t.x, y = t.y, z = groundZ } })
+        face = { x = t.x, y = t.y, z = groundZ }, minigame = mg })
 end
 
 finishZoneTree = function(src, s)

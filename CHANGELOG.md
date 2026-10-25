@@ -1,5 +1,11 @@
 # Changelog
 
+## Chopping and mining minigame
+
+- Chopping a tree or mining a rock is now a small timing game: a marker slides along a bar at the bottom of the screen; press **E** while it is in the green zone. 4 good hits fell a tree, 5 break a rock. A miss flashes red and locks E for 0.4 s; nothing is lost. X, moving or taking damage still stops it.
+- Settings per zone kind in loot.lua: `minigame = { enabled, hits, zone (green width), speed }`. `enabled = false` goes back to the plain timer.
+- The server only checks it was not impossibly fast (0.35 s per hit).
+
 ## Faster chopping and mining, more from each
 
 - Chopping a tree: 6 s (was 10). Each tree gives two picks: mostly logs (2-3 each), sometimes firewood, so usually 4-6 logs (was 2-3).

@@ -351,6 +351,69 @@ end
 
 RegisterNetEvent('wasteland:loot:client:cancel', function() stop(false) end)
 
+-- Chop / mine minigame: a marker slides along a bar; press E while it is
+-- in the green zone. Every hit is a swing; `hits` hits and it is done. A
+-- miss only flashes red and locks E for a moment.
+local function newZone(g, width)
+    g.zoneFrom = 0.08 + math.random() * (0.84 - width)
+    g.zoneTo = g.zoneFrom + width
+end
+
+local function drawMinigame(g, label)
+    local x, y, w, h = 0.5, 0.86, 0.26, 0.022
+    DrawRect(x, y, w + 0.006, h + 0.012, 0, 0, 0, 170)
+    DrawRect(x, y, w, h, 60, 60, 60, 220)
+    local zx = x - w / 2 + (g.zoneFrom + g.zoneTo) / 2 * w
+    DrawRect(zx, y, (g.zoneTo - g.zoneFrom) * w, h, 60, 200, 90, 230)
+    local red = GetGameTimer() < g.flashUntil
+    DrawRect(x - w / 2 + g.pos * w, y, 0.004, h + 0.014, 255, red and 60 or 255, red and 60 or 255, 255)
+    for i = 1, g.need do
+        local on = i <= g.hits
+        DrawRect(x - (g.need - 1) * 0.011 + (i - 1) * 0.022, y - 0.032, 0.014, 0.008, on and 60 or 90, on and 200 or 90, on and 90 or 90, 230)
+    end
+    SetTextFont(4); SetTextScale(0.0, 0.42); SetTextCentre(true); SetTextOutline()
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(string.format('%s  -  press ~g~E~s~ in the green  (%d/%d)  -  ~r~X~s~ stop', label, g.hits, g.need))
+    EndTextCommandDisplayText(0.5, y + 0.02)
+end
+
+local function runMinigame(m, label)
+    local g = { need = math.max(1, math.floor(tonumber(m.hits) or 4)), hits = 0, pos = 0.0, dir = 1, flashUntil = 0, lockUntil = 0 }
+    local width, speed = tonumber(m.zone) or 0.22, tonumber(m.speed) or 0.8
+    newZone(g, width)
+    local last = GetGameTimer()
+    while active do
+        local p = PlayerPedId()
+        if IsEntityDead(p) or #(GetEntityCoords(p) - active.start) > 1.2 or GetEntityHealth(p) < active.health
+            or GetPedArmour(p) < active.armour or IsControlJustPressed(0, 73) then
+            stop(true)
+            return
+        end
+        DisableControlAction(0, 24, true); DisableControlAction(0, 25, true); DisableControlAction(0, 38, true)
+        local t = GetGameTimer()
+        g.pos = g.pos + g.dir * speed * (t - last) / 1000.0
+        last = t
+        if g.pos >= 1.0 then g.pos, g.dir = 1.0, -1 elseif g.pos <= 0.0 then g.pos, g.dir = 0.0, 1 end
+        if IsDisabledControlJustPressed(0, 38) and t >= g.lockUntil then
+            if g.pos >= g.zoneFrom and g.pos <= g.zoneTo then
+                g.hits = g.hits + 1
+                PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+                if g.hits >= g.need then
+                    stop(false)
+                    TriggerServerEvent('wasteland:loot:server:finish')
+                    return
+                end
+                newZone(g, width)
+            else
+                g.flashUntil, g.lockUntil = t + 400, t + 400
+                PlaySoundFrontend(-1, 'ERROR', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+            end
+        end
+        drawMinigame(g, label)
+        Citizen.Wait(0)
+    end
+end
+
 RegisterNetEvent('wasteland:loot:client:search', function(s)
     if type(s) ~= 'table' or active then return end
     local ped = PlayerPedId()
@@ -379,6 +442,10 @@ RegisterNetEvent('wasteland:loot:client:search', function(s)
                 pr.rot[1], pr.rot[2], pr.rot[3], true, true, false, true, 1, true)
             active.prop = obj
         end
+    end
+    if type(s.minigame) == 'table' then
+        Citizen.CreateThread(function() runMinigame(s.minigame, s.label or 'Chopping') end)
+        return
     end
     if uiRunning() then
         exports.wasteland_ui:Open(SCREEN, { script = 'html/progress.js', focus = false, cursor = false,
