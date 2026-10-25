@@ -1,21 +1,28 @@
 # Scrap barricade building props (Blender)
 
-Optional new look for base building pieces: mismatched weathered planks,
-rusty corrugated patches, spray paint, grime. Output goes to
-`resources/[wasteland]/wasteland_buildprops_scrap/stream/` (same model names as
-wasteland_buildprops, so they replace them while that resource runs).
+Optional new look for every base building piece: scrap planks (wood), cinder
+blocks and concrete (stone), rusty corrugated sheet on angle iron (metal), with
+spray paint, blood, grime and mud. Output goes to
+`resources/[wasteland]/wasteland_buildprops_scrap/stream/` with the same model names
+as wasteland_buildprops, so they replace them while that resource runs. Each
+model keeps the collision of the original (it is put into the original .ydr).
+Stairs, ramps, hatches and the tool cupboard keep their shape with a new texture.
 
 ## Needs
-- Blender 4.2 or newer (built with 5.2.3), with the Sollumz add-on (2.9.0) and its
-  dependencies installed (Sollumz preferences: Install dependencies).
-- Python with Pillow 12+ (for `dds_mips.py`).
-- Textures from ambientCG (CC0), 1K-JPG, unzipped into `tex/<Id>/`:
-  Planks012, Wood049, Rust004 (https://ambientcg.com/get?file=<Id>_1K-JPG.zip).
+- Blender 4.2 or newer (built with 5.2.3), with Sollumz 2.9.0 and its dependencies
+  (Sollumz preferences: Install dependencies).
+- Python with Pillow 12+ (`dds_mips.py`, `sheet.py`).
+- ambientCG textures (CC0), 1K-JPG, unzipped into `tex/<Id>/`
+  (https://ambientcg.com/get?file=<Id>_1K-JPG.zip): Planks012, Wood049, Rust004,
+  Bricks066, Concrete034, CorrugatedSteel001, CorrugatedSteel002, CorrugatedSteel003,
+  PaintedMetal004, PaintedMetal009, DiamondPlate001, Metal046A.
 
-## Build
+## Build (from a folder holding these scripts and `tex/`)
 ```
-blender -b --python build_wall.py      # model + bake -> out/wall_wood.blend, out/wl_bp_wall_wood_d.png, previews
-python dds_mips.py out/wl_bp_wall_wood_d.png out/wlbp_scrapwall_d.dds
-blender -b --python export_wall.py     # -> out/export/wl_bp_wall_wood.ydr (keeps the current wall's collision)
+blender -b --python probe_all.py      # sizes and collision of the originals -> pieces.json (already here)
+blender -b --python build_all.py      # every piece -> out/pieces/<name>.blend, _d.png; out/previews/<name>.png
+                                      # (or: -- wl_bp_wall_wood wl_bp_door_wood ... for some)
+for f in out/pieces/*_d.png; do python dds_mips.py "$f" "${f%.png}.dds"; done
+blender -b --python export_all.py     # -> out/export/<name>.ydr
+blender -b --python verify_all.py     # re-imports each: collision equals the original, texture embedded
 ```
-Run from a folder that holds the scripts and `tex/`.

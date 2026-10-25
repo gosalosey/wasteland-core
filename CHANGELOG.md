@@ -1,5 +1,17 @@
 # Changelog
 
+## Scrap barricade building look: all 38 pieces (optional)
+
+- **wasteland_buildprops_scrap** now has the whole set, made in Blender: foundations, walls, doorways, window frames, half walls, ceilings, frames, stairs, ramps and hatches in all three tiers, plus wood and metal doors, the garage door, gate frame and gate door, wood and metal window bars, and the tool cupboard.
+  - Wood: crooked scrap planks with gaps, posts and braces, nailed cross-boards, rusty patches.
+  - Stone: cinder blocks between concrete pillars and caps, patched blocks.
+  - Metal: rusty corrugated sheets (some faded blue / red) on angle iron, welded patch plates, diamond-plate floors.
+  - Spray paint (X, tally marks, "no entry" circles) and blood smears on outside faces; grime and mud everywhere.
+- Every model keeps the exact collision of the original (checked by re-importing all 38). About 20,700 triangles for the whole set, one 1024 texture each (about 14 MB of downloads for players, once).
+- Stairs, ramps, hatches and the tool cupboard keep their shape with the new textures.
+- Still **not started by default**: add `ensure wasteland_buildprops_scrap` after `ensure wasteland_buildprops`. Previews: `docs/images/scrap/`.
+- VERIFY IN-GAME: look by day and night, collision, which side faces out, doors opening, snapping.
+
 ## Scrap barricade building look (test: wood wall)
 
 - New optional resource **wasteland_buildprops_scrap**: a new "scrap barricade" look made in Blender (Sollumz). First piece: the wood wall, with crooked weathered planks with gaps, a nailed cross-board, a rusty corrugated patch, a red spray-painted X, grime and mud. 964 triangles, one 1024 texture, the same size and collision as the old wall.
