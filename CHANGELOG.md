@@ -1,5 +1,14 @@
 # Changelog
 
+## Chop / mine minigame: a circle, and you can fail
+
+- The minigame is now a circle in the middle of the screen (the screen around it darkens, over the swinging player): a needle sweeps round a ring, press **E** (or Space) when it is in the green arc. Each hit cracks the log end / the stone, with chips flying and a thunk; the last hit breaks it ("Timber!").
+- **One miss fails**: "The axe slips" / "The pickaxe glances off", nothing is given, and the player has to start chopping / mining again (the tree or rock stays).
+- Kept easy: the green arc is a fifth of the circle, the needle takes over two seconds a turn, a little faster after each hit. Trees need 3 hits, rocks 4.
+- X / Esc stops. Taking damage still stops it.
+- loot.lua `minigame = { enabled, hits, zone (part of the circle), speed (turns a second), speedStep }`.
+- Without wasteland_ui the old bar is used (a miss fails there too).
+
 ## No building in safe zones; tool cupboards can be broken
 
 - Nothing can be built inside a safe zone: camps and tree / rock zones ("You cannot build inside a safe zone"; nothing is paid). Admin build mode still can. `basebuilding.lua` `placement.noBuildInSafeZones` (default true).

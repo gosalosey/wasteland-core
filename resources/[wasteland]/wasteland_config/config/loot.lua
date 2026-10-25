@@ -94,10 +94,12 @@ return {
         stump = 'prop_tree_stump_01',
         marker = true,        -- green marker over choppable trees close by
         blips = true,         -- zones on the map
-        -- Minigame: a marker slides along a bar, press E while it is in the green
-        -- zone; `hits` good hits fells the tree (enabled = false: just the timer).
         safe = true,          -- no zombies inside (like a camp)
-        minigame = { enabled = true, hits = 4, zone = 0.22, speed = 0.8 },
+        -- Minigame: a needle sweeps round a circle; press E while it is in the
+        -- green arc. `hits` good hits fells the tree; one miss fails it (start
+        -- again). zone: green part of the circle; speed: turns a second (a bit
+        -- faster after each hit by speedStep). enabled = false: just the timer.
+        minigame = { enabled = true, hits = 3, zone = 0.2, speed = 0.45, speedStep = 0.04 },
         zones = {
             { label = 'Sandy Shores woods', coords = vector3(1385.98, 3406.79, 45.90), radius = 75 },
             { label = 'Route 68 woods', coords = vector3(21.16, 3514.90, 56.19), radius = 75 },
@@ -126,7 +128,7 @@ return {
         marker = true,        -- orange marker over minable rocks close by
         blips = true,
         safe = true,          -- no zombies inside (like a camp)
-        minigame = { enabled = true, hits = 5, zone = 0.22, speed = 0.8 },
+        minigame = { enabled = true, hits = 4, zone = 0.2, speed = 0.45, speedStep = 0.04 },
         zones = {
             { label = 'Davis Quartz quarry', coords = vector3(2954.0, 2788.0, 41.5), radius = 100 },
             { label = 'Grand Senora desert rocks', coords = vector3(2340.0, 3120.0, 48.0), radius = 80 },

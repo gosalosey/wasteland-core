@@ -241,13 +241,14 @@ local function zonesSchema(d) return { type = 'table', fields = {
     safe = { type = 'boolean', default = true, description = 'No zombies inside these zones (like camps)' },
     minigame = { type = 'table', fields = {
         enabled = { type = 'boolean', default = true, description = 'Press E in the green zone instead of a timer' },
-        hits = { type = 'integer', default = d.hits, min = 1, max = 20, description = 'Good hits needed' },
-        zone = { type = 'number', default = 0.22, min = 0.05, max = 0.8, description = 'Green zone width (part of the bar)' },
-        speed = { type = 'number', default = 0.8, min = 0.2, max = 4, description = 'Bar lengths per second' },
+        hits = { type = 'integer', default = d.hits, min = 1, max = 12, description = 'Good hits needed (one miss fails)' },
+        zone = { type = 'number', default = 0.2, min = 0.05, max = 0.6, description = 'Green arc (part of the circle)' },
+        speed = { type = 'number', default = 0.45, min = 0.1, max = 2.5, description = 'Turns a second' },
+        speedStep = { type = 'number', default = 0.04, min = 0, max = 0.5, description = 'Faster by this after each hit' },
     } },
     zones = { type = 'array', default = d.zones, items = TREEZONE },
 } } end
-local TREEZONES = zonesSchema({ seconds = 6, hits = 4, distance = 3.5, spacing = 6, table = 'tree',
+local TREEZONES = zonesSchema({ seconds = 6, hits = 3, distance = 3.5, spacing = 6, table = 'tree',
     tools = { 'weapon_hatchet', 'weapon_battleaxe' }, stump = 'prop_tree_stump_01',
     models = { 'prop_tree_pine_01', 'prop_tree_pine_02', 'prop_tree_cedar_s_04', 'prop_tree_cedar_s_06' },
     zones = {
@@ -259,7 +260,7 @@ local TREEZONES = zonesSchema({ seconds = 6, hits = 4, distance = 3.5, spacing =
         { label = 'Raton Canyon woods', coords = { x = -1520.0, y = 4600.0, z = 40.0 }, radius = 80 },
         { label = 'Mount Chiliad trail', coords = { x = -770.0, y = 5560.0, z = 33.0 }, radius = 70 },
     } })
-local ROCKZONES = zonesSchema({ seconds = 7, hits = 5, distance = 4.5, spacing = 9, table = 'rock', tools = { 'pickaxe' }, stump = '',
+local ROCKZONES = zonesSchema({ seconds = 7, hits = 4, distance = 4.5, spacing = 9, table = 'rock', tools = { 'pickaxe' }, stump = '',
     models = { 'prop_rock_4_big', 'prop_rock_4_big2', 'prop_rock_4_c', 'prop_rock_1_a' },
     zones = {
         { label = 'Davis Quartz quarry', coords = { x = 2954.0, y = 2788.0, z = 41.5 }, radius = 100 },
@@ -523,7 +524,8 @@ local function beginZoneTree(src, id, groundZ)
     local stash, err = inv():EnsureStash(name, stashOpts(nc, coords, nil, k.label))
     if not stash then notice(src, 'That cannot be done right now.'); M.log:warn('stash %s: %s', name, tostring(err)); return end
     local seconds = c.chopSeconds * (1 - skillBonus(src, 'scavenging', 'searchTime'))
-    local mg = c.minigame.enabled and { hits = c.minigame.hits, zone = c.minigame.zone, speed = c.minigame.speed } or nil
+    local mg = c.minigame.enabled and { hits = c.minigame.hits, zone = c.minigame.zone, speed = c.minigame.speed,
+        speedStep = c.minigame.speedStep } or nil
     -- With the minigame the player is done when they hit; the server only
     -- checks it was not impossibly fast (0.35 s a hit), and allows a minute.
     local least = mg and mg.hits * 0.35 or seconds

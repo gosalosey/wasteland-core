@@ -28,4 +28,5 @@ client_scripts {
 
 files {
     'html/progress.js',
+    'html/gather.js',
 }

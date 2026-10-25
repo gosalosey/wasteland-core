@@ -5,6 +5,7 @@
 -- The server decides everything else.
 
 local SCREEN = 'lootProgress'
+local GATHER = 'lootGather'   -- chop / mine minigame (html/gather.js)
 local cfg = nil
 local targetIds = {}
 local active = nil   -- current search: { endsAt, start, health }
@@ -353,6 +354,7 @@ local function stop(cancelled)
     if active.prop and DoesEntityExist(active.prop) then DeleteEntity(active.prop) end
     active = nil
     if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end
+    if uiRunning() and exports.wasteland_ui:IsOpen(GATHER) then exports.wasteland_ui:Close(GATHER) end
     if cancelled then
         TriggerServerEvent('wasteland:loot:server:cancel')
         notice('Search cancelled.')
@@ -414,15 +416,50 @@ local function runMinigame(m, label)
                     return
                 end
                 newZone(g, width)
-            else
-                g.flashUntil, g.lockUntil = t + 400, t + 400
+            else -- a miss fails it, like the circle minigame
                 PlaySoundFrontend(-1, 'ERROR', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+                stop(false)
+                TriggerServerEvent('wasteland:loot:server:cancel')
+                notice('You missed. Start again to have another go.')
+                return
             end
         end
         drawMinigame(g, label)
         Citizen.Wait(0)
     end
 end
+
+-- The circle minigame (html/gather.js) has the keyboard; this thread only
+-- watches for dying or getting hurt. One miss fails the attempt.
+local function runGather(m, label, kind)
+    exports.wasteland_ui:Open(GATHER, { script = 'html/gather.js', focus = true, cursor = false,
+        data = { kind = kind, label = label, hits = m.hits, zone = m.zone, speed = m.speed, speedStep = m.speedStep } })
+    active.gather = true
+    while active and active.gather do
+        local p = PlayerPedId()
+        if IsEntityDead(p) or GetEntityHealth(p) < active.health or GetPedArmour(p) < active.armour then
+            stop(true)
+            return
+        end
+        Citizen.Wait(100)
+    end
+end
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen ~= GATHER or not (active and active.gather) then return end
+    if action == 'result' then
+        local ok = type(payload) == 'table' and payload.success == true
+        stop(false)
+        if ok then
+            TriggerServerEvent('wasteland:loot:server:finish')
+        else
+            TriggerServerEvent('wasteland:loot:server:cancel')
+            notice('You missed. Start again to have another go.')
+        end
+    elseif action == 'cancel' then
+        stop(true)
+    end
+end)
 
 RegisterNetEvent('wasteland:loot:client:search', function(s)
     if type(s) ~= 'table' or active then return end
@@ -454,7 +491,12 @@ RegisterNetEvent('wasteland:loot:client:search', function(s)
         end
     end
     if type(s.minigame) == 'table' then
-        Citizen.CreateThread(function() runMinigame(s.minigame, s.label or 'Chopping') end)
+        local kind = s.anim == 'pickaxe' and 'rock' or 'tree'
+        if uiRunning() then
+            Citizen.CreateThread(function() runGather(s.minigame, s.label, kind) end)
+        else -- no UI resource: the simple bar drawn by the game
+            Citizen.CreateThread(function() runMinigame(s.minigame, s.label or 'Chopping') end)
+        end
         return
     end
     if uiRunning() then

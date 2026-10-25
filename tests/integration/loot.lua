@@ -420,7 +420,7 @@ describe('tree zones: trees planted by the server, chopped, grown back', functio
         expect(s.anim).toBe('axe')
         expect(s.label).toBe('Chopping tree')
         expect(s.face.x).toBe(t.x)
-        expect(s.minigame.hits).toBe(4)
+        expect(s.minigame.hits).toBe(3)
         server.players[b].coords = { x = t.x - 1.5, y = t.y, z = 30.0 }
         server:clientEvent(b, 'wasteland:loot:server:chopzone', t.id, 30.0); server:advance(200)
         expect(last(events(server, b, 'wasteland:loot:client:notice')).args[1]).toBe('Someone is already chopping this tree.')
@@ -503,7 +503,7 @@ describe('rock zones: big rocks mined with a pickaxe for stone', function()
         server:export('wasteland_inventory', 'AddItem', a, 'pickaxe', 1)
         server:clientEvent(a, 'wasteland:loot:server:chopzone', r.id, 30.0); server:advance(200)
         local s = last(events(server, a, 'wasteland:loot:client:search')).args[1]
-        expect(s.anim).toBe('pickaxe'); expect(s.label).toBe('Mining rock'); expect(s.minigame.hits).toBe(5)
+        expect(s.anim).toBe('pickaxe'); expect(s.label).toBe('Mining rock'); expect(s.minigame.hits).toBe(4)
         server:advance(2000)
         server:clientEvent(a, 'wasteland:loot:server:finish'); server:advance(200)
         expect(count('stone')).toBe(6)
