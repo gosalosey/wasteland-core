@@ -1,5 +1,11 @@
 # Changelog
 
+## No building in safe zones; tool cupboards can be broken
+
+- Nothing can be built inside a safe zone: camps and tree / rock zones ("You cannot build inside a safe zone"; nothing is paid). Admin build mode still can. `basebuilding.lua` `placement.noBuildInSafeZones` (default true).
+- Other players can break a tool cupboard with melee weapons (bat, crowbar, hatchet...): 10 damage a hit, so 50 hits for a 500-health cupboard (`raid.melee.cupboardDamage`). Explosives already damaged cupboards. The owner and players with access cannot hurt their own.
+- The owner is told "Your tool cupboard is under attack!" (at most every 3 minutes; offline: when they next join), and when it is destroyed. A destroyed cupboard loses its supplies and the land is no longer claimed; the pieces stay.
+
 ## Tree and rock zones are safe from zombies
 
 - Tree zones and rock zones count as safe zones, like camps: no zombies spawn inside, hordes avoid them, zombies that wander in are removed, and zombies stop chasing players inside (and cannot hurt them there).

@@ -83,6 +83,7 @@ return {
         rotateStep = 45.0, fineRotateSpeed = 30.0, heightStep = 0.05,
         fineHeightSpeed = 0.15,       -- metres a second with the Up / Down arrows
         maxPlaceDistance = 15.0, snapDistance = 2.0, wallFacesOutward = true, snapOverlap = 0.0,
+        noBuildInSafeZones = true,    -- nothing can be built in camps or tree / rock zones (admin build mode can)
         -- Gaps between snapped pieces: metres each piece is pulled in, per piece
         -- (default snapOverlap). Tune in game with Ctrl+wheel while placing
         -- (remembered on that computer), then /bbsnap prints the values to copy here.
@@ -249,7 +250,9 @@ return {
         requireThrow = true,
         thrown = { weapon_grenade = 0, weapon_stickybomb = 2, weapon_molotov = 3 },
         throwRange = 80.0, throwSeconds = 30, stickySeconds = 1800,
-        melee = { enabled = true, cooldownMs = 850, woodDamage = 5 },   -- wood only
+        -- Melee hurts wood pieces, and other players' tool cupboards (cupboardDamage
+        -- a hit; 500 health = 50 hits). A cupboard's own people cannot hurt it.
+        melee = { enabled = true, cooldownMs = 850, woodDamage = 5, cupboardDamage = 10 },
         -- Zombies hit walls, doors and gates that stand between them and a
         -- player (needs wasteland_zombies ai.barricades). Damage per hit by
         -- material (0 = they cannot hurt it); the owner is told at most every

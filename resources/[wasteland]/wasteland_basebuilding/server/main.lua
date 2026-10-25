@@ -306,6 +306,19 @@ end
 -- Placing and removing
 -------------------------------------------------------------------------------
 
+-- Camps and tree / rock zones (wasteland_camps, wasteland_loot): no building.
+local function inSafeZone(coords)
+    if GetResourceState('wasteland_camps') == 'started' then
+        local ok, yes = pcall(function() return exports.wasteland_camps:IsInSafeZone(coords) end)
+        if ok and yes == true then return true end
+    end
+    if GetResourceState('wasteland_loot') == 'started' then
+        local ok, yes = pcall(function() return exports.wasteland_loot:IsInGatherZone(coords) end)
+        if ok and yes == true then return true end
+    end
+    return false
+end
+
 local function placeProp(src, key, x, y, z, heading)
     local piece = M.config.pieces[key]
     local cid = characterOf(src)
@@ -313,6 +326,9 @@ local function placeProp(src, key, x, y, z, heading)
     if piece.adminOnly and not isAdmin(src) then notice(src, 'Only admins can build that.'); return end
     local coords = { x = x, y = y, z = z }
     if not near(src, coords, M.config.placement.maxPlaceDistance + 2.0) then notice(src, 'Too far away to place that.'); return end
+    if M.config.placement.noBuildInSafeZones and not adminBuild[src] and inSafeZone(coords) then
+        notice(src, 'You cannot build inside a safe zone (camps, tree and rock zones).'); return
+    end
 
     local cupboard = nil
     if piece.category == 'cupboard' then
@@ -802,6 +818,28 @@ local function wasThrown(kind, where)
     return false
 end
 
+-- A cupboard at 0 health is destroyed: its supplies go, the land is free.
+local cupboardAttackNotice = {} -- cupboard id -> last "under attack" notice
+local function damageCupboard(c, dmg)
+    c.health = math.max(0, c.health - dmg)
+    local t = now()
+    if not cupboardAttackNotice[c.id] or t - cupboardAttackNotice[c.id] > 180000 then
+        cupboardAttackNotice[c.id] = t
+        local message = c.health <= 0 and 'Your tool cupboard was destroyed! The land is no longer claimed.'
+            or 'Your tool cupboard is under attack!'
+        local s = sourceOf and sourceOf(c.owner)
+        if s then notice(s, message) else write(SQL.insertNotice, { c.owner, message, os.time() }, 'cupboard notice') end
+    end
+    if c.health <= 0 then
+        pcall(function() inv():DeleteStash(supplyName(c.id)) end)
+        dropCupboard(c, 'destroyed')
+        cupboardAttackNotice[c.id] = nil
+    else
+        write(SQL.cupboardHealth, { c.health, c.id }, 'cupboard health')
+        TriggerClientEvent('wasteland:basebuilding:client:cupboardHealth', -1, c.id, c.health)
+    end
+end
+
 local function explosion(src, id, kind, at, isCupboard)
     if not M.config.raid.enabled or type(at) ~= 'table' then return end
     local target = isCupboard and cupboards[id] or props[id]
@@ -818,24 +856,27 @@ local function explosion(src, id, kind, at, isCupboard)
     local dmg = rules and (rules[kind] or rules[tostring(kind)])
     if not dmg then return end
     if isCupboard then
-        target.health = math.max(0, target.health - dmg)
-        if target.health <= 0 then
-            pcall(function() inv():DeleteStash(supplyName(id)) end)
-            dropCupboard(target, 'destroyed')
-        else
-            write(SQL.cupboardHealth, { target.health, id }, 'cupboard health')
-            TriggerClientEvent('wasteland:basebuilding:client:cupboardHealth', -1, id, target.health)
-        end
+        damageCupboard(target, dmg)
     else
         damage(id, dmg)
     end
 end
 
-local function melee(src, id)
+local function melee(src, id, isCupboard)
     if not (M.config.raid.enabled and M.config.raid.melee.enabled) then return end
     local t = now()
     if meleeCooldown[src] and t - meleeCooldown[src] < M.config.raid.melee.cooldownMs then return end
     meleeCooldown[src] = t
+    if isCupboard then
+        -- Other players can break a cupboard with melee; its own people cannot
+        -- (so nobody wrecks their own by accident).
+        local c = cupboards[id]
+        local dmg = M.config.raid.melee.cupboardDamage or 0
+        if not c or dmg <= 0 or not near(src, c.coords, 3.0) then return end
+        if hasAccess(characterOf(src), c) then return end
+        damageCupboard(c, dmg)
+        return
+    end
     local p = props[id]
     if not p or p.material ~= 'wood' or not near(src, p.coords, 3.0) then return end
     damage(id, M.config.raid.melee.woodDamage)
@@ -1168,6 +1209,7 @@ M = Wasteland.DefineModule({
         local pd = { rotateStep = 45.0, fineRotateSpeed = 30.0, fineHeightSpeed = 0.15, heightStep = 0.05, maxPlaceDistance = 15.0, snapDistance = 2.0,
             wallFacesOutward = true, snapOverlap = 0.0 }
         for k, v in pairs(pd) do if c.placement[k] == nil then c.placement[k] = v end end
+        if c.placement.noBuildInSafeZones == nil then c.placement.noBuildInSafeZones = true end
         c.raid = c.raid or {}
         c.raid.explosionDamage = c.raid.explosionDamage or {}
         c.raid.explosionRadius = c.raid.explosionRadius or 4.0
@@ -1178,6 +1220,7 @@ M = Wasteland.DefineModule({
         c.raid.throwSeconds = c.raid.throwSeconds or 30
         c.raid.stickySeconds = c.raid.stickySeconds or 1800
         c.raid.melee = c.raid.melee or { enabled = false, cooldownMs = 850, woodDamage = 5 }
+        if c.raid.melee.cupboardDamage == nil then c.raid.melee.cupboardDamage = 10 end
         c.raid.repair = c.raid.repair or { amount = {}, cost = {} }
         -- zombies hitting walls, doors and gates (wasteland_zombies `ai.barricades`)
         c.raid.zombies = c.raid.zombies or {}
@@ -1313,7 +1356,8 @@ M.netEvent('wasteland:basebuilding:server:lockpickResult', { args = { { type = '
     function(src, ok) lockpickResult(src, ok) end)
 M.netEvent('wasteland:basebuilding:server:explosion', { args = { ID, { type = 'integer', required = true, min = 0, max = 100 }, AT, { type = 'boolean', required = true } },
     rateLimit = { burst = 20, perSecond = 10 } }, function(src, id, kind, at, isCupboard) explosion(src, id, kind, at, isCupboard) end)
-M.netEvent('wasteland:basebuilding:server:melee', { args = { ID }, rateLimit = { burst = 6, perSecond = 3 } }, function(src, id) melee(src, id) end)
+M.netEvent('wasteland:basebuilding:server:melee', { args = { ID, { type = 'boolean' } }, rateLimit = { burst = 6, perSecond = 3 } },
+    function(src, id, isCupboard) melee(src, id, isCupboard == true) end)
 
 -- Pieces built without a tool cupboard go after freeBuild.hours (unless a
 -- cupboard claimed them since).

@@ -1252,10 +1252,20 @@ Citizen.CreateThread(function()
             local ped = PlayerPedId()
             if meleeWeapons[GetSelectedPedWeapon(ped)] then
                 local pos = GetEntityCoords(ped)
-                for id, data in pairs(propCache) do
-                    if data.material == 'wood' and #(pos - data.coords) <= 3.0 then
-                        TriggerServerEvent('wasteland:basebuilding:server:melee', id)
+                local hit = false
+                for id, data in pairs(cupboardCache) do -- someone else's cupboard (the server checks)
+                    if #(pos - data.coords) <= 2.5 then
+                        TriggerServerEvent('wasteland:basebuilding:server:melee', id, true)
+                        hit = true
                         break
+                    end
+                end
+                if not hit then
+                    for id, data in pairs(propCache) do
+                        if data.material == 'wood' and #(pos - data.coords) <= 3.0 then
+                            TriggerServerEvent('wasteland:basebuilding:server:melee', id)
+                            break
+                        end
                     end
                 end
             end

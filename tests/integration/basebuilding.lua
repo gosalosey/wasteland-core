@@ -187,6 +187,19 @@ describe('base building', function()
         expect(I('GetItemCount', a, 'wood_planks')).toBe(planks - 3)
     end)
 
+    it('melee: someone else can break a tool cupboard, its own people cannot', function()
+        server:advance(900)
+        local before = #server:clientEventsFor(a, 'wasteland:basebuilding:client:cupboardHealth')
+        act(a, 'melee', cupboardId, true)                    -- the owner: nothing
+        expect(#server:clientEventsFor(a, 'wasteland:basebuilding:client:cupboardHealth')).toBe(before)
+        server:advance(900)
+        act(c, 'melee', cupboardId, true)                    -- the raider: 10 damage, the owner is told
+        local h = last(a, 'wasteland:basebuilding:client:cupboardHealth').args
+        expect(h[1]).toBe(cupboardId); expect(h[2]).toBe(490)
+        expect(note(a)).toBe('Your tool cupboard is under attack!')
+        server:advance(900)
+    end)
+
     it('explosives: only a blast from something really thrown counts, once however many players report it', function()
         local hits = #server:clientEventsFor(a, 'wasteland:basebuilding:client:propHealth')
         local at = { x = door.coords.x, y = door.coords.y, z = door.coords.z }
@@ -408,5 +421,34 @@ describe('base building', function()
         server:advance(61000)
         expect(server:export('wasteland_basebuilding', 'IsPowered', { x = -40.0, y = -3.0, z = 30.0 })).toBe(true) -- still on
         server.aces[a .. '|wasteland.admin'] = nil
+    end)
+end)
+
+describe('base building: not inside safe zones', function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['loot.lua'] = [[return { containers = {}, tables = { tree = { emptyChance = 0, rolls = { 1, 1 },
+        items = { { name = 'wood_log', min = 1, max = 1, weight = 1 } } } },
+        treeZones = { zones = { { label = 'Woods', coords = vector3(500.0, 0.0, 30.0), radius = 50 } } } }]]
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_groups', 'wasteland_loot', 'wasteland_basebuilding' })
+    local id = server:connectAndJoin({ name = 'P-safe', license = 'bbsafe' })
+    server:advance(200)
+    server:command(id, 'character create Sam Test'); server:advance(300)
+    server:command(id, 'character select 1'); server:advance(500)
+    server:clientEvent(id, 'wasteland:appearance:server:save', defaults('mp_m_freemode_01')); server:advance(500)
+    local function note() local l = server:clientEventsFor(id, 'wasteland:basebuilding:client:notice'); return l[#l] and l[#l].args[1] end
+    server:export('wasteland_inventory', 'AddItem', id, 'wood_planks', 40)
+    server:export('wasteland_inventory', 'AddItem', id, 'scrap_metal', 10)
+    server:advance(100)
+
+    it('a tool cupboard in a tree zone is refused (nothing paid); outside it is fine', function()
+        server.players[id].coords = { x = 500.0, y = 0.0, z = 30.0 }
+        server:clientEvent(id, 'wasteland:basebuilding:server:place', 'toolcupboard', 501.0, 0.0, 30.0, 0.0); server:advance(200)
+        expect(note()).toContain('cannot build inside a safe zone')
+        expect(server:export('wasteland_inventory', 'GetItemCount', id, 'wood_planks')).toBe(40)
+        server.players[id].coords = { x = 700.0, y = 0.0, z = 30.0 }
+        server:clientEvent(id, 'wasteland:basebuilding:server:place', 'toolcupboard', 701.0, 0.0, 30.0, 0.0); server:advance(200)
+        expect(note()).toContain('Tool cupboard placed')
     end)
 end)
