@@ -1,5 +1,11 @@
 # Changelog
 
+## Survivor's Cache: a very rare find from chopping and mining
+
+- Every tree chopped and every rock mined has a 1 in 1000 chance (`rareChance = 0.001` in treeZones / rockZones) of a **Survivor's Cache** (`survivor_cache`), on top of the wood or stone. The player is told; a full pocket leaves it at the tree / rock (that opens).
+- Use it from the inventory: a box opens with a carbine rifle, 150 5.56 rounds, an armor vest, a hiking backpack, 3 antibiotics, 15 bandages, 4 MREs and 4 water bottles. The contents are in `loot.lua` `survivorCache.contents`.
+- Other resources can react to `wasteland:loot:rareFound` (source, item, kind).
+
 ## Chop / mine minigame: a circle, and you can fail
 
 - The minigame is now a circle in the middle of the screen (the screen around it darkens, over the swinging player): a needle sweeps round a ring, press **E** (or Space) when it is in the green arc. Each hit cracks the log end / the stone, with chips flying and a thunk; the last hit breaks it ("Timber!").

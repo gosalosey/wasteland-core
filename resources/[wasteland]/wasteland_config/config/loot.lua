@@ -95,6 +95,7 @@ return {
         marker = true,        -- green marker over choppable trees close by
         blips = true,         -- zones on the map
         safe = true,          -- no zombies inside (like a camp)
+        rareChance = 0.001,   -- 1 in 1000: a Survivor's Cache (see survivorCache below)
         -- Minigame: a needle sweeps round a circle; press E while it is in the
         -- green arc. `hits` good hits fells the tree; one miss fails it (start
         -- again). zone: green part of the circle; speed: turns a second (a bit
@@ -128,12 +129,24 @@ return {
         marker = true,        -- orange marker over minable rocks close by
         blips = true,
         safe = true,          -- no zombies inside (like a camp)
+        rareChance = 0.001,   -- 1 in 1000: a Survivor's Cache (see survivorCache below)
         minigame = { enabled = true, hits = 4, zone = 0.2, speed = 0.45, speedStep = 0.04 },
         zones = {
             { label = 'Davis Quartz quarry', coords = vector3(2954.0, 2788.0, 41.5), radius = 100 },
             { label = 'Grand Senora desert rocks', coords = vector3(2340.0, 3120.0, 48.0), radius = 80 },
             { label = 'Mount Chiliad summit', coords = vector3(500.0, 5590.0, 795.0), radius = 70 },
             { label = 'Mount Gordo cliffs', coords = vector3(2850.0, 5950.0, 350.0), radius = 70 },
+        },
+    },
+
+    -- Survivor's Cache: the very rare find from chopping and mining
+    -- (rareChance above). Using it opens a box with all of this.
+    survivorCache = {
+        item = 'survivor_cache',
+        contents = {
+            { name = 'weapon_carbine', count = 1 }, { name = 'ammo_556', count = 150 }, { name = 'armor_plate', count = 1 },
+            { name = 'backpack_large', count = 1 }, { name = 'antibiotics', count = 3 }, { name = 'bandage', count = 15 },
+            { name = 'mre_beef', count = 4 }, { name = 'water_bottle', count = 4 },
         },
     },
 

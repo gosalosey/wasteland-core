@@ -528,3 +528,38 @@ describe('rock zones: big rocks mined with a pickaxe for stone', function()
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe("Survivor's Cache: the very rare find", function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['loot.lua'] = [[return {
+        containers = {},
+        tables = { rock = { emptyChance = 0, rolls = { 1, 1 }, items = { { name = 'stone', min = 1, max = 1, weight = 1 } } } },
+        treeZones = { enabled = false },
+        rockZones = { rareChance = 1, chopSeconds = 1, zones = { { label = 'Lucky pit', coords = vector3(10.0, 10.0, 30.0), radius = 50 } } },
+    }]]
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_survival', 'wasteland_loot' })
+    local a = player(server, 'lucky')
+    local function count(name) return server:export('wasteland_inventory', 'GetItemCount', a, name) end
+
+    it('a chop / mine can give one (chance 1 here)', function()
+        server:clientEvent(a, 'wasteland:loot:server:config'); server:advance(200)
+        local r = last(events(server, a, 'wasteland:loot:client:trees')).args[1].trees[1]
+        server.players[a].coords = { x = r.x + 2, y = r.y, z = 30.0 }
+        server:export('wasteland_inventory', 'AddItem', a, 'pickaxe', 1)
+        server:clientEvent(a, 'wasteland:loot:server:chopzone', r.id, 30.0); server:advance(1500)
+        server:clientEvent(a, 'wasteland:loot:server:finish'); server:advance(200)
+        expect(count('survivor_cache')).toBe(1)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]:find("Survivor's Cache", 1, true) ~= nil).toBe(true)
+    end)
+
+    it('using it opens a box with the rifle, ammo, armor and supplies', function()
+        local cache
+        for _, s in ipairs(server:export('wasteland_inventory', 'GetTradeable', a)) do if s.name == 'survivor_cache' then cache = s end end
+        server:clientEvent(a, 'wasteland:inventory:server:use', cache.uid, cache.inventoryId); server:advance(500)
+        expect(count('survivor_cache')).toBe(0)
+        expect(last(events(server, a, 'wasteland:loot:client:notice')).args[1]).toBe("You crack open the Survivor's Cache.")
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

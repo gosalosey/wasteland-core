@@ -239,6 +239,7 @@ local function zonesSchema(d) return { type = 'table', fields = {
     marker = { type = 'boolean', default = true, description = 'A marker over usable ones close by' },
     blips = { type = 'boolean', default = true, description = 'Zones on the map' },
     safe = { type = 'boolean', default = true, description = 'No zombies inside these zones (like camps)' },
+    rareChance = { type = 'number', default = 0.001, min = 0, max = 1, description = 'Chance of a survivor cache per chop or mine' },
     minigame = { type = 'table', fields = {
         enabled = { type = 'boolean', default = true, description = 'Press E in the green zone instead of a timer' },
         hits = { type = 'integer', default = d.hits, min = 1, max = 12, description = 'Good hits needed (one miss fails)' },
@@ -553,6 +554,41 @@ finishZoneTree = function(src, s)
     setDown(t, true)
     searches = searches + 1
     giveDirect(src, s, nc)
+    -- Very rarely: a Survivor's Cache.
+    local cache = M.config.survivorCache
+    if cache.enabled ~= false and c.rareChance > 0 and math.random() < c.rareChance then
+        if not inv():AddItem(src, cache.item, 1) then
+            inv():AddItem(s.id, cache.item, 1)
+            inv():OpenStash(src, s.name, stashOpts(nc, s.coords, true, k.label))
+        end
+        notice(src, "You found something very rare: a Survivor's Cache! Use it from your inventory.")
+        M.log:info('player %d found a survivor cache at %s', src, t.id)
+        TriggerEvent('wasteland:loot:rareFound', src, cache.item, t.kind)
+    end
+end
+
+-- Using a Survivor's Cache: everything in it goes into a box that opens
+-- next to the inventory (so a full pocket loses nothing).
+local cacheCount = 0
+local function useCache(src)
+    local cache = M.config.survivorCache
+    local p = playerCoords(src)
+    if not p then return false, 'You cannot open that here.' end
+    cacheCount = cacheCount + 1
+    local name = string.format('loot_cache_%d_%d_%d', src, os.time(), cacheCount)
+    local opts = { label = "Survivor's Cache", width = 8, height = 8, maxWeight = 500, coords = p, reach = 6 }
+    Citizen.CreateThread(function()
+        local id, err = inv():EnsureStash(name, opts)
+        if not id then M.log:warn('survivor cache %s: %s', name, tostring(err)); return end
+        for _, it in ipairs(cache.contents) do
+            local ok, e = inv():AddItem(id, it.name, it.count)
+            if not ok then M.log:warn('survivor cache: %s x %d: %s', it.name, it.count, tostring(e)) end
+        end
+        opts.open = true
+        inv():OpenStash(src, name, opts)
+        notice(src, "You crack open the Survivor's Cache.")
+    end)
+    return 1 -- one cache used up
 end
 
 local respawnToken = nil
@@ -667,6 +703,17 @@ M = Wasteland.DefineModule({
             tables = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = TABLE },
             treeZones = TREEZONES,
             rockZones = ROCKZONES,
+            survivorCache = { type = 'table', fields = {
+                item = { type = 'string', default = 'survivor_cache', pattern = '^[%w_]+$' },
+                contents = { type = 'array', default = {
+        { name = 'weapon_carbine', count = 1 }, { name = 'ammo_556', count = 150 }, { name = 'armor_plate', count = 1 },
+        { name = 'backpack_large', count = 1 }, { name = 'antibiotics', count = 3 }, { name = 'bandage', count = 15 },
+        { name = 'mre_beef', count = 4 }, { name = 'water_bottle', count = 4 },
+    }, items = { type = 'table', fields = {
+                    name = { type = 'string', required = true, pattern = '^[%w_]+$' },
+                    count = { type = 'integer', default = 1, min = 1, max = 10000 },
+                } } },
+            } },
         } },
     },
     onInit = function(mod)
@@ -702,6 +749,18 @@ M = Wasteland.DefineModule({
                     c.enabled = false
                 end
             end
+        end
+        local cache = M.config.survivorCache
+        cache.enabled = inv():GetItemDefinition(cache.item) ~= nil
+        for _, it in ipairs(cache.contents) do
+            if not inv():GetItemDefinition(it.name) then
+                M.log:warn('loot.lua: survivorCache has item "%s", which is not in inventory.lua items: no caches', it.name)
+                cache.enabled = false
+            end
+        end
+        if cache.enabled then
+            local okU, errU = inv():RegisterUsable(cache.item, useCache)
+            if not okU then M.log:warn('survivor cache: %s', tostring(errU)); cache.enabled = false end
         end
         loadCustom()
         loadExtra()

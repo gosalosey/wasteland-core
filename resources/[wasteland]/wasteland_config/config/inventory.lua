@@ -281,6 +281,8 @@ return {
 
         -- Weapons (what each one does is in weapons.lua). Durability is
         -- shots (guns) or hits (melee) until the weapon breaks.
+        survivor_cache = { label = "Survivor's Cache", image = 'burriedtreasure', category = 'misc', width = 2, height = 2, weight = 2.0, stack = 10,
+            description = 'Very rare: found once in a thousand trees or rocks. Use it to open: a rifle, ammo, armor, a big backpack, medicine and food.' },
         pickaxe = { label = 'Pickaxe', image = 'pickaxe', category = 'tool', width = 1, height = 3, weight = 1.2, stack = 1,
             description = 'Mine the big rocks in rock zones for stone (see the map: "Mining").' },
         crowbar = { label = 'Crowbar', image = 'weapon_crowbar', category = 'weapon', width = 1, height = 3, weight = 0.75, durability = 400,
