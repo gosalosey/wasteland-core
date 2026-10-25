@@ -86,7 +86,7 @@ return {
     treeZones = {
         enabled = true,
         respawnMinutes = 60,
-        chopSeconds = 10,
+        chopSeconds = 6,
         spacing = 6,          -- least metres between two trees
         table = 'tree',       -- loot table below (what a tree gives)
         tools = { 'weapon_hatchet', 'weapon_battleaxe' },
@@ -112,7 +112,7 @@ return {
     rockZones = {
         enabled = true,
         respawnMinutes = 60,
-        chopSeconds = 12,     -- how long mining one rock takes
+        chopSeconds = 7,      -- how long mining one rock takes
         chopDistance = 4.5,
         spacing = 9,
         table = 'rock',
@@ -133,12 +133,13 @@ return {
     -- rolls: how many picks; items: { name, min, max, weight } (weight =
     -- how likely compared to the others in the same table).
     tables = {
-        tree = { emptyChance = 0, rolls = { 1, 2 }, items = {
+        tree = { emptyChance = 0, rolls = { 2, 2 }, items = {
             { name = 'wood_log', min = 2, max = 3, weight = 10 },
-            { name = 'firewood', min = 1, max = 3, weight = 3 },
+            { name = 'firewood', min = 1, max = 2, weight = 3 },
         } },
-        rock = { emptyChance = 0, rolls = { 1, 1 }, items = {
-            { name = 'stone', min = 5, max = 9, weight = 10 },
+        rock = { emptyChance = 0, rolls = { 2, 2 }, items = {
+            { name = 'stone', min = 5, max = 7, weight = 12 },
+            { name = 'scrap_metal', min = 1, max = 3, weight = 4 },
         } },
         logpile = { emptyChance = 0, rolls = { 1, 1 }, items = {
             { name = 'wood_log', min = 2, max = 4, weight = 10 },

@@ -1,5 +1,10 @@
 # Changelog
 
+## Faster chopping and mining, more from each
+
+- Chopping a tree: 6 s (was 10). Each tree gives two picks: mostly logs (2-3 each), sometimes firewood, so usually 4-6 logs (was 2-3).
+- Mining a rock: 7 s (was 12). Two picks: stone (5-7 each) and now **scrap metal** (1-3), so usually 10-14 stone, or stone plus scrap.
+
 ## Starter tools: cheap hatchet and pickaxe
 
 - **Hatchet**: 2 scrap metal + 1 rag, 5 s, no blueprint needed any more (was 3 scrap metal + 2 duct tape and the hatchet blueprint).

@@ -240,7 +240,7 @@ local function zonesSchema(d) return { type = 'table', fields = {
     blips = { type = 'boolean', default = true, description = 'Zones on the map' },
     zones = { type = 'array', default = d.zones, items = TREEZONE },
 } } end
-local TREEZONES = zonesSchema({ seconds = 10, distance = 3.5, spacing = 6, table = 'tree',
+local TREEZONES = zonesSchema({ seconds = 6, distance = 3.5, spacing = 6, table = 'tree',
     tools = { 'weapon_hatchet', 'weapon_battleaxe' }, stump = 'prop_tree_stump_01',
     models = { 'prop_tree_pine_01', 'prop_tree_pine_02', 'prop_tree_cedar_s_04', 'prop_tree_cedar_s_06' },
     zones = {
@@ -252,7 +252,7 @@ local TREEZONES = zonesSchema({ seconds = 10, distance = 3.5, spacing = 6, table
         { label = 'Raton Canyon woods', coords = { x = -1520.0, y = 4600.0, z = 40.0 }, radius = 80 },
         { label = 'Mount Chiliad trail', coords = { x = -770.0, y = 5560.0, z = 33.0 }, radius = 70 },
     } })
-local ROCKZONES = zonesSchema({ seconds = 12, distance = 4.5, spacing = 9, table = 'rock', tools = { 'pickaxe' }, stump = '',
+local ROCKZONES = zonesSchema({ seconds = 7, distance = 4.5, spacing = 9, table = 'rock', tools = { 'pickaxe' }, stump = '',
     models = { 'prop_rock_4_big', 'prop_rock_4_big2', 'prop_rock_4_c', 'prop_rock_1_a' },
     zones = {
         { label = 'Davis Quartz quarry', coords = { x = 2954.0, y = 2788.0, z = 41.5 }, radius = 100 },
