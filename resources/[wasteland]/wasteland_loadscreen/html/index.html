@@ -140,6 +140,7 @@
         base: '<path d="M3 21V10l9-6 9 6v11"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/><path d="M7 12h2M15 12h2"/>',
         deer: '<path d="M8 3v3l-2 2M8 6l2 2M16 3v3l2 2M16 6l-2 2"/><path d="M9 9h6l-1 5h-4z"/><path d="M10 14l-1 7M14 14l1 7"/>',
         group: '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M2 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M14.5 14.6c3 .1 6.5 1.9 6.5 5.4"/>',
+        axe: '<path d="M14 4l6 6-3 3-6-6z"/><path d="M12.5 8.5L3 18l3 3 9.5-9.5"/>',
         drop: '<path d="M4 9a8 8 0 0 1 16 0z"/><path d="M4 9l7 6M20 9l-7 6M12 9v6"/><rect x="9" y="15" width="6" height="5" rx="1"/>',
     };
 
@@ -147,15 +148,15 @@
         ['zombie', 'The dead', 'Stalkers follow you, sleepers lie in wait, packs surround you. Screamers call the horde.'],
         ['heart', 'Survival', 'Hunger, thirst, bleeding, infection, cold - and nature calls. Ignore it and you will not last.'],
         ['search', 'Scavenging', 'Search dumpsters, fridges, crates and the dead. Traders buy anything you find.'],
-        ['hammer', 'Crafting', 'Rags from old clothes. Blueprints for blades, guns, gun parts and ammo.'],
+        ['axe', 'Gathering', 'Chop trees for logs with a hatchet, mine big rocks for stone and scrap with a pickaxe. Look for Lumber and Mining on the map.'],
+        ['hammer', 'Crafting', 'A hatchet and a pickaxe from scrap and a rag. Saw logs into planks. Blueprints for blades, guns and ammo.'],
         ['gun', 'Weapons', 'Every bullet counts and every weapon wears out. Gunfire draws more of them.'],
         ['base', 'Base building', 'Claim land with a tool cupboard. Walls, gates and storage - the dead will try the doors.'],
         ['deer', 'Hunting', 'Track deer and boar, harvest them with a blade, cook the meat over a campfire.'],
         ['group', 'Groups', 'Band together with a group radio and voice chat. Trade face to face.'],
-        ['tent', 'Camps', 'Safe zones with traders and a medic. The dead do not come inside. People might.'],
+        ['tent', 'Camps', 'Safe zones with traders, a medic and jobs. The dead do not come inside. People might.'],
         ['car', 'Vehicles', 'Fix up a wreck: battery, wheels, fuel. Big trunks. Lock it or lose it.'],
         ['drop', 'Supply drops', 'Planes drop crates of gear. Everyone sees them fall.'],
-        ['map', 'Jobs', 'The camps need scrap, food and someone brave enough to clear the hospital.'],
     ];
 
     const TIPS = [
@@ -182,6 +183,11 @@
         'When you need to go, type /pee or /poop. Somewhere quiet.',
         'A car crash is loud. So is an engine left running.',
         'At night there are more of them, and they are faster.',
+        'Craft a hatchet and a pickaxe first: two or three scrap metal and a rag each. No blueprint needed.',
+        'Green arrows mark trees you can chop, orange arrows rocks you can mine. Chopped trees grow back in an hour.',
+        'One log saws into four planks. Chopping a tree is quicker than buying wood.',
+        'Rocks give stone for upgrades and upkeep, and sometimes scrap metal.',
+        'Chopping and mining are loud work. Taking a hit stops you - so does pressing X.',
     ];
 
     const LOGS = [
@@ -197,6 +203,8 @@
         ['Day 85', 'Built walls around the cupboard. Wood, mostly.\nThey scratched at the gate all night. It held. This time.'],
         ['Day 93', 'Saw one that did not shamble. It followed me for a mile.\nNever got closer. Never went away.'],
         ['Day 101', 'Shot a deer by the lake. First real meal in a week.\nThe fire drew them in before the meat was done.'],
+        ['Day 104', 'Chopped wood at the edge of the forest all morning.
+Every swing rang out. By noon I had company.'],
         ['Day 108', 'A crate came down by parachute near the quarry.\nSo did everyone with a gun.'],
     ];
 
