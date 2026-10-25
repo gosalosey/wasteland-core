@@ -514,6 +514,11 @@ describe('rock zones: big rocks mined with a pickaxe for stone', function()
         expect(st[1]).toBe(r.id); expect(st[2]).toBe(false)
     end)
 
+    it('the zone is safe from zombies: inside yes, outside no', function()
+        expect(server:export('wasteland_loot', 'IsInGatherZone', { x = 30.0, y = 10.0, z = 30.0 })).toBe(true)
+        expect(server:export('wasteland_loot', 'IsInGatherZone', { x = 200.0, y = 10.0, z = 30.0 })).toBe(false)
+    end)
+
     it('/rockzone add places a rock zone (admins)', function()
         server.aces[a .. '|wasteland.admin'] = true
         server.players[a].coords = { x = 900.0, y = 900.0, z = 30.0 }

@@ -238,6 +238,7 @@ local function zonesSchema(d) return { type = 'table', fields = {
     stump = { type = 'string', default = d.stump, pattern = '^[%w_]*$', description = 'Left once used ("" = nothing)' },
     marker = { type = 'boolean', default = true, description = 'A marker over usable ones close by' },
     blips = { type = 'boolean', default = true, description = 'Zones on the map' },
+    safe = { type = 'boolean', default = true, description = 'No zombies inside these zones (like camps)' },
     minigame = { type = 'table', fields = {
         enabled = { type = 'boolean', default = true, description = 'Press E in the green zone instead of a timer' },
         hits = { type = 'integer', default = d.hits, min = 1, max = 20, description = 'Good hits needed' },
@@ -454,7 +455,7 @@ local function zoneTreeData()
     for _, kind in ipairs(KIND_ORDER) do
         local c = kcfg(kind)
         any = any or c.enabled
-        kinds[kind] = { enabled = c.enabled, models = c.models, stump = c.stump, marker = c.marker, blips = c.blips,
+        kinds[kind] = { enabled = c.enabled, safe = c.safe, models = c.models, stump = c.stump, marker = c.marker, blips = c.blips,
             distance = c.chopDistance, option = KINDS[kind].option, blip = KINDS[kind].blip }
     end
     return { enabled = any, trees = out, zones = zones, kinds = kinds }
@@ -777,6 +778,20 @@ M.netEvent('wasteland:loot:server:cancel', { rateLimit = RATE }, function(src) s
 -------------------------------------------------------------------------------
 -- Exports (loot api 0.1)
 -------------------------------------------------------------------------------
+
+--- IsInGatherZone(coords) -> bool   (inside a tree / rock zone that is safe from zombies)
+exports('IsInGatherZone', function(coords)
+    if not (M and M.active) or type(coords) ~= 'table' and type(coords) ~= 'vector3' then return false end
+    local x, y = tonumber(coords.x), tonumber(coords.y)
+    if not x or not y then return false end
+    for _, z in ipairs(zoneList) do
+        if kcfg(z.kind).safe then
+            local dx, dy = x - z.coords.x, y - z.coords.y
+            if dx * dx + dy * dy <= z.radius * z.radius then return true end
+        end
+    end
+    return false
+end)
 
 --- GetLootStats() -> { containers (filled since start), searches (since start) }
 exports('GetLootStats', function()

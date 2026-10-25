@@ -172,7 +172,7 @@ RegisterNetEvent('wasteland:zombies:client:syncCheck', function(seq, radius)
     TriggerServerEvent('wasteland:zombies:server:syncReport', seq, list)
 end)
 
--- Players inside a safe zone (camp) are left alone.
+-- Players inside a safe zone (camp, base, tree / rock zone) are left alone.
 local function safe(target)
     local at = GetEntityCoords(target)
     if GetResourceState('wasteland_camps') == 'started' then
@@ -181,6 +181,10 @@ local function safe(target)
     end
     if GetResourceState('wasteland_basebuilding') == 'started' then
         local ok, yes = pcall(function() return exports.wasteland_basebuilding:IsInBaseZone(at) end)
+        if ok and yes == true then return true end
+    end
+    if GetResourceState('wasteland_loot') == 'started' then -- tree / rock zones
+        local ok, yes = pcall(function() return exports.wasteland_loot:IsInGatherZone(at) end)
         if ok and yes == true then return true end
     end
     return false

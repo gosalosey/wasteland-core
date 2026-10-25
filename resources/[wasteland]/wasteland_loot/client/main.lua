@@ -282,6 +282,16 @@ AddEventHandler('onClientResourceStart', function(res)
     end
 end)
 
+--- IsInGatherZone(coords) -> bool   (client; inside a tree / rock zone safe from zombies)
+exports('IsInGatherZone', function(c)
+    if not zt or not c then return false end
+    for _, z in ipairs(zt.zones) do
+        local k = zt.kinds[z.kind]
+        if k and k.safe and (c.x - z.x) ^ 2 + (c.y - z.y) ^ 2 <= z.radius * z.radius then return true end
+    end
+    return false
+end)
+
 -- /zonecheck: how many tree / rock spots near you were skipped, and why.
 RegisterCommand('zonecheck', function()
     local parts = {}

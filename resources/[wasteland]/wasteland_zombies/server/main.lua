@@ -51,7 +51,8 @@ local function activePlayers()
 end
 
 -- Safe zones (camps): no zombies inside.
--- Camps, and the small zone around every tool cupboard (base building).
+-- Camps, the small zone around every tool cupboard (base building), and
+-- tree / rock zones.
 local function inSafeZone(coords)
     if GetResourceState('wasteland_camps') == 'started' then
         local ok, safe = pcall(function() return exports.wasteland_camps:IsInSafeZone(coords) end)
@@ -59,6 +60,11 @@ local function inSafeZone(coords)
     end
     if GetResourceState('wasteland_basebuilding') == 'started' then
         local ok, safe = pcall(function() return exports.wasteland_basebuilding:IsInBaseZone(coords) end)
+        if ok and safe == true then return true end
+    end
+    -- Tree and rock zones (wasteland_loot treeZones / rockZones, safe = true).
+    if GetResourceState('wasteland_loot') == 'started' then
+        local ok, safe = pcall(function() return exports.wasteland_loot:IsInGatherZone(coords) end)
         if ok and safe == true then return true end
     end
     return false

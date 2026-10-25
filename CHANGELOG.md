@@ -1,5 +1,11 @@
 # Changelog
 
+## Tree and rock zones are safe from zombies
+
+- Tree zones and rock zones count as safe zones, like camps: no zombies spawn inside, hordes avoid them, zombies that wander in are removed, and zombies stop chasing players inside (and cannot hurt them there).
+- Per zone kind in loot.lua: `safe = true` (set `safe = false` for dangerous gathering).
+- New exports `IsInGatherZone(coords)` on wasteland_loot (server and client); wasteland_zombies checks it next to camps and bases.
+
 ## Chopping and mining minigame
 
 - Chopping a tree or mining a rock is now a small timing game: a marker slides along a bar at the bottom of the screen; press **E** while it is in the green zone. 4 good hits fell a tree, 5 break a rock. A miss flashes red and locks E for 0.4 s; nothing is lost. X, moving or taking damage still stops it.
