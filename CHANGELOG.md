@@ -1,5 +1,12 @@
 # Changelog
 
+## Scrap barricade building look (test: wood wall)
+
+- New optional resource **wasteland_buildprops_scrap**: a new "scrap barricade" look made in Blender (Sollumz). First piece: the wood wall, with crooked weathered planks with gaps, a nailed cross-board, a rusty corrugated patch, a red spray-painted X, grime and mud. 964 triangles, one 1024 texture, the same size and collision as the old wall.
+- **Not started by default.** To try it, add `ensure wasteland_buildprops_scrap` after `ensure wasteland_buildprops` in server.cfg; remove it to go back. Every existing wood wall changes look; nothing else changes.
+- Build scripts in `tools/buildprops/scrap` (textures from ambientCG, CC0).
+- VERIFY IN-GAME before more pieces are made: the look by day and night, collision, which side faces out, and snapping next to the old pieces.
+
 ## Survivor's Cache: a very rare find from chopping and mining
 
 - Every tree chopped and every rock mined has a 1 in 1000 chance (`rareChance = 0.001` in treeZones / rockZones) of a **Survivor's Cache** (`survivor_cache`), on top of the wood or stone. The player is told; a full pocket leaves it at the tree / rock (that opens).
