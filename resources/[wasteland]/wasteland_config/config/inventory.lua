@@ -283,6 +283,15 @@ return {
         -- shots (guns) or hits (melee) until the weapon breaks.
         survivor_cache = { label = "Survivor's Cache", image = 'burriedtreasure', category = 'misc', width = 2, height = 2, weight = 2.0, stack = 10,
             description = 'Very rare: found once in a thousand trees or rocks. Use it to open: a rifle, ammo, armor, a big backpack, medicine and food.' },
+        -- Story items (story.lua)
+        story_courier_case = { label = 'Sealed steel case', image = 'original_case', category = 'misc', width = 2, height = 2, weight = 3.0, stack = 1,
+            description = 'LAZARUS-9 / HUMANE LABS / BIOHAZARD. Locked. Hollis at Sandy Shores wants to see it.' },
+        story_keycard = { label = "Dr. Ward's keycard", image = 'labkey', category = 'misc', width = 1, height = 1, weight = 0.01, stack = 1,
+            description = 'Humane Labs, cold store access.' },
+        story_lazarus_sample = { label = 'LAZARUS sample', image = 'bdsample', category = 'misc', width = 1, height = 1, weight = 0.05, stack = 1,
+            description = 'One vial, frost on the glass. L-9 / FINAL / CURE?' },
+        lazarus_serum = { label = 'Lazarus serum', image = 'adrenaline', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 5,
+            description = 'Made from the last LAZARUS sample. Clears infection completely.' },
         pickaxe = { label = 'Pickaxe', image = 'pickaxe', category = 'tool', width = 1, height = 3, weight = 1.2, stack = 1,
             description = 'Mine the big rocks in rock zones for stone (see the map: "Mining").' },
         crowbar = { label = 'Crowbar', image = 'weapon_crowbar', category = 'weapon', width = 1, height = 3, weight = 0.75, durability = 400,

@@ -1,5 +1,17 @@
 # Changelog
 
+## Story: "Patient Zero", Act I (new module wasteland_story)
+
+- A quest chain with a story: 12 steps across the map, three characters (Hollis the radio operator at Sandy Shores, Tomas Reyes at the old Grapeseed ranch, Mr. Crane), notes and recordings to find, and choices that change what happens and how it ends.
+  - Hollis hears a looped radio message; the crashed courier plane at the Sandy airfield; the sealed LAZARUS case and the pilot's log; the infected clinic in Paleto Bay and Dr. Ward's notes; Tomas, bitten, with her keycard (ease his fever with antibiotics, or take the card and watch him turn); holding the Humane Labs gate while the reader boots (zombies come in waves); the last LAZARUS sample and Dr. Ward's final recording; then the choice: give the vial to the camp medic (3 Lazarus serums, $500) or sell it to Crane ($3000, a carbine and ammo).
+  - Two endings; Hollis remembers what you did to Tomas.
+- How it plays: hold Left Alt on a story character to talk (cinematic dialogue with typed lines and numbered choices); story items and notes appear in the world only for you, with a marker; the current objective is on the map; a tracker on the right; "Journal updated" banners; `/journal` tells the story so far as diary entries.
+- Solo or with your group: group members close by on the same step share kills and defending.
+- New items: Sealed steel case, Dr. Ward's keycard, LAZARUS sample, Lazarus serum (use: clears infection).
+- Everything is in `wasteland_config/config/story.lua` (text, places, choices, rewards); more acts can be written there. Admins: `/story reset [id]`, `/story skip [id]`.
+- **server.cfg: add `ensure wasteland_story` after `ensure wasteland_quests`.** It is in modules.lua as `story = true`.
+- VERIFY IN-GAME: the NPC and item positions (picked from the map), the NPC models and the dialogue screen.
+
 ## No gap when walls are stacked
 
 - Walls, half walls, doorways, window frames and frames have a 20 cm skirt below their bottom edge. An upper-floor wall stands on the floor piece's edge, 20 cm above the top of the wall below (the floor sits beside that wall, not on it); the skirt fills that strip. On a foundation the skirt is hidden inside it. Model change only: same collision and snapping, existing bases are fixed too.

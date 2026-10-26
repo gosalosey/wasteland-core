@@ -42,6 +42,7 @@ return {
 
         -- Quests (Milestone 8).
         quests     = true,
+        story      = true,   -- story quest chain (story.lua, /journal)
 
         -- Persistent vehicles (Milestone 9).
         vehicles   = true,
