@@ -408,9 +408,82 @@ def build_reuse(name, tier, mats):
     mat = {'wood': mats.get('planks', [None])[0], 'stone': mats.get('block'), 'metal': mats.get('plate')}.get(tier)
     me.materials.append(mat); parts.append(o)
 
+def plastic_mat(name, colour):
+    m = M(name)
+    base = m.ramp(m.noise(5, 6), (colour[0] * 0.75, colour[1] * 0.75, colour[2] * 0.75, 1), colour, 0.3, 0.7)
+    fade = m.ramp(m.noise(1.5, 4), (0.75, 0.78, 0.8, 1), (1, 1, 1, 1), 0.35, 0.7)          # sun-faded patches
+    p = m.xyz(m.geo.outputs['Position'])
+    streak = m.ramp(m.math('ADD', m.noise(18, 3, None), m.math('MULTIPLY', p[2], 0.6)), (0.45, 0.4, 0.32, 1), (1, 1, 1, 1), 0.45, 0.75)
+    c = m.mix(m.mix(base, fade, 1.0, 'MULTIPLY'), streak, 1.0, 'MULTIPLY')
+    return m, m.finish(c, 0.6)
+
+def build_raincatcher():
+    wood = stud_mat('wood')[1]
+    plank = wood_mat('plank', (0.7, 0.62, 0.52, 1), 'Wood049', 0.5)[1]
+    drum = plastic_mat('drum', (0.07, 0.2, 0.42, 1))[1]
+    tarp = fabric_mat('tarp', (0.28, 0.27, 0.17, 1))[1]
+    rope = fabric_mat('rope', (0.42, 0.36, 0.25, 1))[1]
+    iron = iron_mat('iron')[1]
+    # 55-gallon drum (inside the collision box)
+    cyl(0.29, 0.88, (0, 0, 0.44), mat=drum, verts=28)
+    for z in (0.03, 0.3, 0.6, 0.87):
+        cyl(0.302, 0.03, (0, 0, z), mat=drum, verts=28)                   # rolling hoops / rims
+    cyl(0.03, 0.02, (0.16, -0.1, 0.885), mat=drum, verts=10)             # bung
+    cyl(0.018, 0.09, (0, -0.32, 0.12), rot=(math.pi / 2, 0, 0), mat=iron, verts=8)   # tap
+    box((0.03, 0.03, 0.05), (0, -0.37, 0.1), mat=iron)
+    # 2x4 frame: four crooked posts, crossbars, a couple of braces
+    P = 0.62
+    tops = []
+    for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+        lean = (math.radians(rnd(-2.5, 2.5)), math.radians(rnd(-2.5, 2.5)), math.radians(rnd(0, 360)))
+        x, y = sx * P + rnd(-0.03, 0.03), sy * P + rnd(-0.03, 0.03)
+        box((0.09, 0.04, 1.62), (x, y, 0.81), rot=lean, mat=wood, bevel=0.004)
+        tops.append((x, y, 1.6))
+    for i in range(4):
+        (x0, y0, _), (x1, y1, _) = tops[i], tops[(i + 1) % 4]
+        L = math.hypot(x1 - x0, y1 - y0)
+        box((L + 0.12, 0.04, 0.09), ((x0 + x1) / 2, (y0 + y1) / 2, 1.5 + rnd(-0.03, 0.03)),
+            rot=(0, math.radians(rnd(-2, 2)), math.atan2(y1 - y0, x1 - x0)), mat=plank, bevel=0.004)
+    for i in (0, 2):
+        (x0, y0, _), (x1, y1, _) = tops[i], tops[(i + 1) % 4]
+        L = math.hypot(x1 - x0, y1 - y0)
+        box((math.hypot(L, 0.7), 0.035, 0.08), ((x0 + x1) / 2, (y0 + y1) / 2, 0.45),
+            rot=(0, math.atan2(0.7, L) * (1 if i == 0 else -1), math.atan2(y1 - y0, x1 - x0)), mat=plank, bevel=0.004)
+    # tarp: a sagging funnel from the corners down into the drum, with a hole
+    bm = bmesh.new()
+    N = 24
+    grid = {}
+    for i in range(N + 1):
+        for j in range(N + 1):
+            u, v = -1 + 2 * i / N, -1 + 2 * j / N
+            x, y = u * 0.66, v * 0.66
+            r = max(abs(u), abs(v))                                 # 0 centre .. 1 edge
+            corner = (abs(u) * abs(v))                              # corners pulled up to the posts
+            z = 0.97 + 0.45 * r ** 1.4 + 0.18 * corner + rnd(-0.008, 0.008)
+            grid[i, j] = bm.verts.new((x, y, z))
+    for i in range(N):
+        for j in range(N):
+            cu, cv = -1 + 2 * (i + 0.5) / N, -1 + 2 * (j + 0.5) / N
+            if math.hypot(cu, cv) * 0.66 < 0.12: continue           # drain hole over the drum
+            bm.faces.new((grid[i, j], grid[i + 1, j], grid[i + 1, j + 1], grid[i, j + 1]))
+    me = bpy.data.meshes.new('tarp'); bm.to_mesh(me); bm.free()
+    o = bpy.data.objects.new('tarp', me); bpy.context.collection.objects.link(o)
+    for x in bpy.context.selected_objects: x.select_set(False)
+    bpy.context.view_layer.objects.active = o; o.select_set(True)
+    md = o.modifiers.new('s', 'SOLIDIFY'); md.thickness = 0.006
+    bpy.ops.object.modifier_apply(modifier='s')
+    o.data.materials.append(tarp); parts.append(o)
+    # rope ties from the tarp corners to the posts
+    for (x, y, _) in tops:
+        cyl(0.008, 0.16, (x * 0.97, y * 0.97, 1.55), rot=(rnd(-0.6, 0.6), rnd(-0.6, 0.6), 0), mat=rope, verts=6)
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.06, minor_radius=0.01, location=(x, y, 1.47), major_segments=12, minor_segments=5)
+        t = bpy.context.active_object; t.data.materials.append(rope); parts.append(t)
+
 def build_piece(name):
     random.seed(zlib.crc32(name.encode()))
     info = PIECES[name]
+    if name == 'wl_farm_raincatcher':
+        build_raincatcher(); return True
     kind = name[len('wl_bp_'):]
     tier = kind.split('_')[-1] if kind.split('_')[-1] in ('wood', 'stone', 'metal') else None
     base = kind.rsplit('_', 1)[0] if tier else kind

@@ -1,5 +1,9 @@
 # Changelog
 
+## Rain catcher: scrap-built drum and tarp
+
+- New rain catcher model (`wl_farm_raincatcher`, made in Blender): a sun-faded blue 55-gallon drum with a tap, under an old olive tarp sagging into a funnel, tied with rope to four crooked 2x4 posts with crossbars and braces. Same collision as before (the drum). Preview: `docs/images/scrap/raincatcher.jpg`.
+
 ## No gap between storeys
 
 - Floor / ceiling pieces (wood, stone, metal) have a solid rim the full 20 cm round their edge, so the strip between a lower wall and the wall above is closed (it showed the outside before).
