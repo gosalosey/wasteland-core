@@ -502,3 +502,73 @@ describe('clear spots for wrecks', function()
     end)
 end)
 
+
+describe('vehicle parts: condition, repairing one part, replacing worn parts, wear', function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['vehicles.lua'] = CFG['vehicles.lua']:gsub('wreck = %b{}', [[wreck = { batteryMissing = 0, engineMissing = 0, wheelsMissingChance = 0, wheelsMissingMax = 1,
+            fuel = { 20, 20 }, engine = { 900, 900 }, body = { 900, 900 }, condition = { 50, 50 } }]], 1)
+        :gsub('removeLock = 1, fillCan = 1 }', 'removeLock = 1, fillCan = 1, repairPart = 1 }', 1)
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_vehicles' })
+    local id = player(server, 'mechanic', { x = 998.0, y = 0.0, z = 30.0 })
+    server:advance(2100)
+    local function part(action, which)
+        local e = veh(server)
+        server:clientEvent(id, 'wasteland:vehicles:server:act', e.netId, action, which)
+        server:advance(100); server:advance(1000)
+        server:clientEvent(id, 'wasteland:vehicles:server:finish'); server:advance(200)
+    end
+    local function cond() return veh(server).state.wlVeh.parts.cond end
+
+    it('every part has a condition (a wreck: 50%)', function()
+        local c = cond()
+        expect(c.engine).toBe(50); expect(c.battery).toBe(50)
+        expect(c.tyres[1]).toBe(50); expect(c.tyres[4]).toBe(50)
+    end)
+
+    it('a toolkit repairs one tyre only, up to 80%', function()
+        I(server, 'AddItem', id, 'vehicle_repair_kit', 1); server:advance(100)
+        part('repairPart', 'tyre2')
+        expect(cond().tyres[2]).toBe(80); expect(cond().tyres[1]).toBe(50)
+        expect(note(server, id)).toBe('Patched the front right tyre: 80%.')
+        server:clientEvent(id, 'wasteland:vehicles:server:act', veh(server).netId, 'repairPart', 'tyre2'); server:advance(100)
+        expect(note(server, id)).toBe('A toolkit cannot do better than 80%. Fit a new one.')
+        expect(I(server, 'GetItemCount', id, 'vehicle_repair_kit')).toBe(0)
+    end)
+
+    it('a new battery replaces the worn one (100%)', function()
+        I(server, 'AddItem', id, 'car_battery', 1); server:advance(100)
+        part('battery')
+        expect(cond().battery).toBe(100)
+        expect(note(server, id)).toBe('New battery fitted (100%).')
+        expect(I(server, 'GetItemCount', id, 'car_battery')).toBe(0)
+    end)
+
+    it('a new wheel replaces the tyre you work on', function()
+        I(server, 'AddItem', id, 'car_wheel', 1); server:advance(100)
+        part('wheel', 'tyre3')
+        expect(cond().tyres[3]).toBe(100); expect(cond().tyres[4]).toBe(50)
+    end)
+
+    it('driving wears parts; a burst tyre is flat (0%); only the driver reports', function()
+        local e = veh(server)
+        server:clientEvent(id, 'wasteland:vehicles:server:wear', e.netId, 1.0, { false, false, false, true }); server:advance(100)
+        expect(cond().tyres[4]).toBe(50) -- not the driver
+        e.driver = server.resources.wasteland_vehicles.env.GetPlayerPed(id)
+        server:advance(10000)
+        server:clientEvent(id, 'wasteland:vehicles:server:wear', e.netId, 1.0, { false, false, false, true }); server:advance(100)
+        local c = cond()
+        expect(c.tyres[4]).toBe(0)
+        expect(c.engine < 50).toBe(true); expect(c.tyres[1] < 50).toBe(true)
+        e.driver = 0
+    end)
+
+    it('conditions are saved with the vehicle', function()
+        server:advance(4100)
+        local row
+        for _, r in pairs(server.db.backend.data.wl_vehicles) do if r.x ~= 5000.0 then row = r end end
+        expect(row.parts:find('"c":[', 1, true) ~= nil).toBe(true)
+        expect(#server:lines('raised:')).toBe(0)
+    end)
+end)

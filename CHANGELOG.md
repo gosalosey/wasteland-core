@@ -1,5 +1,14 @@
 # Changelog
 
+## Vehicle parts: condition on the HUD, repair or replace one part
+
+- Engine parts, the battery and each of the four tyres have a condition (%). The vehicle HUD shows them: ENG PARTS and BATTERY chips and four tyre spots laid out like the car (front left, front right, rear left, rear right), green / yellow / red, blinking at 0%, grey when missing.
+- Parts wear: by distance driven (`vehicles.lua` `wear`), engine parts also in crashes (from the engine damage), and a tyre that bursts is flat (0%). Engine parts or battery at 0%: the engine will not start ("worn out" / "dead battery"). A flat tyre stays flat.
+- Fix one part (Left Alt on the vehicle):
+  - with a toolkit: "Repair engine parts", "Recondition battery", "Patch this tyre" (the tyre nearest to you): +40%, never above 80% (`partRepair`);
+  - with a new part: "Replace engine parts", "Replace battery", "Replace this wheel": 100% (the old part is scrap).
+- Wrecks start with parts at 25-85% (`wreck.condition`). Old saved vehicles count their fitted parts as 100%. "Check vehicle" lists every part's %. A full vehicle repair makes every part 100%.
+
 ## Moonshine still: copper still on a fire, smoke while it cooks
 
 - New still model (`wl_moonshine_still`, made in Blender): a hammered copper pot with green patina and soot on a stone fire ring with logs and embers, a copper cap and lyne arm to a copper thumper keg on a stump, then a wooden worm barrel with iron hoops, a copper coil, a spout and a mason jar catching the drip. Same collision as before. Preview: `docs/images/scrap/moonshine_still.jpg`.

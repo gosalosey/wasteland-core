@@ -52,6 +52,7 @@ end
 local function newCode() return string.format('%08x', math.random(0, 0x7fffffff)) end
 
 local function stateOf(v)
+    Rules.cond(v)
     return { id = v.id, fuel = v.fuel, tank = M.config.tankLitres, engine = v.engine, body = v.body, parts = v.parts,
         locked = v.locked == true, hasLock = v.lockCode ~= nil, lockBy = v.lockCode and v.lockOwner or nil, seq = v.seq or 0, acked = v.ackSeq }
 end
@@ -117,7 +118,13 @@ local function capture(v)
     v.x, v.y, v.z = c.x, c.y, c.z
     v.heading = GetEntityHeading(v.handle)
     if v.ackSeq == v.seq then
-        v.engine = GetVehicleEngineHealth(v.handle)
+        local engine = GetVehicleEngineHealth(v.handle)
+        local drop = (v.engine or engine) - engine
+        if drop > 15 and v.parts.engine then
+            local c = Rules.cond(v)
+            c.engine = math.max(0, c.engine - drop / 10 * M.config.wear.crashEngineParts)
+        end
+        v.engine = engine
         v.body = GetVehicleBodyHealth(v.handle)
     end
 end
@@ -280,7 +287,24 @@ end
 
 local LABELS = { fullRepair = 'Fully repairing the vehicle', battery = 'Installing the battery', engine = 'Fitting engine parts', wheel = 'Mounting a wheel',
     refuel = 'Refuelling', siphon = 'Siphoning fuel', repair = 'Repairing', fitLock = 'Fitting a lock', toggleLock = 'Turning the key',
-    pickLock = 'Picking the lock', removeLock = 'Taking the lock off', fillCan = 'Filling the jerry can', pumpRefuel = 'Refuelling at the pump' }
+    pickLock = 'Picking the lock', removeLock = 'Taking the lock off', fillCan = 'Filling the jerry can', pumpRefuel = 'Refuelling at the pump',
+    repairPart = 'Repairing' }
+
+-- What the progress bar says for a part action ("Patching the front left tyre").
+local function partLabel(action, v, part)
+    local kind, i = Rules.part(part)
+    if action == 'repairPart' then
+        if kind == 'engine' then return 'Repairing the engine parts' end
+        if kind == 'battery' then return 'Reconditioning the battery' end
+        if kind == 'tyre' then return 'Patching the ' .. Rules.TYRE_NAMES[i] .. ' tyre' end
+    elseif action == 'battery' and v.parts.battery then return 'Replacing the battery'
+    elseif action == 'engine' and v.parts.engine then return 'Replacing the engine parts'
+    elseif action == 'wheel' and (v.parts.wheels or 0) >= 4 then
+        i = i or Rules.worstTyre(v)
+        return 'Replacing the ' .. (Rules.TYRE_NAMES[i] or '') .. ' wheel'
+    end
+    return LABELS[action]
+end
 
 -- The pump at `coords` (everyone shares it), topped up for the time passed.
 local function pumpAt(coords)
@@ -357,7 +381,7 @@ local function vehicleFor(src, netId)
     return v
 end
 
-local function start(src, netId, action)
+local function start(src, netId, action, part)
     if acting[src] and now() - acting[src].startedAt < 30000 then return end
     acting[src] = nil
     local v, why = vehicleFor(src, netId)
@@ -374,9 +398,9 @@ local function start(src, netId, action)
             coords = coordsOf(v.handle), open = true })
         return
     end
-    local ok, reason = Rules.check(action, v, has(src), keyFor(src, v) ~= nil, M.config, ownsLock(src, v))
+    local ok, reason = Rules.check(action, v, has(src), keyFor(src, v) ~= nil, M.config, ownsLock(src, v), part)
     if not ok then notice(src, reason); return end
-    acting[src] = { id = v.id, action = action, startedAt = now() }
+    acting[src] = { id = v.id, action = action, startedAt = now(), part = part }
     if action == 'pickLock' then
         -- The minigame decides; the server times it and checks everything again.
         local lp = M.config.lockpick
@@ -385,7 +409,7 @@ local function start(src, netId, action)
             speedStep = lp.speedStep })
         return
     end
-    TriggerClientEvent('wasteland:vehicles:client:progress', src, { seconds = M.config.seconds[action], label = LABELS[action] })
+    TriggerClientEvent('wasteland:vehicles:client:progress', src, { seconds = M.config.seconds[action], label = partLabel(action, v, part) })
 end
 
 local function finish(src)
@@ -439,24 +463,50 @@ local function finish(src)
     if not v or not v.handle or not p or dist(p, coordsOf(v.handle)) > M.config.reach + 1.0 then notice(src, 'You moved away.'); return end
     capture(v)
     local key = keyFor(src, v)
-    local item, reason = Rules.check(a.action, v, has(src), key ~= nil, M.config, ownsLock(src, v))
+    local item, reason = Rules.check(a.action, v, has(src), key ~= nil, M.config, ownsLock(src, v), a.part)
     if not item then notice(src, reason); return end
 
     local cfg = M.config
+    local cond = Rules.cond(v)
     if a.action == 'fullRepair' then
         -- every part, full health, at least half a tank: a working car at once
         if not inv():RemoveItem(src, item, 1) then notice(src, 'The repair kit is gone.'); return end
         v.parts.battery, v.parts.engine, v.parts.wheels = true, true, 4
+        cond.engine, cond.battery, cond.tyres = 100, 100, { 100, 100, 100, 100 }
         v.engine, v.body = 1000, 1000
         v.fuel = math.max(v.fuel, cfg.tankLitres * 0.5)
         notice(src, string.format('Fully repaired: every part fitted, engine and body like new, %.0f of %d L of fuel.', v.fuel, cfg.tankLitres))
         M.log:info('player %d used a full vehicle repair on vehicle %s', src, v.id)
     elseif a.action == 'battery' or a.action == 'engine' or a.action == 'wheel' then
+        -- a missing part is fitted; a worn one is replaced (the old one is scrap)
         if not inv():RemoveItem(src, item, 1) then notice(src, 'The part is gone.'); return end
-        if a.action == 'battery' then v.parts.battery = true
-        elseif a.action == 'engine' then v.parts.engine = true
-        else v.parts.wheels = math.min(4, v.parts.wheels + 1) end
-        notice(src, LABELS[a.action]:gsub('ing', 'ed', 1) .. '.')
+        if a.action == 'battery' then
+            notice(src, v.parts.battery and 'New battery fitted (100%).' or 'Battery installed (100%).')
+            v.parts.battery, cond.battery = true, 100
+        elseif a.action == 'engine' then
+            notice(src, v.parts.engine and 'New engine parts fitted (100%).' or 'Engine parts fitted (100%).')
+            v.parts.engine, cond.engine = true, 100
+        elseif v.parts.wheels < 4 then
+            v.parts.wheels = v.parts.wheels + 1
+            cond.tyres[v.parts.wheels] = 100
+            notice(src, string.format('Wheel mounted (%d of 4).', v.parts.wheels))
+        else
+            local _, i = Rules.part(a.part)
+            i = i or Rules.worstTyre(v)
+            cond.tyres[i] = 100
+            notice(src, 'New ' .. Rules.TYRE_NAMES[i] .. ' wheel fitted (100%).')
+        end
+    elseif a.action == 'repairPart' then
+        if not inv():RemoveItem(src, item, 1) then return end
+        local kind, i = Rules.part(a.part)
+        local pr = cfg.partRepair
+        if kind == 'tyre' then
+            cond.tyres[i] = math.min(pr.cap, cond.tyres[i] + pr.amount)
+            notice(src, string.format('Patched the %s tyre: %d%%.', Rules.TYRE_NAMES[i], math.floor(cond.tyres[i])))
+        else
+            cond[kind] = math.min(pr.cap, cond[kind] + pr.amount)
+            notice(src, string.format('%s: %d%%.', kind == 'engine' and 'Engine parts repaired' or 'Battery reconditioned', math.floor(cond[kind])))
+        end
     elseif a.action == 'refuel' then
         local c = canWithFuel(src)
         local amount = math.min(c.metadata.fuel, cfg.tankLitres - v.fuel)
@@ -498,7 +548,8 @@ local function finish(src)
         notice(src, 'You took the lock off. The old key no longer fits anything.')
         M.log:info('player %d took the lock off vehicle %s', src, v.id)
     end
-    publish(v, a.action == 'repair' or a.action == 'fullRepair' or a.action == 'battery' or a.action == 'engine' or a.action == 'wheel')
+    publish(v, a.action == 'repair' or a.action == 'fullRepair' or a.action == 'battery' or a.action == 'engine' or a.action == 'wheel'
+        or a.action == 'repairPart')
     save(v)
     TriggerEvent('wasteland:vehicles:action', src, a.action, v.id)
 end
@@ -546,7 +597,18 @@ M = Wasteland.DefineModule({
                 body = { type = 'number', default = 400, min = 0, max = 1000 } } },
             seconds = { type = 'table', fields = {
                 fullRepair = SECONDS, battery = SECONDS, engine = SECONDS, wheel = SECONDS, refuel = SECONDS, siphon = SECONDS, repair = SECONDS,
-                fitLock = SECONDS, toggleLock = SECONDS, pickLock = SECONDS, removeLock = SECONDS, fillCan = SECONDS,
+                fitLock = SECONDS, toggleLock = SECONDS, pickLock = SECONDS, removeLock = SECONDS, fillCan = SECONDS, repairPart = SECONDS,
+            } },
+            wear = { type = 'table', fields = {
+                enginePartsPer100km = { type = 'number', default = 12, min = 0, max = 1000, description = 'Engine parts condition (%) lost per 100 km' },
+                batteryPer100km = { type = 'number', default = 6, min = 0, max = 1000 },
+                tyresPer100km = { type = 'number', default = 15, min = 0, max = 1000 },
+                crashEngineParts = { type = 'number', default = 0.6, min = 0, max = 10,
+                    description = 'Engine parts % lost per 1% of engine health a crash takes' },
+            } },
+            partRepair = { type = 'table', fields = {
+                amount = { type = 'number', default = 40, min = 1, max = 100, description = 'Condition (%) a toolkit gives one part back' },
+                cap = { type = 'number', default = 80, min = 1, max = 100, description = 'A toolkit repair never goes above this (%); new parts are 100%' },
             } },
             pump = { type = 'table', fields = {
                 litres = { type = 'number', default = 80, min = 1, max = 100000, description = 'Fuel in a full pump (litres)' },
@@ -574,6 +636,7 @@ M = Wasteland.DefineModule({
                 wheelsMissingChance = { type = 'number', default = 0.4, min = 0, max = 1 },
                 wheelsMissingMax = { type = 'integer', default = 2, min = 1, max = 4 },
                 fuel = PAIR(0, 8), engine = PAIR(250, 700), body = PAIR(300, 800),
+                condition = PAIR(25, 85),
             } },
             models = { type = 'array', minItems = 1, default = { 'emperor2' }, items = { type = 'string', pattern = '^[%w_]+$' } },
             pumps = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' } },
@@ -586,7 +649,7 @@ M = Wasteland.DefineModule({
     onInit = function(mod)
         M = mod -- DefineModule may run onInit before it returns
         for action, s in pairs({ fullRepair = 15, battery = 6, engine = 10, wheel = 6, refuel = 8, siphon = 10, repair = 10, fitLock = 6, toggleLock = 1, pickLock = 8,
-            removeLock = 6, fillCan = 8 }) do
+            removeLock = 6, fillCan = 8, repairPart = 8 }) do
             if not M.config.seconds[action] then M.config.seconds[action] = s end
         end
         for _, item in ipairs({ 'car_battery', 'engine_parts', 'car_wheel', 'jerry_can', 'vehicle_repair_kit', 'vehicle_lock', 'vehicle_key', 'lockpick', 'siphon_hose' }) do
@@ -649,12 +712,38 @@ M = Wasteland.DefineModule({
 })
 
 local RATE = { burst = 6, perSecond = 2 }
-local ACTIONS = { 'fullRepair', 'battery', 'engine', 'wheel', 'refuel', 'siphon', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'removeLock', 'trunk' }
+local ACTIONS = { 'fullRepair', 'battery', 'engine', 'wheel', 'refuel', 'siphon', 'repair', 'fitLock', 'toggleLock', 'pickLock', 'removeLock', 'trunk',
+    'repairPart' }
 
 M.netEvent('wasteland:vehicles:server:act', {
-    args = { { type = 'integer', required = true, min = 1 }, { type = 'enum', required = true, values = ACTIONS } },
+    args = { { type = 'integer', required = true, min = 1 }, { type = 'enum', required = true, values = ACTIONS },
+        { type = 'enum', values = { 'engine', 'battery', 'tyre1', 'tyre2', 'tyre3', 'tyre4' } } },
     rateLimit = RATE,
 }, start)
+
+-- The driver reports wear: km driven since the last report and which tyres
+-- burst. Parts only ever lose condition this way.
+local lastWear = {}   -- source -> time of the last report
+M.netEvent('wasteland:vehicles:server:wear', {
+    args = { { type = 'integer', required = true, min = 1 }, { type = 'number', required = true, min = 0, max = 50 },
+        { type = 'array', items = { type = 'boolean' }, maxItems = 4 } },
+    rateLimit = { burst = 4, perSecond = 1 },
+}, function(src, netId, km, bursts)
+    local h = NetworkGetEntityFromNetworkId(netId)
+    local v = h and byHandle[h] and vehicles[byHandle[h]]
+    if not v or GetPedInVehicleSeat(h, -1) ~= GetPlayerPed(src) then return end
+    local t = now()
+    local seconds = math.min(60, (t - (lastWear[src] or (t - 10000))) / 1000)
+    lastWear[src] = t
+    km = math.min(km, seconds * 0.1)   -- no more than 360 km/h
+    local broke = Rules.wear(v, km, M.config.wear)
+    local c = Rules.cond(v)
+    for i, burst in ipairs(bursts or {}) do
+        if burst and i <= (v.parts.wheels or 0) and c.tyres[i] > 0 then c.tyres[i] = 0; broke = true end
+    end
+    publish(v, false)
+    if broke then save(v) end
+end)
 
 M.netEvent('wasteland:vehicles:server:fillCan', {
     args = { { type = 'table', required = true, fields = { x = { type = 'number', required = true }, y = { type = 'number', required = true },
@@ -860,7 +949,7 @@ exports('GetVehicleState', function(id)
     local v = vehicles[id]
     if not v then return nil end
     return { id = v.id, model = v.model, fuel = v.fuel, engine = v.engine, body = v.body,
-        parts = { battery = v.parts.battery, engine = v.parts.engine, wheels = v.parts.wheels },
+        parts = { battery = v.parts.battery, engine = v.parts.engine, wheels = v.parts.wheels, cond = Rules.cond(v) },
         locked = v.locked, hasLock = v.lockCode ~= nil, spawned = v.handle ~= nil, netId = v.handle and NetworkGetNetworkIdFromEntity(v.handle) or nil }
 end)
 
@@ -878,6 +967,7 @@ exports('FixVehicle', function(netId)
     local v = h and byHandle[h] and vehicles[byHandle[h]]
     if not v then return false, 'that is not a world vehicle' end
     v.parts = { battery = true, engine = true, wheels = 4 }
+    Rules.cond(v)
     v.fuel, v.engine, v.body = M.config.tankLitres, 1000.0, 1000.0
     publish(v, true)
     save(v)
@@ -891,6 +981,7 @@ exports('SpawnWorking', function(coords, model)
     v.spotChecked, v.fresh = true, false -- placed on purpose
     if model then v.model = model end
     v.parts = { battery = true, engine = true, wheels = 4 }
+    Rules.cond(v)
     v.fuel, v.engine, v.body = M.config.tankLitres, 1000.0, 1000.0
     save(v)
     return v.id

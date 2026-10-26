@@ -88,3 +88,48 @@ describe('vehicle rules', function()
         expect(Rules.duration(84)).toBe('1 h 24 min'); expect(Rules.duration(120)).toBe('2 h'); expect(Rules.duration(45)).toBe('45 min')
     end)
 end)
+
+describe('vehicle part condition', function()
+    it('old vehicles get conditions: fitted parts 100%, missing 0%', function()
+        local v = { parts = { battery = true, engine = false, wheels = 3 } }
+        local c = Rules.cond(v)
+        expect(c.battery).toBe(100); expect(c.engine).toBe(0)
+        expect(c.tyres[3]).toBe(100); expect(c.tyres[4]).toBe(0)
+    end)
+
+    it('worn out engine parts or a dead battery: no start', function()
+        local v = { fuel = 10, engine = 800, parts = { battery = true, engine = true, wheels = 4, cond = { engine = 0, battery = 50, tyres = { 100, 100, 100, 100 } } } }
+        expect(select(2, Rules.canRun(v))).toContain('worn out')
+        v.parts.cond.engine, v.parts.cond.battery = 40, 0
+        expect(select(2, Rules.canRun(v))).toContain('battery is dead')
+    end)
+
+    it('driving wears the fitted parts by distance', function()
+        local v = { parts = { battery = true, engine = true, wheels = 4 } }
+        local w = { enginePartsPer100km = 10, batteryPer100km = 4, tyresPer100km = 20 }
+        expect(Rules.wear(v, 50, w)).toBe(false)
+        expect(v.parts.cond.engine).toBe(95); expect(v.parts.cond.battery).toBe(98); expect(v.parts.cond.tyres[2]).toBe(90)
+        expect(Rules.wear(v, 1000, w)).toBe(true)
+        expect(v.parts.cond.engine).toBe(0)
+    end)
+
+    it('repairing one part needs a toolkit and stops at the cap', function()
+        local yes = function() return true end
+        local v = { parts = { battery = true, engine = true, wheels = 4, cond = { engine = 70, battery = 85, tyres = { 10, 100, 100, 100 } } } }
+        local c = { partRepair = { cap = 80 } }
+        expect(Rules.check('repairPart', v, yes, false, c, false, 'tyre1')).toBe('vehicle_repair_kit')
+        expect(select(2, Rules.check('repairPart', v, yes, false, c, false, 'battery'))).toContain('80%')
+        expect(select(2, Rules.check('repairPart', v, yes, false, c, false, 'nonsense'))).toBe('Repair what?')
+        expect(Rules.check('battery', v, yes, false, c)).toBe('car_battery')
+        expect(Rules.check('wheel', v, yes, false, c, false, 'tyre1')).toBe('car_wheel')
+        expect(select(2, Rules.check('wheel', v, yes, false, c, false, 'tyre2'))).toBe('All four wheels are on.')
+        expect(Rules.worstTyre(v)).toBe(1)
+    end)
+
+    it('conditions are saved and loaded with the parts', function()
+        local p = Rules.decodeParts(Rules.encodeParts({ battery = true, engine = true, wheels = 4,
+            cond = { engine = 61.25, battery = 0, tyres = { 100, 55.5, 0, 12 } } }))
+        expect(p.cond.engine).toBe(61.3); expect(p.cond.battery).toBe(0); expect(p.cond.tyres[2]).toBe(55.5); expect(p.cond.tyres[4]).toBe(12)
+        expect(Rules.decodeParts('{"battery":true,"engine":true,"wheels":4}').cond).toBe(nil)
+    end)
+end)

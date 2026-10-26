@@ -39,3 +39,13 @@ test('layout: size limits, default position, screen fractions', () => {
     assert.deepStrictEqual(hud.toFractions(500, 600, box, scr), { x: 0.5, y: 1 });
     assert.deepStrictEqual(hud.toFractions(-50, 9999, box, scr), { x: 0, y: 1 });
 });
+
+test('HUD parts: percent, colour level, flat and missing', () => {
+    const v = hud.view({ parts: { engine: 72, battery: 0, tyres: [88, 30, 10, -1] } });
+    assert.strictEqual(v.parts.engine.text, '72%');
+    assert.strictEqual(v.parts.battery.level, 'broken');
+    assert.strictEqual(v.parts.tyres[1].level, 'low');
+    assert.strictEqual(v.parts.tyres[2].level, 'critical');
+    assert.strictEqual(v.parts.tyres[3].level, 'missing');
+    assert.strictEqual(hud.view({}).parts, null);
+});

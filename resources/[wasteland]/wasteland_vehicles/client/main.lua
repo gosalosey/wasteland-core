@@ -56,8 +56,11 @@ local function apply(veh, s)
     end
     SetVehicleFuelLevel(veh, math.max(0.0, (s.fuel or 0) / (s.tank or 50) * 100.0))
     local wheels = s.parts and s.parts.wheels or 4
+    local tyres = s.parts and s.parts.cond and s.parts.cond.tyres or {}
     for i, idx in ipairs(WHEELS) do
-        if i > wheels then SetVehicleTyreBurst(veh, idx, true, 1000.0) else SetVehicleTyreFixed(veh, idx) end
+        if i > wheels then SetVehicleTyreBurst(veh, idx, true, 1000.0)
+        elseif (tyres[i] or 100) <= 0 then SetVehicleTyreBurst(veh, idx, false, 1000.0)   -- worn out or burst: flat
+        else SetVehicleTyreFixed(veh, idx) end
     end
     -- Now the server may read damage from the entity again.
     if s.acked ~= s.seq and NetworkGetEntityIsNetworked(veh) then
@@ -69,12 +72,35 @@ end
 -- Targets
 -------------------------------------------------------------------------------
 
-local function act(action)
+-- The tyre (position 1-4) nearest to the player.
+local TYRE_BONES = { 'wheel_lf', 'wheel_rf', 'wheel_lr', 'wheel_rr' }
+local function nearestTyre(veh)
+    local me = GetEntityCoords(PlayerPedId())
+    local best, bestD = 1, math.huge
+    for i, bone in ipairs(TYRE_BONES) do
+        local b = GetEntityBoneIndexByName(veh, bone)
+        if b ~= -1 then
+            local d = #(GetWorldPositionOfEntityBone(veh, b) - me)
+            if d < bestD then best, bestD = i, d end
+        end
+    end
+    return best
+end
+
+local function act(action, part)
     return function(data)
         if active or not data.entity or not NetworkGetEntityIsNetworked(data.entity) then return end
-        TriggerServerEvent('wasteland:vehicles:server:act', NetworkGetNetworkIdFromEntity(data.entity), action)
+        local p = type(part) == 'function' and part(data.entity) or part
+        TriggerServerEvent('wasteland:vehicles:server:act', NetworkGetNetworkIdFromEntity(data.entity), action, p)
     end
 end
+
+local function condOf(s) return s.parts and s.parts.cond or {} end
+local function tyreHere(s, veh)
+    local i = nearestTyre(veh)
+    return i, i <= (s.parts.wheels or 0), (condOf(s).tyres or {})[i] or 100
+end
+local CAP = 80   -- a toolkit repair goes up to this (vehicles.lua partRepair.cap; the server decides)
 
 local function when(test)
     return function(entity)
@@ -89,9 +115,13 @@ local function describe(s, veh)
     parts[#parts + 1] = string.format('Fuel %.0f/%d L', s.fuel or 0, s.tank or 50)
     parts[#parts + 1] = string.format('Engine %d%%', math.floor(math.max(0, GetVehicleEngineHealth(veh)) / 10))
     parts[#parts + 1] = string.format('Body %d%%', math.floor(math.max(0, GetVehicleBodyHealth(veh)) / 10))
-    parts[#parts + 1] = 'Battery: ' .. (p.battery and 'OK' or 'missing')
-    parts[#parts + 1] = 'Engine parts: ' .. (p.engine and 'OK' or 'missing')
-    parts[#parts + 1] = string.format('Wheels %d/4', p.wheels or 0)
+    local c = p.cond or {}
+    local pct = function(have, v) return have and string.format('%d%%', math.floor(v or 100)) or 'missing' end
+    parts[#parts + 1] = 'Battery ' .. pct(p.battery, c.battery)
+    parts[#parts + 1] = 'Engine parts ' .. pct(p.engine, c.engine)
+    local t = {}
+    for i, n in ipairs({ 'FL', 'FR', 'RL', 'RR' }) do t[#t + 1] = n .. ' ' .. pct(i <= (p.wheels or 0), (c.tyres or {})[i]) end
+    parts[#parts + 1] = 'Tyres: ' .. table.concat(t, ', ')
     if s.hasLock then parts[#parts + 1] = s.locked and 'Locked' or 'Unlocked' end
     return table.concat(parts, ' · ')
 end
@@ -128,6 +158,18 @@ local function register()
         { label = 'Install battery', icon = '+', distance = 3.0, canInteract = when(function(s) return not s.parts.battery end), onSelect = act('battery') },
         { label = 'Fit engine parts', icon = '+', distance = 3.0, canInteract = when(function(s) return not s.parts.engine end), onSelect = act('engine') },
         { label = 'Mount a wheel', icon = '+', distance = 3.0, canInteract = when(function(s) return (s.parts.wheels or 0) < 4 end), onSelect = act('wheel') },
+        { label = 'Repair engine parts (toolkit)', icon = '⚒', distance = 3.0, onSelect = act('repairPart', 'engine'),
+            canInteract = when(function(s) return s.parts.engine and (condOf(s).engine or 100) < CAP end) },
+        { label = 'Replace engine parts (new)', icon = '↻', distance = 3.0, onSelect = act('engine'),
+            canInteract = when(function(s) return s.parts.engine and (condOf(s).engine or 100) < 100 end) },
+        { label = 'Recondition battery (toolkit)', icon = '⚒', distance = 3.0, onSelect = act('repairPart', 'battery'),
+            canInteract = when(function(s) return s.parts.battery and (condOf(s).battery or 100) < CAP end) },
+        { label = 'Replace battery (new)', icon = '↻', distance = 3.0, onSelect = act('battery'),
+            canInteract = when(function(s) return s.parts.battery and (condOf(s).battery or 100) < 100 end) },
+        { label = 'Patch this tyre (toolkit)', icon = '⚒', distance = 3.0, onSelect = act('repairPart', function(veh) return 'tyre' .. nearestTyre(veh) end),
+            canInteract = when(function(s, veh) local _, has, c = tyreHere(s, veh); return has and c < CAP end) },
+        { label = 'Replace this wheel (new)', icon = '↻', distance = 3.0, onSelect = act('wheel', function(veh) return 'tyre' .. nearestTyre(veh) end),
+            canInteract = when(function(s, veh) local _, has, c = tyreHere(s, veh); return has and c < 100 and (s.parts.wheels or 0) >= 4 end) },
         { label = 'Refuel (jerry can)', icon = '⛽', distance = 3.0, canInteract = when(function(s) return (s.fuel or 0) < (s.tank or 50) - 0.5 end),
             onSelect = act('refuel') },
         { label = 'Siphon fuel (hose)', icon = '⛽', distance = 3.0, canInteract = when(function(s) return (s.fuel or 0) >= 0.5 end),
@@ -374,6 +416,7 @@ end)
 
 Citizen.CreateThread(function()
     local fuel, fuelVeh, lastReport, told, savedSeen = nil, nil, 0, nil, nil
+    local km, lastWear = 0.0, GetGameTimer()
     while true do
         local ped = PlayerPedId()
         local veh = GetVehiclePedIsIn(ped, false)
@@ -396,6 +439,17 @@ Citizen.CreateThread(function()
                 SetVehicleUndriveable(veh, false)
                 told = nil
                 if GetIsVehicleEngineRunning(veh) then
+                    km = km + GetEntitySpeed(veh) * GetFrameTime() / 1000.0
+                    if GetGameTimer() - lastWear > 10000 then
+                        -- wear: distance, and tyres that burst (fitted ones that are not flat yet)
+                        lastWear = GetGameTimer()
+                        local bursts, tyres = {}, (s.parts.cond and s.parts.cond.tyres) or {}
+                        for i, idx in ipairs(WHEELS) do
+                            bursts[i] = i <= (s.parts.wheels or 0) and (tyres[i] or 100) > 0 and IsVehicleTyreBurst(veh, idx, false) or false
+                        end
+                        TriggerServerEvent('wasteland:vehicles:server:wear', NetworkGetNetworkIdFromEntity(veh), math.min(50.0, km), bursts)
+                        km = 0.0
+                    end
                     fuel = math.max(0, fuel - Rules.fuelUsed(cfg.fuel, GetEntitySpeed(veh) * 3.6, GetFrameTime()))
                     SetVehicleFuelLevel(veh, fuel / (s.tank or 50) * 100.0)
                     if GetGameTimer() - lastReport > 5000 and fuel < (s.fuel or 0) - 0.01 then
@@ -551,9 +605,17 @@ Citizen.CreateThread(function()
                     engine = GetVehicleEngineHealth(veh), body = GetVehicleBodyHealth(veh),
                     locked = s.locked, hasLock = s.hasLock, warning = mine and driving.why or nil,
                 }
+                local p = s.parts
+                if p then
+                    local c = p.cond or {}
+                    local tyres = {}
+                    for i = 1, 4 do tyres[i] = i <= (p.wheels or 0) and math.floor((c.tyres or {})[i] or 100) or -1 end
+                    data.parts = { engine = p.engine and math.floor(c.engine or 100) or -1, battery = p.battery and math.floor(c.battery or 100) or -1, tyres = tyres }
+                end
             else
                 -- Not in a vehicle while moving the HUDs: show an example.
-                data = { speed = 19.0, metric = false, fuel = 32, tank = 50, engine = 870, body = 640, locked = false, hasLock = true }
+                data = { speed = 19.0, metric = false, fuel = 32, tank = 50, engine = 870, body = 640, locked = false, hasLock = true,
+                    parts = { engine = 72, battery = 31, tyres = { 88, 64, 12, -1 } } }
             end
             data.layout, data.editing = hudLayout, hudEditing
             if shown and exports.wasteland_ui:IsOpen(HUD) then

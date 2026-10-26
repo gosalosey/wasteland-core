@@ -5,6 +5,7 @@
 // resize it (mouse wheel or the - / + buttons). Every change is posted
 // ('layout'); the client keeps it when the main HUD is saved.
 // Data: { speed (m/s), metric, fuel, tank, engine, body (0-1000), locked, hasLock, warning,
+//         parts = { engine, battery (0-100, -1 missing), tyres = [fl, fr, rl, rr] },
 //         layout = { x, y, scale }, editing }
 
 (function () {
@@ -22,6 +23,20 @@
         return 'ok';
     }
 
+    // A part's condition: { text, level } ('missing' when not fitted).
+    function part(p) {
+        const n = Number(p);
+        if (!isFinite(n) || n < 0) return { text: '—', level: 'missing' };
+        const v = Math.max(0, Math.min(100, Math.round(n)));
+        return { text: v + '%', level: v <= 0 ? 'broken' : level(v / 100) };
+    }
+
+    function parts(p) {
+        if (!p || typeof p !== 'object') return null;
+        const t = Array.isArray(p.tyres) ? p.tyres : [];
+        return { engine: part(p.engine), battery: part(p.battery), tyres: [0, 1, 2, 3].map((i) => part(t[i])) };
+    }
+
     function view(d) {
         const tank = d.tank || 50;
         const fuel = Math.max(0, Math.min(tank, d.fuel || 0));
@@ -34,6 +49,7 @@
             body: { text: Math.round(body * 100) + '%', level: level(body) },
             lock: d.hasLock ? (d.locked ? 'Locked' : 'Unlocked') : null,
             warning: d.warning || null,
+            parts: parts(d.parts),
         };
     }
 
@@ -67,7 +83,7 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { speedText: speedText, level: level, view: view, clampScale: clampScale, normalizeLayout: normalizeLayout,
+        module.exports = { speedText: speedText, level: level, view: view, part: part, clampScale: clampScale, normalizeLayout: normalizeLayout,
             toPixels: toPixels, toFractions: toFractions };
         return;
     }
@@ -141,6 +157,17 @@
             h('span', { class: 'wvh-label', text: 'BODY' }), h('span', { class: 'wvh-val is-' + v.body.level, text: v.body.text }));
         if (v.lock) stats.appendChild(h('span', { class: 'wvh-lock', text: v.lock === 'Locked' ? '🔒 Locked' : '🔓 Unlocked' }));
         content.appendChild(stats);
+        if (v.parts) {
+            const p = v.parts;
+            const chip = (label, x) => h('span', { class: 'wvh-part is-' + x.level }, h('span', { class: 'wvh-part__k', text: label }),
+                h('span', { class: 'wvh-part__v', text: x.text }));
+            const tyre = (x, pos) => h('span', { class: 'wvh-tyre is-' + x.level, attrs: { title: pos } }, x.text);
+            const car = h('span', { class: 'wvh-car' },
+                tyre(p.tyres[0], 'front left'), h('span', { class: 'wvh-car__body' }), tyre(p.tyres[1], 'front right'),
+                tyre(p.tyres[2], 'rear left'), h('span', { class: 'wvh-car__body' }), tyre(p.tyres[3], 'rear right'));
+            content.appendChild(h('div', { class: 'wvh-row wvh-parts' }, chip('ENG PARTS', p.engine), chip('BATTERY', p.battery),
+                h('span', { class: 'wvh-label', text: 'TYRES' }), car));
+        }
         if (v.warning) content.appendChild(h('div', { class: 'wvh-warning', text: v.warning }));
 
         const nowEditing = d.editing === true;
@@ -220,6 +247,24 @@
         '.wvh-val { font-variant-numeric: tabular-nums; color: var(--ok); font-weight: 600; }',
         '.wvh-val.is-low { color: var(--low); } .wvh-val.is-critical { color: var(--critical); }',
         '.wvh-stats .wvh-label:not(:first-child) { margin-left: 6px; }',
+        '.wvh-parts { gap: 6px; margin-top: 1px; }',
+        '.wvh-part { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 9px;',
+        '  background: rgba(10,14,9,0.55); border: 1px solid rgba(127,199,90,0.4); }',
+        '.wvh-part__k { color: #9fb092; font-size: 9px; letter-spacing: 0.08em; }',
+        '.wvh-part__v { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ok); }',
+        '.wvh-part.is-low { border-color: rgba(214,178,60,0.6); } .wvh-part.is-low .wvh-part__v { color: var(--low); }',
+        '.wvh-part.is-critical, .wvh-part.is-broken { border-color: rgba(224,83,63,0.75); }',
+        '.wvh-part.is-critical .wvh-part__v, .wvh-part.is-broken .wvh-part__v { color: var(--critical); }',
+        '.wvh-part.is-broken { animation: wvh-blink 1s steps(2) infinite; }',
+        '.wvh-part.is-missing { border-color: rgba(160,160,150,0.35); } .wvh-part.is-missing .wvh-part__v { color: #8a8a80; }',
+        '.wvh-car { display: inline-grid; grid-template-columns: auto 10px auto; grid-template-rows: auto auto; gap: 2px 3px; align-items: center; }',
+        '.wvh-car__body { grid-row: span 1; width: 10px; height: 13px; border: 1px solid rgba(200,210,190,0.45); border-radius: 2px; }',
+        '.wvh-tyre { min-width: 30px; text-align: center; font-size: 9px; font-weight: 700; padding: 0 3px; border-radius: 3px;',
+        '  font-variant-numeric: tabular-nums; color: #10140e; background: var(--ok); }',
+        '.wvh-tyre.is-low { background: var(--low); } .wvh-tyre.is-critical { background: var(--critical); color: #fff; }',
+        '.wvh-tyre.is-broken { background: var(--critical); color: #fff; animation: wvh-blink 1s steps(2) infinite; }',
+        '.wvh-tyre.is-missing { background: rgba(120,120,110,0.5); color: #ddd; }',
+        '@keyframes wvh-blink { 50% { opacity: 0.35; } }',
         '.wvh-lock { margin-left: 8px; color: #d8d8cc; }',
         '.wvh-warning { margin-top: 2px; font-size: 12px; color: #ff9a8a; background: rgba(10,14,9,0.6); padding: 2px 8px; border-radius: 10px;',
         '  border: 1px solid rgba(224,83,63,0.6); }',

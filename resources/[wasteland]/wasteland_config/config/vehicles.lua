@@ -23,7 +23,22 @@ return {
     fuel = { idlePerMinute = 0.1, per100km = 40 },   -- litres; a 50 L tank lasts ~125 km of driving
     repair = { engine = 400, body = 400 },   -- health a toolkit restores (of 1000)
 
-    seconds = { fullRepair = 15, battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, removeLock = 6, siphon = 10, fillCan = 8 },
+    seconds = { fullRepair = 15, battery = 6, engine = 10, wheel = 6, refuel = 8, repair = 10, fitLock = 6, toggleLock = 1, removeLock = 6, siphon = 10, fillCan = 8,
+        repairPart = 8 },
+
+    -- Parts wear out. Engine parts, battery and each tyre have a condition
+    -- (shown on the vehicle HUD). Engine parts or battery at 0%: the engine
+    -- will not start. A tyre at 0% (or burst) is flat. Fix one part with a
+    -- toolkit ("Repair engine parts", "Recondition battery", "Patch this
+    -- tyre": +amount, never above cap), or fit a new part (engine parts, car
+    -- battery, wheel) for 100%.
+    wear = {
+        enginePartsPer100km = 12,   -- % lost per 100 km driven
+        batteryPer100km = 6,
+        tyresPer100km = 15,
+        crashEngineParts = 0.6,     -- engine parts % lost per 1% of engine health a crash takes
+    },
+    partRepair = { amount = 40, cap = 80 },
 
     -- Before a wreck first appears, the nearest player's game checks its spot
     -- for props, walls, other vehicles and steep ground and moves it to the
@@ -47,6 +62,7 @@ return {
         batteryMissing = 0.6, engineMissing = 0.5,
         wheelsMissingChance = 0.4, wheelsMissingMax = 2,
         fuel = { 0, 8 }, engine = { 250, 700 }, body = { 300, 800 },
+        condition = { 25, 85 },     -- % condition of each part a wreck has
     },
 
     -- Trunk size (cells) and how much it holds (kg). Pickups and vans hold more.
