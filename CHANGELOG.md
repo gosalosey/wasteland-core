@@ -1,5 +1,9 @@
 # Changelog
 
+## No gap when walls are stacked
+
+- Walls, half walls, doorways, window frames and frames have a 20 cm skirt below their bottom edge. An upper-floor wall stands on the floor piece's edge, 20 cm above the top of the wall below (the floor sits beside that wall, not on it); the skirt fills that strip. On a foundation the skirt is hidden inside it. Model change only: same collision and snapping, existing bases are fixed too.
+
 ## Vehicle parts: condition on the HUD, repair or replace one part
 
 - Engine parts, the battery and each of the four tyres have a condition (%). The vehicle HUD shows them: ENG PARTS and BATTERY chips and four tyre spots laid out like the car (front left, front right, rear left, rear right), green / yellow / red, blinking at 0%, grey when missing.

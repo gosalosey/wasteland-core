@@ -572,6 +572,11 @@ def build_piece(name):
         panels = info['bounds']
         biggest = max(panels, key=lambda b: (b['max'][0] - b['min'][0]) * (b['max'][2] - b['min'][2]))
         for b in panels: PANEL[tier](b, mats, b is biggest)
+        # skirt: 20 cm below the bottom, the full width. On an upper floor the wall
+        # stands on the floor's 20 cm edge while the wall below ends under it:
+        # the skirt fills that strip (on a foundation it is hidden inside it).
+        skirt = {'wood': mats.get('stud'), 'stone': mats.get('block'), 'metal': mats.get('iron')}[tier]
+        box((4.0, 0.19, 0.21), (0, 0, -0.105), mat=skirt)
         decorate(mats, panels)
     elif base == 'foundation': build_foundation(tier, mats, info)
     elif base == 'ceiling': build_ceiling(tier, mats, info)
