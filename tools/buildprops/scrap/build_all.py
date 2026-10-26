@@ -156,21 +156,33 @@ def concrete_mat(name):
     cracks = m.ramp(m.noise(9, 12), (0.25, 0.24, 0.22, 1), (1, 1, 1, 1), 0.28, 0.33)
     return m, m.finish(m.mix(c, cracks, 1.0, 'MULTIPLY'), 0.45)
 def plate_mat(name):
-    m = M(name); c = m.mix(m.tex('DiamondPlate001', 1.0), (0.7, 0.7, 0.68, 1), 1.0, 'MULTIPLY')
-    mask = m.math('GREATER_THAN', m.noise(2.2, 10), 0.52)
-    return m, m.finish(m.mix(c, m.tex('Rust004', 1.5), mask), 0.55)
+    m = M(name); c = m.mix(m.tex('DiamondPlate001', 1.0), (0.42, 0.42, 0.4, 1), 1.0, 'MULTIPLY')
+    rust = m.mix(m.tex('Rust004', 1.5), (0.55, 0.42, 0.34, 1), 1.0, 'MULTIPLY')
+    mask = m.math('GREATER_THAN', m.noise(2.2, 10), 0.6)
+    return m, m.finish(m.mix(c, rust, m.math('MULTIPLY', mask, 0.8)), 0.6)
+def fabric_mat(name, colour=(0.2, 0.22, 0.13, 1)):
+    m = M(name)
+    weave = m.ramp(m.noise(60, 2), (0.75, 0.75, 0.75, 1), (1, 1, 1, 1), 0.3, 0.7)
+    dark = (colour[0] * 0.7, colour[1] * 0.7, colour[2] * 0.7, 1)
+    c = m.mix(m.ramp(m.noise(3, 6), dark, colour, 0.3, 0.7), weave, 1.0, 'MULTIPLY')
+    return m, m.finish(c, 0.6, mud=False)
+def flat_mat(name, colour):
+    m = M(name); return m, m.finish(m.ramp(m.noise(4, 4), colour, colour, 0, 1), 1.0, mud=False)
 def painted_mat(name, tex='PaintedMetal009', tint=(0.85, 0.85, 0.8, 1)):
     m = M(name); c = m.mix(m.tex(tex, 1.0), tint, 1.0, 'MULTIPLY'); return m, m.finish(c, 0.55)
 
 # ----------------------------------------------------------------------------- geometry
 parts = []
-def box(size, center, rot=(0, 0, 0), mat=None):
+def box(size, center, rot=(0, 0, 0), mat=None, bevel=0.0):
     bpy.ops.mesh.primitive_cube_add(size=1, location=center, rotation=rot)
     o = bpy.context.active_object; o.scale = size
     bpy.ops.object.transform_apply(scale=True)
+    if bevel:
+        md = o.modifiers.new('b', 'BEVEL'); md.width = min(bevel, min(size) * 0.45); md.segments = 2
+        bpy.ops.object.modifier_apply(modifier='b')
     if mat: o.data.materials.append(mat)
     parts.append(o); return o
-def cyl(r, depth, center, rot=(0, 0, 0), mat=None, verts=8):
+def cyl(r, depth, center, rot=(0, 0, 0), mat=None, verts=12):
     bpy.ops.mesh.primitive_cylinder_add(vertices=verts, radius=r, depth=depth, location=center, rotation=rot)
     o = bpy.context.active_object
     if mat: o.data.materials.append(mat)
@@ -201,6 +213,10 @@ def corrugated(w, h, center, mat, waves_per_m=7, depth=0.012, rot=(0, 0, 0), axi
     o.data.materials.append(mat); parts.append(o); return o
 
 def rnd(a, b): return random.uniform(a, b)
+def inside(x0, x1, pw, margin=0.08):
+    """Centre x for something pw wide that stays within the panel (never over an opening)."""
+    lo, hi = x0 + pw / 2 + margin, x1 - pw / 2 - margin
+    return (lo + hi) / 2 if lo >= hi else rnd(lo, hi)
 
 # ---- panels: one collision box of a wall-like piece, outside = -Y
 def panel_wood(b, mats, big):
@@ -217,17 +233,19 @@ def panel_wood(b, mats, big):
     while z < z1 - 0.04:
         ph = min(rnd(0.2, 0.32), z1 - z - 0.005)
         tilt = math.radians(rnd(-1.2, 1.2)) if w > 1 else 0
-        length = w - rnd(0.0, 0.04)
-        box((length, 0.032, ph), (cx + rnd(-0.01, 0.01), y0 + 0.022 + rnd(-0.004, 0.004), z + ph / 2), rot=(0, tilt, 0),
+        length = w
+        box((length, 0.032, ph), (cx, y0 + 0.022 + rnd(-0.004, 0.004), z + ph / 2), rot=(0, tilt, 0),
             mat=random.choice(mats['planks']))
         z += ph + rnd(0.008, 0.03)
+    box((w, 0.012, h), (cx, y0 + 0.046, z0 + h / 2), mat=mats['stud'])   # backing: nothing shows through the gaps
     if big and w > 1.2 and h > 2:
-        a = math.radians(rnd(-18, 18))
-        box((w * 0.75, 0.028, 0.17), (cx + rnd(-0.2, 0.2), y0 - 0.006, rnd(z0 + 1.6, z1 - 0.5)), rot=(0, a, 0), mat=mats['planks'][2])
+        a = math.radians(rnd(-12, 12))
+        bw = w * 0.7
+        box((bw, 0.028, 0.17), (inside(x0, x1, bw * math.cos(a) + 0.1), y0 - 0.006, rnd(z0 + 1.6, z1 - 0.5)), rot=(0, a, 0), mat=mats['planks'][2])
         if random.random() < 0.7:
-            sw, sh = rnd(0.9, min(1.3, w - 0.2)), rnd(0.7, 1.1)
-            corrugated(sw, sh, (cx + rnd(-(w - sw) / 2 + 0.1, (w - sw) / 2 - 0.1), y0 - 0.004, z0 + 0.15 + sh / 2), mats['rust'],
-                       rot=(0, math.radians(rnd(-5, 5)), 0))
+            sw, sh = rnd(0.8, min(1.2, w - 0.3)), rnd(0.7, 1.1)
+            corrugated(sw, sh, (inside(x0, x1, sw + 0.1), y0 - 0.004, z0 + 0.15 + sh / 2), mats['rust'],
+                       rot=(0, math.radians(rnd(-3, 3)), 0))
 
 def panel_stone(b, mats, big):
     (x0, y0, z0), (x1, y1, z1) = b['min'], b['max']
@@ -243,8 +261,9 @@ def panel_stone(b, mats, big):
         bx = rnd(x0 + 0.3, x1 - 0.3); bz = rnd(z0 + 0.2, z1 - 0.3)
         box((bw, 0.025, bh), (bx, y0 - 0.002, bz), mat=mats['block'])
     if big and w > 1.2 and h > 2 and random.random() < 0.6:
-        corrugated(rnd(0.8, 1.1), rnd(0.6, 0.9), (cx + rnd(-0.4, 0.4), y0 - 0.006, z0 + rnd(0.9, 1.6)), mats['rust'],
-                   rot=(0, math.radians(rnd(-8, 8)), 0))
+        sw = rnd(0.7, min(1.0, w - 0.5))
+        corrugated(sw, rnd(0.6, 0.9), (inside(x0 + 0.2, x1 - 0.2, sw + 0.15), y0 - 0.006, z0 + rnd(0.9, 1.6)), mats['rust'],
+                   rot=(0, math.radians(rnd(-5, 5)), 0))
 
 def panel_metal(b, mats, big):
     (x0, y0, z0), (x1, y1, z1) = b['min'], b['max']
@@ -267,8 +286,8 @@ def panel_metal(b, mats, big):
                    rot=(0, math.radians(rnd(-0.8, 0.8)) if w > 1 else 0, 0))
         x += sw - 0.05
     if big and w > 1.2 and h > 2 and random.random() < 0.7:
-        pw, ph = rnd(0.6, 1.0), rnd(0.5, 0.8)
-        box((pw, 0.008, ph), (cx + rnd(-0.6, 0.6), y0 - 0.002, z0 + rnd(0.6, 1.8)), rot=(0, math.radians(rnd(-10, 10)), 0), mat=mats['patch'])
+        pw, ph = rnd(0.5, min(0.9, w - 0.3)), rnd(0.5, 0.8)
+        box((pw, 0.008, ph), (inside(x0, x1, pw + 0.2), y0 - 0.002, z0 + rnd(0.6, 1.8)), rot=(0, math.radians(rnd(-6, 6)), 0), mat=mats['patch'])
 
 def make_mats(tier):
     mats = {}
@@ -312,12 +331,13 @@ M.finish = _finish
 
 # ---- floors
 def deck_wood(x0, x1, y0, y1, ztop, mats, joists=True):
-    y = y0 + 0.005
-    while y < y1 - 0.03:
-        pw = min(rnd(0.18, 0.28), y1 - y - 0.003)
-        box((x1 - x0 - rnd(0, 0.03), pw, 0.04), ((x0 + x1) / 2, y + pw / 2, ztop - 0.02 - rnd(0, 0.006)),
-            rot=(rnd(-0.01, 0.01), 0, 0), mat=random.choice(mats['planks']))
-        y += pw + rnd(0.006, 0.02)
+    box((x1 - x0, y1 - y0, 0.012), ((x0 + x1) / 2, (y0 + y1) / 2, ztop - 0.046), mat=mats['stud'])   # backing under the gaps
+    y = y0
+    while y < y1 - 0.001:
+        pw = rnd(0.18, 0.28)
+        if y1 - y - pw < 0.12: pw = y1 - y          # last plank fills to the edge
+        box((x1 - x0, pw - 0.008, 0.04), ((x0 + x1) / 2, y + pw / 2, ztop - 0.02 - rnd(0, 0.004)), mat=random.choice(mats['planks']))
+        y += pw
     if joists:
         for x in [x0 + 0.08 + i * (x1 - x0 - 0.16) / 4 for i in range(5)]:
             box((0.1, y1 - y0 - 0.02, 0.14), (x, (y0 + y1) / 2, ztop - 0.04 - 0.07), mat=mats['stud'])
@@ -325,7 +345,7 @@ def deck_wood(x0, x1, y0, y1, ztop, mats, joists=True):
 def build_foundation(tier, mats, info):
     if tier == 'wood':
         deck_wood(-2, 2, -2, 2, 1.0, mats, joists=False)
-        box((3.9, 3.9, 4.9), (0, 0, -1.5), mat=mats['stud'])            # core
+        box((4.0, 4.0, 4.9), (0, 0, -1.5), mat=mats['stud'])            # core
         for sx, sy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
             box((0.22, 0.22, 4.95), (sx * 1.89, sy * 1.89, -1.5), mat=mats['stud'])
         for side in range(4):  # skirt planks
@@ -344,8 +364,8 @@ def build_foundation(tier, mats, info):
     else:
         for i in range(2):
             for j in range(2):
-                box((1.98, 1.98, 0.02), (-1 + i * 2, -1 + j * 2, 0.99), rot=(0, 0, math.radians(rnd(-0.5, 0.5))), mat=mats['plate'])
-        box((3.96, 3.96, 4.9), (0, 0, -1.5), mat=mats['iron'])
+                box((2.0, 2.0, 0.02), (-1 + i * 2, -1 + j * 2, 0.99), mat=mats['plate'])
+        box((4.0, 4.0, 4.9), (0, 0, -1.5), mat=mats['iron'])
         for side in range(4):
             rot = (0, 0, side * math.pi / 2)
             for k in range(4):
@@ -363,7 +383,8 @@ def build_ceiling(tier, mats, info):
     else:
         for i in range(2):
             for j in range(2):
-                box((1.98, 1.98, 0.02), (-1 + i * 2, -1 + j * 2, 0.19), mat=mats['plate'])
+                box((2.0, 2.0, 0.02), (-1 + i * 2, -1 + j * 2, 0.19), mat=mats['plate'])
+        box((4.0, 4.0, 0.012), (0, 0, 0.172), mat=mats['iron'])
         for x in (-1.6, -0.55, 0.55, 1.6): box((0.08, 3.96, 0.16), (x, 0, 0.09), mat=mats['iron'])
 
 PANEL = {'wood': panel_wood, 'stone': panel_stone, 'metal': panel_metal}
@@ -459,6 +480,91 @@ def build_piece(name):
         for i in range(7):
             cyl(0.011, 0.94, (-0.5 + i * (1.0 / 6), 0, 1.5), mat=mats['iron'])
         for zz in (1.08, 1.92): box((1.16, 0.035, 0.05), (0, 0, zz), mat=mats['iron'])
+    elif kind in ('stash_small', 'stash_large'):
+        mats = make_mats('wood'); iron = iron_mat('iron')[1]; rope = fabric_mat('rope', (0.42, 0.36, 0.25, 1))[1]
+        (x0, y0, z0), (x1, y1, z1) = info['bounds'][0]['min'], info['bounds'][0]['max']
+        w, d, h = x1 - x0, y1 - y0, z1 - z0; cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        box((w - 0.04, d - 0.04, h - 0.06), (cx, cy, z0 + (h - 0.06) / 2), mat=mats['stud'])
+        n = 4 if kind == 'stash_small' else 5
+        ph = (h - 0.1) / n
+        for side in (-1, 1):
+            for k in range(n):
+                box((w - 0.06, 0.025, ph - 0.012), (cx, cy + side * (d / 2 - 0.013), z0 + 0.03 + ph * (k + 0.5)),
+                    mat=random.choice(mats['planks']), bevel=0.006)
+                box((0.025, d - 0.06, ph - 0.012), (cx + side * (w / 2 - 0.013), cy, z0 + 0.03 + ph * (k + 0.5)),
+                    mat=random.choice(mats['planks']), bevel=0.006)
+        box((w, d, 0.06), (cx, cy, z1 - 0.03), mat=mats['planks'][1], bevel=0.012)
+        for x in (x0 + 0.12, cx, x1 - 0.12):
+            box((0.07, d + 0.004, 0.035), (x, cy, z1 + 0.012), mat=mats['planks'][2], bevel=0.008)
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                box((0.07, 0.07, h - 0.02), (cx + sx * (w / 2 - 0.03), cy + sy * (d / 2 - 0.03), z0 + (h - 0.02) / 2), mat=iron, bevel=0.01)
+        for sx in (-1, 1):
+            bpy.ops.mesh.primitive_torus_add(major_radius=0.07, minor_radius=0.012, location=(cx + sx * (w / 2 + 0.01), cy, z0 + h * 0.62),
+                                             rotation=(0, math.pi / 2, 0), major_segments=14, minor_segments=6)
+            o = bpy.context.active_object; o.data.materials.append(rope); parts.append(o)
+        box((0.12, 0.02, 0.1), (cx, y0 - 0.002, z1 - 0.12), mat=iron, bevel=0.005)
+        decorate(mats, [{'min': [x0, y0, z0], 'max': [x1, y1, z1]}], 0.35)
+    elif kind == 'generator':
+        iron = iron_mat('iron')[1]; paint = rust_steel('paint', 'PaintedMetal009', (0.62, 0.55, 0.38, 1), 0.7)[1]
+        red = rust_steel('red', 'PaintedMetal004', (0.5, 0.4, 0.38, 1), 0.6, desat=0.4)[1]; black = flat_mat('black', (0.05, 0.05, 0.05, 1))[1]
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                cyl(0.022, 0.95, (sx * 0.7, sy * 0.33, 0.5), mat=iron)
+            cyl(0.022, 1.4, (0, sx * 0.33, 0.04), rot=(0, math.pi / 2, 0), mat=iron)
+            cyl(0.022, 1.4, (0, sx * 0.33, 0.97), rot=(0, math.pi / 2, 0), mat=iron)
+            cyl(0.022, 0.66, (sx * 0.7, 0, 0.97), rot=(math.pi / 2, 0, 0), mat=iron)
+            cyl(0.022, 0.66, (sx * 0.7, 0, 0.04), rot=(math.pi / 2, 0, 0), mat=iron)
+        box((0.6, 0.5, 0.5), (-0.25, 0, 0.35), mat=paint, bevel=0.03)
+        for k in range(6): box((0.62, 0.52, 0.015), (-0.25, 0, 0.62 + k * 0.025), mat=iron)
+        cyl(0.17, 0.4, (0.35, 0, 0.32), rot=(0, math.pi / 2, 0), mat=red, verts=20)
+        cyl(0.2, 1.1, (0, 0, 0.98), rot=(0, math.pi / 2, 0), mat=red, verts=20)
+        cyl(0.05, 0.05, (0.2, 0, 1.19), mat=black)
+        cyl(0.03, 0.5, (-0.62, 0.2, 0.55), rot=(0, math.radians(20), 0), mat=iron)
+        box((0.18, 0.1, 0.16), (0.55, -0.32, 0.6), mat=black, bevel=0.01)
+        for sy in (-1, 1): cyl(0.1, 0.06, (0.7, sy * 0.36, 0.1), rot=(math.pi / 2, 0, 0), mat=black, verts=16)
+    elif kind == 'lamp':
+        iron = iron_mat('iron')[1]; bulb = flat_mat('bulb', (1.0, 0.92, 0.7, 1))[1]; black = flat_mat('cord', (0.04, 0.04, 0.04, 1))[1]
+        cyl(0.006, 0.5, (0, 0, -0.25), mat=black, verts=6)
+        bpy.ops.mesh.primitive_cone_add(vertices=20, radius1=0.17, radius2=0.04, depth=0.18, location=(0, 0, -0.6))
+        o = bpy.context.active_object; md = o.modifiers.new('s', 'SOLIDIFY'); md.thickness = 0.006
+        bpy.ops.object.modifier_apply(modifier='s'); o.data.materials.append(iron); parts.append(o)
+        cyl(0.03, 0.06, (0, 0, -0.5), mat=iron)
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=0.05, location=(0, 0, -0.66))
+        o = bpy.context.active_object; o.data.materials.append(bulb); parts.append(o)
+    elif kind == 'worklight':
+        iron = iron_mat('iron')[1]; paint = rust_steel('paint', 'PaintedMetal009', (0.62, 0.55, 0.38, 1), 0.5)[1]
+        lens = flat_mat('lens', (1.0, 0.95, 0.8, 1))[1]; black = flat_mat('black', (0.05, 0.05, 0.05, 1))[1]
+        for k in range(3):
+            a = k * 2 * math.pi / 3
+            cyl(0.014, 0.85, (math.cos(a) * 0.17, math.sin(a) * 0.17, 0.38), rot=(math.sin(a) * 0.45, -math.cos(a) * 0.45, 0), mat=iron)
+        cyl(0.02, 1.4, (0, 0, 1.15), mat=iron)
+        box((0.4, 0.04, 0.04), (0, 0, 1.83), mat=iron)
+        for sx in (-1, 1):
+            box((0.16, 0.12, 0.14), (sx * 0.12, -0.04, 1.85), rot=(math.radians(-15), 0, 0), mat=paint, bevel=0.015)
+            box((0.13, 0.01, 0.11), (sx * 0.12, -0.105, 1.845), rot=(math.radians(-15), 0, 0), mat=lens)
+        box((0.12, 0.08, 0.1), (0, 0.05, 0.9), mat=black, bevel=0.01)
+    elif kind == 'weaponlocker':
+        iron = iron_mat('iron')[1]; green = rust_steel('green', 'PaintedMetal004', (0.22, 0.3, 0.2, 1), 0.6, desat=0.85)[1]
+        black = flat_mat('black', (0.04, 0.04, 0.04, 1))[1]
+        box((0.78, 0.46, 1.86), (0, 0.0, 0.95), mat=green, bevel=0.015)
+        box((0.8, 0.5, 0.04), (0, -0.01, 1.88), mat=green, bevel=0.01)
+        box((0.8, 0.5, 0.05), (0, -0.01, 0.025), mat=iron, bevel=0.01)
+        box((0.004, 0.02, 1.7), (0, -0.24, 0.95), mat=black)
+        for sx in (-1, 1):
+            for k in range(5): box((0.24, 0.012, 0.018), (sx * 0.19, -0.236, 1.55 + k * 0.045), mat=black)
+            box((0.02, 0.03, 0.14), (sx * 0.035, -0.25, 1.0), mat=iron, bevel=0.004)
+        box((0.06, 0.03, 0.08), (0, -0.25, 1.15), mat=iron, bevel=0.005)
+        decorate({'g': green}, [{'min': [-0.4, -0.26, 0.0], 'max': [0.4, 0.24, 1.9]}], 0.4)
+    elif kind == 'bed':
+        iron = iron_mat('iron')[1]; canvas = fabric_mat('canvas', (0.24, 0.25, 0.15, 1))[1]; blanket = fabric_mat('blanket', (0.3, 0.12, 0.1, 1))[1]
+        for sy in (-1, 1): cyl(0.02, 2.0, (0, sy * 0.45, 0.4), rot=(0, math.pi / 2, 0), mat=iron)
+        for sx in (-1, 1):
+            cyl(0.02, 0.9, (sx * 0.98, 0, 0.4), rot=(math.pi / 2, 0, 0), mat=iron)
+            for sy in (-1, 1): cyl(0.016, 0.56, (sx * 0.85, sy * 0.3, 0.2), rot=(sy * 0.6, 0, 0), mat=iron)
+        box((1.9, 0.86, 0.06), (0, 0, 0.43), mat=canvas, bevel=0.02)
+        box((1.1, 0.88, 0.04), (0.35, 0, 0.47), rot=(0, 0, math.radians(2)), mat=blanket, bevel=0.015)
+        box((0.35, 0.5, 0.08), (-0.75, 0, 0.5), mat=canvas, bevel=0.03)
     else:
         print('SKIP', name); return False
     return True

@@ -1,5 +1,12 @@
 # Changelog
 
+## Scrap building look: gaps closed, doorway patch, new props
+
+- Floors (wood and metal ceilings / foundations) run edge to edge, so there are no bright lines between pieces; a backing board under wood floors and behind wood walls means nothing shows through the plank gaps.
+- Patches (rust sheets, the yellow plate) stay inside their panel and never hang over a doorway or window.
+- The metal (diamond plate) floors are darker and much less orange.
+- New detailed models in the scrap pack: small and large storage (plank crates with battens, iron corners, rope handles), generator (tube frame, engine with fins, round fuel tank, exhaust, wheels), hanging lamp (cord and cone shade), work light (tripod, twin floodlights), weapon locker (green steel, louvres, hasp), camp bed (frame, canvas, blanket). 45 models in all, each with the original collision (checked).
+
 ## Scrap barricade building look: all 38 pieces (optional)
 
 - **wasteland_buildprops_scrap** now has the whole set, made in Blender: foundations, walls, doorways, window frames, half walls, ceilings, frames, stairs, ramps and hatches in all three tiers, plus wood and metal doors, the garage door, gate frame and gate door, wood and metal window bars, and the tool cupboard.
