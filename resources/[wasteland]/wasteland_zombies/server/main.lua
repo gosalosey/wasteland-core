@@ -43,7 +43,8 @@ local function activePlayers()
             local ped = GetPlayerPed(src)
             if ped and ped ~= 0 and DoesEntityExist(ped) then
                 local p = GetEntityCoords(ped)
-                out[#out + 1] = { source = src, coords = { x = p.x, y = p.y, z = p.z } }
+                local st = Player(src).state
+                out[#out + 1] = { source = src, coords = { x = p.x, y = p.y, z = p.z }, protected = st and st.wlProtected == true }
             end
         end
     end
@@ -130,6 +131,7 @@ local function requestSpawns(list)
     local pop = M.config.population
     local total = count(true)
     for _, p in ipairs(list) do
+      if not p.protected then
         local near = 0
         for _, z in pairs(zombies) do
             if not z.dead and not z.horde and DoesEntityExist(z.handle) and Rules.dist2d(coordsOf(z.handle), p.coords) <= pop.despawnDistance then
@@ -142,7 +144,18 @@ local function requestSpawns(list)
             TriggerClientEvent('wasteland:zombies:client:findSpawns', p.source, n, pop.spawnMin, pop.spawnMax)
             total = total + n
         end
+      end
     end
+end
+
+-- Players being protected (making a character, choosing where to start)
+-- have a zombie-free bubble around them.
+local PROTECTED_CLEAR = 60.0
+local function nearProtected(c, list)
+    for _, p in ipairs(list) do
+        if p.protected and Rules.dist2d(c, p.coords) <= PROTECTED_CLEAR then return true end
+    end
+    return false
 end
 
 -- Points found by a client (untrusted: each one is checked).
@@ -161,7 +174,7 @@ local function spawnsFound(src, points)
         if spawned >= asked or count(true) >= M.config.population.maxTotal then break end
         -- Checked against the ring that was asked for (admin spawns are closer).
         local ok = Rules.validSpawn(req.ring, point, me.coords, list)
-        if ok and not inSafeZone(point) then
+        if ok and not inSafeZone(point) and not nearProtected(point, list) then
             if spawnAt(point, Rules.pickKind(M.config.kinds, night, math.random())) then spawned = spawned + 1 end
         end
     end
@@ -211,8 +224,8 @@ local function maintain()
                 if t - z.dyingAt >= 3000 then markDead(z, 'health') end
             end
             local c = coordsOf(z.handle)
-            if inSafeZone(c) then
-                remove(z) -- wandered into a camp
+            if inSafeZone(c) or nearProtected(c, list) then
+                remove(z) -- wandered into a camp, or near someone making a character
                 goto continue
             end
             local close = false

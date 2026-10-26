@@ -145,6 +145,8 @@ describe('safe zones and zombies', function()
 
     it('zombies are not spawned inside a camp, and ones that wander in are removed', function()
         server.aces[id .. '|wasteland.admin'] = true
+        -- arrived (a new character choosing a camp is protected: no zombies near them)
+        server.resources.wasteland_zombies.env.Player(id).state:set('wlProtected', false, true)
         server:command(id, 'zombies spawn 2'); server:advance(100)
         server:clientEvent(id, 'wasteland:zombies:server:spawns', { { x = 30.0, y = 0.0, z = 30.0 }, { x = 120.0, y = 0.0, z = 30.0 } })
         server:advance(100)
@@ -154,6 +156,19 @@ describe('safe zones and zombies', function()
         zs[1].coords = { x = 20.0, y = 0.0, z = 30.0 } -- walks into the camp
         server:advance(1100)
         expect(#server:entityList('wlZombie')).toBe(0)
+    end)
+
+    it('no zombies near a protected player (making a character, choosing a camp)', function()
+        local env = server.resources.wasteland_zombies.env
+        server.players[id].coords = { x = 300.0, y = 0.0, z = 30.0 }
+        env.Player(id).state:set('wlProtected', true, true)
+        server:export('wasteland_zombies', 'SpawnZombie', { x = 330.0, y = 0.0, z = 30.0 })
+        server:advance(1100)
+        local near = 0
+        for _, z in ipairs(server:entityList('wlZombie')) do if z.coords.x > 250 then near = near + 1 end end
+        expect(near).toBe(0)
+        env.Player(id).state:set('wlProtected', false, true)
+        server.players[id].coords = { x = 100.0, y = 0.0, z = 30.0 }
     end)
 
     it('a zombie cannot hurt a player inside a camp', function()

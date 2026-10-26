@@ -240,6 +240,18 @@ local function startCreator(info, token)
     ClearPedTasksImmediately(ped)
     FreezeEntityPosition(ped, true)
     SetEntityInvincible(ped, true)
+    -- Keep it that way the whole time the creator is open: other code (the
+    -- login placement finishing, for example) must not switch it off under us.
+    local guard = editing
+    Citizen.CreateThread(function()
+        while editing and editing == guard do
+            if not LocalPlayer.state.wlProtected then LocalPlayer.state:set('wlProtected', true, true) end
+            local p = PlayerPedId()
+            SetEntityInvincible(p, true)
+            if GetEntityHealth(p) < GetEntityMaxHealth(p) then SetEntityHealth(p, GetEntityMaxHealth(p)) end
+            Citizen.Wait(500)
+        end
+    end)
     editing.baseHeading = GetEntityHeading(ped)
     placeCamera('body')
     exports.wasteland_ui:Open(SCREEN, {

@@ -1,5 +1,10 @@
 # Changelog
 
+## Character creator: no zombies, no damage
+
+- Zombies could hit (bleeding, infection) players in the character creator: the login placement switched protection off when its 15-second watch ended, even with the creator open. The creator now holds protection (and full health) the whole time it is open.
+- Players who are protected (making a character, choosing their starting camp) have a 60 m zombie-free bubble: no zombies spawn there, and any that are there or wander in are removed.
+
 ## 5 characters per player
 
 - `players.lua` `maxCharacters = 5` (was 3): every account can make up to 5 characters on the character select screen.
