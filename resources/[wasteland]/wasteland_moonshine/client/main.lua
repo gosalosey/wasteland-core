@@ -31,9 +31,35 @@ end
 -- Stills
 -------------------------------------------------------------------------------
 
+-- Cooking effects: a small fire under the pot, smoke from the cap and the
+-- firebox, and a flickering glow, while the still is brewing and close by.
+-- Effect names are tried in order (the first one the game has is used).
+local FX_RANGE = 60.0
+local FIRE = { 'ent_amb_torch_fire', 'ent_amb_fire_ring' }
+local SMOKE = { 'ent_amb_smoke_scrap', 'ent_amb_generator_smoke', 'ent_amb_smoke_factory_white' }
+
+local function startFx(obj, names, x, y, z, scale)
+    RequestNamedPtfxAsset('core')
+    local untilT = GetGameTimer() + 2000
+    while not HasNamedPtfxAssetLoaded('core') and GetGameTimer() < untilT do Wait(0) end
+    if not HasNamedPtfxAssetLoaded('core') then return nil end
+    for _, n in ipairs(names) do
+        UseParticleFxAssetNextCall('core')
+        local h = StartParticleFxLoopedOnEntity(n, obj, x, y, z, 0.0, 0.0, 0.0, n == 'ent_amb_smoke_factory_white' and scale * 0.15 or scale, false, false, false)
+        if h and h ~= 0 then return h end
+    end
+    return nil
+end
+
+local function stopFx(e)
+    for _, h in ipairs(e.fx or {}) do StopParticleFxLooped(h, false) end
+    e.fx = nil
+end
+
 local function despawn(id)
     local e = spawned[id]
     if not e then return end
+    stopFx(e)
     if e.targets and GetResourceState('wasteland_target') == 'started' then
         for _, t in ipairs(e.targets) do pcall(function() exports.wasteland_target:Remove(t) end) end
     end
@@ -79,6 +105,47 @@ Citizen.CreateThread(function()
             end
         end
         Wait(1000)
+    end
+end)
+
+-- Turn the cooking effects on / off.
+Citizen.CreateThread(function()
+    while true do
+        local me = GetEntityCoords(PlayerPedId())
+        for id, e in pairs(spawned) do
+            local s = stills[id]
+            local near = s and #(me - vector3(s.coords.x, s.coords.y, s.coords.z)) <= FX_RANGE
+            if s and s.brewing and near and not e.fx and DoesEntityExist(e.obj) then
+                e.fx = {}
+                for _, f in ipairs({ { FIRE, 0.0, -0.05, 0.08, 0.9 }, { FIRE, 0.12, 0.08, 0.06, 0.6 },
+                                     { SMOKE, 0.0, 0.0, 1.5, 0.5 }, { SMOKE, 0.0, -0.42, 0.35, 0.35 } }) do
+                    local h = startFx(e.obj, f[1], f[2], f[3], f[4], f[5])
+                    if h then e.fx[#e.fx + 1] = h end
+                end
+            elseif e.fx and not (s and s.brewing and near) then
+                stopFx(e)
+            end
+        end
+        Wait(1000)
+    end
+end)
+
+-- Firelight: a flickering orange glow under brewing stills close by.
+Citizen.CreateThread(function()
+    while true do
+        local me = GetEntityCoords(PlayerPedId())
+        local any = false
+        for id, e in pairs(spawned) do
+            if e.fx and DoesEntityExist(e.obj) then
+                local p = GetOffsetFromEntityInWorldCoords(e.obj, 0.0, -0.1, 0.25)
+                if #(me - p) < 35.0 then
+                    any = true
+                    local f = 0.8 + math.random() * 0.4
+                    DrawLightWithRange(p.x, p.y, p.z, 255, math.floor(120 * f), 30, 3.5 * f, 2.2)
+                end
+            end
+        end
+        Wait(any and 0 or 500)
     end
 end)
 

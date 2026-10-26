@@ -479,9 +479,85 @@ def build_raincatcher():
         bpy.ops.mesh.primitive_torus_add(major_radius=0.06, minor_radius=0.01, location=(x, y, 1.47), major_segments=12, minor_segments=5)
         t = bpy.context.active_object; t.data.materials.append(rope); parts.append(t)
 
+def copper_mat(name):
+    m = M(name)
+    base = m.ramp(m.noise(6, 8), (0.3, 0.11, 0.045, 1), (0.72, 0.32, 0.14, 1), 0.3, 0.75)     # hammered copper
+    dents = m.ramp(m.noise(40, 2), (0.8, 0.8, 0.8, 1), (1, 1, 1, 1), 0.35, 0.65)
+    patina = m.math('GREATER_THAN', m.math('ADD', m.noise(2.5, 8), m.math('MULTIPLY', m.noise(12), 0.25)), 0.74)
+    c = m.mix(m.mix(base, dents, 1.0, 'MULTIPLY'), (0.22, 0.42, 0.34, 1), patina)
+    soot = m.ramp(m.xyz(m.geo.outputs['Position'])[2], (0.08, 0.06, 0.05, 1), (1, 1, 1, 1), 0.3, 0.75)   # blackened by the fire
+    return m, m.finish(m.mix(c, soot, 1.0, 'MULTIPLY'), 0.75, mud=False)
+
+def rock_mat(name):
+    m = M(name); c = m.mix(m.tex('Concrete034', 1.5), (0.5, 0.45, 0.38, 1), 1.0, 'MULTIPLY')
+    soot = m.ramp(m.noise(3, 6), (0.12, 0.1, 0.09, 1), (1, 1, 1, 1), 0.35, 0.7)
+    return m, m.finish(m.mix(c, soot, 1.0, 'MULTIPLY'), 0.5)
+
+def tube(points, r, mat, res=6):
+    cu = bpy.data.curves.new('tube', 'CURVE'); cu.dimensions = '3D'
+    cu.bevel_depth = r; cu.bevel_resolution = 2; cu.use_fill_caps = True
+    sp = cu.splines.new('POLY'); sp.points.add(len(points) - 1)
+    for i, pt in enumerate(points): sp.points[i].co = (pt[0], pt[1], pt[2], 1)
+    o = bpy.data.objects.new('tube', cu); bpy.context.collection.objects.link(o)
+    for x in bpy.context.selected_objects: x.select_set(False)
+    bpy.context.view_layer.objects.active = o; o.select_set(True)
+    bpy.ops.object.convert(target='MESH')
+    o = bpy.context.active_object; o.data.materials.append(mat); parts.append(o); return o
+
+def build_still():
+    cop = copper_mat('copper')[1]; rock = rock_mat('rock')[1]; iron = iron_mat('iron')[1]
+    stave = wood_mat('stave', (0.62, 0.5, 0.4, 1), 'Wood049', 0.5)[1]; log = stud_mat('log')[1]
+    char = flat_mat('char', (0.05, 0.04, 0.035, 1))[1]; glass = flat_mat('glass', (0.62, 0.68, 0.62, 1))[1]
+    shine = flat_mat('shine', (0.85, 0.82, 0.7, 1))[1]
+    # stone firebox under the pot, open towards -Y
+    for k in range(14):
+        a = k / 14 * 2 * math.pi
+        if abs(math.atan2(math.sin(a), math.cos(a)) + math.pi / 2) < 0.45: continue      # the opening
+        for row in range(2):
+            bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=0.1, location=(math.cos(a) * 0.4, math.sin(a) * 0.4, 0.08 + row * 0.15))
+            o = bpy.context.active_object
+            o.scale = (rnd(0.9, 1.3), rnd(0.8, 1.1), rnd(0.7, 0.9)); o.rotation_euler = (rnd(0, 3), rnd(0, 3), rnd(0, 3))
+            bpy.ops.object.transform_apply(scale=True, rotation=True)
+            o.data.materials.append(rock); parts.append(o)
+    for k in range(3):                                                                    # logs and embers
+        cyl(0.045, 0.55, (rnd(-0.08, 0.08), -0.05 + k * 0.08, 0.06), rot=(math.pi / 2 + rnd(-0.3, 0.3), 0, rnd(-0.5, 0.5)), mat=log if k else char, verts=8)
+    box((0.5, 0.5, 0.02), (0, 0, 0.012), mat=char)
+    # copper pot: body, rounded shoulder, cap ("onion head") and lyne arm
+    cyl(0.4, 0.62, (0, 0, 0.62), mat=cop, verts=28)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=28, ring_count=12, radius=0.4, location=(0, 0, 0.93))
+    o = bpy.context.active_object; o.scale = (1, 1, 0.55); bpy.ops.object.transform_apply(scale=True)
+    o.data.materials.append(cop); parts.append(o)
+    cyl(0.12, 0.12, (0, 0, 1.18), mat=cop, verts=16)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=10, radius=0.16, location=(0, 0, 1.32))
+    o = bpy.context.active_object; o.data.materials.append(cop); parts.append(o)
+    for z in (0.34, 0.92): cyl(0.405, 0.03, (0, 0, z), mat=iron, verts=28)               # rivet bands
+    tube([(0.12, 0, 1.38), (0.45, 0, 1.36), (0.98, 0, 1.0)], 0.03, cop)                   # lyne arm to the thumper
+    # thumper: small copper keg on a stump
+    cyl(0.22, 0.42, (0.98, 0, 0.21), mat=log, verts=14)
+    cyl(0.2, 0.5, (0.98, 0, 0.67), mat=cop, verts=20)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=8, radius=0.2, location=(0.98, 0, 0.92))
+    o = bpy.context.active_object; o.scale = (1, 1, 0.4); bpy.ops.object.transform_apply(scale=True); o.data.materials.append(cop); parts.append(o)
+    tube([(0.98, 0, 0.98), (1.2, 0, 1.08), (1.55, 0, 1.08), (1.75, 0, 1.0)], 0.025, cop)  # to the worm barrel
+    # worm barrel: staves, hoops, coil on top, spout and a jar
+    cyl(0.33, 0.95, (1.9, 0, 0.475), mat=stave, verts=24)
+    for z in (0.08, 0.45, 0.87): cyl(0.336, 0.04, (1.9, 0, z), mat=iron, verts=24)
+    pts = []
+    for i in range(60):
+        t = i / 59
+        pts.append((1.9 + math.cos(t * 6 * math.pi) * 0.22, math.sin(t * 6 * math.pi) * 0.22, 1.0 - t * 0.04))
+    tube(pts, 0.018, cop)
+    tube([(1.9 + 0.22, 0, 0.3), (2.3, 0, 0.3), (2.34, 0, 0.22)], 0.016, cop)                 # spout
+    cyl(0.06, 0.15, (2.32, 0, 0.075), mat=glass, verts=14)                                   # mason jar
+    cyl(0.055, 0.09, (2.32, 0, 0.05), mat=shine, verts=14)
+    cyl(0.062, 0.02, (2.32, 0, 0.155), mat=iron, verts=14)
+
+SMOOTH = {'wl_moonshine_still': True}
+
 def build_piece(name):
     random.seed(zlib.crc32(name.encode()))
     info = PIECES[name]
+    if name == 'wl_moonshine_still':
+        build_still(); return True
     if name == 'wl_farm_raincatcher':
         build_raincatcher(); return True
     kind = name[len('wl_bp_'):]
@@ -661,6 +737,8 @@ def join_and_bake(name):
     bpy.ops.object.join()
     o = bpy.context.active_object; o.name = 'piece_hi'
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if SMOOTH.get(name):
+        bpy.ops.object.shade_smooth_by_angle(angle=math.radians(40))   # round parts smooth, edges stay sharp
     for uv in list(o.data.uv_layers): o.data.uv_layers.remove(uv)
     o.data.uv_layers.new(name='bake')
     bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')

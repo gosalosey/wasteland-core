@@ -1,5 +1,11 @@
 # Changelog
 
+## Moonshine still: copper still on a fire, smoke while it cooks
+
+- New still model (`wl_moonshine_still`, made in Blender): a hammered copper pot with green patina and soot on a stone fire ring with logs and embers, a copper cap and lyne arm to a copper thumper keg on a stump, then a wooden worm barrel with iron hoops, a copper coil, a spout and a mason jar catching the drip. Same collision as before. Preview: `docs/images/scrap/moonshine_still.jpg`.
+- While a still is brewing (and you are within 60 m): small flames under the pot, smoke rising from the cap and the firebox, and a flickering orange firelight. They stop when the batch is done.
+- VERIFY IN-GAME: the fire and smoke effects (game particle names; the first one the game has is used) and their positions on the still.
+
 ## Rain catcher: scrap-built drum and tarp
 
 - New rain catcher model (`wl_farm_raincatcher`, made in Blender): a sun-faded blue 55-gallon drum with a tap, under an old olive tarp sagging into a funnel, tied with rope to four crooked 2x4 posts with crossbars and braces. Same collision as before (the drum). Preview: `docs/images/scrap/raincatcher.jpg`.
