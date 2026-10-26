@@ -50,7 +50,8 @@ return {
         pattern = "^[%a][%a' %-]*$",
     },
 
-    -- Where new characters start (Sandy Shores airfield).
-    defaultSpawn = vector3(1734.0, 3297.0, 41.2),
+    -- Where new characters are made (the character creator; a safe zone).
+    -- They pick their starting camp afterwards.
+    defaultSpawn = vector3(318.27, -584.21, 43.28),
     defaultHeading = 195.0,
 }

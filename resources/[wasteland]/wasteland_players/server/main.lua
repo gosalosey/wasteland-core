@@ -113,7 +113,7 @@ local M = Wasteland.DefineModule({
                             description = 'Lua pattern every name must match.' },
                     },
                 },
-                defaultSpawn = { type = 'vector3', default = { x = 1734.0, y = 3297.0, z = 41.2 },
+                defaultSpawn = { type = 'vector3', default = { x = 318.27, y = -584.21, z = 43.28 },
                     description = 'Where new characters start.' },
                 defaultHeading = { type = 'number', default = 195.0, min = 0, max = 360 },
             },

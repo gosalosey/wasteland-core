@@ -62,7 +62,7 @@ end)
 -- scripts" behind the character screen), but at a random map spawn point.
 -- We do it ourselves, at a fixed holding spot (the character is placed at
 -- its own position after it is chosen).
-local HOLD = { x = 1734.0, y = 3297.0, z = 41.2, heading = 0.0 }
+local HOLD = { x = 318.27, y = -584.21, z = 43.28, heading = 0.0 }   -- the character creator (a safe zone)
 local function firstSpawn()
     if GetResourceState('spawnmanager') == 'started' then
         local done = false

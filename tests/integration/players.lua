@@ -177,7 +177,7 @@ describe('characters', function()
         expect(P(server, 'IsCharacterLoaded', id)).toBe(true)
         expect(server.players[id].state.wlCharacterId).toBe(1)
         local ev = last(server:clientEventsFor(id, 'wasteland:players:client:characterLoaded'))
-        expect(ev.args[1].position.x).toBe(1734.0)
+        expect(ev.args[1].position.x).toBe(318.27)
         expect(ev.args[1].firstName).toBe('John')
     end)
 

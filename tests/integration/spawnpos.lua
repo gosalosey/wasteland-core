@@ -26,7 +26,7 @@ describe('where a returning character spawns', function()
 
     it('a brand-new character gets the default spawn (the creator and camp choice come next)', function()
         server:command(id, 'character select 1'); server:advance(500)
-        expect(loadedPos(id).x).toBe(1734.0)
+        expect(loadedPos(id).x).toBe(318.27)
         server:clientEvent(id, 'wasteland:appearance:server:save', defaults('mp_m_freemode_01')); server:advance(500)
     end)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Character creator moved to 318.27, -584.21, 43.28
+
+- New characters are made at 318.27, -584.21, 43.28 (a safe zone) instead of the Sandy Shores airfield hangar; they pick their starting camp afterwards as before. `players.lua` `defaultSpawn`.
+
 ## Character creator: no zombies, no damage
 
 - Zombies could hit (bleeding, infection) players in the character creator: the login placement switched protection off when its 15-second watch ended, even with the creator open. The creator now holds protection (and full health) the whole time it is open.

@@ -82,7 +82,7 @@ describe('real MariaDB (' .. cfg.user .. '@' .. cfg.host .. ':' .. cfg.port .. '
         local rows = backend:rows('SELECT id, slot, first_name, last_name, pos_x FROM wl_characters ORDER BY slot')
         expect(#rows).toBe(2)
         expect(rows[2].last_name).toBe("O'Neil")
-        expect(rows[1].pos_x).toBe(1734.0)
+        expect(rows[1].pos_x).toBe(318.27)
         local dupe, err = backend:execute('insert', WLP.SQL.insertCharacter, { 1, 1, 'Dup', 'Licate', 0, 0, 0, 0 })
         expect(dupe).toBe(nil)
         expect(err).toContain('Duplicate entry')
