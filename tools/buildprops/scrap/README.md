@@ -1,10 +1,9 @@
 # Scrap barricade building props (Blender)
 
-Optional new look for every base building piece: scrap planks (wood), cinder
+The look of every base building piece (the default since it was tested in game): scrap planks (wood), cinder
 blocks and concrete (stone), rusty corrugated sheet on angle iron (metal), with
-spray paint, blood, grime and mud. Output goes to
-`resources/[wasteland]/wasteland_buildprops_scrap/stream/` with the same model names
-as wasteland_buildprops, so they replace them while that resource runs. Each
+spray paint, blood, grime and mud. Copy `out/export/*.ydr` into
+`resources/[wasteland]/wasteland_buildprops/stream/` (same model names). Each
 model keeps the collision of the original (it is put into the original .ydr).
 Stairs, ramps, hatches and the tool cupboard keep their shape with a new texture.
 

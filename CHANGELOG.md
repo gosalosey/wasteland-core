@@ -1,5 +1,11 @@
 # Changelog
 
+## The scrap barricade look is now the default
+
+- The 45 Blender-made models (building pieces in wood, stone and metal, doors, gates, window bars, tool cupboard, storage, generator, lamps, weapon locker, bed) replace the old ones in **wasteland_buildprops**. Every base on the server shows the new look; nothing else changes (same model names, same collision).
+- The separate wasteland_buildprops_scrap resource is gone. If you added `ensure wasteland_buildprops_scrap` to server.cfg, remove that line (otherwise the server only warns that it cannot find it).
+- The old models are in the git history if ever wanted back.
+
 ## Scrap building look: gaps closed, doorway patch, new props
 
 - Floors (wood and metal ceilings / foundations) run edge to edge, so there are no bright lines between pieces; a backing board under wood floors and behind wood walls means nothing shows through the plank gaps.
