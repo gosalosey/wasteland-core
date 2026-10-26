@@ -1,5 +1,9 @@
 # Changelog
 
+## Character creator: the camera never ends up inside a wall
+
+- The creator camera stands 3 m in front of the character. At the new creator spot it looked into a wall, so the character could not be seen. Now the creator tries the character's facing and then every 45 degrees, and turns the character to the first direction with clear space for the camera.
+
 ## Character creator moved to 318.27, -584.21, 43.28
 
 - New characters are made at 318.27, -584.21, 43.28 (a safe zone) instead of the Sandy Shores airfield hangar; they pick their starting camp afterwards as before. `players.lua` `defaultSpawn`.

@@ -166,6 +166,29 @@ local CAMERA = {
 
 -- The camera stays where the ped faced when the creator opened (rotating
 -- the ped must not rotate the camera with it).
+-- A facing with room for the camera: the body camera stands 3 m in front
+-- of the ped. Tries the ped's own heading first, then every 45 degrees, and
+-- takes the first one where nothing (walls, props) is between the ped and
+-- the camera spot, with a little to spare.
+local function clearHeading(ped)
+    local o = GetEntityCoords(ped)
+    local need = CAMERA.body.distance + 0.8
+    local base = GetEntityHeading(ped)
+    for i = 0, 7 do
+        local h = (base + i * 45.0) % 360.0
+        local r = math.rad(h)
+        local fx, fy = -math.sin(r), math.cos(r)
+        local blocked = false
+        for _, dz in ipairs({ 0.6, 0.0, -0.5 }) do
+            local ray = StartExpensiveSynchronousShapeTestLosProbe(o.x, o.y, o.z + dz, o.x + fx * need, o.y + fy * need, o.z + dz, 1 | 16, ped, 7)
+            local _, hit = GetShapeTestResult(ray)
+            if hit == 1 then blocked = true; break end
+        end
+        if not blocked then return h end
+    end
+    return base
+end
+
 local function placeCamera(mode)
     if not editing then return end
     local ped = PlayerPedId()
@@ -252,7 +275,9 @@ local function startCreator(info, token)
             Citizen.Wait(500)
         end
     end)
-    editing.baseHeading = GetEntityHeading(ped)
+    -- face a direction with room for the camera (not into a wall)
+    editing.baseHeading = clearHeading(ped)
+    SetEntityHeading(ped, editing.baseHeading)
     placeCamera('body')
     exports.wasteland_ui:Open(SCREEN, {
         script = 'html/creator.js',
