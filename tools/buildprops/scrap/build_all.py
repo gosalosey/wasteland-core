@@ -230,9 +230,11 @@ def panel_wood(b, mats, big):
             box((w - 0.25, 0.06, 0.12), (cx, y1 - 0.035, zz), mat=mats['stud'])
     # planks outside
     z = z0 + 0.01
-    while z < z1 - 0.04:
-        ph = min(rnd(0.2, 0.32), z1 - z - 0.005)
-        tilt = math.radians(rnd(-1.2, 1.2)) if w > 1 else 0
+    while z < z1 - 0.005:
+        ph = rnd(0.2, 0.32)
+        last = z1 - z - ph < 0.15
+        if last: ph = z1 - z                       # last plank fills to the top, level
+        tilt = math.radians(rnd(-1.2, 1.2)) if w > 1 and not last and z > z0 + 0.05 else 0
         length = w
         box((length, 0.032, ph), (cx, y0 + 0.022 + rnd(-0.004, 0.004), z + ph / 2), rot=(0, tilt, 0),
             mat=random.choice(mats['planks']))
@@ -280,9 +282,9 @@ def panel_metal(b, mats, big):
     x = x0
     while x < x1 - 0.05:
         sw = min(rnd(0.85, 1.15), x1 - x)
-        sh = h - rnd(0.0, 0.06)
+        sh = h
         mat = random.choices(mats['sheets'], weights=(6, 1, 1))[0]
-        corrugated(sw, sh, (x + sw / 2, y0 + 0.016 + rnd(-0.002, 0.004), z0 + sh / 2 + rnd(0, 0.02)), mat,
+        corrugated(sw, sh, (x + sw / 2, y0 + 0.016 + rnd(-0.002, 0.004), z0 + sh / 2), mat,
                    rot=(0, math.radians(rnd(-0.8, 0.8)) if w > 1 else 0, 0))
         x += sw - 0.05
     if big and w > 1.2 and h > 2 and random.random() < 0.7:
@@ -374,11 +376,18 @@ def build_foundation(tier, mats, info):
         for sx, sy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
             box((0.16, 0.16, 4.98), (sx * 1.92, sy * 1.92, -1.5), mat=mats['iron'])
 
+def rim(mat, z0=0.0, z1=0.2, t=0.05):
+    h = z1 - z0
+    for sx in (-1, 1):
+        box((t, 4.0, h), (sx * (2 - t / 2), 0, z0 + h / 2), mat=mat)
+        box((4.0 - 2 * t, t, h), (0, sx * (2 - t / 2), z0 + h / 2), mat=mat)
+
 def build_ceiling(tier, mats, info):
+    rim({'wood': mats.get('stud'), 'stone': mats.get('concrete'), 'metal': mats.get('iron')}[tier])
     if tier == 'wood':
         deck_wood(-2, 2, -2, 2, 0.2, mats)
     elif tier == 'stone':
-        box((4, 4, 0.18), (0, 0, 0.11), mat=mats['concrete'])
+        box((4, 4, 0.2), (0, 0, 0.1), mat=mats['concrete'])
         for x in (-1.3, 0, 1.3): box((0.25, 4, 0.04), (x, 0, 0.01), mat=mats['concrete'])
     else:
         for i in range(2):

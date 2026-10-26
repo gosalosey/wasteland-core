@@ -1,5 +1,11 @@
 # Changelog
 
+## No gap between storeys
+
+- Floor / ceiling pieces (wood, stone, metal) have a solid rim the full 20 cm round their edge, so the strip between a lower wall and the wall above is closed (it showed the outside before).
+- Metal sheets and wood planks on walls now reach the top edge exactly (they stopped a few cm short).
+- Same model names and collision; existing bases change look only.
+
 ## The scrap barricade look is now the default
 
 - The 45 Blender-made models (building pieces in wood, stone and metal, doors, gates, window bars, tool cupboard, storage, generator, lamps, weapon locker, bed) replace the old ones in **wasteland_buildprops**. Every base on the server shows the new look; nothing else changes (same model names, same collision).
