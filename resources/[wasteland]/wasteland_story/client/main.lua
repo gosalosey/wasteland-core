@@ -39,19 +39,18 @@ local function groundAt(x, y, z)
     return nil
 end
 
-local function roofOver(x, y, z)
-    local ray = StartExpensiveSynchronousShapeTestLosProbe(x, y, z + 1.2, x, y, z + 25.0, 1, 0, 7)
-    local _, hit = GetShapeTestResult(ray)
-    return hit == 1
-end
-
--- Story NPCs and items must be easy to reach: open ground, no climbing, no
--- buildings. A spot inside an interior, under a roof or without ground (or
--- far from where it should be) is moved to the nearest road edge.
+-- Story NPCs and items must be easy to reach. A spot is used as given
+-- unless there is no ground there, the ground is far from the given height
+-- (a roof, a pit), or it is inside a building interior: then it is moved
+-- to the nearest road edge. (Awnings, trees and canopies are fine.)
 local function safeSpot(c)
     local gz = groundAt(c.x, c.y, c.z)
-    local fine = gz and math.abs(gz - c.z) < 4.0 and GetInteriorAtCoords(c.x, c.y, gz + 1.0) == 0 and not roofOver(c.x, c.y, gz)
+    local fine = gz and math.abs(gz - c.z) < 4.0 and GetInteriorAtCoords(c.x, c.y, gz + 1.0) == 0
     if fine then return vector3(c.x, c.y, gz), false end
+    if not gz then
+        -- ground not loaded yet: stand where the config says (it is a chosen spot)
+        return vector3(c.x, c.y, c.z), false
+    end
     local found, node = GetClosestVehicleNode(c.x, c.y, c.z, 1, 3.0, 0)
     if found and #(vector3(node.x, node.y, 0.0) - vector3(c.x, c.y, 0.0)) < 75.0 then
         -- the road edge on the side of the original spot

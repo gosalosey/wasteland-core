@@ -1,5 +1,9 @@
 # Changelog
 
+## Story: NPCs stand where they are placed again
+
+- The "easy to reach" safety net moved story NPCs and items away when anything was above them (an awning, a stall canopy, a tree), so Hollis appeared up to 75 m away from his marker. Now a spot is only moved when there is no ground there, the ground is far from the given height (a roof or a pit), or it is inside a building interior. Chosen spots are used as given.
+
 ## Story: Act II "The Company"; easy-to-reach places; tracker goes when done
 
 - **Act II: The Company** (9 steps) starts after Act I's ending card and reacts to what you chose there: a company convoy stopped at the Yellow Jack Inn, its turned guards, the convoy manifest (a weaponised strain, LAZARUS-10, and a relay at the El Gordo lighthouse aimed at Sandy Shores), Rook the deserter at the Fort Zancudo gate (patch his leg with 3 bandages, or just take the codes), holding the lighthouse while the relay is shut down, Crane's orders, and the ending: warn every camp (supplies, $800) or take the company stash ($2500, a pump shotgun, armour).
