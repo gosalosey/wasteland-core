@@ -19,6 +19,7 @@
 -- Places: pick open ground next to a road (no roofs, no interiors). As a
 -- safety net, a story NPC or item whose spot turns out to be inside a
 -- building, high up or without ground is moved to the nearest road edge.
+-- An NPC with `exact = true` (a spot placed by hand) is never moved.
 -- VERIFY IN-GAME: the places are picked from the map.
 return {
     enabled = true,
@@ -34,7 +35,7 @@ return {
 
         npcs = {
             hollis = { name = 'Hollis', role = 'Radio operator, Sandy Shores Camp', model = 'a_m_m_hillbilly_01',
-                coords = { x = 1855.09, y = 3688.89, z = 34.27, heading = 144.91 }, scenario = 'WORLD_HUMAN_STAND_MOBILE',
+                coords = { x = 1855.09, y = 3688.89, z = 34.27, heading = 144.91 }, exact = true, scenario = 'WORLD_HUMAN_STAND_MOBILE',
                 idle = 'Static, static, static. Come back when you have something.' },
             tomas = { name = 'Tomas Reyes', role = "Dr. Ward's assistant", model = 'a_m_y_genstreet_01',
                 coords = { x = 2432.5, y = 4972.2, z = 46.8, heading = 140.0 }, scenario = 'WORLD_HUMAN_BUM_SLUMPED',
@@ -221,7 +222,7 @@ return {
 
         npcs = {
             hollis = { name = 'Hollis', role = 'Radio operator, Sandy Shores Camp', model = 'a_m_m_hillbilly_01',
-                coords = { x = 1855.09, y = 3688.89, z = 34.27, heading = 144.91 }, scenario = 'WORLD_HUMAN_STAND_MOBILE',
+                coords = { x = 1855.09, y = 3688.89, z = 34.27, heading = 144.91 }, exact = true, scenario = 'WORLD_HUMAN_STAND_MOBILE',
                 idle = 'Keep your head down out there. And your radio off.' },
             rook = { name = 'Rook', role = 'A deserter, Fort Zancudo', model = 's_m_y_marine_01',
                 coords = { x = -1582.0, y = 2786.0, z = 17.0, heading = 230.0 }, scenario = 'WORLD_HUMAN_SMOKING',

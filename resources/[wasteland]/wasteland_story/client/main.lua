@@ -87,10 +87,16 @@ end
 local function spawnNpc(n)
     local hash = loadModel(n.model)
     if not hash then return end
-    -- NPCs stand exactly where story.lua puts them (chosen spots): only
-    -- their feet are put on the ground when it is right there.
-    local gz = groundAt(n.coords.x, n.coords.y, n.coords.z)
-    local spot = vector3(n.coords.x, n.coords.y, (gz and math.abs(gz - n.coords.z) < 1.5) and gz or n.coords.z)
+    -- `exact` NPCs (spots placed by hand in story.lua) stand exactly there,
+    -- feet on the ground; the others get the same check as story items and
+    -- are moved to the nearest road edge when players could not reach them.
+    local spot
+    if n.exact then
+        local gz = groundAt(n.coords.x, n.coords.y, n.coords.z)
+        spot = vector3(n.coords.x, n.coords.y, (gz and math.abs(gz - n.coords.z) < 1.5) and gz or n.coords.z)
+    else
+        spot = safeSpot(n.coords)
+    end
     if npcs[n.id] then return end
     local ped = CreatePed(4, hash, spot.x, spot.y, spot.z, n.coords.heading or 0.0, false, false)
     SetModelAsNoLongerNeeded(hash)

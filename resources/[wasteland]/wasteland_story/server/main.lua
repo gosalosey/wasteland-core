@@ -102,7 +102,7 @@ local function view(cid)
         stepNo = #st.log + 1, steps = #a.steps, actNo = actIndex(a.id), acts = #acts(), npcs = {} }
     for id, n in pairs(a.npcs) do
         if step and Rules.npcVisible(n, st) and not (id == 'tomas' and flags.ruthless) then
-            out.npcs[#out.npcs + 1] = { id = id, name = n.name, model = n.model, coords = n.coords, scenario = n.scenario }
+            out.npcs[#out.npcs + 1] = { id = id, name = n.name, model = n.model, coords = n.coords, scenario = n.scenario, exact = n.exact == true }
         end
     end
     if step then

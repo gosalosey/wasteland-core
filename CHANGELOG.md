@@ -1,8 +1,8 @@
 # Changelog
 
-## Story: NPCs always stand at their story.lua coordinates
+## Story: hand-placed NPCs stay put; the others get the reachability check
 
-- Story NPCs are never moved: they stand exactly at the coordinates in story.lua (feet put on the ground when it is right there). The road-edge safety net is only for story items (notes, cases).
+- NPCs with `exact = true` in story.lua (spots placed by hand: Hollis) stand exactly at their coordinates. Every other story NPC (Tomas, Crane, Rook) and every story item gets the safety check: a spot inside a building interior, without ground, or far from the given height is moved to the nearest road edge, so players can always reach it.
 
 ## Story: NPCs stand where they are placed again
 
