@@ -6,7 +6,7 @@ return {
     identifier = 'license',
 
     -- Character slots per account. 1 - 10.
-    maxCharacters = 3,
+    maxCharacters = 5,
 
     -- When an account connects while it is already connected:
     --   'kick_old'   drop the old session, save it, then let the new one in
