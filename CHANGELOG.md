@@ -1,5 +1,9 @@
 # Changelog
 
+## Story: NPCs always stand at their story.lua coordinates
+
+- Story NPCs are never moved: they stand exactly at the coordinates in story.lua (feet put on the ground when it is right there). The road-edge safety net is only for story items (notes, cases).
+
 ## Story: NPCs stand where they are placed again
 
 - The "easy to reach" safety net moved story NPCs and items away when anything was above them (an awning, a stall canopy, a tree), so Hollis appeared up to 75 m away from his marker. Now a spot is only moved when there is no ground there, the ground is far from the given height (a roof or a pit), or it is inside a building interior. Chosen spots are used as given.
