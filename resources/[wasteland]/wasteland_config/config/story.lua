@@ -29,7 +29,7 @@ return {
 
         npcs = {
             hollis = { name = 'Hollis', role = 'Radio operator, Sandy Shores Camp', model = 'a_m_m_hillbilly_01',
-                coords = { x = 1844.6, y = 3681.4, z = 34.27, heading = 300.0 }, scenario = 'WORLD_HUMAN_STAND_MOBILE',
+                coords = { x = 1855.09, y = 3688.89, z = 34.27, heading = 144.91 }, scenario = 'WORLD_HUMAN_STAND_MOBILE',
                 idle = 'Static, static, static. Come back when you have something.' },
             tomas = { name = 'Tomas Reyes', role = "Dr. Ward's assistant", model = 'a_m_y_genstreet_01',
                 coords = { x = 2432.5, y = 4972.2, z = 46.8, heading = 140.0 }, scenario = 'WORLD_HUMAN_BUM_SLUMPED',

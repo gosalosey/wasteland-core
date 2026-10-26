@@ -42,7 +42,7 @@ describe('story: Patient Zero, act I', function()
         at(1700.0, 3600.0, 34.3)
         ev('talk', 'hollis')
         expect(last('wasteland:story:client:dialogue')).toBe(nil)
-        at(1845.5, 3682.0, 34.3)
+        at(1855.5, 3688.0, 34.3)
         ev('talk', 'hollis')
         local d = last('wasteland:story:client:dialogue').args[1]
         expect(d.npc).toBe('Hollis'); expect(#d.lines).toBe(3); expect(d.choices[1].id).toBe('go')
@@ -64,7 +64,7 @@ describe('story: Patient Zero, act I', function()
     end)
 
     it('a choice that needs an item takes it', function()
-        at(1845.5, 3682.0, 34.3)
+        at(1855.5, 3688.0, 34.3)
         ev('choose', 'give')
         expect(count('story_courier_case')).toBe(0)
         expect(step()).toBe('clinic_nest')
@@ -113,7 +113,7 @@ describe('story: Patient Zero, act I', function()
     end)
 
     it('the ending: sharing the vial gives the serum and ends the act', function()
-        at(1845.5, 3682.0, 34.3)
+        at(1855.5, 3688.0, 34.3)
         ev('talk', 'hollis')
         local lines = last('wasteland:story:client:dialogue').args[1].lines
         local joined = ''
