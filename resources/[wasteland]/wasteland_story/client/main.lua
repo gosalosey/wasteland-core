@@ -29,10 +29,40 @@ local function loadModel(name)
     return HasModelLoaded(hash) and hash or nil
 end
 
-local function ground(c)
-    RequestCollisionAtCoord(c.x, c.y, c.z)
-    local ok, z = GetGroundZFor_3dCoord(c.x, c.y, c.z + 3.0, false)
-    return ok and z or c.z
+local function groundAt(x, y, z)
+    RequestCollisionAtCoord(x, y, z)
+    for _ = 1, 20 do
+        local ok, gz = GetGroundZFor_3dCoord(x, y, z + 3.0, false)
+        if ok then return gz end
+        Wait(50)
+    end
+    return nil
+end
+
+local function roofOver(x, y, z)
+    local ray = StartExpensiveSynchronousShapeTestLosProbe(x, y, z + 1.2, x, y, z + 25.0, 1, 0, 7)
+    local _, hit = GetShapeTestResult(ray)
+    return hit == 1
+end
+
+-- Story NPCs and items must be easy to reach: open ground, no climbing, no
+-- buildings. A spot inside an interior, under a roof or without ground (or
+-- far from where it should be) is moved to the nearest road edge.
+local function safeSpot(c)
+    local gz = groundAt(c.x, c.y, c.z)
+    local fine = gz and math.abs(gz - c.z) < 4.0 and GetInteriorAtCoords(c.x, c.y, gz + 1.0) == 0 and not roofOver(c.x, c.y, gz)
+    if fine then return vector3(c.x, c.y, gz), false end
+    local found, node = GetClosestVehicleNode(c.x, c.y, c.z, 1, 3.0, 0)
+    if found and #(vector3(node.x, node.y, 0.0) - vector3(c.x, c.y, 0.0)) < 75.0 then
+        -- the road edge on the side of the original spot
+        local dir = vector3(c.x - node.x, c.y - node.y, 0.0)
+        local len = #dir
+        dir = len > 0.1 and dir / len or vector3(1.0, 0.0, 0.0)
+        local p = vector3(node.x, node.y, node.z) + dir * 5.0
+        local pz = groundAt(p.x, p.y, node.z) or node.z
+        return vector3(p.x, p.y, pz), true
+    end
+    return vector3(c.x, c.y, gz or c.z), false
 end
 
 local function open(screen, script, data, focus)
@@ -58,8 +88,9 @@ end
 local function spawnNpc(n)
     local hash = loadModel(n.model)
     if not hash then return end
-    local z = ground(n.coords)
-    local ped = CreatePed(4, hash, n.coords.x, n.coords.y, z, n.coords.heading or 0.0, false, false)
+    local spot = safeSpot(n.coords)
+    if npcs[n.id] then return end
+    local ped = CreatePed(4, hash, spot.x, spot.y, spot.z, n.coords.heading or 0.0, false, false)
     SetModelAsNoLongerNeeded(hash)
     if not ped or ped == 0 then return end
     SetEntityInvincible(ped, true); FreezeEntityPosition(ped, true)
@@ -67,9 +98,10 @@ local function spawnNpc(n)
     SetPedDiesWhenInjured(ped, false); SetPedFleeAttributes(ped, 0, false)
     if n.scenario then TaskStartScenarioInPlace(ped, n.scenario, 0, true) end
     local e = { ped = ped }
+    local at = { x = spot.x, y = spot.y, z = spot.z }
     if targetRunning() then
         e.target = exports.wasteland_target:AddEntity(ped, { { label = 'Talk to ' .. n.name, icon = '💬', distance = 3.0,
-            onSelect = function() TriggerServerEvent('wasteland:story:server:talk', n.id) end } })
+            onSelect = function() TriggerServerEvent('wasteland:story:server:talk', n.id, at) end } })
     end
     npcs[n.id] = e
 end
@@ -88,15 +120,17 @@ end
 local function spawnProp(s)
     local hash = loadModel(s.prop or 'prop_ld_case_01') or loadModel('prop_ld_case_01')
     if not hash then return end
-    local z = ground(s.coords)
-    local obj = CreateObject(hash, s.coords.x, s.coords.y, z, false, false, false)
+    local spot = safeSpot(s.coords)
+    if prop then return end
+    local obj = CreateObject(hash, spot.x, spot.y, spot.z, false, false, false)
     SetModelAsNoLongerNeeded(hash)
     PlaceObjectOnGroundProperly(obj); FreezeEntityPosition(obj, true)
-    prop = { stepId = s.id, obj = obj, z = z }
+    prop = { stepId = s.id, obj = obj }
+    local at = { x = spot.x, y = spot.y, z = spot.z }
     if targetRunning() then
         local event = s.type == 'read' and 'wasteland:story:server:read' or 'wasteland:story:server:collect'
         prop.target = exports.wasteland_target:AddEntity(obj, { { label = s.label or 'Pick up', icon = s.type == 'read' and '📄' or '✋',
-            distance = 2.5, onSelect = function() TriggerServerEvent(event, s.id) end } })
+            distance = 2.5, onSelect = function() TriggerServerEvent(event, s.id, at) end } })
     end
 end
 
@@ -133,14 +167,14 @@ local function trackerData()
         if s.type == 'kill' then line = string.format('%d / %d killed%s', s.progress or 0, s.count or 0, s.where and (' at ' .. s.where) or '')
         elseif s.type == 'defend' then line = string.format('Held %d / %d s', s.progress or 0, s.seconds or 0) end
     end
-    return { title = state.title, chapter = s and string.format('%d / %d  %s', state.stepNo, state.steps, s.title or '') or nil,
+    return { title = (state.subtitle or state.title), chapter = s and string.format('%d / %d  %s', state.stepNo, state.steps, s.title or '') or nil,
         objective = s and s.objective or (state.ending and state.ending.title) or nil, progress = line, done = state.done }
 end
 
 local function updateTracker()
     if not uiRunning() then return end
     local d = trackerData()
-    if not d then close(TRACKER); return end
+    if not d or d.done then close(TRACKER); return end   -- the whole story is done: off the screen
     if exports.wasteland_ui:IsOpen(TRACKER) then exports.wasteland_ui:Update(TRACKER, d)
     else open(TRACKER, 'html/tracker.js', d, false) end
 end

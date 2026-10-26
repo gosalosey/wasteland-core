@@ -290,6 +290,8 @@ return {
             description = 'Humane Labs, cold store access.' },
         story_lazarus_sample = { label = 'LAZARUS sample', image = 'bdsample', category = 'misc', width = 1, height = 1, weight = 0.05, stack = 1,
             description = 'One vial, frost on the glass. L-9 / FINAL / CURE?' },
+        story_manifest = { label = 'Convoy document case', image = 'original_case', category = 'misc', width = 2, height = 1, weight = 1.0, stack = 1,
+            description = 'Halcyon Biotech, transport manifest #4471.' },
         lazarus_serum = { label = 'Lazarus serum', image = 'adrenaline', category = 'medical', width = 1, height = 1, weight = 0.05, stack = 5,
             description = 'Made from the last LAZARUS sample. Clears infection completely.' },
         pickaxe = { label = 'Pickaxe', image = 'pickaxe', category = 'tool', width = 1, height = 3, weight = 1.2, stack = 1,

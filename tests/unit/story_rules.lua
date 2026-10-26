@@ -72,10 +72,15 @@ end)
 
 describe('the shipped story (Patient Zero)', function()
     local cfg = shipped()
-    it('is valid, about ten steps, two endings', function()
-        local errs = Rules.validate(cfg.act, function() return true end)
-        expect(#errs).toBe(0)
-        expect(#cfg.act.steps >= 10).toBe(true)
-        expect(cfg.act.endings.shared ~= nil and cfg.act.endings.sold ~= nil).toBe(true)
+    it('every act is valid, with two endings; Act I has about ten steps', function()
+        expect(#cfg.acts >= 2).toBe(true)
+        for _, a in ipairs(cfg.acts) do
+            local errs = Rules.validate(a, function() return true end)
+            expect(a.id .. ':' .. table.concat(errs, '; ')).toBe(a.id .. ':')
+            local n = 0
+            for _ in pairs(a.endings) do n = n + 1 end
+            expect(n).toBe(2)
+        end
+        expect(#cfg.acts[1].steps >= 10).toBe(true)
     end)
 end)

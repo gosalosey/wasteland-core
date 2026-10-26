@@ -16,12 +16,17 @@
 -- Dialogue lines can depend on flags: { who, text, ifFlag = 'x' } / ifNotFlag.
 -- `journal`: what the journal says once the step is done (past tense).
 --
--- VERIFY IN-GAME: the places are picked from the map (props are put on the
--- ground). NPCs stand where `coords` says.
+-- Places: pick open ground next to a road (no roofs, no interiors). As a
+-- safety net, a story NPC or item whose spot turns out to be inside a
+-- building, high up or without ground is moved to the nearest road edge.
+-- VERIFY IN-GAME: the places are picked from the map.
 return {
     enabled = true,
     groupRange = 120,          -- group members this close share kills / defending
-    act = {
+    -- Acts are played in order: Act II starts when Act I is done. Flags (the
+    -- choices you made) carry over, so later acts can react to them.
+    acts = {
+    {
         id = 'act1',
         title = 'Patient Zero',
         subtitle = 'Act I: The Lazarus File',
@@ -206,5 +211,142 @@ return {
             shared = { title = 'A Cure, Maybe', text = 'The camp has the vial. It might become a cure. It might not. Crane will be back.' },
             sold = { title = 'Thirty Pieces', text = 'The company has the vial. You have a rifle and a full wallet. Hollis has stopped listening to the radio.' },
         },
+    },
+    {
+        id = 'act2',
+        title = 'Patient Zero',
+        subtitle = 'Act II: The Company',
+        intro = 'Crane said his employer remembers friends. It turns out the company remembers everyone.',
+        -- All places are open ground next to roads: no climbing, no buildings.
+
+        npcs = {
+            hollis = { name = 'Hollis', role = 'Radio operator, Sandy Shores Camp', model = 'a_m_m_hillbilly_01',
+                coords = { x = 1855.09, y = 3688.89, z = 34.27, heading = 144.91 }, scenario = 'WORLD_HUMAN_STAND_MOBILE',
+                idle = 'Keep your head down out there. And your radio off.' },
+            rook = { name = 'Rook', role = 'A deserter, Fort Zancudo', model = 's_m_y_marine_01',
+                coords = { x = -1582.0, y = 2786.0, z = 17.0, heading = 230.0 }, scenario = 'WORLD_HUMAN_SMOKING',
+                onlyDuring = { 'rook' },
+                idle = 'Keep walking, civilian.' },
+        },
+
+        steps = {
+            -- 1 ---------------------------------------------------------
+            { id = 'convoy', type = 'talk', npc = 'hollis', title = 'Headlights',
+                objective = 'Talk to Hollis at Sandy Shores Camp.',
+                dialogue = {
+                    lines = {
+                        { who = 'hollis', text = 'Our medic is gone. Took the serum notes with her. Last anyone saw, she was riding in a black truck with company plates.', ifFlag = 'shared' },
+                        { who = 'hollis', text = 'Remember Crane? His people have been buying up every scrap of medicine in the valley. Paying in ammo. Nobody says no.', ifFlag = 'sold' },
+                        { who = 'hollis', text = 'Three black trucks went past on Route 68 last night. They stopped at the Yellow Jack. Only two drove off.' },
+                        { who = 'hollis', text = 'Whatever they are hauling, I want to know. Go look. Quietly, if you can manage quiet.' },
+                    },
+                    choices = {
+                        { id = 'go', text = 'I\'ll check the Yellow Jack.' },
+                    },
+                },
+                journal = 'A company convoy stopped at the Yellow Jack Inn on Route 68. One truck never left.' },
+
+            -- 2 ---------------------------------------------------------
+            { id = 'yellow_jack', type = 'visit', title = 'The Yellow Jack',
+                objective = 'Go to the Yellow Jack Inn on Route 68.',
+                coords = { x = 1985.6, y = 3053.5, z = 47.2 }, radius = 35,
+                arrive = 'One truck, doors open, engine cold. Drag marks lead into the car park. The guards did not get far.',
+                journal = 'The truck at the Yellow Jack was abandoned. Its guards had turned.' },
+
+            -- 3 ---------------------------------------------------------
+            { id = 'guards', type = 'kill', title = 'Company men',
+                objective = 'Put down the turned convoy guards around the Yellow Jack.',
+                count = 10, near = { x = 1985.6, y = 3053.5, z = 47.2, radius = 90 }, placeLabel = 'the Yellow Jack',
+                journal = 'The guards wore company patches. Under them, bite marks.' },
+
+            -- 4 ---------------------------------------------------------
+            { id = 'manifest', type = 'collect', title = 'The manifest',
+                objective = 'Search the abandoned truck for its paperwork.',
+                coords = { x = 1991.0, y = 3049.0, z = 47.2 }, prop = 'prop_ld_case_01', label = 'Take the document case',
+                item = 'story_manifest',
+                found = 'A document case, still locked to a dead man\'s wrist. You did not need the wrist.',
+                journal = 'You took the convoy\'s document case.' },
+
+            -- 5 ---------------------------------------------------------
+            { id = 'manifest_read', type = 'read', title = 'Cargo: L-10',
+                objective = 'Read the convoy manifest.',
+                coords = { x = 1993.0, y = 3051.5, z = 47.2 }, prop = 'prop_notepod_01', label = 'Read the manifest',
+                note = {
+                    title = 'Halcyon Biotech, transport manifest #4471',
+                    text = 'Origin: Humane Labs (cold store, recovered).\n'
+                        .. 'Cargo: LAZARUS-10 (weaponised strain), 6 canisters. Do NOT expose.\n\n'
+                        .. 'Route: Route 68 > Zancudo checkpoint (escort change) > El Gordo lighthouse (relay).\n\n'
+                        .. 'Note from C.: The lighthouse relay goes live on my signal. When it does, the Sandy Shores camp is to be "cleared for '
+                        .. 'study". Recover the counter-agent by any means.',
+                },
+                journal = 'The manifest: Halcyon Biotech is moving a weaponised strain, LAZARUS-10. A relay at the El Gordo lighthouse will start it. The target is Sandy Shores.' },
+
+            -- 6 ---------------------------------------------------------
+            { id = 'rook', type = 'talk', npc = 'rook', title = 'The checkpoint',
+                objective = 'Find the escort change at the Fort Zancudo gate.',
+                dialogue = {
+                    lines = {
+                        { who = 'rook', text = 'Easy. I am not with them. Not any more. I was the escort. Then I saw what was in the canisters.' },
+                        { who = 'rook', text = 'They shot my sergeant for asking. I got out with a hole in my leg and the relay codes in my head.' },
+                        { who = 'rook', text = 'The lighthouse. If someone holds it long enough, I can talk you through killing the signal. If not... say goodbye to Sandy.' },
+                    },
+                    choices = {
+                        { id = 'patch', text = 'Patch up his leg first. (Bandage x3)', bring = { { name = 'bandage', count = 3 } }, flags = { 'rook_ally' },
+                            reply = 'Thanks. I will be on the radio, channel nine. Get to the lighthouse. I have got your back.' },
+                        { id = 'codes', text = 'Just give me the codes.', flags = { 'rook_alone' },
+                            reply = 'Fine. Three-one-two, then the name of the dead. You will figure it out. I am not following you up there.' },
+                    },
+                },
+                journal = 'Rook, a deserter from the convoy escort, knows how to kill the lighthouse relay.',
+                journalIf = { rook_ally = 'You patched his leg. He promised to talk you through it on the radio.',
+                    rook_alone = 'You took the codes and left him there.' } },
+
+            -- 7 ---------------------------------------------------------
+            { id = 'lighthouse', type = 'defend', title = 'El Gordo',
+                objective = 'Hold the ground at the El Gordo lighthouse while the relay is shut down.',
+                coords = { x = 3426.0, y = 5174.0, z = 7.4 }, radius = 35, seconds = 120, waveSeconds = 15, waveSize = 5,
+                start = 'The relay screams to life. Every dead thing for miles hears it.',
+                journal = 'At the lighthouse the relay howled while you held the ground.' },
+
+            -- 8 ---------------------------------------------------------
+            { id = 'crane_log', type = 'read', title = 'Crane\'s orders',
+                objective = 'Find the relay operator\'s orders by the lighthouse.',
+                coords = { x = 3420.0, y = 5168.0, z = 7.4 }, prop = 'prop_notepod_01', label = 'Read the orders',
+                note = {
+                    title = 'Orders, Halcyon relay team (signed C.)',
+                    text = 'If the relay is compromised, fall back to the stash at the old lighthouse shed and wait for extraction.\n\n'
+                        .. 'The stash holds the payroll and the spare kit. Leave nothing for the locals.\n\n'
+                        .. 'And find me the one who took the Lazarus file. They are either very useful or very dead.',
+                },
+                journal = 'Crane\'s orders: a company stash by the lighthouse, and a note that he is looking for you.' },
+
+            -- 9 ---------------------------------------------------------
+            { id = 'warning', type = 'talk', npc = 'hollis', title = 'Sandy Shores',
+                objective = 'Get back to Hollis. Sandy Shores needs to know.',
+                dialogue = {
+                    lines = {
+                        { who = 'hollis', text = 'Signal\'s dead. I heard it go. You did that?' },
+                        { who = 'hollis', text = 'Rook got through on channel nine. Said you watched each other\'s backs. Said to tell you "the name of the dead" was his sergeant.', ifFlag = 'rook_ally' },
+                        { who = 'hollis', text = 'Some soldier kid called. Said you left him bleeding. Said he hopes it was worth it.', ifFlag = 'rook_alone' },
+                        { who = 'hollis', text = 'There is the company stash, too. Payroll and kit. We could use it. Or we warn every camp on the coast before Crane tries again.' },
+                    },
+                    choices = {
+                        { id = 'warn', text = 'Warn the other camps. Everyone needs to know.', flags = { 'warned' }, ending = 'warned',
+                            give = { { name = 'antibiotics', count = 3 }, { name = 'mre_beef', count = 4 }, { name = 'armor_plate', count = 1 } }, cash = 800,
+                            reply = 'Hollis: On air in five. Every camp, every channel. They will know what Halcyon is. The camps sent supplies for you.' },
+                        { id = 'loot', text = 'Take the stash. Survival first.', flags = { 'looted' }, ending = 'looted',
+                            give = { { name = 'weapon_pumpshotgun', count = 1 }, { name = 'ammo_12g', count = 40 }, { name = 'armor_plate', count = 1 } }, cash = 2500,
+                            reply = 'Hollis: Can\'t argue with full pockets. Just... do not be surprised when nobody believes us later.' },
+                    },
+                },
+                journal = 'Back at Sandy Shores, with the relay dead.',
+                journalIf = { warned = 'You told every camp on the coast what Halcyon is.', looted = 'You took Crane\'s stash and kept quiet.' } },
+        },
+
+        endings = {
+            warned = { title = 'Every Channel', text = 'The whole coast knows the name Halcyon. Crane knows yours.' },
+            looted = { title = 'Payroll', text = 'You are better armed than ever. The camps still do not know what is coming.' },
+        },
+    },
     },
 }

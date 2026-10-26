@@ -1,5 +1,13 @@
 # Changelog
 
+## Story: Act II "The Company"; easy-to-reach places; tracker goes when done
+
+- **Act II: The Company** (9 steps) starts after Act I's ending card and reacts to what you chose there: a company convoy stopped at the Yellow Jack Inn, its turned guards, the convoy manifest (a weaponised strain, LAZARUS-10, and a relay at the El Gordo lighthouse aimed at Sandy Shores), Rook the deserter at the Fort Zancudo gate (patch his leg with 3 bandages, or just take the codes), holding the lighthouse while the relay is shut down, Crane's orders, and the ending: warn every camp (supplies, $800) or take the company stash ($2500, a pump shotgun, armour).
+- story.lua now holds a list of `acts` played in order; choices (flags) carry over between acts. Old saves keep their Act I progress. The journal shows every act with its ending.
+- Easy to reach: every story NPC and item stands on open ground next to a road. As a safety net the game moves one whose spot is inside a building, under a roof or without ground to the nearest road edge (within 75 m); the server accepts the moved spot.
+- The story tracker leaves the screen once every act is done.
+- New item: Convoy document case.
+
 ## Story: "Patient Zero", Act I (new module wasteland_story)
 
 - A quest chain with a story: 12 steps across the map, three characters (Hollis the radio operator at Sandy Shores, Tomas Reyes at the old Grapeseed ranch, Mr. Crane), notes and recordings to find, and choices that change what happens and how it ends.

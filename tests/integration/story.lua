@@ -85,6 +85,7 @@ describe('story: Patient Zero, act I', function()
 
     it('Tomas: mercy needs antibiotics; then he gives the keycard', function()
         at(2432.0, 4972.0, 46.8)
+        ev('talk', 'tomas')
         ev('choose', 'mercy')
         expect(last('wasteland:story:client:reply').args[1].keep).toBe(true)
         expect(step()).toBe('tomas')
@@ -122,17 +123,64 @@ describe('story: Patient Zero, act I', function()
         ev('choose', 'share')
         expect(count('lazarus_serum')).toBe(3)
         expect(count('story_lazarus_sample')).toBe(0)
-        expect(state().done).toBe(true)
-        expect(state().ending.title).toBe('A Cure, Maybe')
-        expect(last('wasteland:story:client:stepDone').args[1].ending.title).toBe('A Cure, Maybe')
+        local done = last('wasteland:story:client:stepDone').args[1]
+        expect(done.ending.title).toBe('A Cure, Maybe'); expect(done.actDone).toBe(true)
     end)
 
-    it('the journal tells the whole story, with what you chose', function()
+    it('Act II starts after the ending card (intro, Hollis again)', function()
+        server:advance(8200)
+        expect(state().subtitle).toBe('Act II: The Company')
+        expect(step()).toBe('convoy')
+        expect(last('wasteland:story:client:intro').args[1].subtitle).toBe('Act II: The Company')
+    end)
+
+    it('Act II reacts to Act I (shared the vial), and plays through to its ending', function()
+        at(1855.5, 3688.0, 34.3)
+        ev('talk', 'hollis')
+        local text = ''
+        for _, l in ipairs(last('wasteland:story:client:dialogue').args[1].lines) do text = text .. l.text end
+        expect(text:find('Our medic is gone', 1, true) ~= nil).toBe(true)
+        expect(text:find('Remember Crane', 1, true)).toBe(nil)
+        ev('choose', 'go')
+        at(1985.0, 3053.0, 47.2); server:advance(1100)
+        expect(step()).toBe('guards')
+        local env = server.resources.wasteland_story.env
+        for _ = 1, 10 do env.TriggerEvent('wasteland:zombies:died', 'u', 'walker', nil, id, { x = 1985.0, y = 3050.0, z = 47.2 }) end
+        server:advance(100)
+        at(1991.0, 3049.0, 47.2); ev('collect', 'manifest')
+        expect(count('story_manifest')).toBe(1)
+        at(1993.0, 3051.5, 47.2); ev('read', 'manifest_read')
+        expect(step()).toBe('rook')
+        at(-1582.0, 2786.0, 17.0)
+        ev('talk', 'rook'); ev('choose', 'codes')
+        expect(step()).toBe('lighthouse')
+        at(3426.0, 5174.0, 7.4); server:advance(122000)
+        expect(step()).toBe('crane_log')
+        at(3420.0, 5168.0, 7.4); ev('read', 'crane_log')
+        at(1855.5, 3688.0, 34.3)
+        ev('talk', 'hollis')
+        text = ''
+        for _, l in ipairs(last('wasteland:story:client:dialogue').args[1].lines) do text = text .. l.text end
+        expect(text:find('left him bleeding', 1, true) ~= nil).toBe(true)
+        ev('choose', 'warn')
+        expect(count('armor_plate')).toBe(1)
+        expect(last('wasteland:story:client:stepDone').args[1].ending.title).toBe('Every Channel')
+        expect(state().done).toBe(true)   -- every act done: the tracker goes
+    end)
+
+    it('the journal tells both acts, with what you chose and the endings', function()
         ev('journal')
         local j = last('wasteland:story:client:journal').args[1]
-        expect(#j.entries).toBe(12)
-        expect(j.entries[8].text:find('eased his fever', 1, true) ~= nil).toBe(true)
-        expect(j.ending.title).toBe('A Cure, Maybe')
+        local headers, endings, all = 0, 0, ''
+        for _, e in ipairs(j.entries) do
+            if e.header then headers = headers + 1 end
+            if e.ending then endings = endings + 1 end
+            all = all .. (e.text or '')
+        end
+        expect(headers).toBe(2); expect(endings).toBe(2)
+        expect(all:find('eased his fever', 1, true) ~= nil).toBe(true)
+        expect(all:find('left him there', 1, true) ~= nil).toBe(true)
+        expect(j.ending.title).toBe('Every Channel')
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)

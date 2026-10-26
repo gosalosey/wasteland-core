@@ -15,8 +15,13 @@
         mount: function (el, d, screenApi) {
             api = screenApi;
             const list = h('div', { class: 'wsj-entries' });
-            (d.entries || []).forEach((e, i) => list.appendChild(h('div', { class: 'wsj-entry' },
-                h('div', { class: 'wsj-entry__title', text: (i + 1) + '. ' + e.title }), h('div', { class: 'wsj-entry__text', text: e.text }))));
+            let n = 0;
+            (d.entries || []).forEach((e) => {
+                if (e.header) { n = 0; list.appendChild(h('div', { class: 'wsj-act', text: e.header })); return; }
+                n += e.ending ? 0 : 1;
+                list.appendChild(h('div', { class: 'wsj-entry' + (e.ending ? ' is-ending' : '') },
+                    h('div', { class: 'wsj-entry__title', text: (e.ending ? '' : n + '. ') + e.title }), h('div', { class: 'wsj-entry__text', text: e.text })));
+            });
             if (!(d.entries || []).length) list.appendChild(h('div', { class: 'wsj-empty', text: 'Nothing written yet.' }));
             const now = d.ending
                 ? h('div', { class: 'wsj-now is-end' }, h('div', { class: 'wsj-now__k', text: 'Ending' }),
@@ -51,6 +56,9 @@
         '.wsj-entry__title { font-size: 14px; font-weight: 700; color: #d8cfae; }',
         '.wsj-entry__text { font-family: Georgia, serif; font-size: 14px; line-height: 1.5; color: rgba(236,232,218,0.85); }',
         '.wsj-empty { color: rgba(236,232,218,0.5); font-style: italic; }',
+        '.wsj-act { margin-top: 8px; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #e8c25a;',
+        '  border-bottom: 1px solid rgba(214,178,60,0.25); padding-bottom: 3px; }',
+        '.wsj-entry.is-ending .wsj-entry__title { color: #7fc75a; }',
         '.wsj-close { display: block; margin: 16px 0 0 auto; background: rgba(214,178,60,0.15); color: #ece8da; border: 1px solid rgba(214,178,60,0.5);',
         '  border-radius: 5px; padding: 6px 14px; cursor: pointer; }',
     ].join('\n');
