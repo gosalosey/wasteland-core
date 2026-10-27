@@ -1,7 +1,7 @@
 // wasteland_target :: html/target.js
 // The eye in the middle of the screen while Left Alt is held, and the
-// options for what the player looks at (scroll to choose, click or E).
-// Data: { active, selected, options = [{ label, icon }] }
+// options for what the player looks at (click one with the mouse, or scroll and press E).
+// Data: { active, selected, cursor, options = [{ label, icon }] }
 
 (function () {
     'use strict';
@@ -20,7 +20,8 @@
 
     const UI = window.WastelandUI;
     const h = UI.h;
-    let root;
+    let root, api = null;
+    function onKey(e) { if (api && (e.key === 'Alt' || e.key === 'Escape')) api.post('close'); }
 
     function render(data) {
         root.innerHTML = '';
@@ -28,23 +29,27 @@
         const eye = h('div', { class: 'wlt-eye' + (list.length ? ' has-target' : '') }, h('div', { class: 'wlt-eye__pupil' }));
         root.appendChild(eye);
         if (!list.length) return;
-        const box = h('div', { class: 'wlt-options' });
-        list.forEach((r) => box.appendChild(h('div', { class: 'wlt-option' + (r.selected ? ' is-selected' : '') },
+        const box = h('div', { class: 'wlt-options' + (data.cursor ? ' is-pointing' : '') });
+        list.forEach((r, i) => box.appendChild(h('div', { class: 'wlt-option' + (r.selected ? ' is-selected' : ''),
+            onclick: () => api && api.post('select', { index: i + 1 }),
+            onmouseenter: () => api && !r.selected && api.post('hover', { index: i + 1 }) },
             h('span', { class: 'wlt-option__icon', text: r.icon }), h('span', { text: r.label }))));
-        if (list.length > 1) box.appendChild(h('div', { class: 'wlt-hint', text: 'Scroll to choose · Click or E' }));
+        if (list.length > 1) box.appendChild(h('div', { class: 'wlt-hint', text: 'Click an option · or scroll and E' }));
         else box.appendChild(h('div', { class: 'wlt-hint', text: 'Click or E' }));
         root.appendChild(box);
     }
 
     UI.registerScreen('target', {
-        mount: function (el, data) {
+        mount: function (el, data, screenApi) {
+            api = screenApi;
+            document.addEventListener('keyup', onKey);
             root = h('div', { class: 'wlt-root' });
             el.appendChild(root);
             el.appendChild(h('style', { text: CSS }));
             render(data);
         },
         update: render,
-        unmount: function () { root = null; },
+        unmount: function () { document.removeEventListener('keyup', onKey); root = null; api = null; },
     });
 
     const CSS = [
@@ -59,6 +64,8 @@
         '  flex-direction: column; gap: 3px; min-width: 150px; }',
         '.wlt-option { display: flex; align-items: center; gap: 8px; padding: 5px 10px; font-size: 13px; color: #e6e6dc;',
         '  background: rgba(10,14,9,0.78); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; text-shadow: 0 1px 2px #000; }',
+        '.wlt-options.is-pointing { pointer-events: auto; }',
+        '.wlt-options.is-pointing .wlt-option { cursor: pointer; }',
         '.wlt-option.is-selected { border-color: #7fc75a; color: #fff; background: rgba(40,60,30,0.85); }',
         '.wlt-option__icon { width: 14px; text-align: center; color: #7fc75a; }',
         '.wlt-hint { font-size: 10px; color: rgba(230,230,220,0.6); padding-left: 2px; text-shadow: 0 1px 2px #000; }',

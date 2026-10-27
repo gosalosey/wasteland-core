@@ -23,6 +23,8 @@ local nextId = 0
 local holding = false
 local current = {}         -- options on screen: list of { reg, option, index }
 local selected = 1
+local clicked = nil      -- option index clicked with the mouse
+local pointing = false   -- the mouse cursor is up and the options can be clicked
 local currentHit = nil
 local lastKey = nil
 
@@ -144,7 +146,7 @@ local function show()
     if not uiRunning() then return end
     local labels = {}
     for i, c in ipairs(current) do labels[i] = { label = c.option.label, icon = c.option.icon } end
-    local data = { active = holding, options = labels, selected = selected }
+    local data = { active = holding, options = labels, selected = selected, cursor = pointing }
     if exports.wasteland_ui:IsOpen(SCREEN) then
         exports.wasteland_ui:Update(SCREEN, data)
     else
@@ -152,7 +154,18 @@ local function show()
     end
 end
 
+-- With options on screen the mouse cursor comes up so an option can be
+-- clicked; the camera stays still meanwhile so the target does not change.
+local function setPointing(on)
+    if pointing == on or not uiRunning() or not exports.wasteland_ui:IsOpen(SCREEN) then return end
+    pointing = on
+    exports.wasteland_ui:SetFocus(SCREEN, on, on)
+    SetNuiFocusKeepInput(on)
+    show()
+end
+
 local function hide()
+    if pointing then pointing = false; SetNuiFocusKeepInput(false) end
     if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end
 end
 
@@ -173,12 +186,12 @@ end
 
 local function canTarget()
     local ped = PlayerPedId()
-    if IsEntityDead(ped) or IsPedInAnyVehicle(ped, false) or IsPauseMenuActive() or IsNuiFocused() then return false end
+    if IsEntityDead(ped) or IsPedInAnyVehicle(ped, false) or IsPauseMenuActive() or (IsNuiFocused() and not pointing) then return false end
     local ok, ready = pcall(function() return exports.wasteland_players:IsReady() end)
     return not ok or ready -- without wasteland_players: always
 end
 
-local CONTROLS = { 24, 25, 140, 141, 142, 257, 263, 264, 14, 15, 16, 17, 37, 38, 44 }
+local CONTROLS = { 1, 2, 24, 25, 140, 141, 142, 257, 263, 264, 14, 15, 16, 17, 37, 38, 44 }
 local ATTACK = { 24, 25, 140, 141, 142, 257, 263, 264 }
 
 -- No shooting, aiming or melee: disabling the buttons alone is not enough
@@ -207,7 +220,8 @@ local function run()
         for _, c in ipairs(CONTROLS) do DisableControlAction(0, c, true) end
         DisablePlayerFiring(PlayerId(), true)
         sinceScan = sinceScan + GetFrameTime() * 1000
-        if sinceScan >= 100 then
+        if pointing and not IsDisabledControlPressed(0, 19) and not IsControlPressed(0, 19) then break end -- Alt let go
+        if sinceScan >= 100 and not pointing then
             sinceScan = 0
             currentHit = look()
             current = currentHit and Match.collect(registrations, currentHit, allowed(currentHit)) or {}
@@ -224,18 +238,31 @@ local function run()
             if IsDisabledControlJustPressed(0, 14) then selected = selected % #current + 1; moved = true end      -- wheel down
             if IsDisabledControlJustPressed(0, 15) then selected = (selected - 2) % #current + 1; moved = true end -- wheel up
             if moved then show() end
-            if IsDisabledControlJustPressed(0, 24) or IsDisabledControlJustPressed(0, 38) then
+            if not pointing then setPointing(true) end
+            if IsDisabledControlJustPressed(0, 38) or not pointing and IsDisabledControlJustPressed(0, 24) then
                 choose()
                 break
             end
         end
+        if clicked then
+            if current[clicked] then selected = clicked; choose() end
+            clicked = nil
+            break
+        end
         Citizen.Wait(0)
     end
-    holding = false
+    holding, clicked = false, nil
     current, currentHit, lastKey, selected = {}, nil, nil, 1
     hide()
     blockUntilReleased()
 end
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
+    if screen ~= SCREEN or not holding then return end
+    if action == 'select' and type(payload) == 'table' and tonumber(payload.index) then clicked = math.floor(tonumber(payload.index))
+    elseif action == 'hover' and type(payload) == 'table' and tonumber(payload.index) and current[math.floor(tonumber(payload.index))] then selected = math.floor(tonumber(payload.index)); show()
+    elseif action == 'close' then holding = false end
+end)
 
 RegisterCommand('+wl_target', function()
     if holding or not canTarget() then return end

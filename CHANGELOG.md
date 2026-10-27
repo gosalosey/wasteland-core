@@ -1,5 +1,9 @@
 # Changelog
 
+## Target: click an option with the mouse
+
+- While Left Alt is held and options are showing, the mouse cursor comes up and the camera holds still. Click an option to use it (hovering highlights it). Scroll + E still works. Let go of Alt (or press Esc) to close.
+
 ## Unreleased: zone trees and stumps sit lower
 
 - Zone trees are now placed 0.7 m into the ground (was 0.3) and stumps 0.6 m (was 0.3), so they no longer float on slopes. Rocks are unchanged.
