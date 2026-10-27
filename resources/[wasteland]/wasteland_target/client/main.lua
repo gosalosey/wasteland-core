@@ -160,12 +160,11 @@ local function setPointing(on)
     if pointing == on or not uiRunning() or not exports.wasteland_ui:IsOpen(SCREEN) then return end
     pointing = on
     exports.wasteland_ui:SetFocus(SCREEN, on, on)
-    SetNuiFocusKeepInput(on)
     show()
 end
 
 local function hide()
-    if pointing then pointing = false; SetNuiFocusKeepInput(false) end
+    pointing = false
     if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end
 end
 
@@ -220,7 +219,6 @@ local function run()
         for _, c in ipairs(CONTROLS) do DisableControlAction(0, c, true) end
         DisablePlayerFiring(PlayerId(), true)
         sinceScan = sinceScan + GetFrameTime() * 1000
-        if pointing and not IsDisabledControlPressed(0, 19) and not IsControlPressed(0, 19) then break end -- Alt let go
         if sinceScan >= 100 and not pointing then
             sinceScan = 0
             currentHit = look()
@@ -271,5 +269,7 @@ RegisterCommand('+wl_target', function()
     show()
     Citizen.CreateThread(run)
 end, false)
-RegisterCommand('-wl_target', function() holding = false end, false)
+-- While the cursor is up the game may report Alt as let go when the screen
+-- takes the keyboard; the screen tells us when it really is (action 'close').
+RegisterCommand('-wl_target', function() if not pointing then holding = false end end, false)
 RegisterKeyMapping('+wl_target', 'Target: look and interact (hold)', 'keyboard', 'LMENU')

@@ -1,5 +1,9 @@
 # Changelog
 
+## Target: fix the menu flashing and not being clickable
+
+- Holding Alt made the target menu flash on and off. When the mouse cursor came up, the game lost sight of Alt being held, closed the menu and opened it again. Now, while the cursor is up, the menu itself watches for Alt being let go (or Esc), and handles E and the scroll wheel too.
+
 ## Scrap weapons 1: Spiked baseball bat (awaiting in-game test)
 
 - New weapon `scrap_spiked_bat` in `wasteland_scrapweapons`: its own model (nails through the barrel, wire, duct-tape grip, old blood), icon, recipe (baseball bat + 10 nails + scrap metal + duct tape) and game weapon `WEAPON_WL_SPIKEDBAT`. Swings like the bat, hits 1.35x as hard. Holding, wear and repairs come from wasteland_weapons.

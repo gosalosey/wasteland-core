@@ -21,9 +21,25 @@
     const UI = window.WastelandUI;
     const h = UI.h;
     let root, api = null;
-    function onKey(e) { if (api && (e.key === 'Alt' || e.key === 'Escape')) api.post('close'); }
+    let last = null;   // the data shown, for E and the wheel while the cursor is up
+    // While the cursor is up the game gets no keys: letting go of Alt (or Esc)
+    // closes, E uses the highlighted option, the wheel moves the highlight.
+    function onKeyUp(e) { if (api && (e.key === 'Alt' || e.key === 'Escape')) api.post('close'); }
+    function onKeyDown(e) {
+        if (!api || !last || !last.cursor) return;
+        if (e.key === 'e' || e.key === 'E') api.post('select', { index: last.selected || 1 });
+        if (e.key === 'Alt') e.preventDefault();
+    }
+    function onWheel(e) {
+        if (!api || !last || !last.cursor) return;
+        const n = (last.options || []).length;
+        if (n < 2) return;
+        const cur = last.selected || 1;
+        api.post('hover', { index: e.deltaY > 0 ? cur % n + 1 : (cur + n - 2) % n + 1 });
+    }
 
     function render(data) {
+        last = data;
         root.innerHTML = '';
         const list = rows(data);
         const eye = h('div', { class: 'wlt-eye' + (list.length ? ' has-target' : '') }, h('div', { class: 'wlt-eye__pupil' }));
@@ -42,14 +58,19 @@
     UI.registerScreen('target', {
         mount: function (el, data, screenApi) {
             api = screenApi;
-            document.addEventListener('keyup', onKey);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('wheel', onWheel);
             root = h('div', { class: 'wlt-root' });
             el.appendChild(root);
             el.appendChild(h('style', { text: CSS }));
             render(data);
         },
         update: render,
-        unmount: function () { document.removeEventListener('keyup', onKey); root = null; api = null; },
+        unmount: function () {
+            document.removeEventListener('keyup', onKeyUp); document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('wheel', onWheel); root = null; api = null; last = null;
+        },
     });
 
     const CSS = [
