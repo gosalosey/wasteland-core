@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased: zone trees and stumps sit lower
+
+- Zone trees are now placed 0.7 m into the ground (was 0.3) and stumps 0.6 m (was 0.3), so they no longer float on slopes. Rocks are unchanged.
+
 ## Character creator: the camera never ends up inside a wall
 
 - The creator camera stands 3 m in front of the character. At the new creator spot it looked into a wall, so the character could not be seen. Now the creator tries the character's facing and then every 45 degrees, and turns the character to the first direction with clear space for the camera.

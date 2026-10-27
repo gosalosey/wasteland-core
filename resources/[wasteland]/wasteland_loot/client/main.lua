@@ -106,8 +106,8 @@ end)
 
 local zt = nil          -- { trees, zones, kinds = { tree|rock = { models, stump, marker, blips, distance, option, blip } } }
 local KIND_LOOK = {
-    tree = { fallback = 'prop_tree_pine_01', sink = 0.3, arrow = 3.2, ring = 2.6, rgb = { 60, 220, 90 }, sprite = 285, colour = 25, icon = '🪓' },
-    rock = { fallback = 'prop_rock_4_big', sink = 0.6, arrow = 4.0, ring = 4.0, rgb = { 240, 160, 50 }, sprite = 1, colour = 47, icon = '⛏' },
+    tree = { fallback = 'prop_tree_pine_01', sink = 0.7, stumpSink = 0.6, arrow = 3.2, ring = 2.6, rgb = { 60, 220, 90 }, sprite = 285, colour = 25, icon = '🪓' },
+    rock = { fallback = 'prop_rock_4_big', sink = 0.6, stumpSink = 0.3, arrow = 4.0, ring = 4.0, rgb = { 240, 160, 50 }, sprite = 1, colour = 47, icon = '⛏' },
 }
 local ztById = {}       -- id -> tree { id, x, y, z, m, down, entity, shown, target, gz }
 local ztBlips = {}
@@ -219,7 +219,7 @@ local function spawnTree(t)
     local hash = loadModel(name)
     if not hash and not t.down then hash = loadModel(look.fallback) end
     if not hash then t.shown = 'none'; return end
-    local e = CreateObject(hash, t.x, t.y, t.gz - (t.down and 0.3 or look.sink), false, false, false)
+    local e = CreateObject(hash, t.x, t.y, t.gz - (t.down and look.stumpSink or look.sink), false, false, false)
     SetModelAsNoLongerNeeded(hash)
     if not e or e == 0 then return end
     SetEntityHeading(e, (t.x * 37.0 + t.y * 11.0) % 360.0)
