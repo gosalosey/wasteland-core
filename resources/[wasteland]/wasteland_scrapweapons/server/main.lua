@@ -9,7 +9,14 @@ local RES = GetCurrentResourceName()
 
 local function log(fmt, ...) print(('[%s] ' .. fmt):format(RES, ...)) end
 
-local function started(res) return GetResourceState(res) == 'started' end
+-- A module's resource can be started before the module itself is ready
+-- (settings, database); only register with modules that are running. The
+-- moduleState handler below registers again the moment each one is.
+local function started(res, module)
+    if GetResourceState(res) ~= 'started' then return false end
+    local ok, running = pcall(function() return exports.wasteland_core:IsModuleRunning(module) end)
+    return ok and running == true
+end
 
 local function call(res, fn, ...)
     local args = { ... }
@@ -19,7 +26,7 @@ local function call(res, fn, ...)
 end
 
 local function registerItems()
-    if not started('wasteland_inventory') then return 0 end
+    if not started('wasteland_inventory', 'inventory') then return nil end
     local n = 0
     for name, w in pairs(WLSW.catalog) do
         local ok, err = call('wasteland_inventory', 'RegisterItem', name, w.item)
@@ -29,7 +36,7 @@ local function registerItems()
 end
 
 local function registerWeapons()
-    if not started('wasteland_weapons') then return 0 end
+    if not started('wasteland_weapons', 'weapons') then return nil end
     local n = 0
     for name, w in pairs(WLSW.catalog) do
         local ok, err = call('wasteland_weapons', 'RegisterWeapon', name, w.weapon)
@@ -39,7 +46,7 @@ local function registerWeapons()
 end
 
 local function registerRecipes()
-    if not started('wasteland_crafting') then return 0 end
+    if not started('wasteland_crafting', 'crafting') then return nil end
     local n = 0
     for name, w in pairs(WLSW.catalog) do
         if w.recipe then
@@ -51,10 +58,12 @@ local function registerRecipes()
 end
 
 local function registerAll()
-    local items, weapons, recipes = registerItems(), registerWeapons(), registerRecipes()
+    local items = registerItems()
+    if not items then return end   -- inventory not running yet: its moduleState event brings us back
+    local weapons, recipes = registerWeapons(), registerRecipes()
     local total = 0
     for _ in pairs(WLSW.catalog) do total = total + 1 end
-    log('%d weapon(s) in the catalog: %d item(s), %d weapon(s), %d recipe(s) registered', total, items, weapons, recipes)
+    log('%d weapon(s) in the catalog: %d item(s), %d weapon(s), %d recipe(s) registered', total, items, weapons or 0, recipes or 0)
 end
 
 -- A module (re)started: what it holds was reset, so register again (in order:

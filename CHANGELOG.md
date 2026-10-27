@@ -1,5 +1,11 @@
 # Changelog
 
+## Fix: script errors from wasteland_scrapweapons at server start
+
+- On start, wasteland_scrapweapons registered its items while the inventory module was still loading its settings, so `RegisterItem` crashed (`attempt to index a nil value (field 'cfg')`) once per weapon. Items still got registered a moment later, but the console filled with errors.
+- `wasteland_inventory` `RegisterItem` / `RegisterUsable` now answer "inventory module is not running yet" instead of crashing.
+- `wasteland_scrapweapons` now registers only with modules that are running (core `IsModuleRunning`); each module's "running" event registers them as soon as it is ready. The start line is printed once everything is in.
+
 ## Improvised double-barrel: new look from the second reference picture
 
 - Rebuilt after the second reference: two thick barrels in mottled tan and green camo paint with a coupling collar, a long receiver in chipped red paint with a ribbed side panel and two spring hammers on top, a bent-rod trigger guard, and a brown stock with a red-painted wrist and wide white bandage wraps. Gameplay unchanged.

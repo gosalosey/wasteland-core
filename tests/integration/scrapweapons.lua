@@ -204,6 +204,16 @@ describe('scrap weapons: registration', function()
         expect(held and held.item).toBe('scrap_test_club')
     end)
 
+    it('before the inventory module is running, RegisterItem says so instead of crashing', function()
+        local inv = server.resources.wasteland_inventory.env.WLI
+        local errors = #server.scriptErrors
+        inv.M.active = false
+        local ok, err = server:export('wasteland_inventory', 'RegisterItem', 'scrap_early', { label = 'Early', category = 'weapon' })
+        inv.M.active = true
+        expect(ok).toBe(false); expect(err:find('not running', 1, true) ~= nil).toBe(true)
+        expect(#server.scriptErrors).toBe(errors)
+    end)
+
     it('registering again (a restart) is allowed; bad definitions are refused with a reason', function()
         env.TriggerEvent('wasteland:core:moduleState', 'inventory', 'running'); server:advance(100)
         local ok, err = server:export('wasteland_weapons', 'RegisterWeapon', 'scrap_nothing', { hash = 'WEAPON_X' })

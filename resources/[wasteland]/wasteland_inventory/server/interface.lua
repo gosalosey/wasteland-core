@@ -203,6 +203,7 @@ end)
 --- RegisterItem(name, definition) -> ok, err   (modules adding their items)
 WLI.itemOwners = WLI.itemOwners or {}   -- item -> resource that registered it
 exports('RegisterItem', function(name, def)
+    if inactive() then return false, 'inventory module is not running yet' end
     local d, err = WLI.validateItem(Wasteland.Schema(), name, def)
     if not d then return false, err end
     -- a resource may replace an item it registered itself (after a restart)
@@ -217,6 +218,7 @@ end)
 --- RegisterUsable(name, handler(source, stack, inventoryId, targetUid?) -> consumed | false, message)
 --- targetUid: the item the player chose to use it on ("Repair with ..."), checked by the handler.
 exports('RegisterUsable', function(name, handler)
+    if inactive() then return false, 'inventory module is not running yet' end
     if not WLI.defs[name] then return false, string.format('unknown item "%s"', tostring(name)) end
     WLI.usable[name] = handler
     Interface.sendDefinitions()
