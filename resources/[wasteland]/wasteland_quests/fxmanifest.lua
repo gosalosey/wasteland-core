@@ -29,4 +29,5 @@ client_scripts {
 files {
     'html/board.js',
     'html/tracker.js',
+    'html/log.js',
 }

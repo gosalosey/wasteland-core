@@ -59,42 +59,84 @@ end
 -- What the player sees
 -------------------------------------------------------------------------------
 
-local function objectivesOf(src, id, quest, progress)
+local function offers(quest, campId)
+    if not quest.camps then return true end
+    for _, c in ipairs(quest.camps) do if c == campId then return true end end
+    return false
+end
+-- What the crafting menu says about an item / recipe: craftable? learned?
+local function recipesOf(src)
+    if GetResourceState('wasteland_crafting') ~= 'started' then return {} end
+    local ok, list = pcall(function() return exports.wasteland_crafting:GetRecipeSummary(src) end)
+    local out = {}
+    for _, r in ipairs(ok and list or {}) do out[r.name] = r end
+    return out
+end
+
+local function objectivesOf(src, id, quest, progress, recipes)
     local out = {}
     for i, o in ipairs(quest.objectives) do
         local have, n = Rules.objective(quest, progress, i, countFor(src))
+        local r = recipes and recipes[o.type == 'craft' and o.recipe or o.item]
         out[i] = { text = Rules.text(o, have, n, objectiveLabel(o)), done = have >= n,
-            coords = (o.type == 'visit' and o.coords) or o.near or nil }
+            coords = (o.type == 'visit' and o.coords) or o.near or nil,
+            how = Rules.hint(o, { itemLabel = objectiveLabel(o), craftable = r ~= nil, needsBlueprint = r ~= nil and not r.known }) }
     end
     return out
+end
+
+-- Camps a quest can be handed in at: { label, x, y, z } (a trader of each).
+local function handInCamps(quest)
+    if GetResourceState('wasteland_camps') ~= 'started' then return {} end
+    local ok, list = pcall(function() return exports.wasteland_camps:GetCamps() end)
+    local out = {}
+    for _, c in ipairs(ok and list or {}) do
+        if offers(quest, c.id) and c.traders[1] then
+            local t = c.traders[1].coords
+            out[#out + 1] = { label = c.label, x = t.x, y = t.y, z = t.z }
+        end
+    end
+    return out
+end
+
+local function rewardsText(q)
+    local out = {}
+    if q.rewards.cash and q.rewards.cash > 0 then out[#out + 1] = '$' .. q.rewards.cash end
+    for _, it in ipairs(q.rewards.items) do out[#out + 1] = it.count .. ' x ' .. itemLabel(it.name) end
+    return out
+end
+
+-- The active quests in full: objectives with how-to lines, when it was
+-- taken, rewards, the camps to hand it in at. (The tracker and /quest.)
+local function activeList(src, s)
+    local list = {}
+    local ids = {}
+    for id in pairs(s.active) do ids[#ids + 1] = id end
+    table.sort(ids)
+    local recipes = recipesOf(src)
+    for _, id in ipairs(ids) do
+        local q = M.config.quests[id]
+        if q then
+            list[#list + 1] = { id = id, label = q.label, description = q.description,
+                objectives = objectivesOf(src, id, q, s.active[id].progress, recipes),
+                ready = Rules.complete(q, s.active[id].progress, countFor(src)),
+                startedAt = s.active[id].startedAt, rewards = rewardsText(q), handIn = handInCamps(q) }
+        end
+    end
+    return list
 end
 
 -- The tracker: active quests and their objectives.
 local function sendTracker(src)
     local s = stateOf(src)
     if not s then return end
-    local list = {}
-    local ids = {}
-    for id in pairs(s.active) do ids[#ids + 1] = id end
-    table.sort(ids)
-    for _, id in ipairs(ids) do
-        local q = M.config.quests[id]
-        if q then
-            list[#list + 1] = { id = id, label = q.label, objectives = objectivesOf(src, id, q, s.active[id].progress),
-                ready = Rules.complete(q, s.active[id].progress, countFor(src)) }
-        end
-    end
+    local list = activeList(src, s)
     local key = json.encode(list)
     if lastSent[src] == key then return end
     lastSent[src] = key
     TriggerClientEvent('wasteland:quests:client:tracker', src, list)
 end
 
-local function offers(quest, campId)
-    if not quest.camps then return true end
-    for _, c in ipairs(quest.camps) do if c == campId then return true end end
-    return false
-end
 
 local function campOf(src, campId)
     if GetResourceState('wasteland_camps') ~= 'started' then return nil end
@@ -125,7 +167,7 @@ local function boardData(src, camp)
         for _, it in ipairs(q.rewards.items) do rewards[#rewards + 1] = it.count .. ' x ' .. itemLabel(it.name) end
         local progress = s.active[id] and s.active[id].progress or Rules.fresh(q)
         out[#out + 1] = { id = id, label = q.label, description = q.description, status = status, minutes = minutes,
-            handInHere = offers(q, camp.id), objectives = objectivesOf(src, id, q, progress), rewards = rewards }
+            handInHere = offers(q, camp.id), objectives = objectivesOf(src, id, q, progress, recipesOf(src)), rewards = rewards }
     end
     local active = 0
     for _ in pairs(s.active) do active = active + 1 end
@@ -385,6 +427,33 @@ M.netEvent('wasteland:quests:server:givers', { rateLimit = { burst = 3, perSecon
         out[#out + 1] = { id = c.id, label = c.label, traders = spots }
     end
     TriggerClientEvent('wasteland:quests:client:givers', src, out)
+end)
+
+-- The /quest screen: the story's current step, every active job in full,
+-- and when finished jobs can be taken again.
+M.netEvent('wasteland:quests:server:log', { rateLimit = { burst = 3, perSecond = 1 } }, function(src)
+    local s = stateOf(src)
+    if not s then return end
+    local now = nowUnix()
+    local again = {}
+    for id, q in pairs(M.config.quests) do
+        local status, minutes = Rules.status(id, q, s, now, countFor(src))
+        if status == 'cooldown' then
+            local camps = {}
+            for _, c in ipairs(handInCamps(q)) do camps[#camps + 1] = c.label end
+            again[#again + 1] = { label = q.label, minutes = minutes, camps = camps }
+        end
+    end
+    table.sort(again, function(a, b) return a.minutes < b.minutes end)
+    local story
+    if GetResourceState('wasteland_story') == 'started' then
+        local ok, v = pcall(function() return exports.wasteland_story:GetStoryView(src) end)
+        if ok and type(v) == 'table' and not v.done then story = v end
+    end
+    local active = 0
+    for _ in pairs(s.active) do active = active + 1 end
+    TriggerClientEvent('wasteland:quests:client:log', src, { now = now, quests = activeList(src, s), again = again, story = story,
+        active = active, maxActive = M.config.maxActive })
 end)
 
 M.netEvent('wasteland:quests:server:tracker', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)

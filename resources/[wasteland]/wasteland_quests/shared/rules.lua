@@ -99,4 +99,37 @@ function Rules.text(o, have, n, itemLabel)
     return '?'
 end
 
+--- How to do an objective, one short line for the tracker and the job log.
+--- info: { itemLabel, craftable = bool, needsBlueprint = bool }
+function Rules.hint(o, info)
+    info = info or {}
+    local what = info.itemLabel or o.item or o.recipe
+    if o.type == 'bring' then
+        return string.format('Carry %s back to camp. %s', what,
+            info.craftable and 'Found while looting, or craft it (K).' or 'Found while looting.')
+    end
+    if o.type == 'kill' then
+        if o.near then return string.format('Kill them near %s (marked on your map).', o.label or 'the marked place') end
+        return 'Kill zombies anywhere; every kill counts.'
+    end
+    if o.type == 'visit' then return string.format('Go to %s: marked on your map with a route.', o.label or 'the marked place') end
+    if o.type == 'search' then
+        return string.format('Search %s: hold Left Alt on one and choose Search.', o.label or (o.container and (o.container .. 's')) or 'containers')
+    end
+    if o.type == 'craft' then
+        return string.format('Craft %s in the crafting menu (K).%s', what, info.needsBlueprint and ' You need its blueprint first.' or '')
+    end
+    return ''
+end
+
+--- "just now", "5 min", "2 h 10 min" (how long ago, or how long until).
+function Rules.duration(seconds)
+    seconds = math.max(0, math.floor(seconds or 0))
+    if seconds < 60 then return 'just now' end
+    local m = math.floor(seconds / 60)
+    if m < 60 then return m .. ' min' end
+    local hrs = math.floor(m / 60)
+    return string.format('%d h %d min', hrs, m % 60)
+end
+
 return Rules

@@ -104,6 +104,22 @@ describe('quests', function()
         expect(t[1].objectives[1].text).toBe('Bring Scrap metal 3/3'); expect(t[1].ready).toBe(true)
     end)
 
+    it('the tracker says how to do it, when it was taken, and where to hand it in', function()
+        local t = tracker(server, id)
+        expect(t[1].objectives[1].how).toContain('Carry Scrap metal back to camp')
+        expect(type(t[1].startedAt)).toBe('number')
+        expect(t[1].rewards[1]).toBe('$50')
+        expect(t[1].handIn[1].label).toBe('Base Camp')
+    end)
+
+    it('/quest: the log has the jobs in full', function()
+        server:clientEvent(id, 'wasteland:quests:server:log'); server:advance(200)
+        local l = server:clientEventsFor(id, 'wasteland:quests:client:log')
+        local d = l[#l].args[1]
+        expect(d.quests[1].label).toBe('Scrap'); expect(d.active).toBe(1); expect(d.maxActive).toBe(2)
+        expect(#d.again).toBe(0)
+    end)
+
     it('only so many jobs at once', function()
         act(server, id, 'accept', 'hunt')
         expect(act(server, id, 'accept', 'make').message).toBe('You can only have 2 jobs at once.')
@@ -117,6 +133,10 @@ describe('quests', function()
         expect(I(server, 'GetItemCount', id, 'duct_tape')).toBe(1)
         expect(quest(d, 'scrap').status).toBe('cooldown'); expect(quest(d, 'scrap').minutes).toBe(60)
         expect(act(server, id, 'accept', 'scrap').message).toBe('Come back in 60 min.')
+        server:clientEvent(id, 'wasteland:quests:server:log'); server:advance(200)
+        local l = server:clientEventsFor(id, 'wasteland:quests:client:log')
+        local again = l[#l].args[1].again
+        expect(again[1].label).toBe('Scrap'); expect(again[1].minutes).toBe(60)
     end)
 
     it('kills count only when this player killed the zombie', function()

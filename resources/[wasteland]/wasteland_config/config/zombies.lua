@@ -94,7 +94,7 @@ return {
         lifetimeMinutes = 15,
         items = {
             { name = 'cash', min = 5, max = 40, weight = 30 },
-            { name = 'ammo_9mm', min = 3, max = 10, weight = 15 },
+            { name = 'ammo_12g', min = 2, max = 6, weight = 15 },
             { name = 'ammo_12g', min = 2, max = 5, weight = 8 },
             { name = 'bandage', min = 1, max = 2, weight = 15 },
             { name = 'canned_beans', min = 1, max = 1, weight = 12 },

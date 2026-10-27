@@ -35,7 +35,7 @@ return {
 
     -- What a bandit drops (each line: chance 0-1).
     banditDrop = {
-        { name = 'ammo_9mm', min = 6, max = 15, chance = 0.8 },
+        { name = 'ammo_12g', min = 4, max = 10, chance = 0.8 },
         { name = 'cash', min = 10, max = 60, chance = 0.6 },
         { name = 'bandage', min = 1, max = 1, chance = 0.25 },
         { name = 'painkillers', min = 1, max = 1, chance = 0.15 },

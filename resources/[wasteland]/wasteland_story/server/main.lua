@@ -529,6 +529,16 @@ RegisterCommand('story', function(source, args)
 end, false)
 
 --- GetStoryState(source) -> { act, step, flags, ending, done = steps done in this act } | nil
+--- GetStoryView(source) -> { title, subtitle, done, stepNo, steps, actNo, acts, step = { title, objective, type, where, count, progress } } | nil
+--- (what the tracker shows; the /quest screen in wasteland_quests uses it)
+exports('GetStoryView', function(src)
+    local cid = characterOf(tonumber(src))
+    if not cid or not data[cid] then return nil end
+    local v = view(cid)
+    v.npcs = nil
+    return v
+end)
+
 exports('GetStoryState', function(src)
     local cid = characterOf(src)
     if not cid or not data[cid] then return nil end

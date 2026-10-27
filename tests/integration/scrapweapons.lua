@@ -273,4 +273,23 @@ describe('scrap weapons replace the standard ones', function()
         end
         expect(table.concat(found, ', ')).toBe('')
     end)
+
+    it('no other config file hands them out either (events, quests, zombie bodies, ...)', function()
+        local found = {}
+        local skip = { ['inventory.lua'] = true, ['weapons.lua'] = true }   -- definitions: owned ones keep working
+        local BS = string.char(92)
+        local p = io.popen(package.config:sub(1, 1) == BS and ('dir /b "' .. (CONFIG:gsub('/', BS)) .. '*.lua"') or ('ls "' .. CONFIG .. '"'))
+        for f in p:lines() do
+            if f:match('%.lua$') and not skip[f] then
+                local h = assert(io.open(CONFIG .. f, 'rb')); local src = h:read('a'); h:close()
+                for line in src:gmatch('[^\n]+') do
+                    local name = line:match("name = '([%w_]+)'")
+                    -- trader lines that only buy from players are fine; so are tool lists
+                    if name and RETIRED[name] and not line:match('sell = %d+ }%s*,?%s*$') then found[#found + 1] = f .. ': ' .. name end
+                end
+            end
+        end
+        p:close()
+        expect(table.concat(found, ', ')).toBe('')
+    end)
 end)

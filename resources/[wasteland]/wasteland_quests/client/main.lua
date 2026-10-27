@@ -3,7 +3,10 @@
 -- the quest tracker on screen and map markers for quest places.
 -- The server decides everything.
 
-local BOARD, TRACKER = 'questBoard', 'questTracker'
+local BOARD, TRACKER, LOG = 'questBoard', 'questTracker', 'questLog'
+local showTracker
+local tracked = {}        -- the active quests last sent (the tracker adds distances to them)
+local hideTracker = false  -- the player hid the on-screen tracker (/quest -> Hide)
 local givers = nil
 local targetIds = {}
 local blips = {}
@@ -73,6 +76,41 @@ end)
 -- Tracker and map markers
 -------------------------------------------------------------------------------
 
+-- Distance (m) from the player to the nearest of the camps a quest is handed in at.
+local function nearestCamp(q, p)
+    local best, bestD
+    for _, c in ipairs(q.handIn or {}) do
+        local d = #(p - vector3(c.x, c.y, c.z))
+        if not bestD or d < bestD then best, bestD = c, d end
+    end
+    return best, bestD
+end
+
+local function trackerData()
+    local p = GetEntityCoords(PlayerPedId())
+    local now = GetCloudTimeAsInt()
+    local out = {}
+    for i, q in ipairs(tracked) do
+        local c, d = nearestCamp(q, p)
+        out[i] = { label = q.label, ready = q.ready, objectives = q.objectives,
+            ago = q.startedAt and WLQ.Rules.duration(now - q.startedAt) or nil,
+            handIn = c and { label = c.label, metres = math.floor(d) } or nil }
+    end
+    return { quests = out }
+end
+
+showTracker = function()
+    if not uiRunning() then return end
+    local open = exports.wasteland_ui:IsOpen(TRACKER)
+    if #tracked == 0 or hideTracker then
+        if open then exports.wasteland_ui:Close(TRACKER) end
+    elseif open then
+        exports.wasteland_ui:Update(TRACKER, trackerData())
+    else
+        exports.wasteland_ui:Open(TRACKER, { script = 'html/tracker.js', data = trackerData(), focus = false, cursor = false })
+    end
+end
+
 local function clearBlips()
     for _, b in ipairs(blips) do RemoveBlip(b) end
     blips = {}
@@ -101,14 +139,8 @@ RegisterNetEvent('wasteland:quests:client:tracker', function(list)
             end
         end
     end
-    if not uiRunning() then return end
-    if #list == 0 then
-        if exports.wasteland_ui:IsOpen(TRACKER) then exports.wasteland_ui:Close(TRACKER) end
-    elseif exports.wasteland_ui:IsOpen(TRACKER) then
-        exports.wasteland_ui:Update(TRACKER, { quests = list })
-    else
-        exports.wasteland_ui:Open(TRACKER, { script = 'html/tracker.js', data = { quests = list }, focus = false, cursor = false })
-    end
+    tracked = list
+    showTracker()
 end)
 
 -------------------------------------------------------------------------------
@@ -145,4 +177,56 @@ AddEventHandler('onResourceStop', function(res)
     clearBlips()
     closeBoard()
     if uiRunning() and exports.wasteland_ui:IsOpen(TRACKER) then exports.wasteland_ui:Close(TRACKER) end
+    if uiRunning() and exports.wasteland_ui:IsOpen(LOG) then exports.wasteland_ui:Close(LOG) end
+end)
+
+-------------------------------------------------------------------------------
+-- /quest (and J): everything you are working on and how to finish it
+-------------------------------------------------------------------------------
+
+local function openLog()
+    if not uiRunning() then return end
+    local ok, ready = pcall(function() return exports.wasteland_players:IsReady() end)
+    if not (ok and ready) then return end
+    TriggerServerEvent('wasteland:quests:server:log')
+end
+
+RegisterCommand('quest', function()
+    if uiRunning() and exports.wasteland_ui:IsOpen(LOG) then exports.wasteland_ui:Close(LOG) else openLog() end
+end, false)
+RegisterKeyMapping('quest', 'Quests: what you are doing and how (open / close)', 'keyboard', 'J')
+
+RegisterNetEvent('wasteland:quests:client:log', function(d)
+    if type(d) ~= 'table' or not uiRunning() then return end
+    local p = GetEntityCoords(PlayerPedId())
+    for _, q in ipairs(d.quests or {}) do
+        for _, c in ipairs(q.handIn or {}) do c.metres = math.floor(#(p - vector3(c.x, c.y, c.z))) end
+        table.sort(q.handIn or {}, function(a, b) return a.metres < b.metres end)
+        q.ago = q.startedAt and WLQ.Rules.duration(d.now - q.startedAt) or nil
+    end
+    d.trackerHidden = hideTracker
+    if exports.wasteland_ui:IsOpen(LOG) then exports.wasteland_ui:Update(LOG, d)
+    else exports.wasteland_ui:Open(LOG, { script = 'html/log.js', data = d }) end
+end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action)
+    if screen ~= LOG then return end
+    if action == 'close' then exports.wasteland_ui:Close(LOG)
+    elseif action == 'toggleTracker' then
+        hideTracker = not hideTracker
+        SetResourceKvpInt('wl_quest_tracker_hidden', hideTracker and 1 or 0)
+        showTracker()
+        openLog()
+    end
+end)
+
+-- The tracker's distances and "taken ... ago" keep up as you move.
+Citizen.CreateThread(function()
+    hideTracker = GetResourceKvpInt('wl_quest_tracker_hidden') == 1
+    while true do
+        Citizen.Wait(2000)
+        if #tracked > 0 and not hideTracker and uiRunning() and exports.wasteland_ui:IsOpen(TRACKER) then
+            exports.wasteland_ui:Update(TRACKER, trackerData())
+        end
+    end
 end)

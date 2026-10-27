@@ -38,7 +38,7 @@ return {
             label = 'Thin the herd', cooldownMinutes = 60,
             description = 'Too many of them out there. Kill zombies anywhere.',
             objectives = { { type = 'kill', count = 10 } },
-            rewards = { cash = 120, items = { { name = 'ammo_9mm', count = 15 } } },
+            rewards = { cash = 120, items = { { name = 'ammo_12g', count = 10 } } },
         },
         field_dressing = {
             label = 'Field dressings', cooldownMinutes = 90,

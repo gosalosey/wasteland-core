@@ -1,5 +1,12 @@
 # Changelog
 
+## Quests: /quest screen and a better tracker
+
+- `/quest` (or J) opens a quest screen: your current story step (Patient Zero) at the top, then every job you have taken in full: what it is, each objective with its progress and how to do it, the camps to hand it in at and how far they are, the reward and when you took it, and under "Done recently" when finished jobs can be taken again. "Hide tracker" / "Show tracker" turns the on-screen tracker off and on.
+- The on-screen job tracker shows how long ago each job was taken, a "how to" line under the objective you are on (where to find the item, what to search, where to go), and when a job is done, the camp to hand it in at with the distance (updates as you move).
+- New export `wasteland_story` `GetStoryView(source)`; the job board shows the how-to lines too.
+- Retired ammo leftovers fixed: the "Thin the herd" job, event loot and zombie bodies gave 9mm; they give 12 gauge now. A test checks every config file for retired weapons and ammo.
+
 ## Vehicles: lock the doors from the inside (L)
 
 - Sitting in any seat, press L to lock or unlock the doors; no key needed. The server checks you are really in that vehicle.
