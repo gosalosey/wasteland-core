@@ -1,5 +1,9 @@
 # Changelog
 
+## Improvised double-barrel: new look from the second reference picture
+
+- Rebuilt after the second reference: two thick barrels in mottled tan and green camo paint with a coupling collar, a long receiver in chipped red paint with a ribbed side panel and two spring hammers on top, a bent-rod trigger guard, and a brown stock with a red-painted wrist and wide white bandage wraps. Gameplay unchanged.
+
 ## Improvised double-barrel: look, third pass
 
 - The stock is now wood wound in separate overlapping rag strips (red, green, grey, tan) instead of a flat camo pattern, and runs right up to the breech, bolted on with steel side plates (the plain bar is gone). The breech is a pipe coupling round each barrel end instead of a box; the trigger guard is a bent rod. Barrels and the brass shell unchanged.

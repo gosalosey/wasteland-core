@@ -144,10 +144,10 @@ WLSW.catalog = {
         status = 'approved',
     },
 
-    -- 10. Improvised double-barrel: two thick pipes painted teal-green and
-    -- worn to rust, a chunky breech block with a spare brass shell wired on
-    -- top, a long rag-wrapped stock. The game's sawed-off: two shells, the
-    -- barrels swing open to reload.
+    -- 10. Improvised double-barrel: two thick pipes in tan and green camo, a
+    -- chipped red receiver with spring hammers, a brown stock with white
+    -- bandage wraps. The game's sawed-off: two shells, the barrels swing open
+    -- to reload.
     scrap_double_barrel = {
         item = { label = 'Improvised double-barrel', category = 'weapon', width = 5, height = 2, weight = 2.3, durability = 200,
             description = 'Two pipes, two hammers, two shells. Break it open and load both.' },
