@@ -1,5 +1,9 @@
 # Changelog
 
+## Scrap weapons 4: Scrap pump shotgun (awaiting in-game test)
+
+- New weapon `scrap_pump_shotgun`: pipe barrel over a pipe magazine tube, a welded sheet-steel receiver with rivets and an ejection port, a pump made from wood wrapped in old inner tube on two steel rods, a plank stock with a taped wrist, tyre-rubber butt pad and spare shells strapped on. Real pump action (the game's pump shotgun), holds 4 shells of 12 gauge. Recipe: 10 scrap metal + 2 metal sheet + 2 wood planks + 4 nails + 2 duct tape.
+
 ## Target: fix the cursor taking all input (Alt release lost)
 
 - Root cause of the target getting stuck or flashing: "keep game input while the screen has the mouse" only applies to the resource that owns the screen, and our screens live in wasteland_ui, but wasteland_target was the one asking for it. So it never applied, and letting go of Alt never reached the game. `wasteland_ui` `SetFocus(name, focus, cursor, keepInput)` now takes it (other callers unchanged).

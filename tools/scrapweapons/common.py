@@ -236,3 +236,35 @@ def renders(o, out, piece, views, icon_rot, icon_scale):
     mid = sum(bb, Vector()) / 8
     cam.data.type = 'ORTHO'; cam.data.ortho_scale = icon_scale
     shot(os.path.join(out, piece + '_icon.png'), mid, (0, 0, 2.0), 50, 256, 256, transparent=True)
+
+
+# ----------------------------------------------------------------------------- looks shared by the guns
+# (the approved pipe shotgun's palette: dark old steel, darker rusty bands)
+def old_steel():
+    m = Mat('steel')
+    base = m.ramp(m.noise(40, 6), (0.035, 0.028, 0.022, 1), (0.09, 0.075, 0.06, 1), 0.3, 0.75)
+    rust = m.mix(m.tex('Rust004', 22.0), (0.55, 0.5, 0.45, 1), 1.0, 'MULTIPLY')
+    c = m.mix(base, rust, m.above(m.noise(8, 8), 0.5))
+    return m.done(m.grime(c, 0.7, 20), 0.6)
+
+
+def band_steel():
+    m = Mat('bands')
+    c = m.mix(m.tex('Rust004', 35.0), (0.4, 0.33, 0.28, 1), 1.0, 'MULTIPLY')
+    return m.done(m.grime(c, 0.6), 0.55)
+
+
+def flat_xz(points, thick, mat, bone, bevel=0.0, y=0.0, segments=1):
+    """A flat shape drawn in the XZ plane (x, z), thick along Y, centred on y."""
+    bm = bmesh.new()
+    vs = [bm.verts.new((x, y - thick / 2, z)) for x, z in points]
+    f = bm.faces.new(vs)
+    ext = bmesh.ops.extrude_face_region(bm, geom=[f])
+    bmesh.ops.translate(bm, verts=[v for v in ext['geom'] if isinstance(v, bmesh.types.BMVert)], vec=(0, thick, 0))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    if bevel > 0:
+        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=bevel, segments=segments, affect='EDGES', clamp_overlap=True)
+    o = add(bm, 'flat', mat, bone)
+    if segments > 1:
+        for p in o.data.polygons: p.use_smooth = True
+    return o

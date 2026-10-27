@@ -3523,3 +3523,4 @@ moonshine_still
 scrap_spiked_bat
 scrap_pipe_shotgun
 scrap_axe
+scrap_pump_shotgun

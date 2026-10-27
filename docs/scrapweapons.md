@@ -39,7 +39,7 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 1 | Spiked Baseball Bat | `scrap_spiked_bat` | approved (tested on the server) |
 | 2 | Pipe Shotgun | `scrap_pipe_shotgun` | approved (tested on the server) |
 | 3 | Scrap-Made Axe | `scrap_axe` | approved (tested on the server) |
-| 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | not started |
+| 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | **awaiting your test** |
 | 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | not started |
 | 6 | Pipe Club | `scrap_pipe_club` | not started |
 | 7 | Scrap Machete | `scrap_machete` | not started |
@@ -115,6 +115,22 @@ python tools/scrapweapons/make_meta.py <dlc data> WEAPON_DBSHOTGUN WEAPON_WL_PIP
 Build: `build_scrap_axe.py`, then `export_weapon.py -- <w_me_hatchet.ydr> <out> scrap_axe wl_w_me_scrapaxe`,
 `make_meta.py <spupgrade data> WEAPON_HATCHET WEAPON_WL_SCRAPAXE wl_w_me_scrapaxe WT_WL_SCRAPAXE <meta>`
 (game data: weaponhatchet.meta as weapons.meta, and the spupgrade weaponanimations / weaponarchetypes).
+
+## 4. Scrap Pump Shotgun
+
+![scrap pump shotgun](images/scrapweapons/scrap_pump_view2.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_pump_shotgun` (5 x 2, 2.2 kg, 250 shots durability) |
+| Game weapon | `WEAPON_WL_SCRAPPUMP`, model `wl_w_sg_scrappump` |
+| Based on | `WEAPON_PUMPSHOTGUN`: its handling, damage, sound and pump animation (the pump is on Gun_Cock1, so it slides); 4 shells |
+| Ammo | `ammo_12g` |
+| Recipe | 10 scrap metal + 2 metal sheet + 2 wood planks + 4 nails + 2 duct tape, 15 s |
+| Model | 3,196 triangles |
+
+Build: `build_scrap_pump.py`, then `export_weapon.py -- <w_sg_pumpshotgun.ydr> <out> scrap_pump wl_w_sg_scrappump`,
+`make_meta.py <update.rpf data> WEAPON_PUMPSHOTGUN WEAPON_WL_SCRAPPUMP wl_w_sg_scrappump WT_WL_SCRAPPUMP <meta> ClipSize=4`.
 
 ## Licensing
 

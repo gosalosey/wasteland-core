@@ -56,6 +56,20 @@ WLSW.catalog = {
         damage = 1.2,
         status = 'approved',
     },
+
+    -- 4. Scrap pump shotgun: pipe barrel over a pipe magazine tube, welded
+    -- sheet-steel receiver, a pump made from wood wrapped in inner tube, plank
+    -- stock with spare shells. Pumps like the game's pump shotgun; holds 4.
+    scrap_pump_shotgun = {
+        item = { label = 'Scrap pump shotgun', category = 'weapon', width = 5, height = 2, weight = 2.2, durability = 250,
+            description = 'A welded receiver, two pipes and a plank. Holds four shells; pump between shots.' },
+        weapon = { hash = 'WEAPON_WL_SCRAPPUMP', ammo = 'ammo_12g', noise = 180 },
+        recipe = { label = 'Scrap pump shotgun', result = { name = 'scrap_pump_shotgun', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 10 }, { name = 'metal_sheet', count = 2 }, { name = 'wood_planks', count = 2 },
+                { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 15 },
+        labelKey = 'WT_WL_SCRAPPUMP', label = 'Scrap Pump Shotgun',
+        status = 'testing',
+    },
 }
 
 return WLSW.catalog

@@ -39,6 +39,9 @@ files {
     'meta/weapon_wl_scrapaxe_weaponarchetypes.meta',
     'meta/weapon_wl_scrapaxe_weaponanimations.meta',
     'meta/weapon_wl_scrapaxe_weapons.meta',
+    'meta/weapon_wl_scrappump_weaponarchetypes.meta',
+    'meta/weapon_wl_scrappump_weaponanimations.meta',
+    'meta/weapon_wl_scrappump_weapons.meta',
 }
 
 -- Spiked baseball bat (based on WEAPON_BAT)
@@ -55,3 +58,8 @@ data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_pipeshotgun_weapons.meta'
 data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrapaxe_weaponarchetypes.meta'
 data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrapaxe_weaponanimations.meta'
 data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapaxe_weapons.meta'
+
+-- Scrap pump shotgun (based on WEAPON_PUMPSHOTGUN; ClipSize 4)
+data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrappump_weaponarchetypes.meta'
+data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrappump_weaponanimations.meta'
+data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrappump_weapons.meta'
