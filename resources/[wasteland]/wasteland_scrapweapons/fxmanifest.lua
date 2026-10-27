@@ -57,6 +57,9 @@ files {
     'meta/weapon_wl_scrapmaul_weaponarchetypes.meta',
     'meta/weapon_wl_scrapmaul_weaponanimations.meta',
     'meta/weapon_wl_scrapmaul_weapons.meta',
+    'meta/weapon_wl_scrapdouble_weaponarchetypes.meta',
+    'meta/weapon_wl_scrapdouble_weaponanimations.meta',
+    'meta/weapon_wl_scrapdouble_weapons.meta',
 }
 
 -- Spiked baseball bat (based on WEAPON_BAT)
@@ -103,3 +106,8 @@ data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scraplever_weapons.meta'
 data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrapmaul_weaponarchetypes.meta'
 data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrapmaul_weaponanimations.meta'
 data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapmaul_weapons.meta'
+
+-- Improvised double-barrel (based on WEAPON_DBSHOTGUN, 2 shells)
+data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrapdouble_weaponarchetypes.meta'
+data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrapdouble_weaponanimations.meta'
+data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapdouble_weapons.meta'

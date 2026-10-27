@@ -141,6 +141,20 @@ WLSW.catalog = {
                 { name = 'duct_tape', count = 2 }, { name = 'rag', count = 1 } }, seconds = 15 },
         labelKey = 'WT_WL_SCRAPMAUL', label = 'Heavy Scrap Maul',
         damage = 1.7,
+        status = 'approved',
+    },
+
+    -- 10. Improvised double-barrel: two pipes side by side with a welded rib,
+    -- a breech plate with two bent-bolt hammers, a sawn-down stock. The
+    -- game's sawed-off: two shells, the barrels swing open to reload.
+    scrap_double_barrel = {
+        item = { label = 'Improvised double-barrel', category = 'weapon', width = 4, height = 2, weight = 1.9, durability = 200,
+            description = 'Two pipes, two hammers, two shells. Break it open and load both.' },
+        weapon = { hash = 'WEAPON_WL_SCRAPDOUBLE', ammo = 'ammo_12g', noise = 180, wear = 2 },
+        recipe = { label = 'Improvised double-barrel', result = { name = 'scrap_double_barrel', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 10 }, { name = 'metal_sheet', count = 1 }, { name = 'wood_planks', count = 2 },
+                { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 15 },
+        labelKey = 'WT_WL_SCRAPDBL', label = 'Improvised Double-Barrel',
         status = 'testing',
     },
 }

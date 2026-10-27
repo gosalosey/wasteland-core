@@ -1,5 +1,10 @@
 # Changelog
 
+## Scrap weapons 10: Improvised double-barrel (awaiting in-game test)
+
+- New weapon `scrap_double_barrel`: two pipes side by side with a welded rib and clamps, a wooden forend, a breech plate with twin nail firing pins and two bent-bolt hammers, two triggers, a sawn-down stock with an inner-tube pad. Two 12 gauge shells, the barrels swing open to reload (the sawed-off). Recipe: 10 scrap metal + 1 metal sheet + 2 wood planks + 4 nails + 2 duct tape.
+- Heavy scrap maul marked approved.
+
 ## Scrap weapons 9: Heavy scrap maul (awaiting in-game test)
 
 - New weapon `scrap_maul`: a head cut from steel I-beam, welded to a thick pipe handle with gusset plates, rebar studs on both striking faces, chain wrapped round the neck, a taped and rag-wrapped grip. Two-handed (the bat's swings), 1.7x the damage, 500 hits durability. Recipe: 10 scrap metal + 2 metal sheet + 2 duct tape + 1 rag.

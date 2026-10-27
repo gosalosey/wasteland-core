@@ -44,8 +44,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 6 | Pipe Club | `scrap_pipe_club` | approved (tested on the server) |
 | 7 | Scrap Machete | `scrap_machete` | approved (tested on the server) |
 | 8 | Scrap Lever Rifle | `scrap_lever_rifle` | approved (tested on the server) |
-| 9 | Heavy Scrap Maul | `scrap_maul` | **awaiting your test** |
-| 10 | Improvised Double-Barrel | `scrap_double_barrel` | not started |
+| 9 | Heavy Scrap Maul | `scrap_maul` | approved (tested on the server) |
+| 10 | Improvised Double-Barrel | `scrap_double_barrel` | **awaiting your test** |
 
 Order note: the Spiked Bat is first because a melee weapon has no muzzle,
 ammo or reload, so it proves the whole addon-weapon chain with the fewest
@@ -214,6 +214,22 @@ Build: `build_scrap_lever.py`, `export_weapon.py -- <w_sr_precisionrifle_reh.ydr
 
 Build: `build_scrap_maul.py`, `export_weapon.py -- <w_me_bat.ydr> <out> scrap_maul wl_w_me_scrapmaul`,
 `make_meta.py <update.rpf data> WEAPON_BAT WEAPON_WL_SCRAPMAUL wl_w_me_scrapmaul WT_WL_SCRAPMAUL <meta>`.
+
+## 10. Improvised Double-Barrel
+
+![improvised double-barrel](images/scrapweapons/scrap_double_view2.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_double_barrel` (4 x 2, 1.9 kg, 200 shots durability, wear 2) |
+| Game weapon | `WEAPON_WL_SCRAPDOUBLE`, model `wl_w_sg_scrapdouble` |
+| Based on | `WEAPON_DBSHOTGUN` (sawed-off): 2 shells, break-open reload (barrels and forend on Gun_Breach) |
+| Ammo | `ammo_12g` |
+| Recipe | 10 scrap metal + 1 metal sheet + 2 wood planks + 4 nails + 2 duct tape, 15 s |
+| Model | 3,280 triangles |
+
+Build: `build_scrap_double.py`, `export_weapon.py -- <w_sg_doublebarrel.ydr> <out> scrap_double wl_w_sg_scrapdouble`,
+`make_meta.py <mplowrider2 data> WEAPON_DBSHOTGUN WEAPON_WL_SCRAPDOUBLE wl_w_sg_scrapdouble WT_WL_SCRAPDBL <meta>`.
 
 ## Licensing
 
