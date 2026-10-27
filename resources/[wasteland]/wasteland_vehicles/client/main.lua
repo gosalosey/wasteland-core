@@ -641,3 +641,29 @@ AddEventHandler('onResourceStop', function(res)
     endPicking()
     if uiRunning() and exports.wasteland_ui:IsOpen(HUD) then exports.wasteland_ui:Close(HUD) end
 end)
+
+-------------------------------------------------------------------------------
+-- Locking from the inside (L) and telling the server when you get out
+-------------------------------------------------------------------------------
+
+RegisterCommand('wl_vehlock', function()
+    local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+    if veh == 0 or not NetworkGetEntityIsNetworked(veh) or IsPauseMenuActive() then return end
+    TriggerServerEvent('wasteland:vehicles:server:insideLock', NetworkGetNetworkIdFromEntity(veh))
+    PlaySoundFromEntity(-1, 'Remote_Control_Close', veh, 'PI_Menu_Sounds', false, 0)
+end, false)
+RegisterKeyMapping('wl_vehlock', 'Vehicle: lock / unlock the doors from inside', 'keyboard', 'L')
+
+Citizen.CreateThread(function()
+    local last = 0
+    while true do
+        local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+        if veh ~= last then
+            if last ~= 0 and DoesEntityExist(last) and NetworkGetEntityIsNetworked(last) then
+                TriggerServerEvent('wasteland:vehicles:server:leftVehicle', NetworkGetNetworkIdFromEntity(last))
+            end
+            last = veh
+        end
+        Citizen.Wait(500)
+    end
+end)

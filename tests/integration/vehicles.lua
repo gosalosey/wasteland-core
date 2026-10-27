@@ -572,3 +572,54 @@ describe('vehicle parts: condition, repairing one part, replacing worn parts, we
         expect(#server:lines('raised:')).toBe(0)
     end)
 end)
+
+describe('locking from the inside (L)', function()
+    local server = world()
+    local id = player(server, 'inside', { x = 1001.0, y = 1.0, z = 30.0 })
+    server:advance(2000)
+    local function lockInside(who) server:clientEvent(who, 'wasteland:vehicles:server:insideLock', veh(server).netId); server:advance(100) end
+    local function getIn(who)
+        local e = veh(server)
+        server.players[who].vehicle = e.handle
+        e.driver = server.resources.wasteland_vehicles.env.GetPlayerPed(who)
+    end
+    local function getOut(who)
+        local e = veh(server)
+        server.players[who].vehicle = nil
+        e.driver = 0
+        server:clientEvent(who, 'wasteland:vehicles:server:leftVehicle', e.netId); server:advance(2000)
+    end
+
+    it('only someone sitting in the vehicle can lock it this way', function()
+        lockInside(id)
+        expect(veh(server).state.wlVeh.locked).toBe(false)
+        getIn(id)
+        lockInside(id)
+        expect(veh(server).state.wlVeh.locked).toBe(true)
+        expect(note(server, id)).toBe('Doors locked.')
+        lockInside(id)
+        expect(veh(server).state.wlVeh.locked).toBe(false)
+        expect(note(server, id)).toBe('Doors unlocked.')
+    end)
+
+    it('with no lock fitted it opens again once everyone is out', function()
+        server:advance(3000)   -- L is rate limited (a few presses a second)
+        lockInside(id)
+        expect(veh(server).state.wlVeh.locked).toBe(true)
+        getOut(id)
+        expect(veh(server).state.wlVeh.locked).toBe(false)
+    end)
+
+    it('with a lock fitted it stays locked (the key opens it)', function()
+        I(server, 'AddItem', id, 'vehicle_lock', 1); server:advance(100)
+        act(server, id, 'fitLock')
+        act(server, id, 'toggleLock')
+        expect(veh(server).state.wlVeh.locked).toBe(false)
+        getIn(id)
+        lockInside(id)
+        expect(veh(server).state.wlVeh.locked).toBe(true)
+        getOut(id)
+        expect(veh(server).state.wlVeh.locked).toBe(true)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

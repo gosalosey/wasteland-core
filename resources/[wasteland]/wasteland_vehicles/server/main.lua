@@ -540,6 +540,7 @@ local function finish(src)
         M.log:info('player %d (character %s) fitted a lock on vehicle %s', src, tostring(v.lockOwner), v.id)
     elseif a.action == 'toggleLock' then
         v.locked = not v.locked
+        v.insideLock = nil
         notice(src, v.locked and 'Locked.' or 'Unlocked.')
     elseif a.action == 'removeLock' then
         local ok = inv():AddItem(src, 'vehicle_lock', 1)
@@ -669,7 +670,7 @@ M = Wasteland.DefineModule({
                 vehicles[r.id] = { id = r.id, model = r.model, x = r.x, y = r.y, z = r.z, heading = r.heading, fuel = r.fuel,
                     engine = r.engine, body = r.body, parts = Rules.decodeParts(r.parts), lockCode = r.lock_code, lockOwner = r.lock_owner,
                     spotChecked = r.spot_checked == 1 or r.spot_checked == true,
-                    locked = r.locked == 1 or r.locked == true }
+                    locked = (r.locked == 1 or r.locked == true) and r.lock_code ~= nil }   -- no lock fitted: only locked from inside, never left so
             end
             -- Fill the world up to the limit on first start.
             local players = playersCoords()
@@ -854,6 +855,48 @@ M.netEvent('wasteland:vehicles:server:spot', {
 end)
 
 M.netEvent('wasteland:vehicles:server:cancel', { rateLimit = RATE }, function(src) acting[src] = nil end)
+
+-- Locking from the inside (L): anyone sitting in the vehicle can lock or
+-- unlock its doors, no key needed. A vehicle with no lock fitted unlocks
+-- itself again once everyone is out (nobody has a key to open it).
+local function inside(src, v)
+    return v and v.handle and DoesEntityExist(v.handle) and GetVehiclePedIsIn(GetPlayerPed(src), false) == v.handle
+end
+
+local function empty(v)
+    for seat = -1, 14 do
+        local ped = GetPedInVehicleSeat(v.handle, seat)
+        if ped and ped ~= 0 then return false end
+    end
+    return true
+end
+
+M.netEvent('wasteland:vehicles:server:insideLock', { args = { { type = 'integer', required = true, min = 1 } },
+    rateLimit = { burst = 3, perSecond = 1 } }, function(src, netId)
+    local h = NetworkGetEntityFromNetworkId(netId)
+    local v = h and byHandle[h] and vehicles[byHandle[h]]
+    if not inside(src, v) then return end
+    v.locked = not v.locked
+    v.insideLock = v.locked and v.lockCode == nil or nil
+    notice(src, v.locked and 'Doors locked.' or 'Doors unlocked.')
+    publish(v)
+    save(v)
+end)
+
+-- Someone got out: a vehicle locked from the inside with no lock fitted
+-- opens again when it is empty.
+M.netEvent('wasteland:vehicles:server:leftVehicle', { args = { { type = 'integer', required = true, min = 1 } },
+    rateLimit = { burst = 3, perSecond = 1 } }, function(src, netId)
+    local h = NetworkGetEntityFromNetworkId(netId)
+    local v = h and byHandle[h] and vehicles[byHandle[h]]
+    if not v or not v.insideLock or not v.handle or not DoesEntityExist(v.handle) then return end
+    Citizen.SetTimeout(1500, function()   -- give the exit animation time to finish
+        if not v.insideLock or not v.handle or not DoesEntityExist(v.handle) or not empty(v) then return end
+        v.locked, v.insideLock = false, nil
+        publish(v)
+        save(v)
+    end)
+end)
 
 -- The lockpick minigame is over: did every pin set?
 M.netEvent('wasteland:vehicles:server:lockpick', { args = { { type = 'boolean', required = true } }, rateLimit = RATE },

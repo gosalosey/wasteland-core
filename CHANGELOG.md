@@ -1,5 +1,11 @@
 # Changelog
 
+## Vehicles: lock the doors from the inside (L)
+
+- Sitting in any seat, press L to lock or unlock the doors; no key needed. The server checks you are really in that vehicle.
+- A vehicle with a lock fitted stays locked after you get out (its key or a lockpick opens it, as before). A vehicle with no lock fitted unlocks itself once everyone is out, so you cannot lock yourself out of it; it is also never left locked after a restart.
+- L can be changed in Settings > Key Bindings > FiveM ("Vehicle: lock / unlock the doors from inside").
+
 ## Standard weapons retired: the scrap weapons replace them
 
 - Loot, supply drops, story rewards, the Survivor's Cache and traders' stock now give the closest scrap weapon instead of a standard one (see the swap table in docs/scrapweapons.md). 9mm, 5.56 and 7.62 ammo became 12 gauge, .44 and .308. The recipes and blueprints of the standard guns and melee weapons are removed.
