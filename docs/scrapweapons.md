@@ -81,13 +81,13 @@ python tools/scrapweapons/make_meta.py <game data> WEAPON_BAT WEAPON_WL_SPIKEDBA
 
 | | |
 |---|---|
-| Item | `scrap_pipe_shotgun` (3 x 2, 1.4 kg, 120 shots durability, wear 2 per shot) |
+| Item | `scrap_pipe_shotgun` (4 x 2, 1.4 kg, 120 shots durability, wear 2 per shot) |
 | Game weapon | `WEAPON_WL_PIPESHOTGUN`, model `wl_w_sg_pipeshotgun` |
 | Based on | `WEAPON_DBSHOTGUN` (sawed-off): its handling, damage, sound and break-open reload; clip 1 shell |
 | Ammo | `ammo_12g` from the inventory |
 | Noise | 180 m (zombies) |
 | Recipe | 6 scrap metal + 1 wood planks + 4 nails + 2 duct tape, 12 s, no blueprint |
-| Model | 2,516 triangles; the barrel is on the hinge bone (opens on reload), trigger on the trigger bone |
+| Model | 3,484 triangles (v2: long rusty barrel with clamp rings, taped rifle stock, after the first look was rejected); the barrel is on the hinge bone (opens on reload), trigger on the trigger bone |
 
 Build (game files: `w_sg_doublebarrel.ydr`; the DLC data `weapondbshotgun.meta`,
 `weaponanimations.meta`, `weaponarchetypes.meta` from mplowrider2, as weapons.meta etc.):

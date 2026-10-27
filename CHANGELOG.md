@@ -1,5 +1,9 @@
 # Changelog
 
+## Scrap weapons 2: Pipe shotgun, new look
+
+- Rebuilt the pipe shotgun model after the in-game look test: a long dark rusty pipe barrel held by clamp rings, a heavy coupling breech with a nail hammer, a ring trigger guard and a wooden rifle stock wrapped in grey duct tape over red cloth. Gameplay is unchanged. It is now 4 x 2 in the inventory.
+
 ## Scrap weapons 2: Pipe shotgun (awaiting in-game test)
 
 - New weapon `scrap_pipe_shotgun`: galvanised pipe barrel on a door hinge, nail firing pin, 2x4 grip, duct-tape forend. One 12 gauge shell; the barrel swings open to reload. Handles, sounds and hits like the sawed-off. Recipe: 6 scrap metal + 1 wood planks + 4 nails + 2 duct tape.

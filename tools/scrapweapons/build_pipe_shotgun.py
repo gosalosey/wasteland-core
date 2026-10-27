@@ -1,10 +1,13 @@
 # Pipe shotgun (scrap_pipe_shotgun): a single-shot break-open gun made from
-# plumbing. Built on the game's sawed-off double-barrel layout: the barrel is
-# on the hinge bone (Gun_Breach) so it swings open when reloading, the trigger
-# on Gun_Trigger_Pr, everything else on Gun_Main_Bone. X is forward, the bore
-# runs along z = 0.046 to the muzzle at x = 0.423.
+# plumbing: a long dark rusty pipe barrel held by clamp rings, a heavy
+# coupling breech, a ring trigger guard and a wooden rifle stock wrapped in
+# grey duct tape over red cloth. Built on the game's sawed-off double-barrel
+# layout: the barrel is on the hinge bone (Gun_Breach) so it swings open when
+# reloading, the trigger on Gun_Trigger_Pr, everything else on Gun_Main_Bone.
+# X is forward, the bore runs along z = 0.046 to the muzzle at x = 0.423; the
+# right hand (Gun_GripR) is at x = -0.084, z = -0.068.
 #   blender -b --python build_pipe_shotgun.py -- <tex folder> <out folder>
-import bpy, math, random, os, sys
+import bpy, bmesh, math, random, os, sys
 from mathutils import Vector
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common as C
@@ -16,58 +19,112 @@ random.seed(11)
 C.start(TEX)
 
 MAIN, BREACH, TRIGGER = 'Gun_Main_Bone', 'Gun_Breach', 'Gun_Trigger_Pr'
-PIPE, RUST, WOOD, TAPE, BLACK = C.galvanized(0.55), C.rusty(), C.wood((0.72, 0.6, 0.45, 1), 7.0), C.tape(), C.black_metal()
 BORE_Z = 0.046
 X = (1, 0, 0)
 
-# ---- barrel (swings open): hollow pipe, tape forend, clamp, front sight, hinge strap
-C.place(C.tube_pipe(0.0145, 0.0105, 0.273, PIPE, BREACH, 18), (0.152, 0, BORE_Z), X)
-C.place(C.cylinder(0.0168, 0.016, PIPE, BREACH, 18), (0.152, 0, BORE_Z), X)            # thread collar at the back
-C.place(C.ring(0.0146, 0.075, 0.0016, TAPE, BREACH, 20), (0.285, 0, BORE_Z), X)       # duct-tape forend
-for x in (0.30, 0.325, 0.345):                                                          # tape edges, a bit lumpy
-    C.place(C.ring(0.0160, 0.004, 0.0007, TAPE, BREACH, 20), (x + random.uniform(-0.003, 0.003), 0, BORE_Z), X)
-C.place(C.ring(0.0146, 0.007, 0.0012, RUST, BREACH, 20), (0.205, 0, BORE_Z), X)       # hose clamp
-b = C.box((0.008, 0.005, 0.006), RUST, BREACH); b.location = (0.209, 0.012, BORE_Z + 0.006)   # its screw housing
-C.place(C.cylinder(0.0018, 0.012, BLACK, BREACH, 6), (0.41, 0, BORE_Z + 0.0135), (0, 0, 1))   # bolt as front sight
-s = C.box((0.06, 0.012, 0.004), RUST, BREACH); s.location = (0.18, 0, BORE_Z - 0.0165)         # hinge strap under the barrel
 
-# ---- breech (stays): coupling, end cap, firing-pin nail, hinge knuckle
-C.place(C.cylinder(0.0215, 0.05, PIPE, MAIN, 20), (0.102, 0, BORE_Z), X)               # coupling the shell sits in
-C.place(C.cylinder(0.0195, 0.024, PIPE, MAIN, 20), (0.078, 0, BORE_Z), X)              # end cap
-for i in range(8):                                                                      # cap's octagon flats
-    a = i * math.pi / 4
-    f = C.box((0.022, 0.004, 0.0016), PIPE, MAIN)
-    f.location = (0.09, math.cos(a) * 0.0198, BORE_Z + math.sin(a) * 0.0198); f.rotation_euler = (a, 0, 0)
-C.place(C.cylinder(0.0045, 0.003, BLACK, MAIN, 10), (0.075, 0, BORE_Z), (-1, 0, 0))    # nail head (firing pin)
-C.place(C.cylinder(0.0015, 0.012, BLACK, MAIN, 6), (0.072, 0, BORE_Z), (-1, 0, 0))
-C.place(C.cylinder(0.006, 0.034, RUST, MAIN, 12), (0.154, -0.017, 0.012), (0, 1, 0))   # hinge knuckle
-C.place(C.cylinder(0.0025, 0.04, BLACK, MAIN, 8), (0.154, -0.02, 0.012), (0, 1, 0))    # hinge pin
-k = C.box((0.03, 0.03, 0.02), RUST, MAIN); k.location = (0.14, 0, 0.02)                 # bracket from cap to knuckle
+# ---- materials: dark old steel, darker rusty bands, taped stock, black iron
+def old_steel():
+    m = C.Mat('steel')
+    base = m.ramp(m.noise(40, 6), (0.035, 0.028, 0.022, 1), (0.09, 0.075, 0.06, 1), 0.3, 0.75)
+    rust = m.mix(m.tex('Rust004', 22.0), (0.55, 0.5, 0.45, 1), 1.0, 'MULTIPLY')
+    c = m.mix(base, rust, m.above(m.noise(8, 8), 0.5))
+    return m.done(m.grime(c, 0.7, 20), 0.6)
 
-# ---- spine and grip: flat bar, sawn 2x4 grip hung under its back end, side plates, wire
-sp = C.box((0.24, 0.012, 0.006), RUST, MAIN); sp.location = (0.03, 0, 0.022)
-tilt = math.radians(15)                                   # grip leans back like a pistol grip
-top = Vector((-0.072, 0, 0.019))
-g = C.box((0.04, 0.03, 0.12), WOOD, MAIN, bevel=0.003)
-g.rotation_euler = (0, tilt, 0); g.location = top + Vector((-0.06 * math.sin(tilt), 0, -0.06 * math.cos(tilt)))
-for y in (-0.0162, 0.0162):                               # steel side plates bolting grip to the bar
-    pl = C.box((0.042, 0.0018, 0.036), RUST, MAIN); pl.location = (-0.07, y, 0.008)
-    for bx in (-0.082, -0.058):
-        C.place(C.cylinder(0.003, 0.002, BLACK, MAIN, 6), (bx, y, 0.006), (0, 1 if y > 0 else -1, 0))
+
+def band_steel():
+    m = C.Mat('bands')
+    c = m.mix(m.tex('Rust004', 35.0), (0.4, 0.33, 0.28, 1), 1.0, 'MULTIPLY')
+    return m.done(m.grime(c, 0.6), 0.55)
+
+
+def taped_stock():
+    """Grey duct tape wound diagonally over red cloth; the red shows in the gaps."""
+    m = C.Mat('taped')
+    w1 = m.n.new('ShaderNodeTexWave'); w1.bands_direction = 'DIAGONAL'
+    w1.inputs['Scale'].default_value = 13.0; w1.inputs['Distortion'].default_value = 3.0; w1.inputs['Detail'].default_value = 2.0
+    m.l.new(m.tc, w1.inputs['Vector'])
+    w2 = m.n.new('ShaderNodeTexWave'); w2.bands_direction = 'Y'
+    w2.inputs['Scale'].default_value = 6.0; w2.inputs['Distortion'].default_value = 4.0
+    m.l.new(m.tc, w2.inputs['Vector'])
+    t1 = m.above(w1.outputs['Fac'], 0.32)
+    t2 = m.above(w2.outputs['Fac'], 0.55)
+    cover = m.n.new('ShaderNodeMath'); cover.operation = 'MAXIMUM'
+    m.l.new(t1, cover.inputs[0]); m.l.new(t2, cover.inputs[1])
+    red = m.ramp(m.noise(30, 4), (0.10, 0.008, 0.006, 1), (0.22, 0.016, 0.01, 1), 0.3, 0.7)
+    tape = m.ramp(m.noise(70, 3), (0.06, 0.06, 0.058, 1), (0.14, 0.14, 0.135, 1), 0.3, 0.75)
+    edge = m.ramp(w1.outputs['Fac'], (0.6, 0.6, 0.6, 1), (1, 1, 1, 1), 0.32, 0.4)   # dark line at the tape edge
+    tape = m.mix(tape, edge, 1.0, 'MULTIPLY')
+    c = m.mix(red, tape, cover.outputs[0])
+    return m.done(m.grime(c, 0.6, 12), 0.65)
+
+
+STEEL, BANDS, TAPED, BLACK = old_steel(), band_steel(), taped_stock(), C.black_metal()
+
+
+def profile(points, thick, mat, bone, bevel=0.004):
+    """A flat shape drawn in the XZ plane (x, z), given thickness along Y."""
+    bm = bmesh.new()
+    vs = [bm.verts.new((x, -thick / 2, z)) for x, z in points]
+    f = bm.faces.new(vs)
+    if f.normal.y > 0: f.normal_flip()
+    ext = bmesh.ops.extrude_face_region(bm, geom=[f])
+    bmesh.ops.translate(bm, verts=[v for v in ext['geom'] if isinstance(v, bmesh.types.BMVert)], vec=(0, thick, 0))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    if bevel > 0:
+        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=bevel, segments=2, affect='EDGES', clamp_overlap=True)
+    o = C.add(bm, 'profile', mat, bone)
+    for p in o.data.polygons: p.use_smooth = True
+    return o
+
+
+def clamp_ring(x, r, bone, width=0.009):
+    """A thick steel band round the barrel with its bolt lug on the side."""
+    C.place(C.ring(r, width, 0.0035, BANDS, bone, 20), (x, 0, BORE_Z), X)
+    lug = C.box((width, 0.007, 0.008), BANDS, bone); lug.location = (x + width / 2, -(r + 0.006), BORE_Z)
+    C.place(C.cylinder(0.0028, 0.012, BLACK, bone, 6), (x + width / 2, -(r + 0.004), BORE_Z + 0.006), (0, 0, -1))
+
+
+# ---- barrel (swings open): long thick pipe, clamp rings, muzzle collar, sight
+R = 0.0165
+C.place(C.tube_pipe(R, 0.0115, 0.28, STEEL, BREACH, 20), (0.148, 0, BORE_Z), X)
+C.place(C.ring(R, 0.014, 0.003, BANDS, BREACH, 20), (0.409, 0, BORE_Z), X)              # muzzle collar
+for x in (0.19, 0.25, 0.31, 0.365):
+    clamp_ring(x + random.uniform(-0.004, 0.004), R, BREACH)
+C.place(C.cylinder(0.0022, 0.012, BLACK, BREACH, 6), (0.415, 0, BORE_Z + R + 0.002), (0, 0, 1))  # bead sight
+s = C.box((0.07, 0.014, 0.005), BANDS, BREACH); s.location = (0.185, 0, BORE_Z - R - 0.002)      # hinge strap
+
+# ---- breech (stays): heavy coupling, threaded nipple, end cap, nail hammer
+C.place(C.cylinder(0.0235, 0.046, STEEL, MAIN, 24), (0.102, 0, BORE_Z), X)              # coupling
+for x in (0.104, 0.142):                                                                 # its raised rims
+    C.place(C.ring(0.0235, 0.004, 0.0015, BANDS, MAIN, 24), (x, 0, BORE_Z), X)
+C.place(C.cylinder(0.019, 0.022, STEEL, MAIN, 24), (0.08, 0, BORE_Z), X)                # nipple
+C.place(C.cylinder(0.0215, 0.016, BANDS, MAIN, 8, smooth=False), (0.064, 0, BORE_Z), X) # hex end cap
+C.poly_tube([(0.064, 0, BORE_Z), (0.05, 0, BORE_Z + 0.004), (0.044, 0, BORE_Z + 0.02)], 0.0028, BLACK, MAIN)   # nail hammer
+C.place(C.cylinder(0.0065, 0.04, BANDS, MAIN, 12), (0.152, -0.02, 0.019), (0, 1, 0))    # hinge knuckle
+k = C.box((0.034, 0.03, 0.024), BANDS, MAIN, bevel=0.002); k.location = (0.136, 0, 0.022)
+
+# ---- stock: one piece from under the breech, down the wrist to the butt, all taped
+stock = [(0.10, 0.026), (0.04, 0.030), (-0.02, 0.016), (-0.07, -0.018), (-0.16, -0.026), (-0.30, -0.01),
+         (-0.305, -0.13), (-0.27, -0.135), (-0.13, -0.098), (-0.10, -0.092), (-0.06, -0.06), (0.0, -0.012), (0.06, 0.0)]
+profile(stock, 0.036, TAPED, MAIN)
+bp = profile([(-0.300, -0.005), (-0.312, -0.006), (-0.317, -0.135), (-0.305, -0.136)], 0.040, BLACK, MAIN, 0.002)  # rubber butt pad
+# wire binding the breech to the stock
 pts = []
-for i in range(70):                                       # wire lashed round bar and grip top
-    t = i / 69; a = t * 2 * math.pi * 5
-    pts.append((-0.05 + t * 0.022, 0.0185 * math.cos(a), 0.012 + 0.0135 * math.sin(a)))
-C.poly_tube(pts, 0.0009, BLACK, MAIN)
+for i in range(80):
+    t = i / 79; a = t * 2 * math.pi * 6
+    pts.append((0.064 + t * 0.026, 0.0195 * math.cos(a), 0.034 + 0.0175 * math.sin(a)))
+C.poly_tube(pts, 0.0011, BLACK, MAIN)
 
-# ---- trigger: a bent rod on its own bone, and a guard of bent wire
-C.poly_tube([(0.03, 0, 0.018), (0.031, 0, 0.0), (0.026, 0, -0.016), (0.018, 0, -0.026)], 0.0024, BLACK, TRIGGER)
-C.poly_tube([(0.06, 0, 0.019), (0.058, 0, -0.03), (0.035, 0, -0.042), (-0.02, 0, -0.04), (-0.058, 0, -0.022)], 0.0016, RUST, MAIN)
+# ---- trigger guard ring and trigger
+pts = [(0.03 + 0.025 * math.cos(a), 0, -0.024 + 0.02 * math.sin(a)) for a in [i * 2 * math.pi / 24 for i in range(25)]]
+C.poly_tube(pts, 0.0025, BANDS, MAIN)
+C.poly_tube([(0.032, 0, 0.0), (0.034, 0, -0.016), (0.028, 0, -0.03)], 0.0026, BLACK, TRIGGER)
 
 o, tris = C.join_and_bake(OUT, 'pipe_shotgun')
 C.renders(o, OUT, 'pipe_shotgun',
-          [((0.17, 0, 0.0), (0.25, -0.62, 0.2), 50),
-           ((0.17, 0, 0.0), (-0.45, -0.4, 0.3), 50),
-           ((0.1, 0, 0.02), (0.08, -0.22, 0.1), 50)],
-          (math.radians(-90), 0, math.radians(18)), 0.6)
+          [((0.05, 0, -0.03), (0.15, -0.8, 0.15), 50),
+           ((0.05, 0, -0.03), (-0.55, -0.5, 0.35), 50),
+           ((0.1, 0, 0.0), (0.12, -0.3, 0.12), 50)],
+          (math.radians(-90), 0, math.radians(18)), 0.8)
 print('BUILT pipe_shotgun', tris, 'tris', flush=True)
