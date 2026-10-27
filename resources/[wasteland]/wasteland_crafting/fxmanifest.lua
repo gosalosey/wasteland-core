@@ -29,4 +29,5 @@ client_scripts {
 files {
     'html/crafting.js',
     'html/progress.js',
+    'html/tracker.js',
 }

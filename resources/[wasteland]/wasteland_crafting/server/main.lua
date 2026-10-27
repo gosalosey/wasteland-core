@@ -26,6 +26,18 @@ local function knownOf(cid)
     return type(data) == 'table' and type(data.known) == 'table' and data.known or {}
 end
 
+local MAX_TRACKED = 3
+
+local function trackedOf(cid)
+    local data = cid and players():GetCharacterData(cid, DATA_KEY)
+    return type(data) == 'table' and type(data.tracked) == 'table' and data.tracked or {}
+end
+
+-- Known recipes and the tracked list live together; writing one keeps the other.
+local function saveData(cid, known, tracked)
+    players():SetCharacterData(cid, DATA_KEY, { known = known or knownOf(cid), tracked = tracked or trackedOf(cid) })
+end
+
 local function label(item)
     local d = inv():GetItemDefinition(item)
     return d and d.label or item
@@ -68,7 +80,38 @@ local function screenData(src)
             hidden = hidden + 1
         end
     end
-    return { recipes = list, unknown = hidden, busy = crafting[src] ~= nil }
+    local tracked = {}
+    for _, n in ipairs(trackedOf(characterOf(src))) do tracked[n] = true end
+    for _, e in ipairs(list) do e.tracked = tracked[e.name] == true end
+    return { recipes = list, unknown = hidden, busy = crafting[src] ~= nil, maxTracked = MAX_TRACKED }
+end
+
+--- The tracker on screen: each tracked recipe with what it needs and what you have.
+local function trackerData(src)
+    local cid = characterOf(src)
+    local list = {}
+    for _, name in ipairs(trackedOf(cid)) do
+        local r = M.config.recipes[name]
+        if r then
+            local ings, ready = {}, true
+            for _, ing in ipairs(r.ingredients) do
+                local have = inv():GetItemCount(src, ing.name) or 0
+                if have < ing.count then ready = false end
+                ings[#ings + 1] = { label = label(ing.name), need = ing.count, have = have }
+            end
+            list[#list + 1] = { name = name, label = r.label, ingredients = ings, ready = ready }
+        end
+    end
+    return list
+end
+
+local lastTracker = {}  -- source -> what was sent last, so unchanged lists are not resent
+local function sendTracker(src, force)
+    local list = trackerData(src)
+    local key = json.encode(list)
+    if not force and lastTracker[src] == key then return end
+    lastTracker[src] = key
+    TriggerClientEvent('wasteland:crafting:client:tracker', src, list)
 end
 
 local function send(src, message, ok)
@@ -94,7 +137,7 @@ local function useBlueprint(src, stack)
         if not known[name] then known[name] = true; new[#new + 1] = M.config.recipes[name].label end
     end
     if #new == 0 then return false, 'You already know this.' end
-    players():SetCharacterData(cid, DATA_KEY, { known = known })
+    saveData(cid, known)
     M.log:info('player %d (character %d) learned %s', src, cid, table.concat(teaches, ', '))
     TriggerEvent('wasteland:crafting:learned', src, teaches)
     return 1, 'You learned how to make: ' .. table.concat(new, ', ') .. '. Press K to craft.'
@@ -216,7 +259,7 @@ end
 
 AddEventHandler('playerDropped', function()
     local src = tonumber(source)
-    if src then crafting[src] = nil end
+    if src then crafting[src], lastTracker[src] = nil, nil end
 end)
 
 -------------------------------------------------------------------------------
@@ -278,6 +321,31 @@ end)
 M.netEvent('wasteland:crafting:server:craft', { args = { { type = 'string', required = true, pattern = '^[%a][%w_]*$', maxLength = 48 },
     { type = 'integer', min = 1, max = MAX_BATCH } }, rateLimit = RATE }, function(src, name, count) start(src, name, count) end)
 
+-- Track / untrack a recipe (at most MAX_TRACKED; the oldest drops off).
+M.netEvent('wasteland:crafting:server:track', { args = { { type = 'string', required = true, pattern = '^[%a][%w_]*$', maxLength = 48 } },
+    rateLimit = RATE }, function(src, name)
+    local cid = characterOf(src)
+    local r = cid and M.config.recipes[name]
+    if not r or not Recipes.knows(knownOf(cid), name, r) then return end
+    local tracked, out, was = trackedOf(cid), {}, false
+    for _, n in ipairs(tracked) do if n == name then was = true elseif M.config.recipes[n] then out[#out + 1] = n end end
+    if not was then
+        out[#out + 1] = name
+        while #out > MAX_TRACKED do table.remove(out, 1) end
+    end
+    saveData(cid, nil, out)
+    send(src)
+    sendTracker(src, true)
+end)
+
+AddEventHandler('wasteland:inventory:playerUpdated', function(src)
+    src = tonumber(src)
+    if src and M and M.active and lastTracker[src] ~= nil then sendTracker(src) end
+end)
+AddEventHandler('wasteland:players:characterLoaded', function(src)
+    if M and M.active then lastTracker[src] = nil; sendTracker(src, true) end
+end)
+
 M.netEvent('wasteland:crafting:server:finish', { rateLimit = RATE }, function(src) finish(src) end)
 M.netEvent('wasteland:crafting:server:cancel', { rateLimit = RATE }, function(src) crafting[src] = nil end)
 
@@ -297,7 +365,7 @@ exports('TeachRecipe', function(src, name)
     if not cid or not (M and M.config.recipes[name]) then return false end
     local known = knownOf(cid)
     known[name] = true
-    players():SetCharacterData(cid, DATA_KEY, { known = known })
+    saveData(cid, known)
     return true
 end)
 
@@ -325,6 +393,6 @@ exports('ForgetRecipe', function(src, name)
     if not cid or not (M and M.config.recipes[name]) then return false end
     local known = knownOf(cid)
     known[name] = nil
-    players():SetCharacterData(cid, DATA_KEY, { known = known })
+    saveData(cid, known)
     return true
 end)

@@ -159,3 +159,39 @@ describe('crafting with no room for the result', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('crafting: tracking recipes', function()
+    local server = world()
+    local id = player(server, 'tracker')
+    local function tracker() return last(events(server, id, 'wasteland:crafting:client:tracker')).args[1] end
+    local function track(name) server:clientEvent(id, 'wasteland:crafting:server:track', name); server:advance(100) end
+
+    it('tracking shows what a recipe needs and what you have, and follows the inventory', function()
+        track('bandage')
+        local t = tracker()
+        expect(#t).toBe(1); expect(t[1].name).toBe('bandage')
+        expect(t[1].ingredients[1].need > 0).toBe(true)
+        local ing = t[1].ingredients[1]
+        local before = ing.have
+        local item
+        server:clientEvent(id, 'wasteland:crafting:server:open'); server:advance(100)
+        for _, r in ipairs(screen(server, id).recipes) do
+            if r.name == 'bandage' then expect(r.tracked).toBe(true); item = r.ingredients[1].name end
+        end
+        I(server, 'AddItem', id, item, 2); server:advance(200)
+        expect(tracker()[1].ingredients[1].have).toBe(before + 2)
+    end)
+
+    it('at most three; the oldest drops off; tracking again untracks; unknown recipes are refused', function()
+        track('rag'); track('lockpick'); track('campfire')
+        local names = {}
+        for _, r in ipairs(tracker()) do names[#names + 1] = r.name end
+        expect(table.concat(names, ',')).toBe('rag,lockpick,campfire')
+        track('rag')
+        expect(#tracker()).toBe(2)
+        local n = #events(server, id, 'wasteland:crafting:client:tracker')
+        track('weapon_pumpshotgun')
+        expect(#events(server, id, 'wasteland:crafting:client:tracker')).toBe(n)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

@@ -1,6 +1,6 @@
 // wasteland_crafting :: html/crafting.js
 // Crafting screen: every recipe you know, what it needs and what you have.
-// Data: { recipes = [{ name, label, seconds, image, result = { label, count },
+// Data: { maxTracked, recipes = [{ name, tracked, label, seconds, image, result = { label, count },
 //         ingredients = [{ name, label, image, need, have }], station? = { label, here } }], unknown, message, ok }
 
 (function () {
@@ -65,7 +65,10 @@
                 h('div', { class: 'wcr-what' },
                     h('div', { class: 'wcr-name', text: r.label + (r.result.count > 1 ? ' (x' + r.result.count + ')' : '') }),
                     h('div', { class: 'wl-hint', text: r.seconds + ' s' + (r.station ? ' · at a ' + r.station.label + (r.station.here ? '' : ' (not here)') : '') })),
-                needs, h('div', { class: 'wcr-do' }, amount, btn)));
+                needs, h('div', { class: 'wcr-do' }, amount, h('div', { class: 'wcr-btns' },
+                    h('button', { class: 'wl-btn wcr-track' + (r.tracked ? ' is-on' : ''), text: r.tracked ? '★ Tracked' : '☆ Track',
+                        attrs: { title: 'Show what this needs on screen (up to ' + (d.maxTracked || 3) + ')' },
+                        onclick: () => st.api.post('track', { recipe: r.name }) }), btn))));
         });
         if (!(d.recipes || []).length) list.appendChild(h('div', { class: 'wl-hint', text: 'You know no recipes yet.' }));
         st.root.appendChild(h('div', { class: 'wcr-panel' },
@@ -112,6 +115,8 @@
         '.wcr-need.is-missing { color: #ff8a80; }',
         '.wcr-needimg { width: 20px; height: 20px; object-fit: contain; }',
         '.wcr-foot { text-align: right; }',
+        '.wcr-btns { display: flex; gap: 6px; }',
+        '.wcr-track.is-on { color: #e8c25a; border-color: rgba(232,194,90,0.6); }',
         // ---- polish ----
         '.wcr-panel { position: relative; border-radius: 12px; border-color: rgba(214,186,140,0.14); background: linear-gradient(180deg, rgba(255,240,210,0.035), rgba(255,240,210,0) 120px), var(--wl-bg); box-shadow: var(--wl-shadow), inset 0 1px 0 rgba(255,240,210,0.06); }',
         '.wcr-panel::before { content: ""; position: absolute; top: -1px; left: 24px; right: 24px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--wl-accent) 25%, var(--wl-accent-strong) 50%, var(--wl-accent) 75%, transparent); opacity: 0.75; pointer-events: none; }',

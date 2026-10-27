@@ -51,6 +51,8 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     elseif action == 'craft' and type(payload) == 'table' and type(payload.recipe) == 'string' and not active then
         local count = math.tointeger(tonumber(payload.count) or 1) or 1
         TriggerServerEvent('wasteland:crafting:server:craft', payload.recipe, math.max(1, math.min(50, count)))
+    elseif action == 'track' and type(payload) == 'table' and type(payload.recipe) == 'string' then
+        TriggerServerEvent('wasteland:crafting:server:track', payload.recipe)
     end
 end)
 
@@ -106,6 +108,38 @@ RegisterNetEvent('wasteland:crafting:client:progress', function(p)
     end)
 end)
 
+-------------------------------------------------------------------------------
+-- Tracker: tracked recipes in the corner, with what you have of each item
+-------------------------------------------------------------------------------
+
+local TRACKER = 'craftTracker'
+local tracked = {}
+
+local function showTracker()
+    if not uiRunning() then return end
+    local open = exports.wasteland_ui:IsOpen(TRACKER)
+    if #tracked == 0 then
+        if open then exports.wasteland_ui:Close(TRACKER) end
+    elseif open then
+        exports.wasteland_ui:Update(TRACKER, { recipes = tracked })
+    else
+        exports.wasteland_ui:Open(TRACKER, { script = 'html/tracker.js', focus = false, cursor = false, data = { recipes = tracked } })
+    end
+end
+
+RegisterNetEvent('wasteland:crafting:client:tracker', function(list)
+    tracked = type(list) == 'table' and list or {}
+    showTracker()
+end)
+
+-- wasteland_ui restarted: put the tracker back.
+AddEventHandler('onClientResourceStart', function(res)
+    if res == 'wasteland_ui' then Citizen.SetTimeout(1000, showTracker) end
+end)
+
 AddEventHandler('onResourceStop', function(res)
-    if res == GetCurrentResourceName() then stop(false); close() end
+    if res == GetCurrentResourceName() then
+        stop(false); close()
+        if uiRunning() and exports.wasteland_ui:IsOpen(TRACKER) then exports.wasteland_ui:Close(TRACKER) end
+    end
 end)

@@ -1,5 +1,9 @@
 # Changelog
 
+## Crafting: track recipes
+
+- Each recipe on the crafting screen (K) has a Track button. Tracked recipes (up to 3) show in the top-right corner with every item they need and how many you have, e.g. Scrap 1 / 2. Counts update as your inventory changes and turn green once you have enough. Click Tracked again to remove one. The list is saved with the character.
+
 ## Target: click an option with the mouse
 
 - While Left Alt is held and options are showing, the mouse cursor comes up and the camera holds still. Click an option to use it (hovering highlights it). Scroll + E still works. Let go of Alt (or press Esc) to close.
