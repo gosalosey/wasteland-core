@@ -40,8 +40,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 2 | Pipe Shotgun | `scrap_pipe_shotgun` | approved (tested on the server) |
 | 3 | Scrap-Made Axe | `scrap_axe` | approved (tested on the server) |
 | 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | approved (tested on the server) |
-| 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | **awaiting your test** |
-| 6 | Pipe Club | `scrap_pipe_club` | not started |
+| 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | approved (tested on the server) |
+| 6 | Pipe Club | `scrap_pipe_club` | **awaiting your test** |
 | 7 | Scrap Machete | `scrap_machete` | not started |
 | 8 | Scrap Lever Rifle | `scrap_lever_rifle` | not started |
 | 9 | Heavy Scrap Maul | `scrap_maul` | not started |
@@ -148,6 +148,22 @@ Build: `build_scrap_pump.py`, then `export_weapon.py -- <w_sg_pumpshotgun.ydr> <
 
 Build: `build_scrap_bolt.py`, then `export_weapon.py -- <w_sr_precisionrifle_reh.ydr> <out> scrap_bolt wl_w_sr_scrapbolt`,
 `make_meta.py <mpsum2 data> WEAPON_PRECISIONRIFLE WEAPON_WL_SCRAPBOLT wl_w_sr_scrapbolt WT_WL_SCRAPBOLT <meta> ClipSize=5`.
+
+## 6. Pipe Club
+
+![pipe club](images/scrapweapons/pipe_club_view3.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_pipe_club` (1 x 3, 1.1 kg, 450 hits durability) |
+| Game weapon | `WEAPON_WL_PIPECLUB`, model `wl_w_me_pipeclub` |
+| Based on | `WEAPON_CROWBAR`: one-handed swings |
+| Damage | 1.3 x the crowbar |
+| Recipe | 5 scrap metal + 1 duct tape + 1 rag, 8 s |
+| Model | 4,240 triangles |
+
+Build: `build_pipe_club.py`, `export_weapon.py -- <w_me_crowbar.ydr> <out> pipe_club wl_w_me_pipeclub`,
+`make_meta.py <update.rpf data> WEAPON_CROWBAR WEAPON_WL_PIPECLUB wl_w_me_pipeclub WT_WL_PIPECLUB <meta>`.
 
 ## Licensing
 

@@ -120,6 +120,18 @@ describe('scrap weapons: registration', function()
         I('ClearInventory', id); server:advance(100)
     end)
 
+    it('the pipe club: crafted from scrap, tape and a rag', function()
+        local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+        expect(server:export('wasteland_weapons', 'GetWeaponConfig', 'scrap_pipe_club').hash).toBe('WEAPON_WL_PIPECLUB')
+        I('ClearInventory', id); server:advance(100)
+        I('AddItem', id, 'scrap_metal', 5); I('AddItem', id, 'duct_tape', 1); I('AddItem', id, 'rag', 1)
+        server:advance(100)
+        server:clientEvent(id, 'wasteland:crafting:server:craft', 'scrap_pipe_club'); server:advance(8200)
+        server:clientEvent(id, 'wasteland:crafting:server:finish'); server:advance(200)
+        expect(I('GetItemCount', id, 'scrap_pipe_club')).toBe(1)
+        I('ClearInventory', id); server:advance(100)
+    end)
+
     it('a catalog weapon becomes an item, a weapon you can hold and a recipe', function()
         env.WLSW.catalog = TEST_CATALOG
         env.TriggerEvent('wasteland:core:moduleState', 'inventory', 'running')

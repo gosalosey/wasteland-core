@@ -45,6 +45,9 @@ files {
     'meta/weapon_wl_scrapbolt_weaponarchetypes.meta',
     'meta/weapon_wl_scrapbolt_weaponanimations.meta',
     'meta/weapon_wl_scrapbolt_weapons.meta',
+    'meta/weapon_wl_pipeclub_weaponarchetypes.meta',
+    'meta/weapon_wl_pipeclub_weaponanimations.meta',
+    'meta/weapon_wl_pipeclub_weapons.meta',
 }
 
 -- Spiked baseball bat (based on WEAPON_BAT)
@@ -71,3 +74,8 @@ data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrappump_weapons.meta'
 data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrapbolt_weaponarchetypes.meta'
 data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrapbolt_weaponanimations.meta'
 data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapbolt_weapons.meta'
+
+-- Pipe club (based on WEAPON_CROWBAR)
+data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_pipeclub_weaponarchetypes.meta'
+data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_pipeclub_weaponanimations.meta'
+data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_pipeclub_weapons.meta'

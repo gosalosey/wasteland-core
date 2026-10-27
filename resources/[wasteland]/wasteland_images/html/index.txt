@@ -3525,3 +3525,4 @@ scrap_pipe_shotgun
 scrap_axe
 scrap_pump_shotgun
 scrap_bolt_rifle
+scrap_pipe_club

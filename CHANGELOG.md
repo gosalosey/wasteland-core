@@ -1,5 +1,10 @@
 # Changelog
 
+## Scrap weapons 6: Pipe club (awaiting in-game test)
+
+- New weapon `scrap_pipe_club`: a steel pipe with a cast-iron tee screwed on as a hammer head (hex caps, a bolt hammered in as a spike), bolts through a coupling, a ribbed bike grip and cord. One-handed (the crowbar's swings), 1.3x the damage, 450 hits durability. Recipe: 5 scrap metal + 1 duct tape + 1 rag.
+- Scrap bolt rifle marked approved.
+
 ## Scrap weapons 5: Scrap bolt rifle (awaiting in-game test)
 
 - New weapon `scrap_bolt_rifle`: long pipe barrel strapped to a full wooden stock, a pipe receiver with a working bolt, a tin box magazine, washer-and-bolt sights, a cracked stock patched with a steel plate. Handles like the game's precision rifle (bolt worked between shots), 5 rounds of .308. Recipe: 12 scrap metal + 1 metal sheet + 3 wood planks + 4 nails + 2 duct tape.

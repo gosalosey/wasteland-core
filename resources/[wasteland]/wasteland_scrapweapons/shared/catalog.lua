@@ -82,6 +82,20 @@ WLSW.catalog = {
             ingredients = { { name = 'scrap_metal', count = 12 }, { name = 'metal_sheet', count = 1 }, { name = 'wood_planks', count = 3 },
                 { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 18 },
         labelKey = 'WT_WL_SCRAPBOLT', label = 'Scrap Bolt Rifle',
+        status = 'approved',
+    },
+
+    -- 6. Pipe club: steel pipe with a cast-iron tee screwed on as a hammer
+    -- head, bolts through a coupling, a bike grip and cord. One-handed, swings
+    -- like the game's crowbar, hits harder.
+    scrap_pipe_club = {
+        item = { label = 'Pipe club', category = 'weapon', width = 1, height = 3, weight = 1.1, durability = 450,
+            description = 'A pipe with a cast-iron tee on the end. Heavy, simple, hard to break.' },
+        weapon = { hash = 'WEAPON_WL_PIPECLUB', noise = 9 },
+        recipe = { label = 'Pipe club', result = { name = 'scrap_pipe_club', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 5 }, { name = 'duct_tape', count = 1 }, { name = 'rag', count = 1 } }, seconds = 8 },
+        labelKey = 'WT_WL_PIPECLUB', label = 'Pipe Club',
+        damage = 1.3,
         status = 'testing',
     },
 }
