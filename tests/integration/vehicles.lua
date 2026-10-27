@@ -623,3 +623,34 @@ describe('locking from the inside (L)', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 end)
+
+describe('motorbikes', function()
+    local cfg = {}
+    for k, v in pairs(CFG) do cfg[k] = v end
+    cfg['vehicles.lua'] = (CFG['vehicles.lua']:gsub("models = { 'rebel' },", "models = { 'rebel' }, bikes = { 'sanchez' }, bikeChance = 1,\n        trunk = { width = 15, height = 12, maxWeight = 300, models = { sanchez = { width = 6, height = 4, maxWeight = 25 } } },"))
+    local server = newServer({ config = cfg })
+    boot(server, { 'wasteland_players', 'wasteland_appearance', 'wasteland_inventory', 'wasteland_vehicles' })
+    local id = player(server, 'rider', { x = 1001.0, y = 1.0, z = 30.0 })
+    server:advance(2000)
+
+    it('a new wreck can be a motorbike, with two wheels at most', function()
+        local s = veh(server).state.wlVeh
+        expect(s.wheelsMax).toBe(2)
+        expect(s.parts.wheels).toBe(1)   -- the test wreck misses a wheel
+    end)
+
+    it('mounting the missing wheel makes it whole: 2 of 2', function()
+        I(server, 'AddItem', id, 'car_wheel', 1); server:advance(100)   -- a wheel is big: one at a time
+        act(server, id, 'wheel')
+        expect(note(server, id)).toBe('Wheel mounted (2 of 2).')
+        expect(veh(server).state.wlVeh.parts.wheels).toBe(2)
+        I(server, 'AddItem', id, 'car_wheel', 1); server:advance(100)
+        act(server, id, 'wheel')                                         -- the worn front tyre is replaced
+        expect(note(server, id)).toBe('New front wheel fitted (100%).')
+        I(server, 'AddItem', id, 'car_wheel', 1); server:advance(100)
+        act(server, id, 'wheel')
+        expect(note(server, id)).toBe('Both wheels are on.')
+        expect(I(server, 'GetItemCount', id, 'car_wheel')).toBe(1)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)

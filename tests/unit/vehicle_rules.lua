@@ -133,3 +133,33 @@ describe('vehicle part condition', function()
         expect(Rules.decodeParts('{"battery":true,"engine":true,"wheels":4}').cond).toBe(nil)
     end)
 end)
+
+describe('motorbikes (two wheels)', function()
+    local bike = { wheelsMax = 2, fuel = 10, engine = 800, body = 800, parts = { battery = true, engine = true, wheels = 2 } }
+    it('runs on two wheels; one missing stops it', function()
+        expect(Rules.canRun(bike)).toBe(true)
+        local one = { wheelsMax = 2, fuel = 10, engine = 800, parts = { battery = true, engine = true, wheels = 1 } }
+        expect(select(2, Rules.canRun(one))).toBe('It has 1 of 2 wheels.')
+    end)
+    it('a bike wreck never has more than two wheels', function()
+        local w = { batteryMissing = 0, engineMissing = 0, wheelsMissingChance = 1, wheelsMissingMax = 2,
+            fuel = { 0, 8 }, engine = { 250, 700 }, body = { 300, 800 } }
+        for _ = 1, 20 do
+            local v = Rules.wreck(w, math.random, math.random, 2)
+            expect(v.parts.wheels <= 1).toBe(true)
+        end
+        local whole = Rules.wreck({ batteryMissing = 0, engineMissing = 0, wheelsMissingChance = 0, wheelsMissingMax = 2,
+            fuel = { 0, 8 }, engine = { 250, 700 }, body = { 300, 800 } }, math.random, math.random, 2)
+        expect(whole.parts.wheels).toBe(2)
+    end)
+    it('wheels: "both are on", no third wheel, tyres named front and rear', function()
+        local has = function() return true end
+        local v = { wheelsMax = 2, fuel = 10, engine = 800, body = 800, parts = { battery = true, engine = true, wheels = 2 } }
+        expect(select(2, Rules.check('wheel', v, has, false, cfg))).toBe('Both wheels are on.')
+        expect(select(2, Rules.check('repairPart', v, has, false, cfg, false, 'tyre3'))).toBe('There is no wheel there.')
+        expect(Rules.tyreName(v, 2)).toBe('rear')
+        expect(Rules.tyreName({}, 2)).toBe('front right')
+        Rules.wear(v, 100, { enginePartsPer100km = 0, batteryPer100km = 0, tyresPer100km = 15 })
+        expect(v.parts.cond.tyres[1]).toBe(85); expect(v.parts.cond.tyres[3]).toBe(0)
+    end)
+end)

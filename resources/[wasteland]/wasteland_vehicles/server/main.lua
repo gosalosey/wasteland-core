@@ -54,7 +54,7 @@ local function newCode() return string.format('%08x', math.random(0, 0x7fffffff)
 local function stateOf(v)
     Rules.cond(v)
     return { id = v.id, fuel = v.fuel, tank = M.config.tankLitres, engine = v.engine, body = v.body, parts = v.parts,
-        locked = v.locked == true, hasLock = v.lockCode ~= nil, lockBy = v.lockCode and v.lockOwner or nil, seq = v.seq or 0, acked = v.ackSeq }
+        locked = v.locked == true, hasLock = v.lockCode ~= nil, wheelsMax = Rules.wheelsMax(v), lockBy = v.lockCode and v.lockOwner or nil, seq = v.seq or 0, acked = v.ackSeq }
 end
 
 -- Tell the owning client about a change (seq makes it apply damage again).
@@ -168,9 +168,19 @@ local function nearest(list, p)
     return best
 end
 
+-- Motorbikes (config `bikes`) have two wheels; everything else four.
+local function wheelsFor(model)
+    for _, b in ipairs(M.config.bikes or {}) do if b == model then return 2 end end
+    return 4
+end
+
 local function createWreck(point)
-    local w = Rules.wreck(M.config.wreck, math.random, math.random)
-    local v = { id = newId(), model = M.config.models[math.random(1, #M.config.models)],
+    local cfg = M.config
+    local bike = #(cfg.bikes or {}) > 0 and math.random() < (cfg.bikeChance or 0)
+    local model = bike and cfg.bikes[math.random(1, #cfg.bikes)] or cfg.models[math.random(1, #cfg.models)]
+    local max = wheelsFor(model)
+    local w = Rules.wreck(cfg.wreck, math.random, math.random, max)
+    local v = { id = newId(), model = model, wheelsMax = max,
         x = point.x, y = point.y, z = point.z, heading = point.heading or 0.0,
         fuel = w.fuel, engine = w.engine, body = w.body, parts = w.parts, locked = false, fresh = true }
     vehicles[v.id] = v
@@ -296,12 +306,12 @@ local function partLabel(action, v, part)
     if action == 'repairPart' then
         if kind == 'engine' then return 'Repairing the engine parts' end
         if kind == 'battery' then return 'Reconditioning the battery' end
-        if kind == 'tyre' then return 'Patching the ' .. Rules.TYRE_NAMES[i] .. ' tyre' end
+        if kind == 'tyre' then return 'Patching the ' .. Rules.tyreName(v, i) .. ' tyre' end
     elseif action == 'battery' and v.parts.battery then return 'Replacing the battery'
     elseif action == 'engine' and v.parts.engine then return 'Replacing the engine parts'
-    elseif action == 'wheel' and (v.parts.wheels or 0) >= 4 then
+    elseif action == 'wheel' and (v.parts.wheels or 0) >= Rules.wheelsMax(v) then
         i = i or Rules.worstTyre(v)
-        return 'Replacing the ' .. (Rules.TYRE_NAMES[i] or '') .. ' wheel'
+        return 'Replacing the ' .. Rules.tyreName(v, i) .. ' wheel'
     end
     return LABELS[action]
 end
@@ -394,7 +404,7 @@ local function start(src, netId, action, part)
         for name, size in pairs(t.models) do
             if GetHashKey(name) == model then t = size; break end
         end
-        inv():OpenStash(src, 'veh_' .. v.id, { label = 'Trunk', width = t.width, height = t.height, maxWeight = t.maxWeight,
+        inv():OpenStash(src, 'veh_' .. v.id, { label = Rules.wheelsMax(v) == 2 and 'Saddlebags' or 'Trunk', width = t.width, height = t.height, maxWeight = t.maxWeight,
             coords = coordsOf(v.handle), open = true })
         return
     end
@@ -471,7 +481,7 @@ local function finish(src)
     if a.action == 'fullRepair' then
         -- every part, full health, at least half a tank: a working car at once
         if not inv():RemoveItem(src, item, 1) then notice(src, 'The repair kit is gone.'); return end
-        v.parts.battery, v.parts.engine, v.parts.wheels = true, true, 4
+        v.parts.battery, v.parts.engine, v.parts.wheels = true, true, Rules.wheelsMax(v)
         cond.engine, cond.battery, cond.tyres = 100, 100, { 100, 100, 100, 100 }
         v.engine, v.body = 1000, 1000
         v.fuel = math.max(v.fuel, cfg.tankLitres * 0.5)
@@ -486,15 +496,15 @@ local function finish(src)
         elseif a.action == 'engine' then
             notice(src, v.parts.engine and 'New engine parts fitted (100%).' or 'Engine parts fitted (100%).')
             v.parts.engine, cond.engine = true, 100
-        elseif v.parts.wheels < 4 then
+        elseif v.parts.wheels < Rules.wheelsMax(v) then
             v.parts.wheels = v.parts.wheels + 1
             cond.tyres[v.parts.wheels] = 100
-            notice(src, string.format('Wheel mounted (%d of 4).', v.parts.wheels))
+            notice(src, string.format('Wheel mounted (%d of %d).', v.parts.wheels, Rules.wheelsMax(v)))
         else
             local _, i = Rules.part(a.part)
             i = i or Rules.worstTyre(v)
             cond.tyres[i] = 100
-            notice(src, 'New ' .. Rules.TYRE_NAMES[i] .. ' wheel fitted (100%).')
+            notice(src, 'New ' .. Rules.tyreName(v, i) .. ' wheel fitted (100%).')
         end
     elseif a.action == 'repairPart' then
         if not inv():RemoveItem(src, item, 1) then return end
@@ -502,7 +512,7 @@ local function finish(src)
         local pr = cfg.partRepair
         if kind == 'tyre' then
             cond.tyres[i] = math.min(pr.cap, cond.tyres[i] + pr.amount)
-            notice(src, string.format('Patched the %s tyre: %d%%.', Rules.TYRE_NAMES[i], math.floor(cond.tyres[i])))
+            notice(src, string.format('Patched the %s tyre: %d%%.', Rules.tyreName(v, i), math.floor(cond.tyres[i])))
         else
             cond[kind] = math.min(pr.cap, cond[kind] + pr.amount)
             notice(src, string.format('%s: %d%%.', kind == 'engine' and 'Engine parts repaired' or 'Battery reconditioned', math.floor(cond[kind])))
@@ -640,6 +650,8 @@ M = Wasteland.DefineModule({
                 condition = PAIR(25, 85),
             } },
             models = { type = 'array', minItems = 1, default = { 'emperor2' }, items = { type = 'string', pattern = '^[%w_]+$' } },
+            bikes = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' }, description = 'Motorbike models (two wheels)' },
+            bikeChance = { type = 'number', default = 0, min = 0, max = 1, description = 'Share of new wrecks that are motorbikes' },
             pumps = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' } },
             spawnPoints = { type = 'array', default = {}, items = { type = 'table', fields = {
                 x = { type = 'number', required = true }, y = { type = 'number', required = true },
@@ -670,7 +682,7 @@ M = Wasteland.DefineModule({
                 vehicles[r.id] = { id = r.id, model = r.model, x = r.x, y = r.y, z = r.z, heading = r.heading, fuel = r.fuel,
                     engine = r.engine, body = r.body, parts = Rules.decodeParts(r.parts), lockCode = r.lock_code, lockOwner = r.lock_owner,
                     spotChecked = r.spot_checked == 1 or r.spot_checked == true,
-                    locked = (r.locked == 1 or r.locked == true) and r.lock_code ~= nil }   -- no lock fitted: only locked from inside, never left so
+                    locked = (r.locked == 1 or r.locked == true) and r.lock_code ~= nil, wheelsMax = wheelsFor(r.model) }   -- no lock fitted: only locked from inside, never left so
             end
             -- Fill the world up to the limit on first start.
             local players = playersCoords()

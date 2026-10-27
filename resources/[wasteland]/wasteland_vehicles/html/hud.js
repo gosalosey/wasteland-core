@@ -34,7 +34,8 @@
     function parts(p) {
         if (!p || typeof p !== 'object') return null;
         const t = Array.isArray(p.tyres) ? p.tyres : [];
-        return { engine: part(p.engine), battery: part(p.battery), tyres: [0, 1, 2, 3].map((i) => part(t[i])) };
+        const bike = p.bike === true;
+        return { engine: part(p.engine), battery: part(p.battery), bike: bike, tyres: (bike ? [0, 1] : [0, 1, 2, 3]).map((i) => part(t[i])) };
     }
 
     function view(d) {
@@ -162,9 +163,12 @@
             const chip = (label, x) => h('span', { class: 'wvh-part is-' + x.level }, h('span', { class: 'wvh-part__k', text: label }),
                 h('span', { class: 'wvh-part__v', text: x.text }));
             const tyre = (x, pos) => h('span', { class: 'wvh-tyre is-' + x.level, attrs: { title: pos } }, x.text);
-            const car = h('span', { class: 'wvh-car' },
-                tyre(p.tyres[0], 'front left'), h('span', { class: 'wvh-car__body' }), tyre(p.tyres[1], 'front right'),
-                tyre(p.tyres[2], 'rear left'), h('span', { class: 'wvh-car__body' }), tyre(p.tyres[3], 'rear right'));
+            // a motorbike: front and rear in one row
+            const car = p.bike
+                ? h('span', { class: 'wvh-car' }, tyre(p.tyres[0], 'front'), h('span', { class: 'wvh-car__body' }), tyre(p.tyres[1], 'rear'))
+                : h('span', { class: 'wvh-car' },
+                    tyre(p.tyres[0], 'front left'), h('span', { class: 'wvh-car__body' }), tyre(p.tyres[1], 'front right'),
+                    tyre(p.tyres[2], 'rear left'), h('span', { class: 'wvh-car__body' }), tyre(p.tyres[3], 'rear right'));
             content.appendChild(h('div', { class: 'wvh-row wvh-parts' }, chip('ENG PARTS', p.engine), chip('BATTERY', p.battery),
                 h('span', { class: 'wvh-label', text: 'TYRES' }), car));
         }

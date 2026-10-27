@@ -3,15 +3,15 @@
 -- the key you lock, unlock and open the trunk. Without it, a lockpick may
 -- open it (and breaks the lock).
 --
--- A vehicle needs engine parts, a battery, four wheels, fuel and an engine
--- that is not wrecked. Hold Left Alt on a vehicle to see what you can do.
+-- A vehicle needs engine parts, a battery, all its wheels (four, or two on a
+-- motorbike), fuel and an engine that is not wrecked. Hold Left Alt on a vehicle to see what you can do.
 -- Vehicles stay where they are left (saved); destroyed ones are replaced by
 -- new wrecks over time.
 --
 -- VERIFY IN-GAME: spawn points are picked from the map; a point in the
 -- wrong place can be moved or removed here.
 return {
-    maxVehicles = 30,            -- wrecks in the world
+    maxVehicles = 40,            -- wrecks in the world (cars and motorbikes); one per spawn point at most
     respawnMinutes = 20,         -- a new wreck every ... while under the limit
     spawnDistance = 250,         -- a vehicle appears when a player is this close
     despawnDistance = 350,       -- ... and is put away when nobody is this close
@@ -78,12 +78,23 @@ return {
             surfer2 = { width = 18, height = 14, maxWeight = 450 },
             rumpo = { width = 18, height = 14, maxWeight = 450 },
             youga = { width = 18, height = 14, maxWeight = 450 },
+            -- motorbikes: saddlebags
+            sanchez = { width = 6, height = 4, maxWeight = 25 }, sanchez2 = { width = 6, height = 4, maxWeight = 25 },
+            manchez = { width = 6, height = 4, maxWeight = 25 }, enduro = { width = 6, height = 4, maxWeight = 25 },
+            bf400 = { width = 6, height = 4, maxWeight = 25 }, ratbike = { width = 6, height = 4, maxWeight = 25 },
+            daemon = { width = 6, height = 4, maxWeight = 25 }, wolfsbane = { width = 6, height = 4, maxWeight = 25 },
+            hexer = { width = 6, height = 4, maxWeight = 25 }, faggio2 = { width = 6, height = 4, maxWeight = 25 },
         },
     },
 
     -- Rusty and ordinary cars (GTA model names).
     models = { 'emperor2', 'rebel', 'tornado3', 'surfer2', 'ratloader', 'bodhi2', 'regina', 'dloader', 'sadler', 'bison',
         'rumpo', 'youga', 'mesa', 'voodoo2', 'asea', 'ingot', 'primo', 'stanier' },
+
+    -- Motorbikes (two wheels; same parts as a car: engine parts, battery,
+    -- wheels, fuel). bikeChance: share of new wrecks that are motorbikes.
+    bikes = { 'sanchez', 'sanchez2', 'manchez', 'enduro', 'bf400', 'ratbike', 'daemon', 'wolfsbane', 'hexer', 'faggio2' },
+    bikeChance = 0.25,
 
     -- Gas pumps have limited fuel, shared by everyone. Standing next to one
     -- shows how much it has and when it is full again. Park next to one and
@@ -128,5 +139,30 @@ return {
         -- Senora Freeway / east
         { x = 2581.0, y = 362.0, z = 108.5, heading = 0.0 },
         { x = 2680.0, y = 3280.0, z = 55.2, heading = 330.0 },
+
+        -- More wrecks (picked from the map, not walked: the spot check moves
+        -- a wreck to the nearest clear spot, or uses another point)
+        -- Blaine County
+        { x = 2400.0, y = 3085.0, z = 48.2, heading = 90.0 },      -- Sandy Shores junkyard
+        { x = 2748.0, y = 3470.0, z = 55.7, heading = 245.0 },     -- YouTool, Senora Fwy
+        { x = 70.0, y = 3700.0, z = 39.7, heading = 180.0 },       -- Stab City
+        { x = 1690.0, y = 4920.0, z = 42.1, heading = 55.0 },      -- Grapeseed main street
+        { x = 2440.0, y = 4980.0, z = 46.8, heading = 45.0 },      -- O'Neil ranch
+        { x = 1700.0, y = 6415.0, z = 32.7, heading = 155.0 },     -- Great Ocean Hwy gas station, north
+        { x = 1208.0, y = 2648.0, z = 37.8, heading = 0.0 },       -- Harmony, Route 68
+        { x = -2555.0, y = 2334.0, z = 33.1, heading = 90.0 },     -- Route 1 gas station, Zancudo
+        { x = -560.0, y = 5330.0, z = 70.2, heading = 70.0 },      -- Paleto Forest sawmill
+        { x = -440.0, y = 6020.0, z = 31.5, heading = 315.0 },     -- Paleto Bay sheriff
+        -- Los Santos
+        { x = 452.0, y = -1020.0, z = 28.3, heading = 90.0 },      -- Mission Row
+        { x = -70.0, y = -1760.0, z = 29.4, heading = 50.0 },      -- Grove Street gas station
+        { x = -526.0, y = -1211.0, z = 18.2, heading = 160.0 },    -- Little Seoul gas station
+        { x = 818.0, y = -1028.0, z = 26.2, heading = 90.0 },      -- La Mesa gas station
+        { x = 1208.0, y = -1402.0, z = 35.2, heading = 135.0 },    -- El Burro Heights gas station
+        { x = -362.0, y = -132.0, z = 38.7, heading = 70.0 },      -- Burton, LS Customs
+        { x = -1185.0, y = -1490.0, z = 4.4, heading = 35.0 },     -- Vespucci Beach car park
+        { x = 1150.0, y = -660.0, z = 57.0, heading = 190.0 },     -- Mirror Park
+        { x = 340.0, y = -560.0, z = 28.8, heading = 340.0 },      -- below Pillbox Hill hospital
+        { x = -1600.0, y = -1000.0, z = 13.0, heading = 140.0 },   -- Del Perro pier car park
     },
 }

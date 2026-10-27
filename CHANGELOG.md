@@ -1,5 +1,10 @@
 # Changelog
 
+## Vehicles: more wrecks, and motorbikes
+
+- Up to 40 wrecks in the world (was 30), with 20 new spawn points: Sandy Shores junkyard, YouTool, Stab City, Grapeseed, O'Neil ranch, Paleto (sawmill, sheriff, north gas station), Harmony, Route 1 at Zancudo, and in Los Santos Mission Row, Grove Street, Little Seoul, La Mesa, El Burro Heights, Burton, Vespucci Beach, Mirror Park, Pillbox Hill and Del Perro pier. VERIFY IN-GAME: picked from the map; the spot check moves a wreck to the nearest clear spot.
+- Motorbikes: about 1 in 4 new wrecks is a dirt bike or motorcycle (`bikes`, `bikeChance` in vehicles.lua). They need the same parts as a car, but two wheels: wheel fitting, tyre wear and bursts, "Check vehicle" (Front / Rear) and the HUD (two tyres) all follow. Their storage is small saddlebags (6 x 4, 25 kg).
+
 ## Quests: /quest screen and a better tracker
 
 - `/quest` (or J) opens a quest screen: your current story step (Patient Zero) at the top, then every job you have taken in full: what it is, each objective with its progress and how to do it, the camps to hand it in at and how far they are, the reward and when you took it, and under "Done recently" when finished jobs can be taken again. "Hide tracker" / "Show tracker" turns the on-screen tracker off and on.
