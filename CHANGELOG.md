@@ -1,5 +1,10 @@
 # Changelog
 
+## Scrap weapons 5: Scrap bolt rifle (awaiting in-game test)
+
+- New weapon `scrap_bolt_rifle`: long pipe barrel strapped to a full wooden stock, a pipe receiver with a working bolt, a tin box magazine, washer-and-bolt sights, a cracked stock patched with a steel plate. Handles like the game's precision rifle (bolt worked between shots), 5 rounds of .308. Recipe: 12 scrap metal + 1 metal sheet + 3 wood planks + 4 nails + 2 duct tape.
+- Scrap pump shotgun marked approved.
+
 ## Scrap weapons 4: Scrap pump shotgun (awaiting in-game test)
 
 - New weapon `scrap_pump_shotgun`: pipe barrel over a pipe magazine tube, a welded sheet-steel receiver with rivets and an ejection port, a pump made from wood wrapped in old inner tube on two steel rods, a plank stock with a taped wrist, tyre-rubber butt pad and spare shells strapped on. Real pump action (the game's pump shotgun), holds 4 shells of 12 gauge. Recipe: 10 scrap metal + 2 metal sheet + 2 wood planks + 4 nails + 2 duct tape.

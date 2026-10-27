@@ -68,6 +68,20 @@ WLSW.catalog = {
             ingredients = { { name = 'scrap_metal', count = 10 }, { name = 'metal_sheet', count = 2 }, { name = 'wood_planks', count = 2 },
                 { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 15 },
         labelKey = 'WT_WL_SCRAPPUMP', label = 'Scrap Pump Shotgun',
+        status = 'approved',
+    },
+
+    -- 5. Scrap bolt rifle: long pipe barrel strapped to a full wooden stock,
+    -- pipe receiver with a working bolt, tin box magazine, washer sights.
+    -- Handles like the game's precision rifle (bolt cycled between shots); 5 rounds.
+    scrap_bolt_rifle = {
+        item = { label = 'Scrap bolt rifle', category = 'weapon', width = 6, height = 2, weight = 3.0, durability = 300,
+            description = 'A pipe barrel on a hand-cut stock with a working bolt. Five rounds of .308; hits hard at range.' },
+        weapon = { hash = 'WEAPON_WL_SCRAPBOLT', ammo = 'ammo_308', noise = 300, wear = 2 },
+        recipe = { label = 'Scrap bolt rifle', result = { name = 'scrap_bolt_rifle', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 12 }, { name = 'metal_sheet', count = 1 }, { name = 'wood_planks', count = 3 },
+                { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 18 },
+        labelKey = 'WT_WL_SCRAPBOLT', label = 'Scrap Bolt Rifle',
         status = 'testing',
     },
 }

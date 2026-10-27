@@ -42,6 +42,9 @@ files {
     'meta/weapon_wl_scrappump_weaponarchetypes.meta',
     'meta/weapon_wl_scrappump_weaponanimations.meta',
     'meta/weapon_wl_scrappump_weapons.meta',
+    'meta/weapon_wl_scrapbolt_weaponarchetypes.meta',
+    'meta/weapon_wl_scrapbolt_weaponanimations.meta',
+    'meta/weapon_wl_scrapbolt_weapons.meta',
 }
 
 -- Spiked baseball bat (based on WEAPON_BAT)
@@ -63,3 +66,8 @@ data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapaxe_weapons.meta'
 data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrappump_weaponarchetypes.meta'
 data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrappump_weaponanimations.meta'
 data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrappump_weapons.meta'
+
+-- Scrap bolt rifle (based on WEAPON_PRECISIONRIFLE, needs game build 2699+; ClipSize 5)
+data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrapbolt_weaponarchetypes.meta'
+data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrapbolt_weaponanimations.meta'
+data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapbolt_weapons.meta'

@@ -39,8 +39,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 1 | Spiked Baseball Bat | `scrap_spiked_bat` | approved (tested on the server) |
 | 2 | Pipe Shotgun | `scrap_pipe_shotgun` | approved (tested on the server) |
 | 3 | Scrap-Made Axe | `scrap_axe` | approved (tested on the server) |
-| 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | **awaiting your test** |
-| 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | not started |
+| 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | approved (tested on the server) |
+| 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | **awaiting your test** |
 | 6 | Pipe Club | `scrap_pipe_club` | not started |
 | 7 | Scrap Machete | `scrap_machete` | not started |
 | 8 | Scrap Lever Rifle | `scrap_lever_rifle` | not started |
@@ -131,6 +131,23 @@ Build: `build_scrap_axe.py`, then `export_weapon.py -- <w_me_hatchet.ydr> <out> 
 
 Build: `build_scrap_pump.py`, then `export_weapon.py -- <w_sg_pumpshotgun.ydr> <out> scrap_pump wl_w_sg_scrappump`,
 `make_meta.py <update.rpf data> WEAPON_PUMPSHOTGUN WEAPON_WL_SCRAPPUMP wl_w_sg_scrappump WT_WL_SCRAPPUMP <meta> ClipSize=4`.
+
+## 5. Scrap Bolt Rifle
+
+![scrap bolt rifle](images/scrapweapons/scrap_bolt_view1.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_bolt_rifle` (6 x 2, 3 kg, 300 shots durability, wear 2) |
+| Game weapon | `WEAPON_WL_SCRAPBOLT`, model `wl_w_sr_scrapbolt` |
+| Based on | `WEAPON_PRECISIONRIFLE` (mpsum2; needs game build 2699+, the server enforces 3570): over-the-shoulder aim (no scope), one shot per pull, bolt cycled between shots (bolt on Gun_Cock2, handle on Gun_Cock1); 5 rounds |
+| Ammo | `ammo_308` |
+| Noise | 300 m |
+| Recipe | 12 scrap metal + 1 metal sheet + 3 wood planks + 4 nails + 2 duct tape, 18 s |
+| Model | 2,420 triangles |
+
+Build: `build_scrap_bolt.py`, then `export_weapon.py -- <w_sr_precisionrifle_reh.ydr> <out> scrap_bolt wl_w_sr_scrapbolt`,
+`make_meta.py <mpsum2 data> WEAPON_PRECISIONRIFLE WEAPON_WL_SCRAPBOLT wl_w_sr_scrapbolt WT_WL_SCRAPBOLT <meta> ClipSize=5`.
 
 ## Licensing
 
