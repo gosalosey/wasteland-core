@@ -41,8 +41,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 3 | Scrap-Made Axe | `scrap_axe` | approved (tested on the server) |
 | 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | approved (tested on the server) |
 | 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | approved (tested on the server) |
-| 6 | Pipe Club | `scrap_pipe_club` | **awaiting your test** |
-| 7 | Scrap Machete | `scrap_machete` | not started |
+| 6 | Pipe Club | `scrap_pipe_club` | approved (tested on the server) |
+| 7 | Scrap Machete | `scrap_machete` | **awaiting your test** |
 | 8 | Scrap Lever Rifle | `scrap_lever_rifle` | not started |
 | 9 | Heavy Scrap Maul | `scrap_maul` | not started |
 | 10 | Improvised Double-Barrel | `scrap_double_barrel` | not started |
@@ -164,6 +164,22 @@ Build: `build_scrap_bolt.py`, then `export_weapon.py -- <w_sr_precisionrifle_reh
 
 Build: `build_pipe_club.py`, `export_weapon.py -- <w_me_crowbar.ydr> <out> pipe_club wl_w_me_pipeclub`,
 `make_meta.py <update.rpf data> WEAPON_CROWBAR WEAPON_WL_PIPECLUB wl_w_me_pipeclub WT_WL_PIPECLUB <meta>`.
+
+## 7. Scrap Machete
+
+![scrap machete](images/scrapweapons/scrap_machete_view1.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_machete` (1 x 3, 0.6 kg, 320 hits durability) |
+| Game weapon | `WEAPON_WL_SCRAPMACHETE`, model `wl_w_me_scrapmachete` |
+| Based on | `WEAPON_MACHETE` (mplowrider data) |
+| Damage | 1.25 x the machete |
+| Recipe | 1 metal sheet + 3 scrap metal + 1 wood planks + 1 rag + 1 duct tape, 10 s |
+| Model | 5,472 triangles |
+
+Build: `build_scrap_machete.py`, `export_weapon.py -- <w_me_machette_lr.ydr> <out> scrap_machete wl_w_me_scrapmachete`,
+`make_meta.py <mplowrider data> WEAPON_MACHETE WEAPON_WL_SCRAPMACHETE wl_w_me_scrapmachete WT_WL_SCRAPMACH <meta>`.
 
 ## Licensing
 

@@ -96,6 +96,21 @@ WLSW.catalog = {
             ingredients = { { name = 'scrap_metal', count = 5 }, { name = 'duct_tape', count = 1 }, { name = 'rag', count = 1 } }, seconds = 8 },
         labelKey = 'WT_WL_PIPECLUB', label = 'Pipe Club',
         damage = 1.3,
+        status = 'approved',
+    },
+
+    -- 7. Scrap machete: a blade cut from steel plate with a ground edge, saw
+    -- teeth on the spine, a bent-bar guard, cord-wrapped handle, nut pommel.
+    -- Swings like the game's machete, a little harder.
+    scrap_machete = {
+        item = { label = 'Scrap machete', category = 'weapon', width = 1, height = 3, weight = 0.6, durability = 320,
+            description = 'A blade ground out of scrap plate with teeth cut in the back. Fast and nasty.' },
+        weapon = { hash = 'WEAPON_WL_SCRAPMACHETE', noise = 6 },
+        recipe = { label = 'Scrap machete', result = { name = 'scrap_machete', count = 1 },
+            ingredients = { { name = 'metal_sheet', count = 1 }, { name = 'scrap_metal', count = 3 }, { name = 'wood_planks', count = 1 },
+                { name = 'rag', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 10 },
+        labelKey = 'WT_WL_SCRAPMACH', label = 'Scrap Machete',
+        damage = 1.25,
         status = 'testing',
     },
 }

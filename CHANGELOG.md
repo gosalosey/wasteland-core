@@ -1,5 +1,10 @@
 # Changelog
 
+## Scrap weapons 7: Scrap machete (awaiting in-game test)
+
+- New weapon `scrap_machete`: a blade cut from rusty steel plate with a ground edge, saw teeth hacked into the spine, old bolt holes, a bent-bar guard, a cord-wrapped wooden handle and a hex nut pommel. Swings like the machete, 1.25x the damage. Recipe: 1 metal sheet + 3 scrap metal + 1 wood planks + 1 rag + 1 duct tape.
+- Pipe club marked approved.
+
 ## Scrap weapons 6: Pipe club (awaiting in-game test)
 
 - New weapon `scrap_pipe_club`: a steel pipe with a cast-iron tee screwed on as a hammer head (hex caps, a bolt hammered in as a spike), bolts through a coupling, a ribbed bike grip and cord. One-handed (the crowbar's swings), 1.3x the damage, 450 hits durability. Recipe: 5 scrap metal + 1 duct tape + 1 rag.
