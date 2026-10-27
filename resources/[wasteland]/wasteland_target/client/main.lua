@@ -162,14 +162,12 @@ end
 local function setPointing(on)
     if pointing == on or not uiRunning() or not exports.wasteland_ui:IsOpen(SCREEN) then return end
     pointing = on
-    exports.wasteland_ui:SetFocus(SCREEN, on, on)
-    SetNuiFocusKeepInput(on)
     if on then SetCursorLocation(0.5, 0.5) end
+    exports.wasteland_ui:SetFocus(SCREEN, on, on, on)   -- keep input: letting go of Alt still reaches the game
     show()
 end
 
 local function hide()
-    if pointing then SetNuiFocusKeepInput(false) end
     pointing = false
     if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end
 end
@@ -227,7 +225,7 @@ local function run()
         if pointing then for _, c in ipairs(LOOK) do DisableControlAction(0, c, true) end end
         DisablePlayerFiring(PlayerId(), true)
         sinceScan = sinceScan + GetFrameTime() * 1000
-        if sinceScan >= 100 and not pointing then
+        if sinceScan >= 100 then
             sinceScan = 0
             currentHit = look()
             current = currentHit and Match.collect(registrations, currentHit, allowed(currentHit)) or {}
@@ -239,7 +237,8 @@ local function run()
                 show()
             end
         end
-        if #current > 0 and not pointing and IsDisabledControlJustPressed(0, 24) then setPointing(true)      -- left-click: cursor
+        if pointing and #current == 0 then setPointing(false)                                                -- target lost
+        elseif #current > 0 and not pointing and IsDisabledControlJustPressed(0, 24) then setPointing(true)  -- left-click: cursor
         elseif pointing and IsDisabledControlJustPressed(0, 25) then setPointing(false) end               -- right-click: look again
         if clicked then
             if current[clicked] then selected = clicked; choose() end

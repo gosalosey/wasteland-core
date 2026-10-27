@@ -1,5 +1,10 @@
 # Changelog
 
+## Target: fix the cursor taking all input (Alt release lost)
+
+- Root cause of the target getting stuck or flashing: "keep game input while the screen has the mouse" only applies to the resource that owns the screen, and our screens live in wasteland_ui, but wasteland_target was the one asking for it. So it never applied, and letting go of Alt never reached the game. `wasteland_ui` `SetFocus(name, focus, cursor, keepInput)` now takes it (other callers unchanged).
+- Like the reference behaviour: while the cursor is up the target keeps being checked, and if you lose it the cursor goes away; Scrap axe marked approved.
+
 ## Target: works the usual FiveM way
 
 - Hold Left Alt: an eye in the middle. Look at something usable: the eye turns green and its options show beside it. Left-click: the mouse cursor comes up and the camera holds still. Click an option to use it. Let go of Alt to close; right-click puts the cursor away so you can look around again. Scroll + E is gone.

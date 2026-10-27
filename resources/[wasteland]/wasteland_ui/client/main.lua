@@ -16,7 +16,7 @@
 local RESOURCE = GetCurrentResourceName()
 local SCREEN_PATTERN = '^[%a][%w_]*$'
 
-local screens = {}    -- [name] = { owner, focus, cursor }
+local screens = {}    -- [name] = { owner, focus, cursor, keepInput }
 local shellReady = false
 local queue = {}
 
@@ -30,12 +30,15 @@ local function send(msg)
 end
 
 local function refreshFocus()
-    local focus, cursor = false, false
+    local focus, cursor, keep = false, false, false
     for _, s in pairs(screens) do
         if s.focus then focus = true end
         if s.cursor then cursor = true end
+        if s.keepInput then keep = true end
     end
     SetNuiFocus(focus, focus and cursor)
+    -- keep-input belongs to the resource that owns the page, so it is set here
+    SetNuiFocusKeepInput(focus and keep)
 end
 
 RegisterNUICallback('ready', function(_, cb)
@@ -127,10 +130,11 @@ exports('IsOpen', function(name)
 end)
 
 --- Change focus while a screen stays open (e.g. let the player look around).
-exports('SetFocus', function(name, focus, cursor)
+--- keepInput: the game still gets keys and mouse buttons while the screen has focus.
+exports('SetFocus', function(name, focus, cursor, keepInput)
     local s = screens[name]
     if not s then return false, 'screen is not open' end
-    s.focus, s.cursor = focus == true, cursor == true
+    s.focus, s.cursor, s.keepInput = focus == true, cursor == true, keepInput == true
     refreshFocus()
     return true
 end)

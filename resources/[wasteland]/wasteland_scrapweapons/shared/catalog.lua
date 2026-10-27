@@ -54,7 +54,7 @@ WLSW.catalog = {
                 { name = 'nails', count = 2 }, { name = 'rag', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 10 },
         labelKey = 'WT_WL_SCRAPAXE', label = 'Scrap Axe',
         damage = 1.2,
-        status = 'testing',
+        status = 'approved',
     },
 }
 

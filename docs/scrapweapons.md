@@ -38,7 +38,7 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 0 | Foundation (resource, registration exports) | - | approved (tested on the server) |
 | 1 | Spiked Baseball Bat | `scrap_spiked_bat` | approved (tested on the server) |
 | 2 | Pipe Shotgun | `scrap_pipe_shotgun` | approved (tested on the server) |
-| 3 | Scrap-Made Axe | `scrap_axe` | **awaiting your test** |
+| 3 | Scrap-Made Axe | `scrap_axe` | approved (tested on the server) |
 | 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | not started |
 | 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | not started |
 | 6 | Pipe Club | `scrap_pipe_club` | not started |
