@@ -43,8 +43,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | approved (tested on the server) |
 | 6 | Pipe Club | `scrap_pipe_club` | approved (tested on the server) |
 | 7 | Scrap Machete | `scrap_machete` | approved (tested on the server) |
-| 8 | Scrap Lever Rifle | `scrap_lever_rifle` | **awaiting your test** |
-| 9 | Heavy Scrap Maul | `scrap_maul` | not started |
+| 8 | Scrap Lever Rifle | `scrap_lever_rifle` | approved (tested on the server) |
+| 9 | Heavy Scrap Maul | `scrap_maul` | **awaiting your test** |
 | 10 | Improvised Double-Barrel | `scrap_double_barrel` | not started |
 
 Order note: the Spiked Bat is first because a melee weapon has no muzzle,
@@ -197,6 +197,23 @@ Build: `build_scrap_machete.py`, `export_weapon.py -- <w_me_machette_lr.ydr> <ou
 
 Build: `build_scrap_lever.py`, `export_weapon.py -- <w_sr_precisionrifle_reh.ydr> <out> scrap_lever wl_w_sr_scraplever`,
 `make_meta.py <mpsum2 data> WEAPON_PRECISIONRIFLE WEAPON_WL_SCRAPLEVER wl_w_sr_scraplever WT_WL_SCRAPLEVER <meta> ClipSize=7 Damage=65.000000 TimeBetweenShots=1.000000`.
+
+## 9. Heavy Scrap Maul
+
+![heavy scrap maul](images/scrapweapons/scrap_maul_view3.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_maul` (2 x 5, 4.5 kg, 500 hits durability) |
+| Game weapon | `WEAPON_WL_SCRAPMAUL`, model `wl_w_me_scrapmaul` |
+| Based on | `WEAPON_BAT`: two-handed swings (the game has no slow overhead smash) |
+| Damage | 1.7 x the bat |
+| Noise | 14 m |
+| Recipe | 10 scrap metal + 2 metal sheet + 2 duct tape + 1 rag, 15 s |
+| Model | 4,788 triangles |
+
+Build: `build_scrap_maul.py`, `export_weapon.py -- <w_me_bat.ydr> <out> scrap_maul wl_w_me_scrapmaul`,
+`make_meta.py <update.rpf data> WEAPON_BAT WEAPON_WL_SCRAPMAUL wl_w_me_scrapmaul WT_WL_SCRAPMAUL <meta>`.
 
 ## Licensing
 

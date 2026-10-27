@@ -126,6 +126,21 @@ WLSW.catalog = {
             ingredients = { { name = 'scrap_metal', count = 12 }, { name = 'metal_sheet', count = 2 }, { name = 'wood_planks', count = 3 },
                 { name = 'nails', count = 6 }, { name = 'duct_tape', count = 1 } }, seconds = 18 },
         labelKey = 'WT_WL_SCRAPLEVER', label = 'Scrap Lever Rifle',
+        status = 'approved',
+    },
+
+    -- 9. Heavy scrap maul: a chunk of steel I-beam welded to a thick pipe
+    -- with gusset plates, rebar studs on both faces, chain round the neck.
+    -- Two-handed (the game's bat swings), hits much harder.
+    scrap_maul = {
+        item = { label = 'Heavy scrap maul', category = 'weapon', width = 2, height = 5, weight = 4.5, durability = 500,
+            description = 'A lump of I-beam on a pipe. Slow to carry, brutal to be hit with.' },
+        weapon = { hash = 'WEAPON_WL_SCRAPMAUL', noise = 14 },
+        recipe = { label = 'Heavy scrap maul', result = { name = 'scrap_maul', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 10 }, { name = 'metal_sheet', count = 2 },
+                { name = 'duct_tape', count = 2 }, { name = 'rag', count = 1 } }, seconds = 15 },
+        labelKey = 'WT_WL_SCRAPMAUL', label = 'Heavy Scrap Maul',
+        damage = 1.7,
         status = 'testing',
     },
 }

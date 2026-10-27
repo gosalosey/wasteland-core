@@ -1,5 +1,10 @@
 # Changelog
 
+## Scrap weapons 9: Heavy scrap maul (awaiting in-game test)
+
+- New weapon `scrap_maul`: a head cut from steel I-beam, welded to a thick pipe handle with gusset plates, rebar studs on both striking faces, chain wrapped round the neck, a taped and rag-wrapped grip. Two-handed (the bat's swings), 1.7x the damage, 500 hits durability. Recipe: 10 scrap metal + 2 metal sheet + 2 duct tape + 1 rag.
+- Scrap lever rifle marked approved.
+
 ## Scrap weapons 8: Scrap lever rifle (awaiting in-game test)
 
 - New weapon `scrap_lever_rifle`: an octagonal barrel over a tube magazine, a receiver with tarnished brass side plates and a loading gate, a closed loop lever, an exposed hammer, a saddle ring, buckhorn sights and a wooden stock and forend studded with brass tacks. 7 rounds of .44, 65 damage, a shot a second. The game has no lever-action animation: it handles like the precision rifle and the lever itself does not move. Recipe: 12 scrap metal + 2 metal sheet + 3 wood planks + 6 nails + 1 duct tape.

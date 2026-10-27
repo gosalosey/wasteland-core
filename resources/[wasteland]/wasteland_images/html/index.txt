@@ -3528,3 +3528,4 @@ scrap_bolt_rifle
 scrap_pipe_club
 scrap_machete
 scrap_lever_rifle
+scrap_maul

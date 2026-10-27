@@ -54,6 +54,9 @@ files {
     'meta/weapon_wl_scraplever_weaponarchetypes.meta',
     'meta/weapon_wl_scraplever_weaponanimations.meta',
     'meta/weapon_wl_scraplever_weapons.meta',
+    'meta/weapon_wl_scrapmaul_weaponarchetypes.meta',
+    'meta/weapon_wl_scrapmaul_weaponanimations.meta',
+    'meta/weapon_wl_scrapmaul_weapons.meta',
 }
 
 -- Spiked baseball bat (based on WEAPON_BAT)
@@ -95,3 +98,8 @@ data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapmachete_weapons.meta'
 data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scraplever_weaponarchetypes.meta'
 data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scraplever_weaponanimations.meta'
 data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scraplever_weapons.meta'
+
+-- Heavy scrap maul (based on WEAPON_BAT)
+data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_scrapmaul_weaponarchetypes.meta'
+data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_scrapmaul_weaponanimations.meta'
+data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_scrapmaul_weapons.meta'
