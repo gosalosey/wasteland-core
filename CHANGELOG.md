@@ -1,5 +1,10 @@
 # Changelog
 
+## Scrap weapons 3: Scrap-made axe (awaiting in-game test)
+
+- New weapon `scrap_axe`: a head cut from rusty steel plate with a ground edge, bolted through a rough branch handle with cheek plates, lashed with wire and a rag, a rebar spike on the back, taped grip. Swings like the hatchet, hits 1.2x as hard. Recipe: 4 scrap metal + 1 log + 2 nails + 1 rag + 1 duct tape.
+- Pipe shotgun marked approved.
+
 ## Scrap weapons 2: Pipe shotgun, new look
 
 - Rebuilt the pipe shotgun model after the in-game look test: a long dark rusty pipe barrel held by clamp rings, a heavy coupling breech with a nail hammer, a ring trigger guard and a wooden rifle stock wrapped in grey duct tape over red cloth. Gameplay is unchanged. It is now 4 x 2 in the inventory.

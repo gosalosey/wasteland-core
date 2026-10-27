@@ -39,6 +39,21 @@ WLSW.catalog = {
             ingredients = { { name = 'scrap_metal', count = 6 }, { name = 'wood_planks', count = 1 },
                 { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 12 },
         labelKey = 'WT_WL_PIPESG', label = 'Pipe Shotgun',
+        status = 'approved',
+    },
+
+    -- 3. Scrap-made axe: a head cut from steel plate with a ground edge, bolted
+    -- through a rough handle, wire and a rag round it, a rebar spike on the
+    -- back. Swings like the game's hatchet, a little harder.
+    scrap_axe = {
+        item = { label = 'Scrap axe', category = 'weapon', width = 1, height = 3, weight = 0.9, durability = 350,
+            description = 'A steel plate head bolted to a branch. Heavier than a hatchet.' },
+        weapon = { hash = 'WEAPON_WL_SCRAPAXE', noise = 8 },
+        recipe = { label = 'Scrap axe', result = { name = 'scrap_axe', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 4 }, { name = 'wood_log', count = 1 },
+                { name = 'nails', count = 2 }, { name = 'rag', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 10 },
+        labelKey = 'WT_WL_SCRAPAXE', label = 'Scrap Axe',
+        damage = 1.2,
         status = 'testing',
     },
 }

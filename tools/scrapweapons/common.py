@@ -83,7 +83,7 @@ def galvanized(rust=0.5):
 
 def rusty():
     m = Mat('rust')
-    c = m.mix(m.tex('Rust004', 40.0), (0.07, 0.065, 0.06, 1), m.above(m.noise(70, 4), 0.6))
+    c = m.mix(m.tex('Rust004', 40.0), (0.035, 0.032, 0.03, 1), m.above(m.noise(70, 4), 0.6))
     return m.done(c, 0.7)
 
 

@@ -37,8 +37,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 |---|---|---|---|
 | 0 | Foundation (resource, registration exports) | - | approved (tested on the server) |
 | 1 | Spiked Baseball Bat | `scrap_spiked_bat` | approved (tested on the server) |
-| 2 | Pipe Shotgun | `scrap_pipe_shotgun` | **awaiting your test** |
-| 3 | Scrap-Made Axe | `scrap_axe` | not started |
+| 2 | Pipe Shotgun | `scrap_pipe_shotgun` | approved (tested on the server) |
+| 3 | Scrap-Made Axe | `scrap_axe` | **awaiting your test** |
 | 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | not started |
 | 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | not started |
 | 6 | Pipe Club | `scrap_pipe_club` | not started |
@@ -98,6 +98,23 @@ python tools/scrapweapons/dds_mips.py <out>/pipe_shotgun_d.png <out>/pipe_shotgu
 blender -b --python tools/scrapweapons/export_weapon.py -- <w_sg_doublebarrel.ydr> <out> pipe_shotgun wl_w_sg_pipeshotgun
 python tools/scrapweapons/make_meta.py <dlc data> WEAPON_DBSHOTGUN WEAPON_WL_PIPESHOTGUN wl_w_sg_pipeshotgun WT_WL_PIPESG <meta out> ClipSize=1
 ```
+
+## 3. Scrap-Made Axe
+
+![scrap axe](images/scrapweapons/scrap_axe_view3.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_axe` (1 x 3, 0.9 kg, 350 hits durability) |
+| Game weapon | `WEAPON_WL_SCRAPAXE`, model `wl_w_me_scrapaxe` |
+| Based on | `WEAPON_HATCHET`: same one-handed swings |
+| Damage | 1.2 x the hatchet |
+| Recipe | 4 scrap metal + 1 log + 2 nails + 1 rag + 1 duct tape, 10 s |
+| Model | 2,952 triangles |
+
+Build: `build_scrap_axe.py`, then `export_weapon.py -- <w_me_hatchet.ydr> <out> scrap_axe wl_w_me_scrapaxe`,
+`make_meta.py <spupgrade data> WEAPON_HATCHET WEAPON_WL_SCRAPAXE wl_w_me_scrapaxe WT_WL_SCRAPAXE <meta>`
+(game data: weaponhatchet.meta as weapons.meta, and the spupgrade weaponanimations / weaponarchetypes).
 
 ## Licensing
 
