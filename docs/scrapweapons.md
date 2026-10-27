@@ -35,8 +35,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 
 | # | Weapon | Item | Status |
 |---|---|---|---|
-| 0 | Foundation (resource, registration exports) | - | awaiting your test |
-| 1 | Spiked Baseball Bat | `scrap_spiked_bat` | not started |
+| 0 | Foundation (resource, registration exports) | - | approved (tested on the server) |
+| 1 | Spiked Baseball Bat | `scrap_spiked_bat` | **awaiting your test** |
 | 2 | Pipe Shotgun | `scrap_pipe_shotgun` | not started |
 | 3 | Scrap-Made Axe | `scrap_axe` | not started |
 | 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | not started |
@@ -50,3 +50,38 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 Order note: the Spiked Bat is first because a melee weapon has no muzzle,
 ammo or reload, so it proves the whole addon-weapon chain with the fewest
 moving parts.
+
+## 1. Spiked Baseball Bat
+
+![spiked bat](images/scrapweapons/spiked_bat_view3.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_spiked_bat` (1 x 4, 0.7 kg, 300 hits durability) |
+| Game weapon | `WEAPON_WL_SPIKEDBAT`, model `wl_w_me_spikedbat` |
+| Based on | `WEAPON_BAT`: same two-handed swings, blocking, first person |
+| Damage | 1.35 x the bat (client `SetWeaponDamageModifier`) |
+| Noise | 10 m (zombies) |
+| Recipe | Baseball bat + 10 nails + 1 scrap metal + 1 duct tape, 8 s, no blueprint |
+| Model | 4,596 triangles, one 1024 texture (embedded), the bat's bones and collision |
+
+Build (needs the game's `w_me_bat.ydr`, exported with CodeWalker, and the
+ambientCG textures Wood049 and Rust004):
+
+```
+blender -b --python tools/scrapweapons/build_spiked_bat.py -- <tex> <out>
+python tools/scrapweapons/dds_mips.py <out>/spiked_bat_d.png <out>/spiked_bat_d.dds
+blender -b --python tools/scrapweapons/export_weapon.py -- <w_me_bat.ydr> <out> spiked_bat wl_w_me_spikedbat
+python tools/scrapweapons/make_meta.py <game data> WEAPON_BAT WEAPON_WL_SPIKEDBAT wl_w_me_spikedbat WT_WL_SPKBAT <meta out>
+```
+
+## Licensing
+
+* Models: made for this project in Blender. Each keeps the skeleton (bone
+  names and positions) and the simple collision box of the game weapon it is
+  based on, which the game needs to hold it; no game mesh or texture is used.
+* Textures: ambientCG (CC0).
+* Weapon data (`meta/`): the game's own values for the base weapon, renamed;
+  standard for any add-on weapon.
+* Game files (the original models and data) are never committed; they are
+  read from your own GTA V install with CodeWalker.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Scrap weapons 1: Spiked baseball bat (awaiting in-game test)
+
+- New weapon `scrap_spiked_bat` in `wasteland_scrapweapons`: its own model (nails through the barrel, wire, duct-tape grip, old blood), icon, recipe (baseball bat + 10 nails + scrap metal + duct tape) and game weapon `WEAPON_WL_SPIKEDBAT`. Swings like the bat, hits 1.35x as hard. Holding, wear and repairs come from wasteland_weapons.
+- `wasteland_images`: icon `scrap_spiked_bat`.
+- Build tools in `tools/scrapweapons/`; renders in `docs/images/scrapweapons/`.
+
 ## Scrap weapons: foundation (no weapons yet)
 
 - New resource `wasteland_scrapweapons` (add `ensure wasteland_scrapweapons`; the updater offers to). Its weapon list is empty for now: weapons are added one at a time, see docs/scrapweapons.md.

@@ -5,7 +5,7 @@ lua54 'yes'
 name 'wasteland_scrapweapons'
 author 'Wasteland Core contributors'
 description 'Wasteland Core - home-made scrap weapons (addon weapons with their own models)'
-version '0.1.0'
+version '0.2.0'
 
 -- Only needs the core to log; it registers its items, weapons and recipes
 -- with wasteland_inventory, wasteland_weapons and wasteland_crafting
@@ -22,7 +22,20 @@ server_scripts {
     'server/main.lua',
 }
 
--- Models (stream/) and weapon data (meta/) are added one weapon at a time.
--- Each weapon adds its meta files here, e.g.:
---   files { 'meta/weapon_wl_pipeshotgun.meta', ... }
---   data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_pipeshotgun.meta'
+client_scripts {
+    'client/main.lua',
+}
+
+-- Models are in stream/ (streamed automatically). Each weapon has three data
+-- files, made by tools/scrapweapons/make_meta.py from the game weapon it is
+-- based on.
+files {
+    'meta/weapon_wl_spikedbat_weaponarchetypes.meta',
+    'meta/weapon_wl_spikedbat_weaponanimations.meta',
+    'meta/weapon_wl_spikedbat_weapons.meta',
+}
+
+-- Spiked baseball bat (based on WEAPON_BAT)
+data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_spikedbat_weaponarchetypes.meta'
+data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_spikedbat_weaponanimations.meta'
+data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_spikedbat_weapons.meta'
