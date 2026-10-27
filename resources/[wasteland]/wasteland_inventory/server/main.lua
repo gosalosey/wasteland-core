@@ -232,6 +232,7 @@ WLI.M = Wasteland.DefineModule({
             if not defs[entry.name] then return false, string.format('inventory.lua: startingItems names unknown item "%s"', entry.name) end
         end
         WLI.defs = defs
+        WLI.itemOwners = {}
         WLI.invs, WLI.chars, WLI.views, WLI.dropList = {}, {}, {}, {}
         if not commandRegistered then
             Interface.registerCommand(M.config)

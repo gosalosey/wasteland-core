@@ -10,6 +10,7 @@ local Recipes = WLCR.Recipes
 local M
 local crafting = {}    -- source -> { recipe, startedAt }
 local DATA_KEY = 'crafting'
+local extra = {}       -- recipe -> { def, owner, applied }: recipes other resources added with RegisterRecipe
 
 local function inv() return exports.wasteland_inventory end
 local function players() return exports.wasteland_players end
@@ -271,6 +272,24 @@ local STACK = { type = 'table', required = true, fields = {
     count = { type = 'integer', default = 1, min = 1, max = 100000 },
 } }
 
+local RECIPE_SCHEMA = { type = 'table', fields = {
+    label = { type = 'string', required = true, minLength = 1, maxLength = 48 },
+    result = STACK,
+    ingredients = { type = 'array', required = true, minItems = 1, items = STACK },
+    seconds = { type = 'number', default = 4, min = 0.5, max = 120 },
+    blueprint = { type = 'string', pattern = '^[%w_]+$' },
+    station = { type = 'string', pattern = '^[%w_]+$', description = 'Made only at this station (bases: workbench)' },
+} }
+
+-- Items a recipe names that the inventory does not know (nil when all are known).
+local function unknownItem(r)
+    local items = { r.result.name, r.blueprint }
+    for _, ing in ipairs(r.ingredients) do items[#items + 1] = ing.name end
+    for _, item in pairs(items) do
+        if item and not inv():GetItemDefinition(item) then return item end
+    end
+end
+
 M = Wasteland.DefineModule({
     name = 'crafting',
     version = '0.1.0',
@@ -281,26 +300,21 @@ M = Wasteland.DefineModule({
         file = 'crafting.lua',
         optional = true,
         schema = { type = 'table', fields = {
-            recipes = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = { type = 'table', fields = {
-                label = { type = 'string', required = true, minLength = 1, maxLength = 48 },
-                result = STACK,
-                ingredients = { type = 'array', required = true, minItems = 1, items = STACK },
-                seconds = { type = 'number', default = 4, min = 0.5, max = 120 },
-                blueprint = { type = 'string', pattern = '^[%w_]+$' },
-                station = { type = 'string', pattern = '^[%w_]+$', description = 'Made only at this station (bases: workbench)' },
-            } } },
+            recipes = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = RECIPE_SCHEMA },
         } },
     },
     onInit = function(mod)
         M = mod -- DefineModule may run onInit before it returns
         for name, r in pairs(M.config.recipes) do
-            local items = { r.result.name, r.blueprint }
-            for _, ing in ipairs(r.ingredients) do items[#items + 1] = ing.name end
-            for _, item in pairs(items) do
-                if item and not inv():GetItemDefinition(item) then
-                    return false, string.format('crafting.lua: recipe "%s" names item "%s", which is not in inventory.lua items', name, item)
-                end
+            local item = unknownItem(r)
+            if item then
+                return false, string.format('crafting.lua: recipe "%s" names item "%s", which is not in inventory.lua items', name, item)
             end
+        end
+        -- recipes from RegisterRecipe (crafting.lua wins on a clash; unknown items skip the recipe)
+        for name, e in pairs(extra) do
+            e.applied = nil
+            if not M.config.recipes[name] and not unknownItem(e.def) then M.config.recipes[name] = e.def; e.applied = true end
         end
         crafting = {}
         registerBlueprints()
@@ -395,4 +409,40 @@ exports('ForgetRecipe', function(src, name)
     known[name] = nil
     saveData(cid, known)
     return true
+end)
+
+--- RegisterRecipe(name, { label, result, ingredients, seconds?, blueprint?, station? }) -> ok, err
+--- For resources that bring their own craftable items. Every item it names
+--- must already exist (inventory RegisterItem). Kept until the registering
+--- resource stops; a recipe of the same name in crafting.lua wins.
+exports('RegisterRecipe', function(name, def)
+    if type(name) ~= 'string' or not name:match('^[%a][%w_]*$') then return false, 'recipe name must start with a letter: letters, digits and _' end
+    local r, errs = Wasteland.Schema().validate(RECIPE_SCHEMA, def)
+    if #errs > 0 then
+        local m = {}
+        for _, e in ipairs(errs) do m[#m + 1] = (e.path ~= '' and e.path .. ': ' or '') .. e.message end
+        return false, string.format('recipe "%s": %s', name, table.concat(m, '; '))
+    end
+    local owner = GetInvokingResource() or GetCurrentResourceName()
+    if extra[name] and extra[name].owner ~= owner then return false, string.format('recipe "%s" was already registered by %s', name, extra[name].owner) end
+    if M and M.active and GetResourceState('wasteland_inventory') == 'started' then
+        local item = unknownItem(r)
+        if item then return false, string.format('recipe "%s" names unknown item "%s" (register the item first)', name, item) end
+    end
+    local was = extra[name]
+    extra[name] = { def = r, owner = owner }
+    if M and M.active and (not M.config.recipes[name] or (was and was.applied)) then
+        M.config.recipes[name] = r; extra[name].applied = true
+        registerBlueprints()
+    end
+    return true
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    for name, e in pairs(extra) do
+        if e.owner == res then
+            if M and e.applied then M.config.recipes[name] = nil end
+            extra[name] = nil
+        end
+    end
 end)

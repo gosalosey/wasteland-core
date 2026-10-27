@@ -7,6 +7,7 @@
 
 local M
 local held = {}  -- source -> { uid, item }
+local extra = {} -- item -> { def, owner }: weapons other resources added with RegisterWeapon
 
 local function inv() return exports.wasteland_inventory end
 local function inventoryRunning() return GetResourceState('wasteland_inventory') == 'started' end
@@ -84,6 +85,7 @@ end
 -- Only weapons the player carries (not ones in a drop or stash they have
 -- open) can be held.
 local function useWeapon(src, stack)
+    if not M.config.weapons[stack.name] then return false, 'This weapon cannot be used right now.' end
     local found = inv():FindItem(src, stack.uid)
     if not found then return false, 'Put it in your inventory first.' end
     if held[src] and held[src].uid == stack.uid then
@@ -155,6 +157,13 @@ local function detach(src, uid)
     if held[src] and held[src].uid == uid then sendState(src) end
     if taken > 0 then notice(src, string.format('Took %d attachment%s off your %s.', taken, taken == 1 and '' or 's', gd and gd.label or 'gun')) end
     if next(left) then notice(src, 'No room for the rest: they stay on the gun.') end
+end
+
+-- Weapons from RegisterWeapon join the config's (the config wins on a clash).
+local function applyExtra()
+    for item, e in pairs(extra) do
+        if not M.config.weapons[item] then M.config.weapons[item] = e.def; e.applied = true end
+    end
 end
 
 local function registerUsables()
@@ -259,6 +268,13 @@ end)
 -- Module
 -------------------------------------------------------------------------------
 
+local WEAPON_SCHEMA = { type = 'table', fields = {
+    hash = { type = 'string', required = true, pattern = '^WEAPON_[%w_]+$' },
+    ammo = { type = 'string', pattern = '^[%w_]+$' },
+    wear = { type = 'integer', default = 1, min = 0, max = 1000 },
+    noise = { type = 'number', default = 0, min = 0, max = 2000 },
+} }
+
 M = Wasteland.DefineModule({
     name = 'weapons',
     version = '0.1.0',
@@ -270,12 +286,7 @@ M = Wasteland.DefineModule({
         optional = true,
         schema = { type = 'table', fields = {
             weapons = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' },
-                values = { type = 'table', fields = {
-                    hash = { type = 'string', required = true, pattern = '^WEAPON_[%w_]+$' },
-                    ammo = { type = 'string', pattern = '^[%w_]+$' },
-                    wear = { type = 'integer', default = 1, min = 0, max = 1000 },
-                    noise = { type = 'number', default = 0, min = 0, max = 2000 },
-                } } },
+                values = WEAPON_SCHEMA },
             attachmentItems = { type = 'array', default = {}, items = { type = 'string', pattern = '^[%w_]+$' } },
             suppressorNoise = { type = 'number', default = 0.5, min = 0, max = 1, description = 'Noise of a suppressed shot (share of the gun\'s)' },
             repairItems = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%w_]+$' },
@@ -285,6 +296,8 @@ M = Wasteland.DefineModule({
     onInit = function(mod)
         M = mod -- DefineModule may run onInit before it returns
         held = {}
+        for _, e in pairs(extra) do e.applied = nil end
+        applyExtra()
         if inventoryRunning() then
             for item, w in pairs(M.config.weapons) do
                 if w.ammo and not inv():GetItemDefinition(w.ammo) then
@@ -333,3 +346,49 @@ end)
 
 M.netEvent('wasteland:weapons:server:detach', { args = { { type = 'string', required = true, pattern = '^[%w_%-]+$', maxLength = 64 } },
     rateLimit = { burst = 3, perSecond = 1 } }, function(src, uid) detach(src, uid) end)
+
+--- RegisterWeapon(item, { hash, ammo?, wear?, noise? }) -> ok, err
+--- For resources that bring their own weapons (an addon weapon streamed by
+--- that resource). The item must already exist (inventory RegisterItem).
+--- Kept until the registering resource stops; a weapon of the same name in
+--- weapons.lua wins.
+exports('RegisterWeapon', function(item, def)
+    if type(item) ~= 'string' or not item:match('^[%w_]+$') then return false, 'item name must be letters, digits and _' end
+    local w, errs = Wasteland.Schema().validate(WEAPON_SCHEMA, def)
+    if #errs > 0 then
+        local m = {}
+        for _, e in ipairs(errs) do m[#m + 1] = (e.path ~= '' and e.path .. ': ' or '') .. e.message end
+        return false, string.format('weapon "%s": %s', item, table.concat(m, '; '))
+    end
+    local owner = GetInvokingResource() or GetCurrentResourceName()
+    if extra[item] and extra[item].owner ~= owner then return false, string.format('weapon "%s" was already registered by %s', item, extra[item].owner) end
+    if M and M.active and inventoryRunning() then
+        if not inv():GetItemDefinition(item) then return false, string.format('unknown item "%s" (register the item first)', item) end
+        if w.ammo and not inv():GetItemDefinition(w.ammo) then return false, string.format('weapon "%s" uses unknown ammo "%s"', item, w.ammo) end
+    end
+    local was = extra[item]
+    extra[item] = { def = w, owner = owner }
+    if M and M.active then
+        -- a weapons.lua entry of the same name stays; ours replaces only our own
+        if not M.config.weapons[item] or (was and was.applied) then
+            M.config.weapons[item] = w; extra[item].applied = true
+        end
+        if inventoryRunning() then
+            local ok, err = inv():RegisterUsable(item, useWeapon)
+            if not ok then return false, err end
+        end
+    end
+    return true
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    for item, e in pairs(extra) do
+        if e.owner == res then
+            if M and e.applied then
+                M.config.weapons[item] = nil
+                for src, h in pairs(held) do if h.item == item then holster(src) end end
+            end
+            extra[item] = nil
+        end
+    end
+end)

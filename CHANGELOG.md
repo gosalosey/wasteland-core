@@ -1,5 +1,11 @@
 # Changelog
 
+## Scrap weapons: foundation (no weapons yet)
+
+- New resource `wasteland_scrapweapons` (add `ensure wasteland_scrapweapons`; the updater offers to). Its weapon list is empty for now: weapons are added one at a time, see docs/scrapweapons.md.
+- New exports so a resource can bring its own weapons and recipes without touching your config files: `wasteland_weapons` `RegisterWeapon(item, def)` and `wasteland_crafting` `RegisterRecipe(name, def)`. Entries of the same name in weapons.lua / crafting.lua win. Registrations go away when the registering resource stops.
+- `wasteland_inventory` `RegisterItem`: the resource that registered an item may now register it again (after a restart).
+
 ## Crafting: track recipes
 
 - Each recipe on the crafting screen (K) has a Track button. Tracked recipes (up to 3) show in the top-right corner with every item they need and how many you have, e.g. Scrap 1 / 2. Counts update as your inventory changes and turn green once you have enough. Click Tracked again to remove one. The list is saved with the character.

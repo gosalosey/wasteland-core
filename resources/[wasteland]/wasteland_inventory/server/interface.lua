@@ -201,11 +201,15 @@ exports('GetItemDefinition', function(name)
 end)
 
 --- RegisterItem(name, definition) -> ok, err   (modules adding their items)
+WLI.itemOwners = WLI.itemOwners or {}   -- item -> resource that registered it
 exports('RegisterItem', function(name, def)
     local d, err = WLI.validateItem(Wasteland.Schema(), name, def)
     if not d then return false, err end
-    if WLI.defs[name] then return false, string.format('item "%s" is already defined', name) end
+    -- a resource may replace an item it registered itself (after a restart)
+    local owner = GetInvokingResource() or GetCurrentResourceName()
+    if WLI.defs[name] and WLI.itemOwners[name] ~= owner then return false, string.format('item "%s" is already defined', name) end
     WLI.defs[name] = d
+    WLI.itemOwners[name] = owner
     Interface.sendDefinitions()
     return true
 end)
