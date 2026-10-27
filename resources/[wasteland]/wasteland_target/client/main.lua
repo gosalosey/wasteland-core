@@ -1,5 +1,8 @@
 -- wasteland_target :: client/main.lua
--- Target system: hold Left Alt, look at something, choose what to do.
+-- Target system, the usual FiveM way: hold Left Alt and an eye shows; look
+-- at something usable and its options list beside the eye; left-click to
+-- bring up the mouse cursor (the camera holds still), click an option. Let go
+-- of Alt to close; right-click puts the cursor away to look around again.
 -- Other resources register targets (models, entities, network ids, every
 -- ped / vehicle / object / player, sphere and box zones) with options;
 -- each option runs a function (onSelect), a client event or a server event.
@@ -154,16 +157,19 @@ local function show()
     end
 end
 
--- With options on screen the mouse cursor comes up so an option can be
--- clicked; the camera stays still meanwhile so the target does not change.
+-- The mouse cursor for clicking an option. Game input is kept (the usual way,
+-- does) so letting go of Alt still closes; looking around is blocked meanwhile.
 local function setPointing(on)
     if pointing == on or not uiRunning() or not exports.wasteland_ui:IsOpen(SCREEN) then return end
     pointing = on
     exports.wasteland_ui:SetFocus(SCREEN, on, on)
+    SetNuiFocusKeepInput(on)
+    if on then SetCursorLocation(0.5, 0.5) end
     show()
 end
 
 local function hide()
+    if pointing then SetNuiFocusKeepInput(false) end
     pointing = false
     if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end
 end
@@ -190,7 +196,8 @@ local function canTarget()
     return not ok or ready -- without wasteland_players: always
 end
 
-local CONTROLS = { 1, 2, 24, 25, 140, 141, 142, 257, 263, 264, 14, 15, 16, 17, 37, 38, 44 }
+local LOOK = { 1, 2 }
+local CONTROLS = { 24, 25, 140, 141, 142, 257, 263, 264, 14, 15, 16, 17, 37, 38, 44 }
 local ATTACK = { 24, 25, 140, 141, 142, 257, 263, 264 }
 
 -- No shooting, aiming or melee: disabling the buttons alone is not enough
@@ -217,6 +224,7 @@ local function run()
     while holding do
         if not canTarget() then break end
         for _, c in ipairs(CONTROLS) do DisableControlAction(0, c, true) end
+        if pointing then for _, c in ipairs(LOOK) do DisableControlAction(0, c, true) end end
         DisablePlayerFiring(PlayerId(), true)
         sinceScan = sinceScan + GetFrameTime() * 1000
         if sinceScan >= 100 and not pointing then
@@ -231,17 +239,8 @@ local function run()
                 show()
             end
         end
-        if #current > 0 then
-            local moved = false
-            if IsDisabledControlJustPressed(0, 14) then selected = selected % #current + 1; moved = true end      -- wheel down
-            if IsDisabledControlJustPressed(0, 15) then selected = (selected - 2) % #current + 1; moved = true end -- wheel up
-            if moved then show() end
-            if not pointing then setPointing(true) end
-            if IsDisabledControlJustPressed(0, 38) or not pointing and IsDisabledControlJustPressed(0, 24) then
-                choose()
-                break
-            end
-        end
+        if #current > 0 and not pointing and IsDisabledControlJustPressed(0, 24) then setPointing(true)      -- left-click: cursor
+        elseif pointing and IsDisabledControlJustPressed(0, 25) then setPointing(false) end               -- right-click: look again
         if clicked then
             if current[clicked] then selected = clicked; choose() end
             clicked = nil
@@ -258,7 +257,6 @@ end
 AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     if screen ~= SCREEN or not holding then return end
     if action == 'select' and type(payload) == 'table' and tonumber(payload.index) then clicked = math.floor(tonumber(payload.index))
-    elseif action == 'hover' and type(payload) == 'table' and tonumber(payload.index) and current[math.floor(tonumber(payload.index))] then selected = math.floor(tonumber(payload.index)); show()
     elseif action == 'close' then holding = false end
 end)
 
@@ -269,7 +267,5 @@ RegisterCommand('+wl_target', function()
     show()
     Citizen.CreateThread(run)
 end, false)
--- While the cursor is up the game may report Alt as let go when the screen
--- takes the keyboard; the screen tells us when it really is (action 'close').
-RegisterCommand('-wl_target', function() if not pointing then holding = false end end, false)
+RegisterCommand('-wl_target', function() holding = false end, false)
 RegisterKeyMapping('+wl_target', 'Target: look and interact (hold)', 'keyboard', 'LMENU')

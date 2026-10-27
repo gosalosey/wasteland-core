@@ -1,5 +1,9 @@
 # Changelog
 
+## Target: works the usual FiveM way
+
+- Hold Left Alt: an eye in the middle. Look at something usable: the eye turns green and its options show beside it. Left-click: the mouse cursor comes up and the camera holds still. Click an option to use it. Let go of Alt to close; right-click puts the cursor away so you can look around again. Scroll + E is gone.
+
 ## Scrap weapons 3: Scrap-made axe (awaiting in-game test)
 
 - New weapon `scrap_axe`: a head cut from rusty steel plate with a ground edge, bolted through a rough branch handle with cheek plates, lashed with wire and a rag, a rebar spike on the back, taped grip. Swings like the hatchet, hits 1.2x as hard. Recipe: 4 scrap metal + 1 log + 2 nails + 1 rag + 1 duct tape.
