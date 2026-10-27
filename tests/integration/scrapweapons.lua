@@ -44,15 +44,15 @@ describe('scrap weapons: registration', function()
         expect(#server.scriptErrors).toBe(0)
     end)
 
-    it('the spiked bat is crafted from a bat, nails, scrap and tape', function()
+    it('the spiked bat is crafted from a plank, nails, scrap and tape', function()
         local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
-        I('AddItem', id, 'weapon_bat', 1); I('AddItem', id, 'nails', 10); I('AddItem', id, 'scrap_metal', 1); I('AddItem', id, 'duct_tape', 1)
+        I('AddItem', id, 'wood_planks', 1); I('AddItem', id, 'nails', 10); I('AddItem', id, 'scrap_metal', 1); I('AddItem', id, 'duct_tape', 1)
         server:advance(100)
         local tape = I('GetItemCount', id, 'duct_tape')
         server:clientEvent(id, 'wasteland:crafting:server:craft', 'scrap_spiked_bat'); server:advance(8200)
         server:clientEvent(id, 'wasteland:crafting:server:finish'); server:advance(200)
         expect(I('GetItemCount', id, 'scrap_spiked_bat')).toBe(1)
-        expect(I('GetItemCount', id, 'weapon_bat')).toBe(0)
+        expect(I('GetItemCount', id, 'wood_planks')).toBe(0)
         expect(I('GetItemCount', id, 'nails')).toBe(0)
         expect(I('GetItemCount', id, 'duct_tape')).toBe(tape - 1)
     end)
@@ -227,5 +227,50 @@ describe('scrap weapons: registration', function()
         ok = server:export('wasteland_weapons', 'RegisterWeapon', 'weapon_bat', { hash = 'WEAPON_WL_OTHER' })
         expect(server:export('wasteland_weapons', 'GetWeaponConfig', 'weapon_bat').hash).toBe('WEAPON_BAT')
         expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+
+describe('scrap weapons replace the standard ones', function()
+    local CONFIG = RESOURCES .. '/wasteland_config/config/'
+    local function config(name)
+        local f = assert(io.open(CONFIG .. name, 'rb')); local src = f:read('a'); f:close()
+        return assert(load(src, '@' .. name, 't', { vector3 = function(x, y, z) return { x = x, y = y, z = z } end,
+            vector4 = function(x, y, z, w) return { x = x, y = y, z = z, w = w } end }))()
+    end
+    local env = setmetatable({}, { __index = _G })
+    assert(loadfile(RESOURCES .. '/wasteland_scrapweapons/shared/catalog.lua', 't', env))()
+    local catalog = env.WLSW.catalog
+    local RETIRED = {}
+    for _, n in ipairs({ 'crowbar', 'weapon_bat', 'weapon_machete', 'weapon_hammer', 'weapon_wrench', 'weapon_battleaxe', 'weapon_knuckle',
+        'weapon_switchblade', 'weapon_pistol', 'weapon_revolver', 'weapon_dbshotgun', 'weapon_pumpshotgun', 'weapon_microsmg', 'weapon_smg',
+        'weapon_carbine', 'weapon_assaultrifle', 'weapon_huntingrifle', 'ammo_9mm', 'ammo_556', 'ammo_762' }) do RETIRED[n] = true end
+
+    it('inventory.lua defines every scrap weapon exactly as the catalog does', function()
+        local items = config('inventory.lua').items
+        for name, w in pairs(catalog) do
+            local d = items[name]
+            expect(name .. ':' .. tostring(d ~= nil)).toBe(name .. ':true')
+            for k, v in pairs(w.item) do expect(name .. '.' .. k .. '=' .. tostring(d[k])).toBe(name .. '.' .. k .. '=' .. tostring(v)) end
+        end
+    end)
+
+    it('nothing hands out a retired standard weapon or its ammo any more', function()
+        local found = {}
+        local function check(where, name) if RETIRED[name] then found[#found + 1] = where .. ': ' .. name end end
+        for tname, t in pairs(config('loot.lua').tables) do for _, it in ipairs(t.items) do check('loot ' .. tname, it.name) end end
+        for _, it in ipairs(config('loot.lua').survivorCache.items or {}) do check('survivor cache', it.name) end
+        for _, it in ipairs(config('supplydrops.lua').items) do check('supply drops', it.name) end
+        for rname, r in pairs(config('crafting.lua').recipes) do check('recipe ' .. rname, r.result.name) end
+        for sname, shop in pairs(config('camps.lua').shops) do
+            for _, e in ipairs(shop.items) do if e.buy then check('shop ' .. sname, e.name) end end   -- selling old ones to traders is fine
+        end
+        for _, act in ipairs(config('story.lua').acts) do
+            for _, step in ipairs(act.steps) do
+                for _, c in ipairs(step.dialogue and step.dialogue.choices or {}) do
+                    for _, g in ipairs(c.give or {}) do check('story ' .. step.id, g.name) end
+                end
+            end
+        end
+        expect(table.concat(found, ', ')).toBe('')
     end)
 end)

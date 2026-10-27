@@ -333,6 +333,19 @@ return {
             description = 'Uses .308 rounds.',
             attachments = { suppressor = 'COMPONENT_AT_AR_SUPP_02' } },
 
+        -- Scrap weapons (wasteland_scrapweapons brings their models, game
+        -- weapons and recipes; keep these in step with its shared/catalog.lua).
+        scrap_spiked_bat = { label = 'Spiked bat', category = 'weapon', width = 1, height = 4, weight = 0.7, durability = 300, description = 'A baseball bat with nails driven through it. Hits harder than a plain bat.' },
+        scrap_pipe_shotgun = { label = 'Pipe shotgun', category = 'weapon', width = 4, height = 2, weight = 1.4, durability = 120, description = 'One shell in a length of pipe. Crude, loud and hits hard up close. Reload after every shot.' },
+        scrap_axe = { label = 'Scrap axe', category = 'weapon', width = 1, height = 3, weight = 0.9, durability = 350, description = 'A steel plate head bolted to a branch. Heavier than a hatchet.' },
+        scrap_pump_shotgun = { label = 'Scrap pump shotgun', category = 'weapon', width = 5, height = 2, weight = 2.2, durability = 250, description = 'A welded receiver, two pipes and a plank. Holds four shells; pump between shots.' },
+        scrap_bolt_rifle = { label = 'Scrap bolt rifle', category = 'weapon', width = 6, height = 2, weight = 3.0, durability = 300, description = 'A pipe barrel on a hand-cut stock with a working bolt. Five rounds of .308; hits hard at range.' },
+        scrap_pipe_club = { label = 'Pipe club', category = 'weapon', width = 1, height = 3, weight = 1.1, durability = 450, description = 'A pipe with a cast-iron tee on the end. Heavy, simple, hard to break.' },
+        scrap_machete = { label = 'Scrap machete', category = 'weapon', width = 1, height = 3, weight = 0.6, durability = 320, description = 'A blade ground out of scrap plate with teeth cut in the back. Fast and nasty.' },
+        scrap_lever_rifle = { label = 'Scrap lever rifle', category = 'weapon', width = 6, height = 2, weight = 2.8, durability = 350, description = 'An old-style lever gun put back together from scrap. Seven .44 rounds, quick follow-up shots.' },
+        scrap_maul = { label = 'Heavy scrap maul', category = 'weapon', width = 2, height = 5, weight = 4.5, durability = 500, description = 'A lump of I-beam on a pipe. Slow to carry, brutal to be hit with.' },
+        scrap_double_barrel = { label = 'Improvised double-barrel', category = 'weapon', width = 5, height = 2, weight = 2.3, durability = 200, description = 'Two pipes, two hammers, two shells. Break it open and load both.' },
+
         -- Weapon attachments: right-click one -> Attach to... (a gun it fits);
         -- right-click a gun -> Remove attachments. What fits which gun is the
         -- gun's `attachments` (slot = GTA component). A suppressor halves how

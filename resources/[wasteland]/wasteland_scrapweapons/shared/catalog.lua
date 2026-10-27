@@ -21,7 +21,7 @@ WLSW.catalog = {
             description = 'A baseball bat with nails driven through it. Hits harder than a plain bat.' },
         weapon = { hash = 'WEAPON_WL_SPIKEDBAT', noise = 10 },
         recipe = { label = 'Spiked bat', result = { name = 'scrap_spiked_bat', count = 1 },
-            ingredients = { { name = 'weapon_bat', count = 1 }, { name = 'nails', count = 10 },
+            ingredients = { { name = 'wood_planks', count = 1 }, { name = 'nails', count = 10 },
                 { name = 'scrap_metal', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 8 },
         labelKey = 'WT_WL_SPKBAT', label = 'Spiked Bat',
         damage = 1.35,
@@ -156,7 +156,7 @@ WLSW.catalog = {
             ingredients = { { name = 'scrap_metal', count = 10 }, { name = 'metal_sheet', count = 1 }, { name = 'wood_planks', count = 2 },
                 { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 15 },
         labelKey = 'WT_WL_SCRAPDBL', label = 'Improvised Double-Barrel',
-        status = 'testing',
+        status = 'approved',
     },
 }
 

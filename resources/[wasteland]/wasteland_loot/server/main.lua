@@ -722,8 +722,8 @@ M = Wasteland.DefineModule({
             local t = M.config.tables[c.table]
             if not t then return false, string.format('loot.lua: container "%s" uses table "%s", which does not exist', name, c.table) end
             for _, tool in ipairs(c.tools or {}) do
-                if not inv():GetItemDefinition(tool) then
-                    return false, string.format('loot.lua: container "%s" needs tool "%s", which is not in inventory.lua items', name, tool)
+                if not inv():GetItemDefinition(tool) then   -- may be registered later by another resource; any other tool still works
+                    M.log:warn('loot.lua: container "%s" lists tool "%s", which is not in inventory.lua items (yet)', name, tool)
                 end
             end
         end
@@ -731,8 +731,8 @@ M = Wasteland.DefineModule({
             if t.rolls[1] > t.rolls[2] then return false, string.format('loot.lua: table "%s" has rolls min above max', name) end
             for _, it in ipairs(t.items) do
                 if it.min > it.max then return false, string.format('loot.lua: table "%s" item "%s" has min above max', name, it.name) end
-                if not inv():GetItemDefinition(it.name) then
-                    return false, string.format('loot.lua: table "%s" names item "%s", which is not in inventory.lua items', name, it.name)
+                if not inv():GetItemDefinition(it.name) then   -- may be registered later by another resource: picks of it are skipped until then
+                    M.log:warn('loot.lua: table "%s" names item "%s", which is not in inventory.lua items (yet)', name, it.name)
                 end
             end
         end

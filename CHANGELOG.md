@@ -1,5 +1,13 @@
 # Changelog
 
+## Standard weapons retired: the scrap weapons replace them
+
+- Loot, supply drops, story rewards, the Survivor's Cache and traders' stock now give the closest scrap weapon instead of a standard one (see the swap table in docs/scrapweapons.md). 9mm, 5.56 and 7.62 ammo became 12 gauge, .44 and .308. The recipes and blueprints of the standard guns and melee weapons are removed.
+- Kept: the knife and hatchet as tools (skinning, trees, starting knife), and molotovs, grenades and sticky bombs. The scrap axe and maul chop trees, the scrap machete and axe skin, the pipe club, axe and maul break down wood piles.
+- Standard weapons players already own keep working, and traders still buy them.
+- The ten scrap items are now in inventory.lua, so every system knows them from the start; `ensure wasteland_scrapweapons` moves right after `ensure wasteland_inventory`. Loot and supply drops warn instead of refusing to start when a listed item is missing. The spiked bat recipe takes a wood plank instead of a baseball bat. Improvised double-barrel marked approved.
+- Config files changed: inventory.lua, crafting.lua, loot.lua, camps.lua, supplydrops.lua, story.lua, hunting.lua.
+
 ## Fix: script errors from wasteland_scrapweapons at server start
 
 - On start, wasteland_scrapweapons registered its items while the inventory module was still loading its settings, so `RegisterItem` crashed (`attempt to index a nil value (field 'cfg')`) once per weapon. Items still got registered a moment later, but the console filled with errors.

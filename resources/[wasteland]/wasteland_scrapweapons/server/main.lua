@@ -29,7 +29,11 @@ local function registerItems()
     if not started('wasteland_inventory', 'inventory') then return nil end
     local n = 0
     for name, w in pairs(WLSW.catalog) do
-        local ok, err = call('wasteland_inventory', 'RegisterItem', name, w.item)
+        -- inventory.lua defines them (so loot, traders and drops know them from
+        -- the start); register only what a server's own inventory.lua lacks
+        local defined = call('wasteland_inventory', 'GetItemDefinition', name)
+        local ok, err = true, nil
+        if not defined then ok, err = call('wasteland_inventory', 'RegisterItem', name, w.item) end
         if ok then n = n + 1 else log('item %s: %s', name, tostring(err)) end
     end
     return n
@@ -75,10 +79,7 @@ AddEventHandler('wasteland:core:moduleState', function(name, state)
     elseif name == 'crafting' then registerRecipes() end
 end)
 
-Citizen.CreateThread(function()
-    Citizen.Wait(0)
-    registerAll()
-end)
+registerAll()   -- at once, in case the inventory is already running
 
 --- GetCatalog() -> { [item] = { status, hash } }   (admin / tests)
 exports('GetCatalog', function()

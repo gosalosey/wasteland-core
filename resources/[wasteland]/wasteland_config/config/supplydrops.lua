@@ -20,13 +20,13 @@ return {
     grid = { 10, 8 },      -- the crate's size (cells), room for a full drop
     rolls = { 3, 5 },
     items = {
-        { name = 'ammo_9mm', min = 10, max = 25, weight = 10 },
+        { name = 'ammo_12g', min = 10, max = 25, weight = 10 },
         { name = 'bandage', min = 2, max = 4, weight = 8 },
         { name = 'antibiotics', min = 1, max = 2, weight = 4 },
         { name = 'water_bottle', min = 2, max = 3, weight = 8 },
         { name = 'canned_beans', min = 2, max = 3, weight = 8 },
         { name = 'armor_plate', min = 1, max = 1, weight = 2 },
-        { name = 'weapon_pistol', min = 1, max = 1, weight = 1 },
+        { name = 'scrap_pipe_shotgun', min = 1, max = 1, weight = 1 },
     },
 
     points = {

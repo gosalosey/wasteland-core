@@ -45,7 +45,7 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 7 | Scrap Machete | `scrap_machete` | approved (tested on the server) |
 | 8 | Scrap Lever Rifle | `scrap_lever_rifle` | approved (tested on the server) |
 | 9 | Heavy Scrap Maul | `scrap_maul` | approved (tested on the server) |
-| 10 | Improvised Double-Barrel | `scrap_double_barrel` | **awaiting your test** |
+| 10 | Improvised Double-Barrel | `scrap_double_barrel` | approved (tested on the server) |
 
 Order note: the Spiked Bat is first because a melee weapon has no muzzle,
 ammo or reload, so it proves the whole addon-weapon chain with the fewest
@@ -230,6 +230,30 @@ Build: `build_scrap_maul.py`, `export_weapon.py -- <w_me_bat.ydr> <out> scrap_ma
 
 Build: `build_scrap_double.py`, `export_weapon.py -- <w_sg_doublebarrel.ydr> <out> scrap_double wl_w_sg_scrapdouble`,
 `make_meta.py <mplowrider2 data> WEAPON_DBSHOTGUN WEAPON_WL_SCRAPDOUBLE wl_w_sg_scrapdouble WT_WL_SCRAPDBL <meta>`.
+
+## The standard weapons are retired
+
+The scrap weapons replace the game's standard ones (decided after all ten were approved):
+
+* Nothing hands out a standard gun or melee weapon any more: their recipes and
+  blueprints are gone; loot, supply drops, story rewards, the Survivor's Cache
+  and traders' stock give the closest scrap weapon instead. 9mm / 5.56 / 7.62
+  became 12 gauge / .44 / .308 (the scrap guns' ammo).
+* Kept as tools: the knife (skinning, new characters start with one) and the
+  hatchet (trees); the scrap axe and maul chop too, the scrap machete and axe
+  skin, the pipe club, axe and maul break down wood. Molotovs, grenades and
+  sticky bombs stay (base raiding).
+* Standard weapons players already have keep working (their items and
+  weapons.lua entries stay) and traders still buy them.
+* The scrap items are defined in inventory.lua (so loot, traders and drops know
+  them from the start); wasteland_scrapweapons registers any a server's own
+  inventory.lua lacks. `ensure wasteland_scrapweapons` goes right after
+  `ensure wasteland_inventory`.
+* Swap table: crowbar, hammer, wrench, brass knuckles -> pipe club; bat -> spiked
+  bat; machete, switchblade -> scrap machete; battle axe -> scrap axe; pistol,
+  micro SMG -> pipe shotgun; revolver, SMG, carbine -> lever rifle; assault
+  rifle, hunting rifle -> bolt rifle; sawed-off -> double-barrel; pump shotgun ->
+  scrap pump shotgun.
 
 ## Licensing
 

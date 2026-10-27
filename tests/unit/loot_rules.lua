@@ -51,7 +51,7 @@ describe('loot tables', function()
         math.randomseed(42)
         for _ = 1, n do
             for _, it in ipairs(Rules.roll(cfg.tables.crate, math.random, math.random)) do
-                if it.name == 'weapon_pistol' then guns = guns + 1 end
+                if it.name == 'scrap_pipe_shotgun' then guns = guns + 1 end
             end
         end
         expect(guns > 0 and guns < n * 0.03).toBe(true)

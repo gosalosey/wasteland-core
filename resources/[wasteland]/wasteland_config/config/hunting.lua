@@ -36,7 +36,7 @@ return {
 
     harvest = {
         seconds = 6,
-        tools = { 'weapon_knife', 'weapon_switchblade', 'weapon_machete', 'weapon_hatchet', 'weapon_battleaxe' },
+        tools = { 'weapon_knife', 'weapon_switchblade', 'weapon_machete', 'weapon_hatchet', 'weapon_battleaxe', 'scrap_machete', 'scrap_axe' },
         meatItem = 'raw_meat',
         peltItem = 'animal_pelt',
     },

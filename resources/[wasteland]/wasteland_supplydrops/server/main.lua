@@ -191,8 +191,8 @@ M = Wasteland.DefineModule({
         -- Checks a schema cannot express: fail with a clear message.
         if #M.config.points == 0 then return false, 'supplydrops.lua: add at least one point' end
         for _, it in ipairs(M.config.items) do
-            if not inv():GetItemDefinition(it.name) then
-                return false, string.format('supplydrops.lua: item "%s" is not in inventory.lua items', it.name)
+            if not inv():GetItemDefinition(it.name) then   -- may be registered later by another resource
+                M.log:warn('supplydrops.lua: item "%s" is not in inventory.lua items (yet)', it.name)
             end
         end
         if not commandRegistered then
