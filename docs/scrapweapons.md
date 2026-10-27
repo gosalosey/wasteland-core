@@ -226,7 +226,7 @@ Build: `build_scrap_maul.py`, `export_weapon.py -- <w_me_bat.ydr> <out> scrap_ma
 | Based on | `WEAPON_DBSHOTGUN` (sawed-off): 2 shells, break-open reload (barrels and forend on Gun_Breach) |
 | Ammo | `ammo_12g` |
 | Recipe | 10 scrap metal + 1 metal sheet + 2 wood planks + 4 nails + 2 duct tape, 15 s |
-| Model | v2 after the reference picture: thick teal-green barrels worn to rust, brass shell wired on the breech, long rag-wrapped stock |
+| Model | v3 after the reference picture: thick teal-green barrels worn to rust, pipe couplings at the breech with a brass shell wired on, a wooden stock wound in rag strips |
 
 Build: `build_scrap_double.py`, `export_weapon.py -- <w_sg_doublebarrel.ydr> <out> scrap_double wl_w_sg_scrapdouble`,
 `make_meta.py <mplowrider2 data> WEAPON_DBSHOTGUN WEAPON_WL_SCRAPDOUBLE wl_w_sg_scrapdouble WT_WL_SCRAPDBL <meta>`.

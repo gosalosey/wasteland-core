@@ -45,27 +45,20 @@ def brass():
     return m.done(m.grime(c, 0.75, 20), 0.4)
 
 
-def cloth_wrap():
-    """Strips of mixed rags wound round the stock: faded red, pale green, grey."""
-    m = C.Mat('cloth')
-    w = m.n.new('ShaderNodeTexWave'); w.bands_direction = 'DIAGONAL'
-    w.inputs['Scale'].default_value = 11.0; w.inputs['Distortion'].default_value = 3.5; w.inputs['Detail'].default_value = 2.0
-    m.l.new(m.tc, w.inputs['Vector'])
-    pick = m.n.new('ShaderNodeTexNoise'); pick.inputs['Scale'].default_value = 7.0
-    m.l.new(m.tc, pick.inputs['Vector'])
-    red = m.ramp(m.noise(70, 3), (0.11, 0.025, 0.025, 1), (0.22, 0.06, 0.055, 1), 0.3, 0.7)
-    green = m.ramp(m.noise(70, 3), (0.05, 0.075, 0.045, 1), (0.1, 0.14, 0.08, 1), 0.3, 0.7)
-    grey = m.ramp(m.noise(70, 3), (0.06, 0.058, 0.052, 1), (0.13, 0.125, 0.11, 1), 0.3, 0.7)
-    c = m.mix(red, green, m.above(pick.outputs['Fac'], 0.5))
-    c = m.mix(c, grey, m.above(pick.outputs['Fac'], 0.62))
-    seam = m.ramp(w.outputs['Fac'], (0.45, 0.45, 0.45, 1), (1, 1, 1, 1), 0.08, 0.2)    # dark line between strips
-    c = m.mix(c, seam, 1.0, 'MULTIPLY')
-    return m.done(m.grime(c, 0.6, 12), 0.9)
+def rag(name, lo, hi):
+    m = C.Mat(name)
+    c = m.ramp(m.noise(80, 4), lo, hi, 0.3, 0.75)
+    c = m.mix(c, m.ramp(m.noise(18, 6), (0.55, 0.52, 0.48, 1), (1, 1, 1, 1), 0.35, 0.7), 1.0, 'MULTIPLY')   # dirt
+    return m.done(c, 0.9)
 
 
 STEEL, BANDS, BLACK = C.old_steel(), C.band_steel(), C.black_metal()
 WOOD = C.wood((0.4, 0.27, 0.17, 1), 7.0)
-RUBBER, GREEN, BRASS, CLOTH = rubber(), green_paint(), brass(), cloth_wrap()
+RUBBER, GREEN, BRASS = rubber(), green_paint(), brass()
+RAGS = [rag('rag_red', (0.06, 0.013, 0.011, 1), (0.13, 0.03, 0.026, 1)),
+        rag('rag_green', (0.028, 0.042, 0.024, 1), (0.06, 0.085, 0.045, 1)),
+        rag('rag_grey', (0.035, 0.034, 0.031, 1), (0.075, 0.072, 0.065, 1)),
+        rag('rag_tan', (0.05, 0.04, 0.025, 1), (0.1, 0.078, 0.05, 1))]
 
 # ---- barrels (swing open): two thick painted pipes, collars, clamp bands, bead
 for y in (-DY, DY):
@@ -83,30 +76,54 @@ for x in (0.215, 0.33):                                                         
 C.place(C.cylinder(0.0025, 0.009, BRASS, BREACH, 8), (0.405, 0, BORE_Z + R + 0.004), (0, 0, 1))  # brass bead
 s = C.box((0.07, 0.02, 0.006), BANDS, BREACH); s.location = (0.185, 0, BORE_Z - R - 0.003)     # hinge strap
 
-# ---- breech (stays): chunky clamp block with bolts, firing pins, a spare brass shell on top
-C.flat_xz([(0.1, BORE_Z + 0.026), (0.147, BORE_Z + 0.026), (0.147, 0.004), (0.1, 0.004)], 0.078, STEEL, MAIN, 0.003)
-for y in (-0.03, 0.03):
-    for z in (BORE_Z + 0.014, 0.016):
-        C.place(C.cylinder(0.0045, 0.005, BANDS, MAIN, 6, smooth=False), (0.124, y + (0.009 if y > 0 else -0.009), z), (0, 1 if y > 0 else -1, 0))
+# ---- breech (stays): a pipe coupling round each barrel end on a back plate,
+# side plates bolting the stock to it, firing pins, a spare brass shell on top
 for y in (-DY, DY):
-    C.place(C.cylinder(0.004, 0.004, BLACK, MAIN, 10), (0.1, y, BORE_Z), (-1, 0, 0))     # nail firing pins
-C.place(C.cylinder(0.0105, 0.05, BRASS, MAIN, 16), (0.088, 0, BORE_Z + 0.037), X)        # brass shell lying on top
-C.place(C.cylinder(0.0118, 0.006, BRASS, MAIN, 16), (0.082, 0, BORE_Z + 0.037), X)       # its rim
-for x in (0.096, 0.13):                                                                   # wire holding it
-    pts = [(x, 0.0125 * math.cos(a), BORE_Z + 0.037 + 0.0125 * math.sin(a)) for a in [i / 16 * 2 * math.pi for i in range(17)]]
+    C.place(C.cylinder(0.0215, 0.042, STEEL, MAIN, 20), (0.106, y, BORE_Z), X)
+    for x in (0.106, 0.142):
+        C.place(C.ring(0.0215, 0.005, 0.0016, BANDS, MAIN, 20), (x, y, BORE_Z), X)
+    C.place(C.cylinder(0.004, 0.004, BLACK, MAIN, 10), (0.098, y, BORE_Z), (-1, 0, 0))   # nail firing pins
+C.flat_xz([(0.094, BORE_Z + 0.02), (0.106, BORE_Z + 0.02), (0.106, 0.004), (0.094, 0.004)], 0.078, STEEL, MAIN, 0.002)
+for side in (-1, 1):
+    C.flat_xz([(0.03, 0.03), (0.13, 0.034), (0.13, 0.004), (0.03, 0.0)], 0.003, BANDS, MAIN, 0.001, y=side * 0.0215)
+    for x, z in ((0.045, 0.01), (0.045, 0.024), (0.115, 0.012)):
+        C.place(C.cylinder(0.0035, 0.004, BLACK, MAIN, 6, smooth=False), (x, side * 0.023, z), (0, side, 0))
+C.place(C.cylinder(0.0105, 0.05, BRASS, MAIN, 16), (0.096, 0, BORE_Z + 0.034), X)        # brass shell lying on top
+C.place(C.cylinder(0.0118, 0.006, BRASS, MAIN, 16), (0.09, 0, BORE_Z + 0.034), X)       # its rim
+for x in (0.104, 0.138):                                                                  # wire holding it
+    pts = [(x, 0.0125 * math.cos(a), BORE_Z + 0.034 + 0.0125 * math.sin(a)) for a in [i / 16 * 2 * math.pi for i in range(17)]]
     C.poly_tube(pts, 0.0011, BLACK, MAIN)
 C.place(C.cylinder(0.0075, 0.06, BANDS, MAIN, 12), (0.152, -0.03, 0.012), (0, 1, 0))     # hinge knuckle
 
-# ---- long stock, all wound in rag strips, rubber pad
-C.flat_xz([(0.1, 0.03), (0.04, 0.032), (-0.01, 0.026), (-0.01, -0.004), (0.1, -0.002)], 0.032, STEEL, MAIN, 0.002)
-stock = [(-0.01, 0.032), (-0.04, 0.026), (-0.09, -0.006), (-0.17, -0.01), (-0.29, 0.016), (-0.29, -0.11), (-0.24, -0.114),
-         (-0.13, -0.088), (-0.1, -0.1), (-0.07, -0.09), (-0.04, -0.045), (-0.01, -0.006)]
-C.flat_xz(stock, 0.038, CLOTH, MAIN, 0.006, segments=2)
+# ---- stock: one piece of wood up to the breech, wound in separate rag strips
+TOP = [(0.1, 0.028), (0.04, 0.03), (-0.02, 0.026), (-0.06, 0.006), (-0.1, -0.008), (-0.17, -0.01), (-0.29, 0.016)]
+BOT = [(0.1, -0.004), (0.0, -0.01), (-0.04, -0.045), (-0.07, -0.09), (-0.1, -0.1), (-0.13, -0.088), (-0.24, -0.114), (-0.29, -0.11)]
+C.flat_xz(TOP + list(reversed(BOT)), 0.038, WOOD, MAIN, 0.006, segments=2)
 C.flat_xz([(-0.29, 0.018), (-0.304, 0.019), (-0.304, -0.112), (-0.29, -0.112)], 0.04, RUBBER, MAIN, 0.003)
 
-# ---- trigger guard and two triggers
-C.flat_xz([(0.07, -0.002), (0.066, -0.036), (0.03, -0.046), (-0.012, -0.04), (-0.016, -0.03), (0.0, -0.033),
-           (0.03, -0.038), (0.058, -0.032), (0.062, -0.002)], 0.008, BANDS, MAIN, 0.001)
+
+def edge(chain, x):
+    for (x0, z0), (x1, z1) in zip(chain, chain[1:]):
+        if x1 <= x <= x0: return z0 + (z1 - z0) * (x - x0) / (x1 - x0)
+    return chain[-1][1]
+
+
+x = -0.004
+k = 0
+while x > -0.278:
+    w = random.uniform(0.028, 0.038)
+    slant = 0.022
+    if random.random() > 0.08:                                    # now and then a gap shows the wood
+        xa, xb = x - w, x
+        quad = [(xa + slant, edge(TOP, xa + slant) + 0.0012), (xb + slant, edge(TOP, xb + slant) + 0.0012),
+                (xb, edge(BOT, xb) - 0.0012), (xa, edge(BOT, xa) - 0.0012)]
+        C.flat_xz(quad, 0.0392, RAGS[(k + random.randint(0, 1)) % len(RAGS)], MAIN, 0.0062, segments=2)
+        k += 1
+    x -= w - random.uniform(0.003, 0.007)          # strips overlap a little
+
+# ---- trigger guard (bent rod) and two triggers
+C.poly_tube([(0.072, 0, -0.004), (0.07, 0, -0.03), (0.05, 0, -0.042), (0.02, 0, -0.044), (-0.008, 0, -0.036), (-0.01, 0, -0.012)],
+            0.0028, BANDS, MAIN)
 for x in (0.022, 0.038):
     C.poly_tube([(x, 0, -0.002), (x + 0.002, 0, -0.014), (x - 0.004, 0, -0.026)], 0.0022, BLACK, TRIGGER)
 

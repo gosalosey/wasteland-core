@@ -1,5 +1,9 @@
 # Changelog
 
+## Improvised double-barrel: look, third pass
+
+- The stock is now wood wound in separate overlapping rag strips (red, green, grey, tan) instead of a flat camo pattern, and runs right up to the breech, bolted on with steel side plates (the plain bar is gone). The breech is a pipe coupling round each barrel end instead of a box; the trigger guard is a bent rod. Barrels and the brass shell unchanged.
+
 ## Improvised double-barrel: new look
 
 - Rebuilt to match the reference picture: thick barrels painted teal-green and worn through to rust, a chunky breech block with bolts and a spare brass shell wired on top, a long stock wound in strips of red, green and grey rag, rubber pad. Gameplay unchanged; now 5 x 2 in the inventory.
