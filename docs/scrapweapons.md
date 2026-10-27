@@ -42,8 +42,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | approved (tested on the server) |
 | 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | approved (tested on the server) |
 | 6 | Pipe Club | `scrap_pipe_club` | approved (tested on the server) |
-| 7 | Scrap Machete | `scrap_machete` | **awaiting your test** |
-| 8 | Scrap Lever Rifle | `scrap_lever_rifle` | not started |
+| 7 | Scrap Machete | `scrap_machete` | approved (tested on the server) |
+| 8 | Scrap Lever Rifle | `scrap_lever_rifle` | **awaiting your test** |
 | 9 | Heavy Scrap Maul | `scrap_maul` | not started |
 | 10 | Improvised Double-Barrel | `scrap_double_barrel` | not started |
 
@@ -180,6 +180,23 @@ Build: `build_pipe_club.py`, `export_weapon.py -- <w_me_crowbar.ydr> <out> pipe_
 
 Build: `build_scrap_machete.py`, `export_weapon.py -- <w_me_machette_lr.ydr> <out> scrap_machete wl_w_me_scrapmachete`,
 `make_meta.py <mplowrider data> WEAPON_MACHETE WEAPON_WL_SCRAPMACHETE wl_w_me_scrapmachete WT_WL_SCRAPMACH <meta>`.
+
+## 8. Scrap Lever Rifle
+
+![scrap lever rifle](images/scrapweapons/scrap_lever_view1.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_lever_rifle` (6 x 2, 2.8 kg, 350 shots durability) |
+| Game weapon | `WEAPON_WL_SCRAPLEVER`, model `wl_w_sr_scraplever` |
+| Based on | `WEAPON_PRECISIONRIFLE` (the game has no lever-action, see the limits above): ClipSize 7, Damage 65 (101), TimeBetweenShots 1.0 (1.567) |
+| Ammo | `ammo_44` |
+| Noise | 220 m |
+| Recipe | 12 scrap metal + 2 metal sheet + 3 wood planks + 6 nails + 1 duct tape, 18 s |
+| Model | 2,092 triangles; the lever is fixed (on Gun_Main_Bone): the hand cycles the action but the lever does not move |
+
+Build: `build_scrap_lever.py`, `export_weapon.py -- <w_sr_precisionrifle_reh.ydr> <out> scrap_lever wl_w_sr_scraplever`,
+`make_meta.py <mpsum2 data> WEAPON_PRECISIONRIFLE WEAPON_WL_SCRAPLEVER wl_w_sr_scraplever WT_WL_SCRAPLEVER <meta> ClipSize=7 Damage=65.000000 TimeBetweenShots=1.000000`.
 
 ## Licensing
 

@@ -95,7 +95,7 @@ def tape(colour=(0.33, 0.33, 0.32, 1)):
 
 def black_metal():
     m = Mat('blackmetal')
-    c = m.ramp(m.noise(40, 6), (0.03, 0.03, 0.03, 1), (0.12, 0.11, 0.1, 1), 0.3, 0.7)
+    c = m.ramp(m.noise(40, 6), (0.012, 0.012, 0.012, 1), (0.045, 0.042, 0.04, 1), 0.3, 0.7)
     c = m.mix(c, m.tex('Rust004', 30.0), m.above(m.noise(12, 8), 0.68))
     return m.done(c, 0.5)
 

@@ -111,6 +111,21 @@ WLSW.catalog = {
                 { name = 'rag', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 10 },
         labelKey = 'WT_WL_SCRAPMACH', label = 'Scrap Machete',
         damage = 1.25,
+        status = 'approved',
+    },
+
+    -- 8. Scrap lever rifle: octagonal barrel over a tube magazine, brass side
+    -- plates, a loop lever, hammer, saddle ring, tack-studded stock. The game
+    -- has no lever action: it handles like the precision rifle, faster and
+    -- lighter (7 rounds of .44, 65 damage, a shot a second).
+    scrap_lever_rifle = {
+        item = { label = 'Scrap lever rifle', category = 'weapon', width = 6, height = 2, weight = 2.8, durability = 350,
+            description = 'An old-style lever gun put back together from scrap. Seven .44 rounds, quick follow-up shots.' },
+        weapon = { hash = 'WEAPON_WL_SCRAPLEVER', ammo = 'ammo_44', noise = 220 },
+        recipe = { label = 'Scrap lever rifle', result = { name = 'scrap_lever_rifle', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 12 }, { name = 'metal_sheet', count = 2 }, { name = 'wood_planks', count = 3 },
+                { name = 'nails', count = 6 }, { name = 'duct_tape', count = 1 } }, seconds = 18 },
+        labelKey = 'WT_WL_SCRAPLEVER', label = 'Scrap Lever Rifle',
         status = 'testing',
     },
 }

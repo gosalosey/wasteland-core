@@ -144,6 +144,19 @@ describe('scrap weapons: registration', function()
         I('ClearInventory', id); server:advance(100)
     end)
 
+    it('the scrap lever rifle: crafted from scrap, sheet, planks, nails and tape; uses .44', function()
+        local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+        local w = server:export('wasteland_weapons', 'GetWeaponConfig', 'scrap_lever_rifle')
+        expect(w.hash).toBe('WEAPON_WL_SCRAPLEVER'); expect(w.ammo).toBe('ammo_44')
+        I('ClearInventory', id); server:advance(100)
+        I('AddItem', id, 'scrap_metal', 12); I('AddItem', id, 'metal_sheet', 2); I('AddItem', id, 'wood_planks', 3); I('AddItem', id, 'nails', 6); I('AddItem', id, 'duct_tape', 1)
+        server:advance(100)
+        server:clientEvent(id, 'wasteland:crafting:server:craft', 'scrap_lever_rifle'); server:advance(18200)
+        server:clientEvent(id, 'wasteland:crafting:server:finish'); server:advance(200)
+        expect(I('GetItemCount', id, 'scrap_lever_rifle')).toBe(1)
+        I('ClearInventory', id); server:advance(100)
+    end)
+
     it('a catalog weapon becomes an item, a weapon you can hold and a recipe', function()
         env.WLSW.catalog = TEST_CATALOG
         env.TriggerEvent('wasteland:core:moduleState', 'inventory', 'running')

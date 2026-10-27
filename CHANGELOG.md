@@ -1,5 +1,10 @@
 # Changelog
 
+## Scrap weapons 8: Scrap lever rifle (awaiting in-game test)
+
+- New weapon `scrap_lever_rifle`: an octagonal barrel over a tube magazine, a receiver with tarnished brass side plates and a loading gate, a closed loop lever, an exposed hammer, a saddle ring, buckhorn sights and a wooden stock and forend studded with brass tacks. 7 rounds of .44, 65 damage, a shot a second. The game has no lever-action animation: it handles like the precision rifle and the lever itself does not move. Recipe: 12 scrap metal + 2 metal sheet + 3 wood planks + 6 nails + 1 duct tape.
+- Scrap machete marked approved.
+
 ## Scrap weapons 7: Scrap machete (awaiting in-game test)
 
 - New weapon `scrap_machete`: a blade cut from rusty steel plate with a ground edge, saw teeth hacked into the spine, old bolt holes, a bent-bar guard, a cord-wrapped wooden handle and a hex nut pommel. Swings like the machete, 1.25x the damage. Recipe: 1 metal sheet + 3 scrap metal + 1 wood planks + 1 rag + 1 duct tape.
