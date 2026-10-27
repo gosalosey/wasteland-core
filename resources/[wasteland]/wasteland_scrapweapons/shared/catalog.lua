@@ -25,6 +25,20 @@ WLSW.catalog = {
                 { name = 'scrap_metal', count = 1 }, { name = 'duct_tape', count = 1 } }, seconds = 8 },
         labelKey = 'WT_WL_SPKBAT', label = 'Spiked Bat',
         damage = 1.35,
+        status = 'approved',
+    },
+
+    -- 2. Pipe shotgun: one shell in a length of galvanised pipe, hinged on a
+    -- door hinge, nail firing pin, 2x4 grip. Handles like the game's sawed-off
+    -- but holds one shell: the barrel swings open to load each shot.
+    scrap_pipe_shotgun = {
+        item = { label = 'Pipe shotgun', category = 'weapon', width = 3, height = 2, weight = 1.4, durability = 120,
+            description = 'One shell in a length of pipe. Crude, loud and hits hard up close. Reload after every shot.' },
+        weapon = { hash = 'WEAPON_WL_PIPESHOTGUN', ammo = 'ammo_12g', noise = 180, wear = 2 },
+        recipe = { label = 'Pipe shotgun', result = { name = 'scrap_pipe_shotgun', count = 1 },
+            ingredients = { { name = 'scrap_metal', count = 6 }, { name = 'wood_planks', count = 1 },
+                { name = 'nails', count = 4 }, { name = 'duct_tape', count = 2 } }, seconds = 12 },
+        labelKey = 'WT_WL_PIPESG', label = 'Pipe Shotgun',
         status = 'testing',
     },
 }

@@ -23,6 +23,12 @@ bone = model.vertex_groups[0].name   # every vertex follows the bone the origina
 with bpy.data.libraries.load(os.path.join(BUILT, PIECE + '.blend')) as (src, dst):
     dst.objects = ['piece_hi']
 hi = dst.objects[0]
+# parts built on other bones (a barrel that swings open, a trigger) keep them;
+# the rest follows the bone the original used
+per_vertex = {}
+for v in hi.data.vertices:
+    for gw in v.groups:
+        if gw.weight > 0.5: per_vertex[v.index] = hi.vertex_groups[gw.group].name
 me = hi.data.copy(); me.name = NAME + '_mesh'
 me.uv_layers[0].name = 'UVMap 0'
 ca = me.color_attributes.new('Color 1', 'BYTE_COLOR', 'CORNER')
@@ -36,8 +42,14 @@ for n in mat.node_tree.nodes:
 me.materials.append(mat)
 model.data = me
 model.vertex_groups.clear()
-g = model.vertex_groups.new(name=bone)
-g.add(list(range(len(me.vertices))), 1.0, 'REPLACE')
+groups = {}
+for i in range(len(me.vertices)):
+    b = per_vertex.get(i, bone)
+    if b not in root.data.bones: raise SystemExit('bone %s is not in %s' % (b, old_name))
+    groups.setdefault(b, []).append(i)
+for b, idx in groups.items():
+    model.vertex_groups.new(name=b).add(idx, 1.0, 'REPLACE')
+print('BONES', {b: len(i) for b, i in groups.items()})
 
 for x in bpy.context.selected_objects: x.select_set(False)
 for o in [root] + list(root.children_recursive): o.select_set(True)

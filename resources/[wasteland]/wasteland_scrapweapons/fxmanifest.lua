@@ -33,9 +33,17 @@ files {
     'meta/weapon_wl_spikedbat_weaponarchetypes.meta',
     'meta/weapon_wl_spikedbat_weaponanimations.meta',
     'meta/weapon_wl_spikedbat_weapons.meta',
+    'meta/weapon_wl_pipeshotgun_weaponarchetypes.meta',
+    'meta/weapon_wl_pipeshotgun_weaponanimations.meta',
+    'meta/weapon_wl_pipeshotgun_weapons.meta',
 }
 
 -- Spiked baseball bat (based on WEAPON_BAT)
 data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_spikedbat_weaponarchetypes.meta'
 data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_spikedbat_weaponanimations.meta'
 data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_spikedbat_weapons.meta'
+
+-- Pipe shotgun (based on WEAPON_DBSHOTGUN, the sawed-off; ClipSize 1)
+data_file 'WEAPON_METADATA_FILE' 'meta/weapon_wl_pipeshotgun_weaponarchetypes.meta'
+data_file 'WEAPON_ANIMATIONS_FILE' 'meta/weapon_wl_pipeshotgun_weaponanimations.meta'
+data_file 'WEAPONINFO_FILE' 'meta/weapon_wl_pipeshotgun_weapons.meta'

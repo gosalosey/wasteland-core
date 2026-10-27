@@ -57,6 +57,30 @@ describe('scrap weapons: registration', function()
         expect(I('GetItemCount', id, 'duct_tape')).toBe(tape - 1)
     end)
 
+    it('the pipe shotgun: crafted from scrap, holds with 12 gauge, every shot uses a shell', function()
+        local function I(fn, ...) return server:export('wasteland_inventory', fn, ...) end
+        local w = server:export('wasteland_weapons', 'GetWeaponConfig', 'scrap_pipe_shotgun')
+        expect(w.hash).toBe('WEAPON_WL_PIPESHOTGUN'); expect(w.ammo).toBe('ammo_12g')
+        I('AddItem', id, 'scrap_metal', 6); I('AddItem', id, 'wood_planks', 1); I('AddItem', id, 'nails', 4); I('AddItem', id, 'duct_tape', 2)
+        server:advance(100)
+        server:clientEvent(id, 'wasteland:crafting:server:craft', 'scrap_pipe_shotgun'); server:advance(12200)
+        server:clientEvent(id, 'wasteland:crafting:server:finish'); server:advance(200)
+        expect(I('GetItemCount', id, 'scrap_pipe_shotgun')).toBe(1)
+        expect(I('GetItemCount', id, 'wood_planks')).toBe(0)
+        I('AddItem', id, 'ammo_12g', 3); server:advance(100)
+        local snap = server:clientEventsFor(id, 'wasteland:inventory:client:sync')
+        local uid, invId
+        for _, i in ipairs(snap[#snap].args[1].inventories) do
+            for _, st in ipairs(i.items) do if st.name == 'scrap_pipe_shotgun' then uid, invId = st.uid, i.id end end
+        end
+        server:clientEvent(id, 'wasteland:inventory:server:use', uid, invId); server:advance(200)
+        expect(server:export('wasteland_weapons', 'GetHeldWeapon', id).item).toBe('scrap_pipe_shotgun')
+        local before = I('GetItemCount', id, 'ammo_12g')
+        server:clientEvent(id, 'wasteland:weapons:server:used', 1, { x = 0.0, y = 0.0, z = 30.0 }); server:advance(200)
+        expect(I('GetItemCount', id, 'ammo_12g')).toBe(before - 1)
+        server:clientEvent(id, 'wasteland:inventory:server:use', uid, invId); server:advance(200)   -- put it away again
+    end)
+
     it('a catalog weapon becomes an item, a weapon you can hold and a recipe', function()
         env.WLSW.catalog = TEST_CATALOG
         env.TriggerEvent('wasteland:core:moduleState', 'inventory', 'running')

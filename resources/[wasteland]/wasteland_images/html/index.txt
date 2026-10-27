@@ -3521,3 +3521,4 @@ moonshine_potato
 moonshine_watermelon
 moonshine_still
 scrap_spiked_bat
+scrap_pipe_shotgun

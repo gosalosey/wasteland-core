@@ -1,5 +1,11 @@
 # Changelog
 
+## Scrap weapons 2: Pipe shotgun (awaiting in-game test)
+
+- New weapon `scrap_pipe_shotgun`: galvanised pipe barrel on a door hinge, nail firing pin, 2x4 grip, duct-tape forend. One 12 gauge shell; the barrel swings open to reload. Handles, sounds and hits like the sawed-off. Recipe: 6 scrap metal + 1 wood planks + 4 nails + 2 duct tape.
+- Spiked bat marked approved.
+- Build tools: shared `common.py`, parts on more than one bone, `make_meta.py` reads DLC files and takes setting overrides (ClipSize=1).
+
 ## Target: fix the menu flashing and not being clickable
 
 - Holding Alt made the target menu flash on and off. When the mouse cursor came up, the game lost sight of Alt being held, closed the menu and opened it again. Now, while the cursor is up, the menu itself watches for Alt being let go (or Esc), and handles E and the scroll wheel too.

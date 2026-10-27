@@ -36,8 +36,8 @@ Item names start with `scrap_`; weapon names with `WEAPON_WL_`.
 | # | Weapon | Item | Status |
 |---|---|---|---|
 | 0 | Foundation (resource, registration exports) | - | approved (tested on the server) |
-| 1 | Spiked Baseball Bat | `scrap_spiked_bat` | **awaiting your test** |
-| 2 | Pipe Shotgun | `scrap_pipe_shotgun` | not started |
+| 1 | Spiked Baseball Bat | `scrap_spiked_bat` | approved (tested on the server) |
+| 2 | Pipe Shotgun | `scrap_pipe_shotgun` | **awaiting your test** |
 | 3 | Scrap-Made Axe | `scrap_axe` | not started |
 | 4 | Scrap Pump Shotgun | `scrap_pump_shotgun` | not started |
 | 5 | Scrap Bolt Rifle | `scrap_bolt_rifle` | not started |
@@ -73,6 +73,30 @@ blender -b --python tools/scrapweapons/build_spiked_bat.py -- <tex> <out>
 python tools/scrapweapons/dds_mips.py <out>/spiked_bat_d.png <out>/spiked_bat_d.dds
 blender -b --python tools/scrapweapons/export_weapon.py -- <w_me_bat.ydr> <out> spiked_bat wl_w_me_spikedbat
 python tools/scrapweapons/make_meta.py <game data> WEAPON_BAT WEAPON_WL_SPIKEDBAT wl_w_me_spikedbat WT_WL_SPKBAT <meta out>
+```
+
+## 2. Pipe Shotgun
+
+![pipe shotgun](images/scrapweapons/pipe_shotgun_view1.jpg)
+
+| | |
+|---|---|
+| Item | `scrap_pipe_shotgun` (3 x 2, 1.4 kg, 120 shots durability, wear 2 per shot) |
+| Game weapon | `WEAPON_WL_PIPESHOTGUN`, model `wl_w_sg_pipeshotgun` |
+| Based on | `WEAPON_DBSHOTGUN` (sawed-off): its handling, damage, sound and break-open reload; clip 1 shell |
+| Ammo | `ammo_12g` from the inventory |
+| Noise | 180 m (zombies) |
+| Recipe | 6 scrap metal + 1 wood planks + 4 nails + 2 duct tape, 12 s, no blueprint |
+| Model | 2,516 triangles; the barrel is on the hinge bone (opens on reload), trigger on the trigger bone |
+
+Build (game files: `w_sg_doublebarrel.ydr`; the DLC data `weapondbshotgun.meta`,
+`weaponanimations.meta`, `weaponarchetypes.meta` from mplowrider2, as weapons.meta etc.):
+
+```
+blender -b --python tools/scrapweapons/build_pipe_shotgun.py -- <tex> <out>
+python tools/scrapweapons/dds_mips.py <out>/pipe_shotgun_d.png <out>/pipe_shotgun_d.dds
+blender -b --python tools/scrapweapons/export_weapon.py -- <w_sg_doublebarrel.ydr> <out> pipe_shotgun wl_w_sg_pipeshotgun
+python tools/scrapweapons/make_meta.py <dlc data> WEAPON_DBSHOTGUN WEAPON_WL_PIPESHOTGUN wl_w_sg_pipeshotgun WT_WL_PIPESG <meta out> ClipSize=1
 ```
 
 ## Licensing
