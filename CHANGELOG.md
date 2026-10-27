@@ -1,5 +1,9 @@
 # Changelog
 
+## Improvised double-barrel: new look
+
+- Rebuilt to match the reference picture: thick barrels painted teal-green and worn through to rust, a chunky breech block with bolts and a spare brass shell wired on top, a long stock wound in strips of red, green and grey rag, rubber pad. Gameplay unchanged; now 5 x 2 in the inventory.
+
 ## Scrap weapons 10: Improvised double-barrel (awaiting in-game test)
 
 - New weapon `scrap_double_barrel`: two pipes side by side with a welded rib and clamps, a wooden forend, a breech plate with twin nail firing pins and two bent-bolt hammers, two triggers, a sawn-down stock with an inner-tube pad. Two 12 gauge shells, the barrels swing open to reload (the sawed-off). Recipe: 10 scrap metal + 1 metal sheet + 2 wood planks + 4 nails + 2 duct tape.

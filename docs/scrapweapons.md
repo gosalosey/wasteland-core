@@ -221,12 +221,12 @@ Build: `build_scrap_maul.py`, `export_weapon.py -- <w_me_bat.ydr> <out> scrap_ma
 
 | | |
 |---|---|
-| Item | `scrap_double_barrel` (4 x 2, 1.9 kg, 200 shots durability, wear 2) |
+| Item | `scrap_double_barrel` (5 x 2, 2.3 kg, 200 shots durability, wear 2) |
 | Game weapon | `WEAPON_WL_SCRAPDOUBLE`, model `wl_w_sg_scrapdouble` |
 | Based on | `WEAPON_DBSHOTGUN` (sawed-off): 2 shells, break-open reload (barrels and forend on Gun_Breach) |
 | Ammo | `ammo_12g` |
 | Recipe | 10 scrap metal + 1 metal sheet + 2 wood planks + 4 nails + 2 duct tape, 15 s |
-| Model | 3,280 triangles |
+| Model | v2 after the reference picture: thick teal-green barrels worn to rust, brass shell wired on the breech, long rag-wrapped stock |
 
 Build: `build_scrap_double.py`, `export_weapon.py -- <w_sg_doublebarrel.ydr> <out> scrap_double wl_w_sg_scrapdouble`,
 `make_meta.py <mplowrider2 data> WEAPON_DBSHOTGUN WEAPON_WL_SCRAPDOUBLE wl_w_sg_scrapdouble WT_WL_SCRAPDBL <meta>`.
