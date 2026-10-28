@@ -1,9 +1,10 @@
 // wasteland_survival :: html/hud.js
 // Survival HUD (runs inside wasteland_ui, no input focus). Two styles:
 //   body     - (default) a body figure (red while bleeding, green tint while
-//              infected) with rings in an arc: health, stamina, food, drink;
-//              small rings top left for armour (outer ring the vest, inner
-//              ring the plates) and voice (range, lit while talking); small
+//              infected) with rings in an arc: health (red), stamina (dark
+//              blue), food (brown), drink (deep blue); small rings top left
+//              for armour (outer ring the vest, inner ring the plates) and
+//              noise (how far zombies hear you, lit green while talking); small
 //              rings for temperature, pee and poop; bleeding / infection tags
 //   classic  - health (and armour) as bars on a riveted plate, food, drink,
 //              temperature, pee and poop as round iron dials
@@ -17,6 +18,7 @@
 // with the HUD), and a stamina bar at the bottom middle of the screen that
 // only shows while stamina is being used.
 // Data: { mode, health, armor (vest %, only while one is worn), plates (%), stamina, voice = { talking, level, levels, on },
+//         noise = { radius (m), source, count, safe } (wasteland_zombies; nil = unknown),
 //         portrait = { sig, shots? = { sig, with, without } } (the character picture, client/portrait.lua),
 //         editing, layout = { x, y, vertical, size, style },
 //         info = { id, name, cash },
@@ -106,6 +108,15 @@
         return { visible: fill < 100, fill: fill, low: fill <= 20 };
     }
 
+    // How loud (the zombies' hearing range, metres): the same bands as the noise panel.
+    function noiseLevel(r) {
+        if (r <= 6) return { key: 'quiet', word: 'QUIET' };
+        if (r <= 12) return { key: 'low', word: 'LOW' };
+        if (r <= 25) return { key: 'noticeable', word: 'NOTICEABLE' };
+        if (r <= 50) return { key: 'loud', word: 'LOUD' };
+        return { key: 'deafening', word: 'DEAFENING' };
+    }
+
     // The body style: rings in the arc, the small rings, the armour and voice
     // rings, and how the body figure looks. Rings: [{ key, fill, level, text }].
     function bodyView(data) {
@@ -126,14 +137,24 @@
         const levels = v.levels || 3;
         const voice = { on: v.on !== false, talking: v.talking === true,
             fill: typeof v.level === 'number' ? clamp(v.level / levels * 100) : (v.on === false ? 0 : 66) };
+        const n = data.noise;
+        const noise = n && typeof n.radius === 'number'
+            ? Object.assign(noiseLevel(n.radius), { known: true, talking: false,
+                fill: Math.max(4, Math.round(Math.min(1, Math.sqrt(Math.max(0, n.radius) / 120)) * 100)),
+                feet: Math.round(n.radius * 3.28084 / 5) * 5, count: n.count || 0 })
+            : { known: false, key: 'quiet', word: '', talking: false, fill: 0, feet: 0, count: 0 };
         const immersive = data.mode === 'immersive';
         if (immersive) {
             big = big.filter((i) => i.level !== 'ok');
         }
+        // the speaker in the small row: voice range, lit while talking ("when it matters": only while talking)
+        if (voice.on && (!immersive || voice.talking)) {
+            small.push({ key: 'voice', label: 'Voice', fill: voice.fill, level: 'ok', talking: voice.talking });
+        }
         return {
             big: big,
-            small: immersive ? small.filter((i) => i.level !== 'ok') : small,
-            armor: armor, voice: voice,
+            small: immersive ? small.filter((i) => i.level !== 'ok' || i.key === 'voice') : small,
+            armor: armor, voice: voice, noise: noise,
             body: { bleeding: Math.min(3, s.bleeding || 0), infected: (s.infection || 0) > 0,
                 hurt: typeof data.health === 'number' && data.health <= LOW },
         };
@@ -198,7 +219,7 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { cutout: cutout, bodyView: bodyView, icons: icons, badges: badges, infoLine: infoLine, staminaBar: staminaBar, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
+        module.exports = { noiseLevel: noiseLevel, cutout: cutout, bodyView: bodyView, icons: icons, badges: badges, infoLine: infoLine, staminaBar: staminaBar, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
         return;
     }
 
@@ -231,6 +252,7 @@
         stamina: { stroke: 'M13 8l-3 4.5 3 3-1.5 6M10 12.5l-4.5 1M13.2 9.5l4 2 2.3-2.2M13 15.5l4.5 1 1 4.5', circle: [14.5, 4.6, 2.3] },
         bread: { fill: 'M3.5 11.2C3.5 7.2 7.4 5 12 5s8.5 2.2 8.5 6.2c0 1.3-.8 2.1-2 2.2V19H5.5v-5.6c-1.2-.1-2-.9-2-2.2z' },
         glass: { stroke: 'M7 3h10c0 5.2-2.2 8.2-5 8.2S7 8.2 7 3zM12 11.2V19M8 21h8' },
+        voice: { fill: 'M3.5 9h4l5.2-4.2v14.4L7.5 15h-4z', stroke: 'M16 8.6a4.8 4.8 0 0 1 0 6.8M18.6 6a8.4 8.4 0 0 1 0 12' },
         speaker: { fill: 'M3.5 9h4l5.2-4.2v14.4L7.5 15h-4z', stroke: 'M16 8.6a4.8 4.8 0 0 1 0 6.8M18.6 6a8.4 8.4 0 0 1 0 12' },
         poop: { fill: 'M12 3.5c2 .8 2.2 2.8 1.2 3.8 2.8 0 3.8 1.8 3 3 2.8.2 3.8 2.8 2.8 4.5 2 .9 1.4 4.7-1 4.7H6c-2.4 0-3-3.8-1-4.7-1-1.7 0-4.3 2.8-4.5-.8-1.2.2-3 3-3-1-1-.6-3 1.2-3.8z' },
     };
@@ -258,7 +280,7 @@
             svg('circle', { cx: '24', cy: '24', r: '19', class: 'wlh-ring__fill',
                 'stroke-dasharray': RING.toFixed(2), 'stroke-dashoffset': (RING * (1 - icon.fill / 100)).toFixed(2) }),
         ]);
-        const el = h('div', { class: 'wlh-dial wlh-dial--' + icon.key + (icon.hot ? ' is-hot' : '') + ' is-' + icon.level,
+        const el = h('div', { class: 'wlh-dial wlh-dial--' + icon.key + (icon.hot ? ' is-hot' : '') + (icon.talking ? ' is-talking' : '') + ' is-' + icon.level,
             attrs: { title: icon.label + ' ' + icon.fill + '%' } },
             ring, h('div', { class: 'wlh-dial__face' }, glyph(icon.key)));
         return el;
@@ -393,11 +415,15 @@
             h('div', { class: 'wlh-mini__face' }, glyph('armor')));
     }
 
-    function voiceRing(v) {
-        return h('div', { class: 'wlh-mini wlh-mini--voice' + (v.talking ? ' is-talking' : '') + (v.on ? '' : ' is-none'),
-            attrs: { title: v.on ? 'Voice' : 'No voice' } },
-            svg('svg', { viewBox: '0 0 60 60', class: 'wlh-gauge__ring' }, arcRing(26, 4.5, v.fill)),
-            h('div', { class: 'wlh-mini__face' }, glyph('speaker')));
+    function noiseRing(n) {
+        const title = n.known ? 'Noise: ' + n.word.toLowerCase() + ', heard within ~' + n.feet + ' ft'
+            + (n.count ? ' (' + n.count + ' in earshot)' : '') : 'Noise';
+        return h('div', { class: 'wlh-noise' },
+            h('div', { class: 'wlh-mini wlh-mini--noise is-' + n.key + (n.talking ? ' is-talking' : '') + (n.known ? '' : ' is-none'),
+                attrs: { title: title } },
+                svg('svg', { viewBox: '0 0 60 60', class: 'wlh-gauge__ring' }, arcRing(26, 4.5, n.fill)),
+                h('div', { class: 'wlh-mini__face' }, glyph('speaker'))),
+            n.known ? h('div', { class: 'wlh-noise__word is-' + n.key, text: n.word }) : null);
     }
 
     function renderBody(shown) {
@@ -405,7 +431,7 @@
         if (!v) return;
         const wrap = h('div', { class: 'wlh-bodyhud' });
         const left = h('div', { class: 'wlh-bodyhud__left' },
-            h('div', { class: 'wlh-bodyhud__minis' }, armorRing(v.armor), voiceRing(v.voice)),
+            h('div', { class: 'wlh-bodyhud__minis' }, armorRing(v.armor), noiseRing(v.noise)),
             (() => { const pic = portraitFor(shown.portrait); return pic ? characterPicture(pic, v.body) : bodyFigure(v.body); })());
         const right = h('div', { class: 'wlh-bodyhud__arc' });
         v.big.forEach((r, i) => {
@@ -667,9 +693,9 @@
         '.wlh-stamina.is-low .wlh-stamina__fill { background: linear-gradient(180deg, #f0b44a, #b06e14); }',
         // ---- body style
         '.wlh-bodyhud { display: flex; align-items: center; gap: calc(4px * var(--wlh-scale)); }',
-        '.wlh-bodyhud__left { position: relative; width: calc(132px * var(--wlh-scale)); height: calc(262px * var(--wlh-scale)); }',
+        '.wlh-bodyhud__left { position: relative; width: calc(132px * var(--wlh-scale)); height: calc(274px * var(--wlh-scale)); }',
         '.wlh-bodyhud__minis { position: absolute; left: 0; top: 0; display: flex; gap: calc(5px * var(--wlh-scale)); z-index: 1; }',
-        '.wlh-body { position: absolute; left: calc(10px * var(--wlh-scale)); top: calc(26px * var(--wlh-scale)); width: calc(118px * var(--wlh-scale));',
+        '.wlh-body { position: absolute; left: calc(10px * var(--wlh-scale)); top: calc(38px * var(--wlh-scale)); width: calc(118px * var(--wlh-scale));',
         '  height: calc(236px * var(--wlh-scale)); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.8)); overflow: visible; }',
         '.wlh-body__skin path { stroke: rgba(30,30,28,0.9); stroke-width: 0.8; }',
         '.wlh-body__lines { fill: none; stroke: rgba(40,40,36,0.55); stroke-width: 0.9; stroke-linecap: round; }',
@@ -680,7 +706,7 @@
         '.wlh-body.is-bleeding-3 .wlh-body__blood path { animation-duration: 0.7s; }',
         '.wlh-body.is-infected .wlh-body__infection path { opacity: 0.28; }',
         '@keyframes wlhBleed { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.6; } }',
-        '.wlh-portrait { position: absolute; left: calc(6px * var(--wlh-scale)); top: calc(30px * var(--wlh-scale)); width: calc(124px * var(--wlh-scale));',
+        '.wlh-portrait { position: absolute; left: calc(6px * var(--wlh-scale)); top: calc(42px * var(--wlh-scale)); width: calc(124px * var(--wlh-scale));',
         '  height: calc(230px * var(--wlh-scale)); }',
         '.wlh-portrait__img, .wlh-portrait__tint { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }',
         '.wlh-portrait__img { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.85)); }',
@@ -708,13 +734,21 @@
         '.wlh-mini__face .wlh-glyph { width: calc(17px * var(--wlh-scale)); height: calc(17px * var(--wlh-scale)); filter: drop-shadow(0 1px 2px #000); }',
         '.wlh-gauge__val { margin-top: calc(1px * var(--wlh-scale)); font-size: calc(11px * var(--wlh-scale)); font-weight: 700; color: #f3f3ee;',
         '  text-shadow: 0 1px 2px #000; font-family: Arial, sans-serif; }',
+        // each stat its own colour; low turns amber, critical red
+        '.wlh-gauge--health { --c1: #e0352b; } .wlh-gauge--stamina { --c1: #2448b8; } .wlh-gauge--food { --c1: #8a5a2b; } .wlh-gauge--drink { --c1: #1d3f9e; }',
         '.wlh-gauge.is-low { --c1: #f2b24a; } .wlh-gauge.is-critical { --c1: #ff4a3d; animation: wlhPulse 0.9s ease-in-out infinite; }',
+        '.wlh-gauge--health.is-critical { --c1: #ff2a1a; }',
         '.wlh-mini--armor { --c1: #a9c7da; } .wlh-mini--armor .wlh-arc__fill.is-plates { stroke: #e0b84f; filter: drop-shadow(0 0 2px #e0b84f); }',
         '.wlh-mini--armor .wlh-mini__face { color: #a9c7da; }',
         '.wlh-mini.is-none { opacity: 0.45; }',
-        '.wlh-mini--voice { --c1: #e8e8e2; } .wlh-mini--voice.is-talking { --c1: #7fe36a; }',
-        '.wlh-mini--voice.is-talking .wlh-mini__face { color: #7fe36a; } .wlh-mini--voice.is-talking::before { box-shadow: 0 0 10px rgba(127,227,106,0.6), inset 0 1px 3px rgba(0,0,0,0.8); }',
+        '.wlh-noise { display: flex; flex-direction: column; align-items: center; gap: 1px; }',
+        '.wlh-mini--noise { --c1: #e8e8e2; } .wlh-mini--noise.is-low { --c1: #cfe3a0; } .wlh-mini--noise.is-noticeable { --c1: #f0d24a; }',
+        '.wlh-mini--noise.is-loud { --c1: #f08a2c; } .wlh-mini--noise.is-deafening { --c1: #ff3b2e; }',
+        '.wlh-mini--noise.is-talking .wlh-mini__face { color: #7fe36a; } .wlh-mini--noise.is-talking::before { box-shadow: 0 0 10px rgba(127,227,106,0.6), inset 0 1px 3px rgba(0,0,0,0.8); }',
+        '.wlh-noise__word { font-size: calc(8px * var(--wlh-scale)); font-weight: 800; letter-spacing: 0.08em; color: #e8e8e2; text-shadow: 0 1px 2px #000; font-family: Arial, sans-serif; }',
+        '.wlh-noise__word.is-noticeable { color: #f0d24a; } .wlh-noise__word.is-loud { color: #f08a2c; } .wlh-noise__word.is-deafening { color: #ff3b2e; }',
         '.wlh-bodyhud__small { justify-content: flex-end; }',
+        '.wlh-dial--voice { --c: #e8e8e2; } .wlh-dial--voice.is-talking { --c: #7fe36a; box-shadow: 0 0 12px rgba(127,227,106,0.7), 0 4px 10px rgba(0,0,0,0.65); }',
         '.wlh-bodyhud__small .wlh-dial { width: calc(36px * var(--wlh-scale)); height: calc(36px * var(--wlh-scale)); }',
         '.wlh-tb { position: absolute; top: 3vh; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center;',
         '  gap: 10px 16px; max-width: 92vw; padding: 10px 14px; background: var(--wl-bg); border: 1px solid var(--wl-border);',

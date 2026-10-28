@@ -104,7 +104,8 @@ test('body style: the arc of rings, armour with plates, voice and the body state
     assert.strictEqual(v.big[0].text, '80%');
     assert.deepStrictEqual(v.armor, { worn: true, fill: 60, plates: 40, level: 'ok' });
     assert.strictEqual(v.voice.talking, true); assert.strictEqual(v.voice.fill, 67);
-    assert.deepStrictEqual(v.small.map((i) => i.key), ['temp', 'pee', 'poop']);
+    assert.deepStrictEqual(v.small.map((i) => i.key), ['temp', 'pee', 'poop', 'voice']);
+    assert.strictEqual(v.small[3].talking, true);
     assert.deepStrictEqual(v.body, { bleeding: 2, infected: true, hurt: false });
 });
 
@@ -129,4 +130,23 @@ test('character picture: only the pixels that differ between the two shots are k
     assert.strictEqual(r.data[(2 * w + 3) * 4 + 3], 255);     // character: solid
     assert.strictEqual(r.data[(2 * w + 3) * 4], 250);         // with its own colour
     assert.strictEqual(hud.cutout(b, b, w, h).box, null);    // nothing differs: no picture
+});
+
+test('noise ring: the zombies\' hearing range as a word, a fill and feet', () => {
+    const v = hud.bodyView({ mode: 'compact', health: 90, noise: { radius: 30, source: 'running', count: 2 }, voice: { talking: true }, stats: {} });
+    assert.strictEqual(v.noise.key, 'loud'); assert.strictEqual(v.noise.word, 'LOUD');
+    assert.strictEqual(v.noise.feet, 100); assert.strictEqual(v.noise.count, 2);
+    assert.ok(v.noise.fill > 40 && v.noise.fill < 60);
+    assert.strictEqual(hud.noiseLevel(4).key, 'quiet'); assert.strictEqual(hud.noiseLevel(80).key, 'deafening');
+    const none = hud.bodyView({ mode: 'compact', health: 90, stats: {} });
+    assert.strictEqual(none.noise.known, false);
+});
+
+test('voice speaker in the small row: only with voice chat; "when it matters" only while talking', () => {
+    const quiet = hud.bodyView({ mode: 'immersive', health: 90, voice: { on: true, talking: false, level: 1, levels: 3 }, stats: {} });
+    assert.strictEqual(quiet.small.some((i) => i.key === 'voice'), false);
+    const talking = hud.bodyView({ mode: 'immersive', health: 90, voice: { on: true, talking: true, level: 3, levels: 3 }, stats: {} });
+    assert.strictEqual(talking.small.find((i) => i.key === 'voice').fill, 100);
+    const off = hud.bodyView({ mode: 'compact', health: 90, voice: { on: false }, stats: {} });
+    assert.strictEqual(off.small.some((i) => i.key === 'voice'), false);
 });

@@ -1,5 +1,11 @@
 # Changelog
 
+## HUD: noise ring, voice speaker, new ring colours
+
+- The separate noise panel is gone: the small speaker ring at the top of the HUD now shows the noise, how far zombies can hear you (fill and colour from white "QUIET" to red "DEAFENING", the word under it). /noise still brings the old panel back if wanted.
+- Voice chat: a small speaker ring in the bottom row next to pee and poop shows your voice range and glows green while you talk (only with voice chat running; "When it matters" mode shows it only while talking).
+- Ring colours: health red, stamina dark blue, food brown, water deep blue (low still turns amber, critical red).
+
 ## HUD character picture: /hudphoto and clear reasons
 
 - `/hudphoto` takes the picture of your character at once, or says on screen why it cannot (screenshot-basic not running, in a vehicle, moving, fighting, a menu open, ...). Failures of the automatic picture are shown the same way and printed in F8, instead of the HUD silently keeping the figure.

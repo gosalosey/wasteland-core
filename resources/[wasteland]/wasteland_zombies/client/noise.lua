@@ -2,16 +2,17 @@
 -- Noise meter on screen: how far zombies can hear you right now. Uses the
 -- same rule the zombies use (shared/ai.lua AI.hearRange with this game's
 -- detection settings), and for gunshots the exact reach the server used
--- (suppressor, night, repeated fire). Moved and resized in the /hud edit
--- mode like the other HUD pieces; /noise hides or shows it. Both are kept
--- on this computer (KVP).
+-- (suppressor, night, repeated fire). The survival HUD shows it on its noise
+-- ring (event wasteland:zombies:noise); this separate panel is off unless
+-- /noise turns it on. Moved and resized in the /hud edit mode; both kept on
+-- this computer (KVP).
 
 local SCREEN = 'noiseMeter'
 local AI = WLZ.AI
 
 local function uiRunning() return GetResourceState('wasteland_ui') == 'started' end
 
-local shown = true
+local shown = false   -- the separate panel (the HUD's noise ring shows the level anyway)
 local layout = { scale = 1 }      -- x, y: share of the free screen space (nil = default spot)
 local editing, before = false, nil
 local shot = nil                  -- { radius, at } last gunshot the server reported
@@ -27,7 +28,7 @@ end
 
 do
     local ok, v = pcall(GetResourceKvpString, 'noiseShown')
-    if ok and v == 'no' then shown = false end
+    if ok and v == 'show' then shown = true end   -- (the old 'yes' / 'no' from before the HUD ring is ignored)
     local okL, raw = pcall(GetResourceKvpString, 'noiseLayout')
     if okL and type(raw) == 'string' then
         local okJ, decoded = pcall(json.decode, raw)
@@ -57,13 +58,13 @@ end)
 
 RegisterCommand('noise', function()
     shown = not shown
-    SetResourceKvp('noiseShown', shown and 'yes' or 'no')
+    SetResourceKvp('noiseShown', shown and 'show' or 'hide')
     BeginTextCommandThefeedPost('STRING')
-    AddTextComponentSubstringPlayerName(shown and 'Noise meter shown. Type /noise to hide it, /hud to move it.'
-        or 'Noise meter hidden. Type /noise to show it.')
+    AddTextComponentSubstringPlayerName(shown and 'Noise panel shown. Type /noise to hide it, /hud to move it.'
+        or 'Noise panel hidden (the HUD noise ring still shows it). Type /noise to show it.')
     EndTextCommandThefeedPostTicker(false, false)
 end, false)
-TriggerEvent('chat:addSuggestion', '/noise', 'Show or hide the noise meter (move it with /hud)')
+TriggerEvent('chat:addSuggestion', '/noise', 'Show or hide the separate noise panel (the HUD noise ring always shows it)')
 
 local SHOT_HOLD, SHOT_FADE = 1200, 2500
 
@@ -115,9 +116,10 @@ end
 
 Citizen.CreateThread(function()
     local open, tick, count = false, 0, 0
+    local sent = nil   -- what the HUD was last told
     while true do
         local ped = PlayerPedId()
-        local ready = uiRunning() and (shown or editing) and not IsPauseMenuActive() and not IsEntityDead(ped)
+        local ready = uiRunning() and not IsPauseMenuActive() and not IsEntityDead(ped)
         if ready then
             local okP, isReady = pcall(function() return exports.wasteland_players:IsReady() end)
             ready = (not okP) or isReady == true
@@ -130,7 +132,15 @@ Citizen.CreateThread(function()
             local C = WLZ.Client
             local data = { radius = radius, source = source, firing = firing, count = count,
                 safe = C and C.safe and C.safe(ped) or false, layout = layout, editing = editing }
-            if open and exports.wasteland_ui:IsOpen(SCREEN) then
+            -- the HUD's noise ring (wasteland_survival): told when it changes
+            local key = math.floor(radius + 0.5) .. ':' .. tostring(source) .. ':' .. count .. ':' .. tostring(data.safe)
+            if key ~= sent then
+                sent = key
+                TriggerEvent('wasteland:zombies:noise', { radius = radius, source = source, count = count, safe = data.safe })
+            end
+            if not shown then   -- the separate panel only when /noise turned it on
+                if open then open = false; if exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end end
+            elseif open and exports.wasteland_ui:IsOpen(SCREEN) then
                 exports.wasteland_ui:Update(SCREEN, data)
             else
                 exports.wasteland_ui:Open(SCREEN, { script = 'html/noise.js', data = data, focus = false, cursor = false })
@@ -138,6 +148,7 @@ Citizen.CreateThread(function()
             end
             Citizen.Wait(150)
         else
+            if sent then sent = nil; TriggerEvent('wasteland:zombies:noise', nil) end
             if open then
                 open = false
                 if uiRunning() and exports.wasteland_ui:IsOpen(SCREEN) then exports.wasteland_ui:Close(SCREEN) end

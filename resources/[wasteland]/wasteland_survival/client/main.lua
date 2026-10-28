@@ -115,6 +115,20 @@ local function staminaPercent()
     return math.max(0, math.min(100, 100 - GetPlayerSprintStaminaRemaining(PlayerId())))
 end
 
+-- Noise: how far zombies hear you (wasteland_zombies measures it), shown on
+-- the HUD's noise ring. The HUD is refreshed when the loudness band changes.
+local noise = nil
+local ensureHudLater   -- set below, once ensureHud exists
+local function noiseBand(r)
+    if not r then return 0 end
+    return r <= 6 and 1 or r <= 12 and 2 or r <= 25 and 3 or r <= 50 and 4 or 5
+end
+AddEventHandler('wasteland:zombies:noise', function(n)
+    local before = noiseBand(noise and noise.radius)
+    noise = type(n) == 'table' and n or nil
+    if noiseBand(noise and noise.radius) ~= before and ensureHudLater then ensureHudLater() end
+end)
+
 -- Voice: talking now, and the range (pma-voice: 1 whisper, 2 normal, 3 shout).
 local function voiceData()
     local talking = NetworkIsPlayerTalking(PlayerId()) == true or NetworkIsPlayerTalking(PlayerId()) == 1
@@ -127,6 +141,7 @@ local function hudData()
     local ped = PlayerPedId()
     return {
         voice = voiceData(),
+        noise = noise,
         portrait = WLPortrait and WLPortrait.data() or nil,
         mode = hudMode,
         health = healthPercent(ped),
@@ -171,6 +186,7 @@ local function ensureHud()
         exports.wasteland_ui:Open(HUD, { script = 'html/hud.js', data = hudData(), focus = false, cursor = false })
     end
 end
+ensureHudLater = ensureHud
 
 -- Other HUD pieces (the vehicle HUD) move in the same edit mode:
 -- 'wasteland:hud:editing'(true) when it starts, (false, saved) when it ends.
