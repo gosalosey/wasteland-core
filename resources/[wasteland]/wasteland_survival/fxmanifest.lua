@@ -23,6 +23,7 @@ server_scripts {
 }
 
 client_scripts {
+    'client/portrait.lua',   -- the HUD picture of your character (screenshot-basic)
     'client/main.lua',
 }
 

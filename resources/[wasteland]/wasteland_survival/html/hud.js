@@ -17,6 +17,7 @@
 // with the HUD), and a stamina bar at the bottom middle of the screen that
 // only shows while stamina is being used.
 // Data: { mode, health, armor (vest %, only while one is worn), plates (%), stamina, voice = { talking, level, levels, on },
+//         portrait = { sig, shots? = { sig, with, without } } (the character picture, client/portrait.lua),
 //         editing, layout = { x, y, vertical, size, style },
 //         info = { id, name, cash },
 //         stats = { hunger, thirst, infection, bleeding, temperature, treatment, dead } }
@@ -138,6 +139,32 @@
         };
     }
 
+    // The character picture: `a` is a shot with the character, `b` the same
+    // view without (RGBA pixel arrays, w x h). Pixels that differ are the
+    // character: they keep a's colour, the rest become clear. Returns the
+    // RGBA result and the box around the character ({ x, y, w, h }, null if
+    // nothing differs).
+    function cutout(a, b, w, h) {
+        const out = new Uint8ClampedArray(w * h * 4);
+        const rows = new Uint32Array(h), cols = new Uint32Array(w);
+        for (let i = 0, px = 0; px < w * h; px++, i += 4) {
+            const d = Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+            const alpha = d >= 48 ? 255 : d > 24 ? Math.round((d - 24) * 255 / 24) : 0;
+            out[i] = a[i]; out[i + 1] = a[i + 1]; out[i + 2] = a[i + 2]; out[i + 3] = alpha;
+            if (alpha > 128) { rows[Math.floor(px / w)]++; cols[px % w]++; }
+        }
+        // the box: rows and columns with more than a couple of character pixels (noise left out)
+        const firstLast = (counts, n) => {
+            let f = -1, l = -1;
+            for (let i = 0; i < n; i++) if (counts[i] > 2) { if (f < 0) f = i; l = i; }
+            return [f, l];
+        };
+        const [y0, y1] = firstLast(rows, h);
+        const [x0, x1] = firstLast(cols, w);
+        const box = y0 < 0 || x0 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+        return { data: out, box: box };
+    }
+
     // Layout: x/y are the share of the free space left of / above the HUD
     // (0 = left/top edge, 1 = right/bottom edge), so the HUD stays on screen
     // at any resolution or size. x/y null = default corner (bottom right).
@@ -171,7 +198,7 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { bodyView: bodyView, icons: icons, badges: badges, infoLine: infoLine, staminaBar: staminaBar, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
+        module.exports = { cutout: cutout, bodyView: bodyView, icons: icons, badges: badges, infoLine: infoLine, staminaBar: staminaBar, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
         return;
     }
 
@@ -269,6 +296,58 @@
     // Muscle lines over it (chest, belly, knees).
     const BODY_LINES = 'M38 50c4 4 8 5 12 5s8-1 12-5M50 56v48M41 66h18M41 77h18M42 88h16M38.6 158c2 2 6 2 8 0M53.4 158c2 2 6 2 8 0M26 70c1 6 1 12 0 18M74 70c-1 6-1 12 0 18';
 
+    // The character picture: made from the shots once, kept on this PC.
+    const PORTRAIT_KEY = 'wl.hud.portrait';
+    let portrait = null;          // { sig, url }
+    let making = null;            // sig of the shots being made into a picture
+    let asked = null;             // sig a picture was asked for
+    try { portrait = JSON.parse(localStorage.getItem(PORTRAIT_KEY) || 'null'); } catch (e) { portrait = null; }
+
+    function loadImage(src) {
+        return new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = src; });
+    }
+
+    function makePortrait(shots) {
+        making = shots.sig;
+        Promise.all([loadImage(shots.with), loadImage(shots.without)]).then(([a, b]) => {
+            const scale = Math.min(1, 640 / a.height);
+            const w = Math.round(a.width * scale), hh = Math.round(a.height * scale);
+            const pixels = (img) => {
+                const c = document.createElement('canvas'); c.width = w; c.height = hh;
+                const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, hh);
+                return x.getImageData(0, 0, w, hh).data;
+            };
+            const res = cutout(pixels(a), pixels(b), w, hh);
+            if (!res.box) throw new Error('no character in the shots');
+            const pad = 4, bx = res.box;
+            const full = document.createElement('canvas'); full.width = w; full.height = hh;
+            full.getContext('2d').putImageData(new ImageData(res.data, w, hh), 0, 0);
+            const crop = document.createElement('canvas');
+            crop.width = bx.w + pad * 2; crop.height = bx.h + pad * 2;
+            crop.getContext('2d').drawImage(full, bx.x - pad, bx.y - pad, crop.width, crop.height, 0, 0, crop.width, crop.height);
+            portrait = { sig: shots.sig, url: crop.toDataURL('image/png') };
+            try { localStorage.setItem(PORTRAIT_KEY, JSON.stringify(portrait)); } catch (e) { /* storage full: keep it for now */ }
+        }).catch((e) => { UI.log && UI.log('warn', 'character picture: ' + (e && e.message || e)); })
+            .then(() => { making = null; if (post) post('portraitDone', {}); if (last && root) render(last); });
+    }
+
+    // Each update: make the picture from new shots, or ask for one when this
+    // look has none yet.
+    function portraitFor(p) {
+        if (!p) return portrait;
+        if (p.shots && making !== p.shots.sig && (!portrait || portrait.sig !== p.shots.sig)) makePortrait(p.shots);
+        else if (!p.shots && (!portrait || portrait.sig !== p.sig) && asked !== p.sig && !making) { asked = p.sig; post('portraitNeed', {}); }
+        return portrait;   // the last one shows until the new one is ready
+    }
+
+    function characterPicture(pic, b) {
+        const img = h('img', { class: 'wlh-portrait__img', draggable: false });
+        img.src = pic.url;
+        const tint = (cls) => { const d = h('div', { class: 'wlh-portrait__tint ' + cls }); d.style.webkitMaskImage = d.style.maskImage = 'url(' + pic.url + ')'; return d; };
+        return h('div', { class: 'wlh-portrait' + (b.bleeding ? ' is-bleeding is-bleeding-' + b.bleeding : '') + (b.infected ? ' is-infected' : '')
+            + (b.hurt ? ' is-hurt' : '') }, img, tint('wlh-portrait__infection'), tint('wlh-portrait__blood'));
+    }
+
     function bodyFigure(b) {
         const id = 'wlhb' + (++uid);
         const shapes = (cls) => svg('g', { class: cls }, BODY_PARTS.map((d) => svg('path', { d: d })));
@@ -322,7 +401,7 @@
         const wrap = h('div', { class: 'wlh-bodyhud' });
         const left = h('div', { class: 'wlh-bodyhud__left' },
             h('div', { class: 'wlh-bodyhud__minis' }, armorRing(v.armor), voiceRing(v.voice)),
-            bodyFigure(v.body));
+            (() => { const pic = portraitFor(shown.portrait); return pic ? characterPicture(pic, v.body) : bodyFigure(v.body); })());
         const right = h('div', { class: 'wlh-bodyhud__arc' });
         v.big.forEach((r, i) => {
             const g = bigRing(r);
@@ -596,6 +675,18 @@
         '.wlh-body.is-bleeding-3 .wlh-body__blood path { animation-duration: 0.7s; }',
         '.wlh-body.is-infected .wlh-body__infection path { opacity: 0.28; }',
         '@keyframes wlhBleed { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.6; } }',
+        '.wlh-portrait { position: absolute; left: calc(6px * var(--wlh-scale)); top: calc(30px * var(--wlh-scale)); width: calc(124px * var(--wlh-scale));',
+        '  height: calc(230px * var(--wlh-scale)); }',
+        '.wlh-portrait__img, .wlh-portrait__tint { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }',
+        '.wlh-portrait__img { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.85)); }',
+        '.wlh-portrait__tint { opacity: 0; transition: opacity 0.4s; -webkit-mask-size: contain; mask-size: contain;',
+        '  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center bottom; mask-position: center bottom; }',
+        '.wlh-portrait__blood { background: #c8150c; mix-blend-mode: multiply; } .wlh-portrait__infection { background: #6fbf2c; mix-blend-mode: multiply; }',
+        '.wlh-portrait.is-hurt .wlh-portrait__blood { opacity: 0.35; }',
+        '.wlh-portrait.is-bleeding .wlh-portrait__blood { animation: wlhBleed2 1.4s ease-in-out infinite; }',
+        '.wlh-portrait.is-bleeding-3 .wlh-portrait__blood { animation-duration: 0.7s; }',
+        '.wlh-portrait.is-infected .wlh-portrait__infection { opacity: 0.4; }',
+        '@keyframes wlhBleed2 { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.8; } }',
         '.wlh-bodyhud__arc { display: flex; flex-direction: column; gap: calc(6px * var(--wlh-scale)); }',
         '.wlh-gauge, .wlh-mini { position: relative; display: grid; place-items: center; --c1: #8fe3ff; --c2: #2c7be5; }',
         '.wlh-gauge { width: calc(58px * var(--wlh-scale)); height: calc(58px * var(--wlh-scale)); }',

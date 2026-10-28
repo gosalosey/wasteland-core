@@ -117,3 +117,16 @@ test('body style: no vest, no voice resource, "when it matters" and off', () => 
     assert.strictEqual(hud.normalizeLayout({}).style, 'body');
     assert.strictEqual(hud.normalizeLayout({ style: 'classic' }).style, 'classic');
 });
+
+test('character picture: only the pixels that differ between the two shots are kept', () => {
+    const w = 10, h = 10;
+    const a = new Uint8ClampedArray(w * h * 4).fill(100), b = new Uint8ClampedArray(w * h * 4).fill(100);
+    for (let y = 2; y < 8; y++) for (let x = 3; x < 6; x++) { const i = (y * w + x) * 4; a[i] = 250; a[i + 2] = 20; }
+    a[(9 * w + 9) * 4] = 160;   // one stray pixel: not part of the box
+    const r = hud.cutout(a, b, w, h);
+    assert.deepStrictEqual(r.box, { x: 3, y: 2, w: 3, h: 6 });
+    assert.strictEqual(r.data[3], 0);                          // background: clear
+    assert.strictEqual(r.data[(2 * w + 3) * 4 + 3], 255);     // character: solid
+    assert.strictEqual(r.data[(2 * w + 3) * 4], 250);         // with its own colour
+    assert.strictEqual(hud.cutout(b, b, w, h).box, null);    // nothing differs: no picture
+});

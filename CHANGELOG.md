@@ -1,5 +1,12 @@
 # Changelog
 
+## HUD: your own character instead of the figure
+
+- The Body style HUD shows a picture of your actual character, real clothes and all, where the grey figure was. Bleeding (pulsing red), infection (green) and low health (red) show on the picture.
+- How: when your character or clothes change and you stand still on foot, out of a fight, a copy of your character is put high in the sky above you with a light on it; a camera looks at it for a moment (a short flash on your screen) and takes two shots, one with the copy and one without. The HUD keeps only what differs (your character) and stores the picture on your PC, so it is taken again only when your clothes change. Without screenshot-basic the figure stays.
+- New resource `screenshot-basic` (the official CitizenFX one, MIT, shipped already built in resources\[wasteland]\screenshot-basic). server.cfg needs `ensure screenshot-basic`; the updater offers to add it.
+- New client file wasteland_survival/client/portrait.lua.
+
 ## HUD: new "Body" style (now the default)
 
 - A body figure with rings in an arc beside it: health, stamina, food and drink, each with its percentage. Top left, two small rings: armour (outer ring the vest, gold inner ring the plates in it) and voice (your range: whisper, normal, shout; lights up green while you talk, needs pma-voice for the range). Small rings for temperature, pee and poop and the bleeding / infection tags below. The body pulses red while bleeding, has a green tint while infected and a red flush when health is low. Preview: docs/images/hud/body_style.png.
