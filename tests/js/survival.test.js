@@ -119,19 +119,6 @@ test('body style: no vest, no voice resource, "when it matters" and off', () => 
     assert.strictEqual(hud.normalizeLayout({ style: 'classic' }).style, 'classic');
 });
 
-test('character picture: only the pixels that differ between the two shots are kept', () => {
-    const w = 10, h = 10;
-    const a = new Uint8ClampedArray(w * h * 4).fill(100), b = new Uint8ClampedArray(w * h * 4).fill(100);
-    for (let y = 2; y < 8; y++) for (let x = 3; x < 6; x++) { const i = (y * w + x) * 4; a[i] = 250; a[i + 2] = 20; }
-    a[(9 * w + 9) * 4] = 160;   // one stray pixel: not part of the box
-    const r = hud.cutout(a, b, w, h);
-    assert.deepStrictEqual(r.box, { x: 3, y: 2, w: 3, h: 6 });
-    assert.strictEqual(r.data[3], 0);                          // background: clear
-    assert.strictEqual(r.data[(2 * w + 3) * 4 + 3], 255);     // character: solid
-    assert.strictEqual(r.data[(2 * w + 3) * 4], 250);         // with its own colour
-    assert.strictEqual(hud.cutout(b, b, w, h).box, null);    // nothing differs: no picture
-});
-
 test('noise ring: the zombies\' hearing range as a word, a fill and feet', () => {
     const v = hud.bodyView({ mode: 'compact', health: 90, noise: { radius: 30, source: 'running', count: 2 }, voice: { talking: true }, stats: {} });
     assert.strictEqual(v.noise.key, 'loud'); assert.strictEqual(v.noise.word, 'LOUD');
@@ -149,18 +136,4 @@ test('voice speaker in the small row: only with voice chat; "when it matters" on
     assert.strictEqual(talking.small.find((i) => i.key === 'voice').fill, 100);
     const off = hud.bodyView({ mode: 'compact', health: 90, voice: { on: false }, stats: {} });
     assert.strictEqual(off.small.some((i) => i.key === 'voice'), false);
-});
-
-test('character picture: specks elsewhere in the shot (clouds) do not widen the crop', () => {
-    const w = 200, h = 100;
-    const a = new Uint8ClampedArray(w * h * 4).fill(120), b = new Uint8ClampedArray(w * h * 4).fill(120);
-    const set = (x, y) => { a[(y * w + x) * 4] = 255; };
-    for (let y = 20; y < 96; y++) for (let x = 90; x < 111; x++) set(x, y);   // the character
-    for (let x = 60; x < 66; x++) for (let y = 30; y < 50; y++) set(x, y);    // ... an arm held out (small gap allowed? no: far)
-    let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
-    for (let i = 0; i < 400; i++) set(Math.floor(rnd() * w), Math.floor(rnd() * 12));   // clouds across the top rows
-    const r = hud.cutout(a, b, w, h);
-    assert.ok(r.box.x >= 85 && r.box.x + r.box.w <= 115, 'columns: ' + JSON.stringify(r.box));
-    assert.ok(r.box.y >= 15 && r.box.y + r.box.h >= 94, 'rows: ' + JSON.stringify(r.box));
-    assert.strictEqual(r.data[(5 * w + 10) * 4 + 3], 0);   // a cloud speck outside the box is cleared
 });

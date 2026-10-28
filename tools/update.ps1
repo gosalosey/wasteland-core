@@ -269,8 +269,7 @@ Say 'resources\[wasteland] updated.' Green
 # --- server.cfg -------------------------------------------------------------------
 $template = Get-Content -LiteralPath (Join-Path $root.FullName 'txadmin\server.cfg')
 $cfg = Get-Content -LiteralPath $cfgPath
-# screenshot-basic ships in [wasteland] too (the HUD character picture)
-$wanted = $template | Where-Object { $_ -match '^ensure\s+(wasteland_\w+|screenshot-basic)' } | ForEach-Object { ($_ -split '\s+')[1] }
+$wanted = $template | Where-Object { $_ -match '^ensure\s+(wasteland_\w+)' } | ForEach-Object { ($_ -split '\s+')[1] }
 $missing = @($wanted | Where-Object { $name = $_; -not ($cfg | Where-Object { $_ -match ('^\s*ensure\s+' + [regex]::Escape($name) + '\s*(#.*)?$') }) })
 if ($missing.Count -gt 0) {
     Say ''

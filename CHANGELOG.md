@@ -1,5 +1,10 @@
 # Changelog
 
+## HUD: a grey silhouette instead of the character picture
+
+- The Body style HUD shows a plain grey body silhouette (the image the owner picked), sized to fill the space beside the rings. Bleeding (pulsing red), infection (green) and low health (red flush) tint it, shaped to its outline.
+- The character picture is gone, and with it /hudphoto, client/portrait.lua and the screenshot-basic resource: nothing touches the camera any more. If server.cfg has `ensure screenshot-basic`, delete that line.
+
 ## HUD character picture: only when you ask (/hudphoto)
 
 - The HUD no longer takes the picture by itself (it kept doing it and cut the camera away mid-game). It is taken only when the player types `/hudphoto`, and the last picture keeps showing until the next one, also after changing clothes.
