@@ -1,8 +1,13 @@
 // wasteland_survival :: html/hud.js
-// Survival HUD (runs inside wasteland_ui, no input focus): health (and
-// armour) as bars on a riveted plate, and food, drink, temperature, pee and
-// poop as round iron dials whose ring drains; tags for bleeding and
-// infection. Modes:
+// Survival HUD (runs inside wasteland_ui, no input focus). Two styles:
+//   body     - (default) a body figure (red while bleeding, green tint while
+//              infected) with rings in an arc: health, stamina, food, drink;
+//              small rings top left for armour (outer ring the vest, inner
+//              ring the plates) and voice (range, lit while talking); small
+//              rings for temperature, pee and poop; bleeding / infection tags
+//   classic  - health (and armour) as bars on a riveted plate, food, drink,
+//              temperature, pee and poop as round iron dials
+// Modes:
 //   compact    - every icon, always
 //   immersive  - an icon only while it matters (low, cold, hot)
 //   off        - nothing
@@ -11,7 +16,8 @@
 // Also: a line with the player's server id, character name and cash (moves
 // with the HUD), and a stamina bar at the bottom middle of the screen that
 // only shows while stamina is being used.
-// Data: { mode, health, armor (plate %, only while one is worn), stamina, editing, layout = { x, y, vertical, size },
+// Data: { mode, health, armor (vest %, only while one is worn), plates (%), stamina, voice = { talking, level, levels, on },
+//         editing, layout = { x, y, vertical, size, style },
 //         info = { id, name, cash },
 //         stats = { hunger, thirst, infection, bleeding, temperature, treatment, dead } }
 
@@ -99,6 +105,39 @@
         return { visible: fill < 100, fill: fill, low: fill <= 20 };
     }
 
+    // The body style: rings in the arc, the small rings, the armour and voice
+    // rings, and how the body figure looks. Rings: [{ key, fill, level, text }].
+    function bodyView(data) {
+        const s = data.stats || {};
+        if (data.mode === 'off' || s.dead) return null;
+        const ring = (key, v) => ({ key: key, fill: clamp(v), level: levelOf(clamp(v)), text: clamp(v) + '%' });
+        let big = [];
+        if (typeof data.health === 'number') big.push(ring('health', data.health));
+        if (typeof data.stamina === 'number') big.push(ring('stamina', data.stamina));
+        if (typeof s.hunger === 'number') big.push(ring('food', s.hunger));
+        if (typeof s.thirst === 'number') big.push(ring('drink', s.thirst));
+        const small = icons(Object.assign({}, data, { mode: 'compact', health: null, armor: null, plates: null, stats: Object.assign({}, s, { hunger: null, thirst: null }) }))
+            .filter((i) => i.key === 'temp' || i.key === 'pee' || i.key === 'poop');
+        const armor = typeof data.armor === 'number'
+            ? { worn: true, fill: clamp(data.armor), plates: typeof data.plates === 'number' ? clamp(data.plates) : 0, level: levelOf(clamp(data.armor)) }
+            : { worn: false, fill: 0, plates: 0, level: 'ok' };
+        const v = data.voice || {};
+        const levels = v.levels || 3;
+        const voice = { on: v.on !== false, talking: v.talking === true,
+            fill: typeof v.level === 'number' ? clamp(v.level / levels * 100) : (v.on === false ? 0 : 66) };
+        const immersive = data.mode === 'immersive';
+        if (immersive) {
+            big = big.filter((i) => i.level !== 'ok');
+        }
+        return {
+            big: big,
+            small: immersive ? small.filter((i) => i.level !== 'ok') : small,
+            armor: armor, voice: voice,
+            body: { bleeding: Math.min(3, s.bleeding || 0), infected: (s.infection || 0) > 0,
+                hurt: typeof data.health === 'number' && data.health <= LOW },
+        };
+    }
+
     // Layout: x/y are the share of the free space left of / above the HUD
     // (0 = left/top edge, 1 = right/bottom edge), so the HUD stays on screen
     // at any resolution or size. x/y null = default corner (bottom right).
@@ -110,7 +149,7 @@
         let x = unit(l.x);
         let y = unit(l.y);
         if (x === null || y === null) { x = null; y = null; }
-        return { x: x, y: y, vertical: l.vertical === true, size: SIZES[l.size] ? l.size : 'm' };
+        return { x: x, y: y, vertical: l.vertical === true, size: SIZES[l.size] ? l.size : 'm', style: l.style === 'classic' ? 'classic' : 'body' };
     }
 
     // Pixel position of the HUD's top-left corner (null = default corner).
@@ -132,7 +171,7 @@
     }
 
     if (typeof module === 'object' && module.exports) {
-        module.exports = { icons: icons, badges: badges, infoLine: infoLine, staminaBar: staminaBar, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
+        module.exports = { bodyView: bodyView, icons: icons, badges: badges, infoLine: infoLine, staminaBar: staminaBar, normalizeLayout: normalizeLayout, toPixels: toPixels, toFractions: toFractions };
         return;
     }
 
@@ -162,6 +201,10 @@
         drink: { fill: 'M12 2.8s-6.2 7.3-6.2 11.5a6.2 6.2 0 0 0 12.4 0C18.2 10.1 12 2.8 12 2.8z' },
         temp: { stroke: 'M10 13.6V5a2 2 0 0 1 4 0v8.6a4.2 4.2 0 1 1-4 0zM12 9v7.5', dot: true },
         pee: { fill: 'M12 2.8s-6 7-6 11.2a6 6 0 0 0 12 0C18 9.8 12 2.8 12 2.8z', text: 'P' },
+        stamina: { stroke: 'M13 8l-3 4.5 3 3-1.5 6M10 12.5l-4.5 1M13.2 9.5l4 2 2.3-2.2M13 15.5l4.5 1 1 4.5', circle: [14.5, 4.6, 2.3] },
+        bread: { fill: 'M3.5 11.2C3.5 7.2 7.4 5 12 5s8.5 2.2 8.5 6.2c0 1.3-.8 2.1-2 2.2V19H5.5v-5.6c-1.2-.1-2-.9-2-2.2z' },
+        glass: { stroke: 'M7 3h10c0 5.2-2.2 8.2-5 8.2S7 8.2 7 3zM12 11.2V19M8 21h8' },
+        speaker: { fill: 'M3.5 9h4l5.2-4.2v14.4L7.5 15h-4z', stroke: 'M16 8.6a4.8 4.8 0 0 1 0 6.8M18.6 6a8.4 8.4 0 0 1 0 12' },
         poop: { fill: 'M12 3.5c2 .8 2.2 2.8 1.2 3.8 2.8 0 3.8 1.8 3 3 2.8.2 3.8 2.8 2.8 4.5 2 .9 1.4 4.7-1 4.7H6c-2.4 0-3-3.8-1-4.7-1-1.7 0-4.3 2.8-4.5-.8-1.2.2-3 3-3-1-1-.6-3 1.2-3.8z' },
     };
 
@@ -171,6 +214,7 @@
         if (g.fill) kids.push(svg('path', { d: g.fill, class: 'wlh-g-fill' }));
         if (g.stroke) kids.push(svg('path', { d: g.stroke, class: 'wlh-g-stroke' }));
         if (g.dot) kids.push(svg('circle', { cx: '12', cy: '17.2', r: '2.2', class: 'wlh-g-fill' }));
+        if (g.circle) kids.push(svg('circle', { cx: String(g.circle[0]), cy: String(g.circle[1]), r: String(g.circle[2]), class: 'wlh-g-fill' }));
         if (g.text) {
             const t = svg('text', { x: '12', y: '17.6', 'text-anchor': 'middle', class: 'wlh-g-text' });
             t.textContent = g.text;
@@ -201,6 +245,98 @@
             h('div', { class: 'wlh-plate__icon' }, glyph(icon.key)),
             h('div', { class: 'wlh-bar' }, fill, h('div', { class: 'wlh-bar__grime' })),
             h('span', { class: 'wlh-plate__value', text: String(icon.fill) }));
+    }
+
+    // ------------------------------------------------------------------
+    // Body style
+    // ------------------------------------------------------------------
+
+    // The figure, in a 100 x 220 box: head, neck, torso, hips, arms, legs.
+    const BODY_PARTS = [
+        'M50 4.5c6.6 0 11.2 5.6 11.2 13.2S56.6 31.5 50 31.5 38.8 25.3 38.8 17.7 43.4 4.5 50 4.5z',
+        'M45 29h10l1 8H44z',
+        'M31 39c6-3.2 13-4.6 19-4.6s13 1.4 19 4.6l2.2 30c.2 14-4 28-6.6 40H36.4C33.8 97 29.6 83 29.8 69z',
+        'M36.4 107h27.2l2.2 16c-5 4-10.6 5.6-15.8 5.6S39.2 127 34.2 123z',
+        'M31 40.5c-6 2-8.6 7.6-9.4 16l-2.4 32c-.4 9-2 18-3.6 27.4l5.6 1.4c2.2-9.2 4.4-18 5.4-27l3.2-26.6z',
+        'M69 40.5c6 2 8.6 7.6 9.4 16l2.4 32c.4 9 2 18 3.6 27.4l-5.6 1.4c-2.2-9.2-4.4-18-5.4-27l-3.2-26.6z',
+        'M16.2 116.5c-2 4.2-1.4 9.4 1.6 10.4s5.4-3.6 5-9z',
+        'M83.8 116.5c2 4.2 1.4 9.4-1.6 10.4s-5.4-3.6-5-9z',
+        'M34.4 122c4.6 3.6 10 5 14.4 5.4l-1.6 44-1.6 36.6h-7.6l-1.6-36.6z',
+        'M65.6 122c-4.6 3.6-10 5-14.4 5.4l1.6 44 1.6 36.6h7.6l1.6-36.6z',
+        'M37.6 207.4h8.8c1.6 2.6 1.4 5-1 6.4h-8.6c-1.2-1.8-.8-4.4.8-6.4z',
+        'M62.4 207.4h-8.8c-1.6 2.6-1.4 5 1 6.4h8.6c1.2-1.8.8-4.4-.8-6.4z',
+    ];
+    // Muscle lines over it (chest, belly, knees).
+    const BODY_LINES = 'M38 50c4 4 8 5 12 5s8-1 12-5M50 56v48M41 66h18M41 77h18M42 88h16M38.6 158c2 2 6 2 8 0M53.4 158c2 2 6 2 8 0M26 70c1 6 1 12 0 18M74 70c-1 6-1 12 0 18';
+
+    function bodyFigure(b) {
+        const id = 'wlhb' + (++uid);
+        const shapes = (cls) => svg('g', { class: cls }, BODY_PARTS.map((d) => svg('path', { d: d })));
+        return svg('svg', { viewBox: '0 0 100 220', preserveAspectRatio: 'none', class: 'wlh-body' + (b.bleeding ? ' is-bleeding is-bleeding-' + b.bleeding : '')
+            + (b.infected ? ' is-infected' : '') + (b.hurt ? ' is-hurt' : '') }, [
+            svg('defs', {}, [svg('linearGradient', { id: id, x1: '0', y1: '0', x2: '1', y2: '1' }, [
+                svg('stop', { offset: '0', 'stop-color': '#e2e2dc' }), svg('stop', { offset: '0.55', 'stop-color': '#9a9a93' }),
+                svg('stop', { offset: '1', 'stop-color': '#55554f' })])]),
+            (() => { const g = shapes('wlh-body__skin'); g.setAttribute('fill', 'url(#' + id + ')'); return g; })(),
+            svg('path', { d: BODY_LINES, class: 'wlh-body__lines' }),
+            shapes('wlh-body__infection'),
+            shapes('wlh-body__blood'),
+        ]);
+    }
+
+    // An arc ring (open on the left, like a gauge) with a glyph and a value.
+    const ARC = 0.8;   // share of the circle the gauge covers
+    function arcRing(r, sw, fill, cls) {
+        const c = 2 * Math.PI * r;
+        const track = svg('circle', { cx: '30', cy: '30', r: String(r), class: 'wlh-arc__track ' + (cls || ''),
+            'stroke-width': String(sw), 'stroke-dasharray': (c * ARC).toFixed(2) + ' ' + c.toFixed(2), transform: 'rotate(216 30 30)' });
+        const bar = svg('circle', { cx: '30', cy: '30', r: String(r), class: 'wlh-arc__fill ' + (cls || ''),
+            'stroke-width': String(sw), 'stroke-dasharray': (c * ARC * fill / 100).toFixed(2) + ' ' + c.toFixed(2), transform: 'rotate(216 30 30)' });
+        return [track, bar];
+    }
+
+    function bigRing(r) {
+        const glyphKey = { health: 'health', stamina: 'stamina', food: 'bread', drink: 'glass' }[r.key];
+        return h('div', { class: 'wlh-gauge wlh-gauge--' + r.key + ' is-' + r.level, attrs: { title: r.key + ' ' + r.text } },
+            svg('svg', { viewBox: '0 0 60 60', class: 'wlh-gauge__ring' }, arcRing(26, 4.2, r.fill)),
+            h('div', { class: 'wlh-gauge__face' }, glyph(glyphKey), h('span', { class: 'wlh-gauge__val', text: r.text })));
+    }
+
+    function armorRing(a) {
+        return h('div', { class: 'wlh-mini wlh-mini--armor' + (a.worn ? '' : ' is-none') + ' is-' + a.level,
+            attrs: { title: a.worn ? 'Armour ' + a.fill + '%, plates ' + a.plates + '%' : 'No armour' } },
+            svg('svg', { viewBox: '0 0 60 60', class: 'wlh-gauge__ring' }, arcRing(26, 4.5, a.fill).concat(arcRing(19.5, 3.2, a.plates, 'is-plates'))),
+            h('div', { class: 'wlh-mini__face' }, glyph('armor')));
+    }
+
+    function voiceRing(v) {
+        return h('div', { class: 'wlh-mini wlh-mini--voice' + (v.talking ? ' is-talking' : '') + (v.on ? '' : ' is-none'),
+            attrs: { title: v.on ? 'Voice' : 'No voice' } },
+            svg('svg', { viewBox: '0 0 60 60', class: 'wlh-gauge__ring' }, arcRing(26, 4.5, v.fill)),
+            h('div', { class: 'wlh-mini__face' }, glyph('speaker')));
+    }
+
+    function renderBody(shown) {
+        const v = bodyView(shown);
+        if (!v) return;
+        const wrap = h('div', { class: 'wlh-bodyhud' });
+        const left = h('div', { class: 'wlh-bodyhud__left' },
+            h('div', { class: 'wlh-bodyhud__minis' }, armorRing(v.armor), voiceRing(v.voice)),
+            bodyFigure(v.body));
+        const right = h('div', { class: 'wlh-bodyhud__arc' });
+        v.big.forEach((r, i) => {
+            const g = bigRing(r);
+            g.style.marginLeft = 'calc(' + [0, 16, 16, 0][i % 4] + 'px * var(--wlh-scale))';
+            right.appendChild(g);
+        });
+        wrap.appendChild(left);
+        wrap.appendChild(right);
+        root.appendChild(wrap);
+        if (v.small.length) {
+            const row = h('div', { class: 'wlh-row wlh-bodyhud__small' });
+            v.small.forEach((i) => row.appendChild(badgeEl(i)));
+            root.appendChild(row);
+        }
     }
 
     // ------------------------------------------------------------------
@@ -240,7 +376,7 @@
 
     function finish(save) {
         if (save && draft) {
-            post('saveLayout', { mode: draft.mode, x: draft.x, y: draft.y, vertical: draft.vertical, size: draft.size });
+            post('saveLayout', { mode: draft.mode, x: draft.x, y: draft.y, vertical: draft.vertical, size: draft.size, style: draft.style });
         } else {
             post('cancelLayout', {});
         }
@@ -257,10 +393,11 @@
         return h('div', { class: 'wlh-tb' },
             h('div', { class: 'wlh-tb__title', text: 'Drag the HUD anywhere on the screen, then Save' }),
             group('Show', MODES, draft.mode, (v) => { draft.mode = v; }),
-            group('Layout', [[false, 'Row'], [true, 'Column']], draft.vertical, (v) => { draft.vertical = v; }),
+            group('Style', [['body', 'Body'], ['classic', 'Classic']], draft.style, (v) => { draft.style = v; }),
+            draft.style === 'classic' ? group('Layout', [[false, 'Row'], [true, 'Column']], draft.vertical, (v) => { draft.vertical = v; }) : null,
             group('Size', [['s', 'S'], ['m', 'M'], ['l', 'L']], draft.size, (v) => { draft.size = v; }),
             h('div', { class: 'wlh-tb__group' },
-                UI.button('Reset', () => { draft.x = null; draft.y = null; draft.vertical = false; draft.size = 'm'; render(last); }),
+                UI.button('Reset', () => { draft.x = null; draft.y = null; draft.vertical = false; draft.size = 'm'; draft.style = 'body'; render(last); }),
                 UI.button('Cancel', () => finish(false)),
                 UI.button('Save', () => finish(true), 'primary')));
     }
@@ -289,7 +426,10 @@
                 stats: Object.assign({}, DEMO, data.stats || {}, { dead: false }),
             })
             : data;
-        const list = icons(shown);
+        const style = (editing ? draft : normalizeLayout(data.layout)).style;
+        root.classList.toggle('is-body', style === 'body');
+        if (style === 'body') renderBody(editing ? Object.assign({}, shown, { stamina: typeof data.stamina === 'number' ? data.stamina : 100 }) : shown);
+        const list = style === 'body' ? [] : icons(shown);
         const BAR = { health: true, armor: true, plates: true };
         const bars = list.filter((i) => BAR[i.key]);
         const dials = list.filter((i) => !BAR[i.key]);
@@ -312,7 +452,7 @@
         if (toolbar) { toolbar.remove(); toolbar = null; }
         if (editing) { toolbar = buildToolbar(); host.appendChild(toolbar); }
 
-        const bar = staminaBar(data);
+        const bar = style === 'body' ? { visible: false, fill: 100 } : staminaBar(data);
         stamina.classList.toggle('is-visible', bar.visible);
         stamina.classList.toggle('is-low', bar.low === true);
         stamina.firstChild.style.width = bar.fill + '%';
@@ -441,6 +581,45 @@
         '.wlh-stamina.is-visible { opacity: 1; transition: opacity 0.15s ease; }',
         '.wlh-stamina__fill { height: 100%; width: 100%; background: linear-gradient(180deg, #efe6d2, #a89c84); box-shadow: 0 0 6px rgba(239,230,210,0.4); transition: width 0.15s linear; }',
         '.wlh-stamina.is-low .wlh-stamina__fill { background: linear-gradient(180deg, #f0b44a, #b06e14); }',
+        // ---- body style
+        '.wlh-bodyhud { display: flex; align-items: center; gap: calc(4px * var(--wlh-scale)); }',
+        '.wlh-bodyhud__left { position: relative; width: calc(132px * var(--wlh-scale)); height: calc(262px * var(--wlh-scale)); }',
+        '.wlh-bodyhud__minis { position: absolute; left: 0; top: 0; display: flex; gap: calc(5px * var(--wlh-scale)); z-index: 1; }',
+        '.wlh-body { position: absolute; left: calc(10px * var(--wlh-scale)); top: calc(26px * var(--wlh-scale)); width: calc(118px * var(--wlh-scale));',
+        '  height: calc(236px * var(--wlh-scale)); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.8)); overflow: visible; }',
+        '.wlh-body__skin path { stroke: rgba(30,30,28,0.9); stroke-width: 0.8; }',
+        '.wlh-body__lines { fill: none; stroke: rgba(40,40,36,0.55); stroke-width: 0.9; stroke-linecap: round; }',
+        '.wlh-body__blood path, .wlh-body__infection path { opacity: 0; transition: opacity 0.4s; }',
+        '.wlh-body__blood path { fill: #c8150c; } .wlh-body__infection path { fill: #6fbf2c; }',
+        '.wlh-body.is-hurt .wlh-body__blood path { opacity: 0.22; }',
+        '.wlh-body.is-bleeding .wlh-body__blood path { animation: wlhBleed 1.4s ease-in-out infinite; }',
+        '.wlh-body.is-bleeding-3 .wlh-body__blood path { animation-duration: 0.7s; }',
+        '.wlh-body.is-infected .wlh-body__infection path { opacity: 0.28; }',
+        '@keyframes wlhBleed { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.6; } }',
+        '.wlh-bodyhud__arc { display: flex; flex-direction: column; gap: calc(6px * var(--wlh-scale)); }',
+        '.wlh-gauge, .wlh-mini { position: relative; display: grid; place-items: center; --c1: #8fe3ff; --c2: #2c7be5; }',
+        '.wlh-gauge { width: calc(58px * var(--wlh-scale)); height: calc(58px * var(--wlh-scale)); }',
+        '.wlh-mini { width: calc(40px * var(--wlh-scale)); height: calc(40px * var(--wlh-scale)); }',
+        '.wlh-gauge__ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }',
+        '.wlh-arc__track { fill: none; stroke: rgba(0,0,0,0.55); stroke-linecap: round; }',
+        '.wlh-arc__fill { fill: none; stroke: var(--c2); stroke-linecap: round; filter: drop-shadow(0 0 2px var(--c1)); transition: stroke-dasharray 0.5s ease; }',
+        '.wlh-gauge .wlh-arc__fill, .wlh-mini .wlh-arc__fill { stroke: var(--c1); }',
+        '.wlh-gauge::before, .wlh-mini::before { content: ""; position: absolute; inset: 14%; border-radius: 50%;',
+        '  background: radial-gradient(circle at 40% 35%, rgba(40,40,38,0.85), rgba(8,8,8,0.9)); box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); }',
+        '.wlh-gauge__face, .wlh-mini__face { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;',
+        '  color: #f3f3ee; line-height: 1; }',
+        '.wlh-gauge__face .wlh-glyph { width: calc(20px * var(--wlh-scale)); height: calc(20px * var(--wlh-scale)); filter: drop-shadow(0 1px 2px #000); }',
+        '.wlh-mini__face .wlh-glyph { width: calc(17px * var(--wlh-scale)); height: calc(17px * var(--wlh-scale)); filter: drop-shadow(0 1px 2px #000); }',
+        '.wlh-gauge__val { margin-top: calc(1px * var(--wlh-scale)); font-size: calc(11px * var(--wlh-scale)); font-weight: 700; color: #f3f3ee;',
+        '  text-shadow: 0 1px 2px #000; font-family: Arial, sans-serif; }',
+        '.wlh-gauge.is-low { --c1: #f2b24a; } .wlh-gauge.is-critical { --c1: #ff4a3d; animation: wlhPulse 0.9s ease-in-out infinite; }',
+        '.wlh-mini--armor { --c1: #a9c7da; } .wlh-mini--armor .wlh-arc__fill.is-plates { stroke: #e0b84f; filter: drop-shadow(0 0 2px #e0b84f); }',
+        '.wlh-mini--armor .wlh-mini__face { color: #a9c7da; }',
+        '.wlh-mini.is-none { opacity: 0.45; }',
+        '.wlh-mini--voice { --c1: #e8e8e2; } .wlh-mini--voice.is-talking { --c1: #7fe36a; }',
+        '.wlh-mini--voice.is-talking .wlh-mini__face { color: #7fe36a; } .wlh-mini--voice.is-talking::before { box-shadow: 0 0 10px rgba(127,227,106,0.6), inset 0 1px 3px rgba(0,0,0,0.8); }',
+        '.wlh-bodyhud__small { justify-content: flex-end; }',
+        '.wlh-bodyhud__small .wlh-dial { width: calc(36px * var(--wlh-scale)); height: calc(36px * var(--wlh-scale)); }',
         '.wlh-tb { position: absolute; top: 3vh; left: 50%; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center;',
         '  gap: 10px 16px; max-width: 92vw; padding: 10px 14px; background: var(--wl-bg); border: 1px solid var(--wl-border);',
         '  border-radius: var(--wl-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; }',

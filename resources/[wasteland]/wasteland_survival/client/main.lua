@@ -28,16 +28,17 @@ end
 
 local MODES = { compact = true, immersive = true, off = true }
 local SIZES = { s = true, m = true, l = true }
-local hudLayout = { vertical = false, size = 'm' } -- x, y: share of the free screen space (nil = default corner)
+local hudLayout = { vertical = false, size = 'm', style = 'body' } -- x, y: share of the free screen space (nil = default corner)
 local hudEditing = false
 
 -- Layout from the screen or storage (only numbers 0-1 and known sizes).
 local function cleanLayout(p)
-    if type(p) ~= 'table' then return { vertical = false, size = 'm' } end
+    if type(p) ~= 'table' then return { vertical = false, size = 'm', style = 'body' } end
     local function unit(v) return type(v) == 'number' and v == v and math.max(0.0, math.min(1.0, v)) or nil end
     local x, y = unit(p.x), unit(p.y)
     if not x or not y then x, y = nil, nil end
-    return { x = x, y = y, vertical = p.vertical == true, size = SIZES[p.size] and p.size or 'm' }
+    return { x = x, y = y, vertical = p.vertical == true, size = SIZES[p.size] and p.size or 'm',
+        style = p.style == 'classic' and 'classic' or 'body' }
 end
 
 local function loadHudMode()
@@ -114,9 +115,18 @@ local function staminaPercent()
     return math.max(0, math.min(100, 100 - GetPlayerSprintStaminaRemaining(PlayerId())))
 end
 
+-- Voice: talking now, and the range (pma-voice: 1 whisper, 2 normal, 3 shout).
+local function voiceData()
+    local talking = NetworkIsPlayerTalking(PlayerId()) == true or NetworkIsPlayerTalking(PlayerId()) == 1
+    local prox = LocalPlayer.state.proximity
+    local level = type(prox) == 'table' and tonumber(prox.index) or nil
+    return { talking = talking, level = level, levels = 3, on = GetResourceState('pma-voice') == 'started' or MumbleIsConnected() == true }
+end
+
 local function hudData()
     local ped = PlayerPedId()
     return {
+        voice = voiceData(),
         mode = hudMode,
         health = healthPercent(ped),
         stamina = staminaPercent(),
@@ -584,12 +594,13 @@ end)
 
 -- Stamina bar: refresh quickly only while stamina is changing.
 Citizen.CreateThread(function()
-    local lastStamina = 100
+    local lastStamina, lastTalking = 100, false
     while true do
         if active then
             local s = staminaPercent()
-            if s ~= lastStamina then
-                lastStamina = s
+            local talking = NetworkIsPlayerTalking(PlayerId()) == true or NetworkIsPlayerTalking(PlayerId()) == 1
+            if s ~= lastStamina or talking ~= lastTalking then
+                lastStamina, lastTalking = s, talking
                 ensureHud()
                 Citizen.Wait(150)
             else

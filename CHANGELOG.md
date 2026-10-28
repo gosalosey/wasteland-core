@@ -1,5 +1,11 @@
 # Changelog
 
+## HUD: new "Body" style (now the default)
+
+- A body figure with rings in an arc beside it: health, stamina, food and drink, each with its percentage. Top left, two small rings: armour (outer ring the vest, gold inner ring the plates in it) and voice (your range: whisper, normal, shout; lights up green while you talk, needs pma-voice for the range). Small rings for temperature, pee and poop and the bleeding / infection tags below. The body pulses red while bleeding, has a green tint while infected and a red flush when health is low. Preview: docs/images/hud/body_style.png.
+- /hud has a new Style choice: Body or Classic (the old plates and dials, still there). Size, position and "Always / When it matters / Off" work for both. Everyone starts on Body; a saved position and size are kept.
+- In the Body style stamina is a ring, so the stamina bar at the bottom of the screen only shows in Classic.
+
 ## Vehicles: more wrecks, and motorbikes
 
 - Up to 40 wrecks in the world (was 30), with 20 new spawn points: Sandy Shores junkyard, YouTool, Stab City, Grapeseed, O'Neil ranch, Paleto (sawmill, sheriff, north gas station), Harmony, Route 1 at Zancudo, and in Los Santos Mission Row, Grove Street, Little Seoul, La Mesa, El Burro Heights, Burton, Vespucci Beach, Mirror Park, Pillbox Hill and Del Perro pier. VERIFY IN-GAME: picked from the map; the spot check moves a wreck to the nearest clear spot.

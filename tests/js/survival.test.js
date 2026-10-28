@@ -46,9 +46,9 @@ test('badges: bleeding level and infection', () => {
 });
 
 test('layout: default corner, clamped fractions, known sizes only', () => {
-    assert.deepStrictEqual(hud.normalizeLayout(undefined), { x: null, y: null, vertical: false, size: 'm' });
-    assert.deepStrictEqual(hud.normalizeLayout({ x: 0.5, y: 'top', size: 'xl' }), { x: null, y: null, vertical: false, size: 'm' });
-    assert.deepStrictEqual(hud.normalizeLayout({ x: -1, y: 7, vertical: true, size: 'l' }), { x: 0, y: 1, vertical: true, size: 'l' });
+    assert.deepStrictEqual(hud.normalizeLayout(undefined), { x: null, y: null, vertical: false, size: 'm', style: 'body' });
+    assert.deepStrictEqual(hud.normalizeLayout({ x: 0.5, y: 'top', size: 'xl' }), { x: null, y: null, vertical: false, size: 'm', style: 'body' });
+    assert.deepStrictEqual(hud.normalizeLayout({ x: -1, y: 7, vertical: true, size: 'l' }), { x: 0, y: 1, vertical: true, size: 'l', style: 'body' });
     assert.strictEqual(hud.toPixels({}, { w: 200, h: 50 }, { w: 1920, h: 1080 }), null);
 });
 
@@ -93,4 +93,27 @@ test('pee and poop icons fill up and warn when nearly full', () => {
     assert.strictEqual(pee.fill, 90); assert.strictEqual(pee.level, 'critical');
     assert.strictEqual(poop.level, 'ok');
     assert.deepStrictEqual(hud.icons({ mode: 'immersive', health: 90, stats: stats({ bladder: 70, bowel: 10 }) }).map((i) => i.key), ['pee']);
+});
+
+test('body style: the arc of rings, armour with plates, voice and the body state', () => {
+    const v = hud.bodyView({ mode: 'compact', health: 80, stamina: 100, armor: 60, plates: 40,
+        voice: { talking: true, level: 2, levels: 3, on: true },
+        stats: { hunger: 60, thirst: 5, temperature: 37, bladder: 20, bowel: 10, bleeding: 2, infection: 10 } });
+    assert.deepStrictEqual(v.big.map((r) => r.key), ['health', 'stamina', 'food', 'drink']);
+    assert.strictEqual(v.big[3].level, 'critical');
+    assert.strictEqual(v.big[0].text, '80%');
+    assert.deepStrictEqual(v.armor, { worn: true, fill: 60, plates: 40, level: 'ok' });
+    assert.strictEqual(v.voice.talking, true); assert.strictEqual(v.voice.fill, 67);
+    assert.deepStrictEqual(v.small.map((i) => i.key), ['temp', 'pee', 'poop']);
+    assert.deepStrictEqual(v.body, { bleeding: 2, infected: true, hurt: false });
+});
+
+test('body style: no vest, no voice resource, "when it matters" and off', () => {
+    const v = hud.bodyView({ mode: 'compact', health: 100, voice: { on: false }, stats: {} });
+    assert.strictEqual(v.armor.worn, false); assert.strictEqual(v.voice.on, false); assert.strictEqual(v.voice.fill, 0);
+    const im = hud.bodyView({ mode: 'immersive', health: 90, stamina: 30, stats: { hunger: 80, thirst: 90 } });
+    assert.deepStrictEqual(im.big.map((r) => r.key), ['stamina']);
+    assert.strictEqual(hud.bodyView({ mode: 'off', stats: {} }), null);
+    assert.strictEqual(hud.normalizeLayout({}).style, 'body');
+    assert.strictEqual(hud.normalizeLayout({ style: 'classic' }).style, 'classic');
 });
