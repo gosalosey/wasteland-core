@@ -1,11 +1,11 @@
 -- wasteland_survival :: client/portrait.lua
--- The HUD's picture of your own character (Body style). When the character
--- or their clothes change, and the player is standing safely, a copy of the
--- character is put high above them in the sky with a light on it; a camera
--- looks at it for a moment and two screenshots are taken (screenshot-basic):
--- one with the copy, one without. The HUD keeps the pixels that differ, i.e.
--- the character on a clear background, and stores the picture on this PC
--- (so it is only taken again when the clothes change).
+-- The HUD's picture of your own character (Body style). Taken only when the
+-- player types /hudphoto (never by itself: it cuts the camera away for a
+-- moment): a copy of the character is put high above them in the sky with
+-- a light on it; a camera looks at it and two screenshots are taken
+-- (screenshot-basic): one with the copy, one without. The HUD keeps the
+-- pixels that differ, i.e. the character on a clear background, and stores
+-- the picture on this PC; it shows until the next /hudphoto.
 -- Without screenshot-basic the HUD keeps the plain figure.
 
 WLPortrait = { sig = nil, shots = nil, wanted = false, busy = false }
@@ -110,8 +110,8 @@ local function capture(sig)
     error('screenshot-basic took no picture (no answer within 3 s)')
 end
 
--- The HUD asks: it has no picture for this look (or never had one).
-function P.need() P.wanted = true end
+-- (Older HUD versions asked for a picture by themselves; that is ignored now.)
+function P.need() end
 
 -- The HUD made and stored the picture: do not send the shots again.
 function P.done() P.shots = nil end
@@ -137,16 +137,6 @@ Citizen.CreateThread(function()
             -- the look has settled for a few seconds (dressing in the inventory changes it bit by bit)
             if GetGameTimer() - changedAt > 4000 then
                 if P.sig ~= sig then P.sig = sig end
-                local why = blocked(ped)
-                if P.wanted and not P.busy and not why then
-                    P.busy, P.wanted = true, false
-                    local okC, err = pcall(capture, sig)
-                    if not okC then say('failed: ' .. tostring(err)) end
-                    P.busy = false
-                elseif P.wanted and why and why ~= P.lastWhy then
-                    print('[wasteland_survival] character picture waits: ' .. why)
-                end
-                P.lastWhy = why
             end
         end
     end

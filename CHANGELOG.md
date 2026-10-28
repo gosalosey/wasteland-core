@@ -1,5 +1,9 @@
 # Changelog
 
+## HUD character picture: only when you ask (/hudphoto)
+
+- The HUD no longer takes the picture by itself (it kept doing it and cut the camera away mid-game). It is taken only when the player types `/hudphoto`, and the last picture keeps showing until the next one, also after changing clothes.
+
 ## HUD character picture: cropped to the character (bigger)
 
 - The picture was cropped around everything that changed between the two shots, drifting clouds included, so the character came out small at the bottom. The crop now finds the character itself (the solid block of change) and clears specks elsewhere, so the character fills the space. Pictures taken before are dropped and taken again once (one short flash).

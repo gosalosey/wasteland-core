@@ -340,7 +340,6 @@
     let portrait = null;          // { sig, url }
     let making = null;            // id of the shots being made into a picture
     let madeId = null;            // id of the last shots made (each capture has its own)
-    let asked = null;             // sig a picture was asked for
     try { portrait = JSON.parse(localStorage.getItem(PORTRAIT_KEY) || 'null'); } catch (e) { portrait = null; }
 
     function loadImage(src) {
@@ -375,13 +374,11 @@
         }).then(() => { madeId = shots.id; making = null; if (last && root) render(last); });
     }
 
-    // Each update: make the picture from new shots, or ask for one when this
-    // look has none yet.
+    // Each update: make the picture from new shots. Pictures are only taken
+    // when the player asks (/hudphoto): the last one shows until then.
     function portraitFor(p) {
-        if (!p) return portrait;
-        if (p.shots && making !== p.shots.id && madeId !== p.shots.id) makePortrait(p.shots);
-        else if (!p.shots && (!portrait || portrait.sig !== p.sig) && asked !== p.sig && !making) { asked = p.sig; post('portraitNeed', {}); }
-        return portrait;   // the last one shows until the new one is ready
+        if (p && p.shots && making !== p.shots.id && madeId !== p.shots.id) makePortrait(p.shots);
+        return portrait;
     }
 
     function characterPicture(pic, b) {
