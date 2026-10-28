@@ -299,7 +299,8 @@
     // The character picture: made from the shots once, kept on this PC.
     const PORTRAIT_KEY = 'wl.hud.portrait';
     let portrait = null;          // { sig, url }
-    let making = null;            // sig of the shots being made into a picture
+    let making = null;            // id of the shots being made into a picture
+    let madeId = null;            // id of the last shots made (each capture has its own)
     let asked = null;             // sig a picture was asked for
     try { portrait = JSON.parse(localStorage.getItem(PORTRAIT_KEY) || 'null'); } catch (e) { portrait = null; }
 
@@ -308,7 +309,7 @@
     }
 
     function makePortrait(shots) {
-        making = shots.sig;
+        making = shots.id;
         Promise.all([loadImage(shots.with), loadImage(shots.without)]).then(([a, b]) => {
             const scale = Math.min(1, 640 / a.height);
             const w = Math.round(a.width * scale), hh = Math.round(a.height * scale);
@@ -327,15 +328,19 @@
             crop.getContext('2d').drawImage(full, bx.x - pad, bx.y - pad, crop.width, crop.height, 0, 0, crop.width, crop.height);
             portrait = { sig: shots.sig, url: crop.toDataURL('image/png') };
             try { localStorage.setItem(PORTRAIT_KEY, JSON.stringify(portrait)); } catch (e) { /* storage full: keep it for now */ }
-        }).catch((e) => { UI.log && UI.log('warn', 'character picture: ' + (e && e.message || e)); })
-            .then(() => { making = null; if (post) post('portraitDone', {}); if (last && root) render(last); });
+            if (post) post('portraitDone', {});
+        }).catch((e) => {
+            const why = (e && e.message) || String(e);
+            if (UI.log) UI.log('warn', 'character picture: ' + why);
+            if (post) post('portraitFailed', { why: why });
+        }).then(() => { madeId = shots.id; making = null; if (last && root) render(last); });
     }
 
     // Each update: make the picture from new shots, or ask for one when this
     // look has none yet.
     function portraitFor(p) {
         if (!p) return portrait;
-        if (p.shots && making !== p.shots.sig && (!portrait || portrait.sig !== p.shots.sig)) makePortrait(p.shots);
+        if (p.shots && making !== p.shots.id && madeId !== p.shots.id) makePortrait(p.shots);
         else if (!p.shots && (!portrait || portrait.sig !== p.sig) && asked !== p.sig && !making) { asked = p.sig; post('portraitNeed', {}); }
         return portrait;   // the last one shows until the new one is ready
     }

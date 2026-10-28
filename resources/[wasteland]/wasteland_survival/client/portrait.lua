@@ -25,16 +25,35 @@ local function signature(ped)
     return table.concat(parts, ',')
 end
 
--- Only when nothing is going on: a camera cut must not cost anyone a fight.
-local function calm(ped)
-    return not IsEntityDead(ped) and not IsPedInAnyVehicle(ped, true) and not IsPedRagdoll(ped) and not IsPedFalling(ped)
-        and not IsPedSwimming(ped) and not IsPedShooting(ped) and not IsPedInMeleeCombat(ped) and not IsPlayerFreeAiming(PlayerId())
-        and not IsPauseMenuActive() and not IsNuiFocused() and IsScreenFadedIn() and GetEntitySpeed(ped) < 0.5
+-- Why a picture cannot be taken right now (nil = it can). Only when nothing
+-- is going on: a camera cut must not cost anyone a fight.
+local function blocked(ped)
+    if not available() then return 'screenshot-basic is not running (server.cfg needs "ensure screenshot-basic", then a restart)' end
+    if IsEntityDead(ped) then return 'you are dead' end
+    if IsPedInAnyVehicle(ped, true) then return 'you are in a vehicle' end
+    if IsPedRagdoll(ped) or IsPedFalling(ped) or IsPedSwimming(ped) then return 'you are not standing' end
+    if IsPedShooting(ped) or IsPedInMeleeCombat(ped) or IsPlayerFreeAiming(PlayerId()) then return 'you are fighting' end
+    if IsPauseMenuActive() or IsNuiFocused() then return 'a menu is open' end
+    if not IsScreenFadedIn() then return 'the screen is faded' end
+    if GetEntitySpeed(ped) >= 0.5 then return 'you are moving' end
+    return nil
 end
 
+local function say(msg)
+    print('[wasteland_survival] character picture: ' .. msg)
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName('HUD picture: ' .. msg)
+    EndTextCommandThefeedPostTicker(false, false)
+end
+
+-- One screenshot; nil if screenshot-basic does not answer within 3 s.
 local function shot()
     local p = promise.new()
-    exports[SS]:requestScreenshot({ encoding = 'jpg', quality = 0.92 }, function(data) p:resolve(data) end)
+    local okCall, err = pcall(function()
+        exports[SS]:requestScreenshot({ encoding = 'jpg', quality = 0.92 }, function(data) p:resolve(data) end)
+    end)
+    if not okCall then error('screenshot-basic: ' .. tostring(err)) end
+    SetTimeout(3000, function() p:resolve(nil) end)
     return Citizen.Await(p)
 end
 
@@ -85,8 +104,10 @@ local function capture(sig)
     DeleteEntity(copy)
     if not ok then error(err) end
     if type(first) == 'string' and type(second) == 'string' and #first > 100 then
-        P.shots = { sig = sig, with = first, without = second }
+        P.shots = { sig = sig, id = GetGameTimer(), with = first, without = second }
+        return true
     end
+    error('screenshot-basic took no picture (no answer within 3 s)')
 end
 
 -- The HUD asks: it has no picture for this look (or never had one).
@@ -94,6 +115,9 @@ function P.need() P.wanted = true end
 
 -- The HUD made and stored the picture: do not send the shots again.
 function P.done() P.shots = nil end
+
+-- The HUD could not make a picture from the shots.
+function P.failed(why) P.shots = nil; say('failed: ' .. tostring(why or 'no character in the shots')) end
 
 -- What hudData sends: the look, and the shots once after a capture.
 function P.data()
@@ -113,13 +137,33 @@ Citizen.CreateThread(function()
             -- the look has settled for a few seconds (dressing in the inventory changes it bit by bit)
             if GetGameTimer() - changedAt > 4000 then
                 if P.sig ~= sig then P.sig = sig end
-                if P.wanted and not P.busy and available() and calm(ped) then
+                local why = blocked(ped)
+                if P.wanted and not P.busy and not why then
                     P.busy, P.wanted = true, false
                     local okC, err = pcall(capture, sig)
-                    if not okC then print('[wasteland_survival] character picture failed: ' .. tostring(err)) end
+                    if not okC then say('failed: ' .. tostring(err)) end
                     P.busy = false
+                elseif P.wanted and why and why ~= P.lastWhy then
+                    print('[wasteland_survival] character picture waits: ' .. why)
                 end
+                P.lastWhy = why
             end
         end
     end
 end)
+
+-- /hudphoto: take the picture now, and say why if it cannot be taken.
+RegisterCommand('hudphoto', function()
+    local ped = PlayerPedId()
+    if P.busy then return say('already taking it') end
+    local why = blocked(ped)
+    if why then return say('cannot take it now: ' .. why) end
+    Citizen.CreateThread(function()
+        P.busy = true
+        local sig = signature(ped)
+        P.sig = sig
+        local ok, err = pcall(capture, sig)
+        P.busy = false
+        if ok then say('taken; it shows in a moment') else say('failed: ' .. tostring(err)) end
+    end)
+end, false)

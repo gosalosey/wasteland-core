@@ -416,7 +416,8 @@ AddEventHandler('wasteland:ui:client:action', function(screen, action, payload)
     if screen == DEATH and action == 'respawn' then TriggerServerEvent('wasteland:survival:server:respawn') end
     if screen == HUD and WLPortrait then
         if action == 'portraitNeed' then WLPortrait.need()
-        elseif action == 'portraitDone' then WLPortrait.done() end
+        elseif action == 'portraitDone' then WLPortrait.done()
+        elseif action == 'portraitFailed' then WLPortrait.failed(type(payload) == 'table' and payload.why or nil) end
     end
     if screen == HUD and hudEditing then
         if action == 'saveLayout' and type(payload) == 'table' then

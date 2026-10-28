@@ -1,5 +1,10 @@
 # Changelog
 
+## HUD character picture: /hudphoto and clear reasons
+
+- `/hudphoto` takes the picture of your character at once, or says on screen why it cannot (screenshot-basic not running, in a vehicle, moving, fighting, a menu open, ...). Failures of the automatic picture are shown the same way and printed in F8, instead of the HUD silently keeping the figure.
+- If screenshot-basic does not answer within 3 s, the camera comes back anyway. A picture can be taken again for the same clothes.
+
 ## HUD: your own character instead of the figure
 
 - The Body style HUD shows a picture of your actual character, real clothes and all, where the grey figure was. Bleeding (pulsing red), infection (green) and low health (red) show on the picture.
