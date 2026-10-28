@@ -1,5 +1,9 @@
 # Changelog
 
+## HUD character picture: cropped to the character (bigger)
+
+- The picture was cropped around everything that changed between the two shots, drifting clouds included, so the character came out small at the bottom. The crop now finds the character itself (the solid block of change) and clears specks elsewhere, so the character fills the space. Pictures taken before are dropped and taken again once (one short flash).
+
 ## HUD: noise ring, voice speaker, new ring colours
 
 - The separate noise panel is gone: the small speaker ring at the top of the HUD now shows the noise, how far zombies can hear you (fill and colour from white "QUIET" to red "DEAFENING", the word under it). /noise still brings the old panel back if wanted.

@@ -174,15 +174,32 @@
             out[i] = a[i]; out[i + 1] = a[i + 1]; out[i + 2] = a[i + 2]; out[i + 3] = alpha;
             if (alpha > 128) { rows[Math.floor(px / w)]++; cols[px % w]++; }
         }
-        // the box: rows and columns with more than a couple of character pixels (noise left out)
-        const firstLast = (counts, n) => {
-            let f = -1, l = -1;
-            for (let i = 0; i < n; i++) if (counts[i] > 2) { if (f < 0) f = i; l = i; }
-            return [f, l];
+        // the box: the solid block around the character only. Other things
+        // that changed between the shots (drifting clouds, shimmer) are
+        // scattered specks; start at the busiest column / row and widen while
+        // the counts stay up (small gaps allowed: an arm away from the body).
+        const run = (counts, n, minCount, gap) => {
+            let peak = 0;
+            for (let i = 1; i < n; i++) if (counts[i] > counts[peak]) peak = i;
+            if (counts[peak] <= 2) return [-1, -1];
+            const need = Math.max(minCount, counts[peak] * 0.06);
+            let lo = peak, hi = peak;
+            for (let i = peak, miss = 0; i >= 0 && miss <= gap; i--) { if (counts[i] >= need) { lo = i; miss = 0; } else miss++; }
+            for (let i = peak, miss = 0; i < n && miss <= gap; i++) { if (counts[i] >= need) { hi = i; miss = 0; } else miss++; }
+            return [lo, hi];
         };
-        const [y0, y1] = firstLast(rows, h);
-        const [x0, x1] = firstLast(cols, w);
-        const box = y0 < 0 || x0 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+        const [x0, x1] = run(cols, w, 3, Math.max(2, Math.round(w * 0.012)));
+        if (x0 < 0) return { data: out, box: null };
+        // rows counted inside those columns only
+        const rowsIn = new Uint32Array(h);
+        for (let y = 0; y < h; y++) for (let x = x0; x <= x1; x++) if (out[(y * w + x) * 4 + 3] > 128) rowsIn[y]++;
+        const [y0, y1] = run(rowsIn, h, 2, Math.max(2, Math.round(h * 0.02)));
+        if (y0 < 0) return { data: out, box: null };
+        // everything outside the character's box becomes clear
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            if (x < x0 || x > x1 || y < y0 || y > y1) out[(y * w + x) * 4 + 3] = 0;
+        }
+        const box = { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
         return { data: out, box: box };
     }
 
@@ -319,7 +336,7 @@
     const BODY_LINES = 'M38 50c4 4 8 5 12 5s8-1 12-5M50 56v48M41 66h18M41 77h18M42 88h16M38.6 158c2 2 6 2 8 0M53.4 158c2 2 6 2 8 0M26 70c1 6 1 12 0 18M74 70c-1 6-1 12 0 18';
 
     // The character picture: made from the shots once, kept on this PC.
-    const PORTRAIT_KEY = 'wl.hud.portrait';
+    const PORTRAIT_KEY = 'wl.hud.portrait.2';   // .2: pictures cropped to the character (the first ones had sky in them)
     let portrait = null;          // { sig, url }
     let making = null;            // id of the shots being made into a picture
     let madeId = null;            // id of the last shots made (each capture has its own)

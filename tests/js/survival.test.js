@@ -150,3 +150,17 @@ test('voice speaker in the small row: only with voice chat; "when it matters" on
     const off = hud.bodyView({ mode: 'compact', health: 90, voice: { on: false }, stats: {} });
     assert.strictEqual(off.small.some((i) => i.key === 'voice'), false);
 });
+
+test('character picture: specks elsewhere in the shot (clouds) do not widen the crop', () => {
+    const w = 200, h = 100;
+    const a = new Uint8ClampedArray(w * h * 4).fill(120), b = new Uint8ClampedArray(w * h * 4).fill(120);
+    const set = (x, y) => { a[(y * w + x) * 4] = 255; };
+    for (let y = 20; y < 96; y++) for (let x = 90; x < 111; x++) set(x, y);   // the character
+    for (let x = 60; x < 66; x++) for (let y = 30; y < 50; y++) set(x, y);    // ... an arm held out (small gap allowed? no: far)
+    let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    for (let i = 0; i < 400; i++) set(Math.floor(rnd() * w), Math.floor(rnd() * 12));   // clouds across the top rows
+    const r = hud.cutout(a, b, w, h);
+    assert.ok(r.box.x >= 85 && r.box.x + r.box.w <= 115, 'columns: ' + JSON.stringify(r.box));
+    assert.ok(r.box.y >= 15 && r.box.y + r.box.h >= 94, 'rows: ' + JSON.stringify(r.box));
+    assert.strictEqual(r.data[(5 * w + 10) * 4 + 3], 0);   // a cloud speck outside the box is cleared
+});
