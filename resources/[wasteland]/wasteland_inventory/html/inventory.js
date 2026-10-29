@@ -398,7 +398,22 @@
         'Q26 115 26 111 L28 66 L30 64 L32 66 L34 111 Q34 115 36 116 L38 116 Q42 116 42 112 L41 58 L41 32 L45 52 Q45 56 47 58 L48 58 ' +
         'Q50 56 49 52 L45 27 Q43 22 34 21 L34 18 Z';
     function glowColor(hp) { return hp > 50 ? '#8dff5a' : hp > 25 ? '#ffc43d' : '#ff4a3d'; }
+    // The same body as the HUD (its silhouette, with red / green tints) when
+    // the HUD has loaded it; the outline drawing below otherwise.
     function bodyFigure(v) {
+        const src = window.WastelandBody && window.WastelandBody.silhouette;
+        if (src) {
+            const hp = typeof v.health === 'number' ? v.health : 100;
+            const img = h('img', { class: 'wli-portrait__img', draggable: false });
+            img.src = src;
+            const tint = (cls) => { const d = h('div', { class: 'wli-portrait__tint ' + cls }); d.style.webkitMaskImage = d.style.maskImage = 'url(' + src + ')'; return d; };
+            const bleed = Math.min(3, v.bleeding || 0);
+            return h('div', { class: 'wli-portrait' + (bleed ? ' is-bleeding is-bleeding-' + bleed : '') + (v.infection > 0 ? ' is-infected' : '')
+                + (hp <= 35 ? ' is-hurt' : '') }, img, tint('wli-portrait__infection'), tint('wli-portrait__blood'));
+        }
+        return outlineFigure(v);
+    }
+    function outlineFigure(v) {
         const svg = svgEl('svg', { viewBox: '0 0 60 120', class: 'wli-body' });
         const hp = typeof v.health === 'number' ? v.health : 100;
         const c = glowColor(hp);
@@ -634,7 +649,8 @@
 
     // Double-click / shift-click: move between your inventories and the
     // searched one. `explain`: say so when nothing is open.
-    // The snapshot as the screen shows it: the worn backpack only while it is open.
+    // The snapshot as the screen shows it: the worn backpack only while it is open
+    // (it opens with the inventory; Close backpack hides it).
     function shown() {
         if (st.bagOpen || !st.snap.backpack) return st.snap;
         return Object.assign({}, st.snap, { backpack: null });
@@ -809,7 +825,7 @@
 
     UI.registerScreen('inventory', {
         mount: function (el, data, api) {
-            st = { api: api, defs: data.defs, snap: data.snapshot, drag: null, menu: null, preview: null, vitals: data.vitals || null, bagOpen: false };
+            st = { api: api, defs: data.defs, snap: data.snapshot, drag: null, menu: null, preview: null, vitals: data.vitals || null, bagOpen: true };
             st.vitalsEl = h('div', { class: 'wli-section wli-health' });
             st.left = h('div', { class: 'wli-col' });
             st.middle = h('div', { class: 'wli-col wli-col--main' });
@@ -901,6 +917,17 @@
         '.wli-body { width: 105px; height: 210px; overflow: visible; }',
         '.wli-body__glow { filter: drop-shadow(0 0 1.5px var(--glow)) drop-shadow(0 0 4px var(--glow)) drop-shadow(0 0 9px var(--glow)); }',
         '.wli-body__spot { filter: blur(1.2px); }',
+        '.wli-portrait { position: relative; width: 105px; height: 210px; }',
+        '.wli-portrait__img, .wli-portrait__tint { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }',
+        '.wli-portrait__img { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.85)); }',
+        '.wli-portrait__tint { opacity: 0; transition: opacity 0.4s; -webkit-mask-size: contain; mask-size: contain;',
+        '  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center bottom; mask-position: center bottom; }',
+        '.wli-portrait__blood { background: #c8150c; mix-blend-mode: multiply; } .wli-portrait__infection { background: #6fbf2c; mix-blend-mode: multiply; }',
+        '.wli-portrait.is-hurt .wli-portrait__blood { opacity: 0.35; }',
+        '.wli-portrait.is-bleeding .wli-portrait__blood { animation: wliBleed 1.4s ease-in-out infinite; }',
+        '.wli-portrait.is-bleeding-3 .wli-portrait__blood { animation-duration: 0.7s; }',
+        '.wli-portrait.is-infected .wli-portrait__infection { opacity: 0.4; }',
+        '@keyframes wliBleed { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.8; } }',
         '.wli-body__drop { animation: wli-drip 1.4s ease-in infinite; }',
         '@keyframes wli-drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(10px); opacity: 0; } }',
         '.wli-vbars { display: flex; flex-direction: column; gap: 5px; }',

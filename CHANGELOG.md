@@ -1,5 +1,10 @@
 # Changelog
 
+## Inventory: backpack shown open, HUD body in the health panel
+
+- Opening the inventory now shows the worn backpack straight away (Close backpack still hides it).
+- The health panel uses the same body silhouette as the HUD, with the same red (hurt / bleeding) and green (infected) tints.
+
 ## Admin backpack stays on death
 
 - The admin backpack stays worn when the player dies, with everything in it, like hotbar items. New item setting `keepOnDeath`, which any item can use.
