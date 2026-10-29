@@ -1,5 +1,9 @@
 # Changelog
 
+## Gate doors tougher
+
+- Gate doors now have 3000 health (was 700). Gate frames are unchanged at 700.
+
 ## HUD: a grey silhouette instead of the character picture
 
 - The Body style HUD shows a plain grey body silhouette (the image the owner picked), sized to fill the space beside the rings. Bleeding (pulsing red), infection (green) and low health (red flush) tint it, shaped to its outline.
