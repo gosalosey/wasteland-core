@@ -51,6 +51,7 @@ WLI.ITEM_SCHEMA = {
                 width = { type = 'integer', required = true, min = 1, max = 20 },
                 height = { type = 'integer', required = true, min = 1, max = 20 },
                 maxWeight = { type = 'number', required = true, min = 0, max = 1000 },
+                noWeightLimit = { type = 'boolean', default = false, description = 'Holds any weight (maxWeight is ignored); what is in it weighs nothing' },
                 accepts = { type = 'array', items = { type = 'string', pattern = '^[%w_]+$' },
                     description = 'Only these items go in (armor vest: its plates)' },
             },

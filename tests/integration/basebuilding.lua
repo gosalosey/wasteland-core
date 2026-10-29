@@ -329,6 +329,32 @@ describe('base building', function()
         server.aces[a .. '|wasteland.admin'] = nil
     end)
 
+    it('the admin tool cupboard: admins only, free, upkeep never runs out', function()
+        server.players[c].coords = { x = 200.0, y = 0.0, z = 30.0 }
+        place(c, 'admintoolcupboard', 201.0, 0.0)
+        expect(note(c)).toBe('Only admins can build that.')
+        server.aces[a .. '|wasteland.admin'] = true
+        I('ClearInventory', a); server:advance(100)
+        server.players[a].coords = { x = 200.0, y = 0.0, z = 30.0 }
+        place(a, 'admintoolcupboard', 201.0, 0.0)
+        expect(note(a)).toContain('Tool cupboard placed')
+        local row
+        for _, r in pairs(server.db.backend.data.wl_bb_cupboards) do if r.x == 201.0 then row = r end end
+        expect(row.infinite).toBe(1)
+        I('AddItem', a, 'wood_planks', 6); server:advance(100)
+        place(a, 'wall', 203.0, 0.0)
+        local wall = lastProp(a)
+        expect(wall.piece).toBe('wall')
+        server:advance(3 * 61000) -- upkeep ticks: nothing in its supplies, and no decay
+        expect(server.db.backend.data.wl_bb_props[wall.id].health).toBe(wall.max_health)
+        server:restart('wasteland_basebuilding'); server:advance(2500)
+        server:advance(2 * 61000) -- still infinite after a restart
+        expect(server.db.backend.data.wl_bb_props[wall.id].health).toBe(wall.max_health)
+        server.aces[a .. '|wasteland.admin'] = nil
+        server.players[a].coords = { x = 0.0, y = 0.0, z = 30.0 }
+        server.players[c].coords = { x = 2.0, y = 0.0, z = 30.0 }
+    end)
+
 
     it('external wall: its barbed wire hurts only someone up at the top of it', function()
         I('AddItem', a, 'metal_sheet', 8); I('AddItem', a, 'scrap_metal', 6); server:advance(100)

@@ -313,7 +313,7 @@ function MemoryDB:installBasebuilding(SQL)
     self:on(SQL.insertCupboard, function(db, p)
         nextC = nextC + 1
         db.data.wl_bb_cupboards[nextC] = { id = nextC, owner_id = p[1], x = p[2], y = p[3], z = p[4], heading = p[5], radius = p[6],
-            health = p[7], max_health = p[8], created_unix = p[9] }
+            health = p[7], max_health = p[8], infinite = p[9], created_unix = p[10] }
         return ins(nextC)
     end)
     self:on(SQL.deleteCupboard, function(db, p) db.data.wl_bb_cupboards[p[1]] = nil; return header(1) end)

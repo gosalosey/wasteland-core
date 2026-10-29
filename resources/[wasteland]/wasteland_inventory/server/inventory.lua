@@ -57,11 +57,17 @@ end
 function Inv.stackWeight(s)
     local d = WLI.defs[s.name]
     local w = d and d.weight * s.count or 0
-    if d and d.container then
+    if d and d.container and not d.container.noWeightLimit then
         local c = WLI.invs['item:' .. s.uid]
         if c then w = w + Inv.weight(c) end
     end
     return w
+end
+
+-- What a bag holds (kg). No limit: more than anyone can carry (the screen
+-- shows no weight for 100000 kg or more).
+function Inv.bagLimit(d)
+    return d.container.noWeightLimit and 1e9 or d.container.maxWeight
 end
 
 function Inv.weight(inv, ignoreUid)
@@ -120,12 +126,12 @@ function Inv.containerFor(stack)
                 inv.width, inv.height = d.container.width, d.container.height
             end
         end
-        inv.maxWeight = d.container.maxWeight
+        inv.maxWeight = Inv.bagLimit(d)
         inv.accepts = d.container.accepts
         return inv
     end
     local inv = Inv.create(id, 'grid', {
-        label = d.label, width = d.container.width, height = d.container.height, maxWeight = d.container.maxWeight,
+        label = d.label, width = d.container.width, height = d.container.height, maxWeight = Inv.bagLimit(d),
     })
     if inv then inv.accepts = d.container.accepts end
     return inv

@@ -1,5 +1,10 @@
 # Changelog
 
+## Admin tool cupboard and admin backpack
+
+- **Admin Tool Cupboard** (build menu, Tool Cupboard tab; only admins see it; free): claims land like the normal cupboard, but its upkeep is infinite. Nothing ever has to go in it and its pieces never decay. Kept across restarts (database: new `infinite` column on wl_bb_cupboards, added automatically).
+- **Admin backpack** (`admin_backpack`, give it from the F10 admin panel; it is never found, sold or made): 14 x 12 (the hiking backpack is 12 x 10) and no weight limit. What is in it weighs nothing. New item setting `container.noWeightLimit`.
+
 ## Survivors (new module: wasteland_survivors)
 
 - Friendly NPC survivors wander the map near players (config/survivors.lua). They carry a gun or a blade, which they never drop.

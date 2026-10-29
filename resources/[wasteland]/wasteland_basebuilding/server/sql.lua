@@ -77,14 +77,19 @@ CREATE TABLE IF NOT EXISTS wl_bb_notices (
         name = 'props_fuel',
         up = [[ALTER TABLE wl_bb_props ADD COLUMN fuel DOUBLE NOT NULL DEFAULT 0 AFTER is_open]],
     },
+    {
+        version = 7,
+        name = 'cupboards_infinite',
+        up = [[ALTER TABLE wl_bb_cupboards ADD COLUMN infinite TINYINT(1) NOT NULL DEFAULT 0 AFTER max_health]],
+    },
 }
 
 WLBB.SQL = {
-    selectCupboards = 'SELECT id, owner_id, x, y, z, heading, radius, health, max_health, created_unix FROM wl_bb_cupboards',
+    selectCupboards = 'SELECT id, owner_id, x, y, z, heading, radius, health, max_health, infinite, created_unix FROM wl_bb_cupboards',
     cupboardMove = 'UPDATE wl_bb_cupboards SET x = ?, y = ?, z = ?, heading = ? WHERE id = ?',
     selectAuth = 'SELECT cupboard_id, character_id, name FROM wl_bb_auth',
     selectProps = 'SELECT id, cupboard_id, owner_id, category, piece, model, x, y, z, heading, is_open, fuel, health, max_health, material, created_unix FROM wl_bb_props',
-    insertCupboard = 'INSERT INTO wl_bb_cupboards (owner_id, x, y, z, heading, radius, health, max_health, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    insertCupboard = 'INSERT INTO wl_bb_cupboards (owner_id, x, y, z, heading, radius, health, max_health, infinite, created_unix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     deleteCupboard = 'DELETE FROM wl_bb_cupboards WHERE id = ?',
     cupboardHealth = 'UPDATE wl_bb_cupboards SET health = ? WHERE id = ?',
     insertAuth = 'INSERT INTO wl_bb_auth (cupboard_id, character_id, name) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)',

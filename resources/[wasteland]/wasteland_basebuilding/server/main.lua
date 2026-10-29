@@ -283,7 +283,7 @@ local function cupboardView(src, c)
         local daily = counts[material] * (M.config.upkeep.perPieceCostPerDay[material] or 0)
         local have = stash and inv():GetItemCount(stash, item) or 0
         upkeep[#upkeep + 1] = { material = material, item = label(item), pieces = counts[material], daily = daily, have = have,
-            hours = Rules.hoursLeft(have, daily) }
+            hours = Rules.hoursLeft(have, daily), infinite = c.infinite == true }
     end
     local auth = {}
     for acid, name in pairs(c.auth) do auth[#auth + 1] = { id = acid, name = name, online = sourceOf(acid) ~= nil } end
@@ -357,10 +357,12 @@ local function placeProp(src, key, x, y, z, heading)
 
     heading = (tonumber(heading) or 0.0) % 360.0
     if piece.category == 'cupboard' then
-        local id, err = WDB.insert(SQL.insertCupboard, { cid, x, y, z, heading, M.config.cupboard.radius, piece.health, piece.health, os.time() })
+        local infinite = piece.infiniteUpkeep == true
+        local id, err = WDB.insert(SQL.insertCupboard, { cid, x, y, z, heading, M.config.cupboard.radius, piece.health, piece.health,
+            infinite and 1 or 0, os.time() })
         if not id then give(src, piece.cost); notice(src, 'The cupboard could not be saved. Try again.'); M.log:warn('cupboard: %s', tostring(err)); return end
         local c = { id = id, owner = cid, coords = coords, heading = heading, radius = M.config.cupboard.radius,
-            health = piece.health, max_health = piece.health, auth = {}, created = os.time() }
+            health = piece.health, max_health = piece.health, auth = {}, created = os.time(), infinite = infinite }
         cupboards[id] = c
         -- pieces left from an earlier cupboard here belong to this one now
         for _, p in pairs(props) do
@@ -675,7 +677,7 @@ local function removeCupboard(src, id)
         if snap and #(snap.items or {}) > 0 then notice(src, 'Take the supplies out of the cupboard first.'); return end
         pcall(function() inv():DeleteStash(supplyName(id)) end)
         local piece = M.config.pieces[M.config.cupboard.piece]
-        if piece and piece.cost and not adminBuild[src] then give(src, Rules.refund(piece.cost, M.config.refund)) end
+        if piece and piece.cost and not adminBuild[src] and not c.infinite then give(src, Rules.refund(piece.cost, M.config.refund)) end
         dropCupboard(c, 'removed by its owner')
         notice(src, 'Tool cupboard removed. The land is no longer claimed.')
     end)
@@ -998,6 +1000,7 @@ local function upkeepTick()
     if not u.enabled then return end
     local fraction = u.tickMinutes / (24 * 60)
     for id, c in pairs(cupboards) do
+      if not c.infinite then -- an admin tool cupboard: supplies never run out
         local counts = pieceCounts(id)
         local owed, nextCarry = Rules.upkeepTick(counts, u.perPieceCostPerDay, fraction, carry[id])
         carry[id] = nextCarry
@@ -1015,6 +1018,7 @@ local function upkeepTick()
                 end
             end
         end
+      end
     end
 end
 
@@ -1165,6 +1169,7 @@ M = Wasteland.DefineModule({
                 wireReach = { type = 'number', min = 0.1, max = 5, description = 'Barbed wire: this close to the wall line counts' },
                 needsPower = { type = 'boolean', description = 'Only works while a running generator is in range (electric fence)' },
                 adminOnly = { type = 'boolean', default = false, description = 'Only admins (the F10 admin panel) can build it' },
+                infiniteUpkeep = { type = 'boolean', default = false, description = 'A tool cupboard whose upkeep never runs out (nothing to put in it)' },
                 bed = { type = 'table', nullable = true, fields = {
                     tickSeconds = { type = 'number', default = 10, min = 1, max = 600 },
                     health = { type = 'number', default = 2, min = 0, max = 200, description = 'Health back each tick' },
@@ -1260,7 +1265,8 @@ M = Wasteland.DefineModule({
             if not cr or not ar or not pr then return M.fail('could not load bases: ' .. tostring(e1 or e2 or e3)) end
             for _, r in ipairs(cr) do
                 cupboards[r.id] = { id = r.id, owner = r.owner_id, coords = { x = r.x, y = r.y, z = r.z }, heading = r.heading + 0.0,
-                    radius = r.radius + 0.0, health = r.health, max_health = r.max_health, auth = {}, created = tonumber(r.created_unix) or 0 }
+                    radius = r.radius + 0.0, health = r.health, max_health = r.max_health, auth = {}, created = tonumber(r.created_unix) or 0,
+                    infinite = r.infinite == 1 or r.infinite == true }
                 cupboards[r.id].safeEnded = safeLeft(cupboards[r.id]) == 0
             end
             for _, r in ipairs(ar) do if cupboards[r.cupboard_id] then cupboards[r.cupboard_id].auth[r.character_id] = r.name end end

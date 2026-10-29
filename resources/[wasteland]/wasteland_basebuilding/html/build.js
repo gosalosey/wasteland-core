@@ -16,6 +16,7 @@
 
     // Pure helper (unit-tested): how long the supplies of one material last.
     function upkeepLine(u) {
+        if (u.infinite) return u.pieces > 0 ? 'infinite (admin cupboard)' : 'no pieces';
         if (!u.daily) return u.pieces > 0 ? 'no upkeep needed' : 'no pieces';
         if (u.have <= 0) return 'OUT OF SUPPLY: these pieces are decaying';
         const hours = u.hours || 0;

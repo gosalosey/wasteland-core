@@ -88,6 +88,7 @@ return {
     bagLooks = {
         backpack_small = { mp_m_freemode_01 = { 45, 0 }, mp_f_freemode_01 = { 45, 0 } },
         backpack_large = { mp_m_freemode_01 = { 82, 0 }, mp_f_freemode_01 = { 82, 0 } },
+        admin_backpack = { mp_m_freemode_01 = { 82, 0 }, mp_f_freemode_01 = { 82, 0 } },
     },
 
     -- Item definitions. Fields (all optional except label):
@@ -464,6 +465,10 @@ return {
             equip = 'back', container = { width = 8, height = 8, maxWeight = 400 } },
         backpack_large = { label = 'Hiking backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 0.9,
             equip = 'back', container = { width = 12, height = 10, maxWeight = 750 } },
+        -- Admins only (give it from the F10 admin panel; it is never found or made):
+        -- a little bigger than the hiking backpack, and no weight limit at all.
+        admin_backpack = { label = 'Admin backpack', image = 'duffelbag', category = 'container', width = 4, height = 4, weight = 0,
+            equip = 'back', container = { width = 14, height = 12, maxWeight = 0, noWeightLimit = true } },
 
         clothing_top = { label = 'Top', image = 'clothe', category = 'clothing', width = 2, height = 2, weight = 0.25, equip = 'torso', warmth = 6, durability = 100 },
         clothing_pants = { label = 'Pants', image = 'jeans', category = 'clothing', width = 2, height = 2, weight = 0.25, equip = 'legs', warmth = 4, durability = 100 },

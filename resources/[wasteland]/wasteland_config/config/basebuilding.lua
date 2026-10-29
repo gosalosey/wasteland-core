@@ -100,6 +100,10 @@ return {
     pieces = {
         toolcupboard = { label = 'Tool Cupboard', model = 'wl_bp_toolcupboard', category = 'cupboard',
             cost = { wood_planks = 10, scrap_metal = 5 }, health = 500, material = 'wood' },
+        -- Admins only (in the build menu only for them, free): upkeep is infinite,
+        -- nothing ever has to go in it.
+        admintoolcupboard = { label = 'Admin Tool Cupboard', model = 'wl_bp_toolcupboard', category = 'cupboard',
+            cost = {}, health = 500, material = 'wood', adminOnly = true, infiniteUpkeep = true },
         foundation = { label = 'Foundation', model = 'wl_bp_foundation_wood', category = 'structure',
             cost = { wood_planks = 8 }, health = 500, material = 'wood' },
         wall = { label = 'Wall', model = 'wl_bp_wall_wood', category = 'structure', cost = { wood_planks = 6 }, health = 500, material = 'wood' },

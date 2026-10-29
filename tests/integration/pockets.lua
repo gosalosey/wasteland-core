@@ -145,4 +145,26 @@ describe('pockets grow with clothing', function()
         expect(large.width .. 'x' .. large.height .. ' ' .. large.maxWeight).toBe('12x10 750')
         expect(#server:lines('raised:')).toBe(0)
     end)
+
+    it('the admin backpack: bigger than the hiking backpack, no weight limit, what is in it weighs nothing', function()
+        local admin = I('GetItemDefinition', 'admin_backpack').container
+        expect(admin.width .. 'x' .. admin.height).toBe('14x12')
+        expect(admin.noWeightLimit).toBe(true)
+        local env = server.resources.wasteland_inventory.env
+        local result
+        server:createThread('wasteland_inventory', function() local okr, er = pcall(function()
+            local s = I('EnsureStash', 'test_admin_bag', { width = 10, height = 10, maxWeight = 50 })
+            assert(I('AddItem', s, 'admin_backpack', 1), 'bag in')
+            local stack
+            for _, st in pairs(env.WLI.invs['stash:test_admin_bag'].items) do stack = st end
+            local bag = env.WLI.Inv.containerFor(stack)
+            local ok = env.WLI.Inv.addItem(bag.id, 'stone', 2000) -- 1000 kg
+            result = { ok = ok, inside = env.WLI.Inv.weight(bag), outer = env.WLI.Inv.stackWeight(stack) }
+        end) if not okr then result = { err = tostring(er) } end end)
+        server:advance(500)
+        expect(result.err).toBe(nil)
+        expect(result.ok).toBe(true)
+        expect(result.inside > 750).toBe(true)  -- more than the hiking backpack holds
+        expect(result.outer).toBe(0)            -- and the bag still weighs nothing
+    end)
 end)
