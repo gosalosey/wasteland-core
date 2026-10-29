@@ -600,6 +600,39 @@ describe('death: body bags', function()
     end)
 end)
 
+describe('death: the admin backpack stays, with what is in it', function()
+    local server = world()
+    local a = player(server, 'adminbag', { x = 10.0, y = 20.0, z = 30.0 })
+    server:export('wasteland_inventory', 'ClearInventory', a); server:advance(100)
+    give(server, a, 'admin_backpack')
+    give(server, a, 'water_bottle')
+    give(server, a, 'canned_beans')
+    local bag = find(snap(server, a), 'admin_backpack')
+    op(server, a, 'equip', bag.uid, 'player:1', 'back')
+    local s1 = snap(server, a)
+    local bottle = find(s1, 'water_bottle')
+    op(server, a, 'move', bottle.uid, 'player:1', s1.backpack, 0, 0, false) -- bottle inside the bag
+    local result = server:export('wasteland_inventory', 'DeathDrop', a, 'Body of John Doe')
+    server:advance(300)
+
+    it('is still worn after death and keeps its contents; the rest drops', function()
+        local s = snap(server, a)
+        expect(s.backpack ~= nil).toBe(true)
+        local worn = {}
+        for _, it in ipairs(inv(s, 'equip:1').items) do worn[it.name] = true end
+        expect(worn.admin_backpack).toBe(true)
+        local inBag = {}
+        for _, it in ipairs(inv(s, s.backpack).items) do inBag[it.name] = true end
+        expect(inBag.water_bottle).toBe(true)
+        expect(#result.dropIds).toBe(1)
+        local dropped = {}
+        for _, r in ipairs(rows(server, 'drop:' .. result.dropIds[1])) do dropped[r.name] = true end
+        expect(dropped.admin_backpack).toBe(nil)
+        expect(dropped.canned_beans).toBe(true)
+        expect(#server.scriptErrors).toBe(0)
+    end)
+end)
+
 describe('configuration errors', function()
     it('a bad item definition stops the module with the item and setting named', function()
         local cfg = {}

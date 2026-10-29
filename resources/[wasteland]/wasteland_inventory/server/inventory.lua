@@ -764,6 +764,13 @@ function Inv.deathDrop(src, label)
     for i = 1, 8 do if c.hotbar[i] then keep[c.hotbar[i]] = true end end
 
     local pockets, equip = WLI.invs[c.pockets], WLI.invs[c.equip]
+    -- items kept on death (keepOnDeath: the admin backpack, with what is in it)
+    for _, inv in ipairs({ pockets, equip }) do
+        for uid, s in pairs(inv.items) do
+            local d = WLI.defs[s.name]
+            if d and d.keepOnDeath then keep[uid] = true end
+        end
+    end
     local bag = Inv.backpack(c)
     local bagGrid = bag and WLI.invs['item:' .. bag.uid]
     local statements, changed = {}, changedSet(c.pockets, c.equip)

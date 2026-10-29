@@ -57,6 +57,7 @@ WLI.ITEM_SCHEMA = {
             },
         },
         color = { type = 'string', pattern = '^#%x%x%x%x%x%x$', description = 'Tile colour in the UI' },
+        keepOnDeath = { type = 'boolean', default = false, description = 'Stays with the player on death, like the hotbar (a bag keeps what is in it)' },
         warmth = { type = 'number', default = 0, min = 0, max = 30,
             description = 'Degrees C of insulation while worn (survival temperature)' },
         attachment = { type = 'enum', values = { 'suppressor', 'flashlight', 'scope', 'grip', 'extmag' },

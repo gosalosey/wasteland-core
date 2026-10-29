@@ -1,5 +1,9 @@
 # Changelog
 
+## Admin backpack stays on death
+
+- The admin backpack stays worn when the player dies, with everything in it, like hotbar items. New item setting `keepOnDeath`, which any item can use.
+
 ## Admin tool cupboard and admin backpack
 
 - **Admin Tool Cupboard** (build menu, Tool Cupboard tab; only admins see it; free): claims land like the normal cupboard, but its upkeep is infinite. Nothing ever has to go in it and its pieces never decay. Kept across restarts (database: new `infinite` column on wl_bb_cupboards, added automatically).
