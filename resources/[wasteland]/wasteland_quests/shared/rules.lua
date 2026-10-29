@@ -96,6 +96,18 @@ function Rules.matches(o, name)
     return not o.item or o.item == name
 end
 
+--- Materials for a `have` objective (o.materials = { { item, count } }):
+--- { { item, have, need } }, and whether all are there. count(item) -> carried.
+function Rules.materials(o, count)
+    local out, all = {}, true
+    for i, m in ipairs(o.materials or {}) do
+        local have = math.min(count(m.item) or 0, m.count)
+        out[i] = { item = m.item, have = have, need = m.count }
+        if have < m.count then all = false end
+    end
+    return out, all
+end
+
 --- Status of a quest for a character: 'active' | 'ready' | 'cooldown' | 'available'.
 --- state = { active = { [id] = { progress } }, done = { [id] = unixTime } }
 --- Returns status, minutes left (cooldown).

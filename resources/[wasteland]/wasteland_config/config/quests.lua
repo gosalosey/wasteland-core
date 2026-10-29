@@ -21,6 +21,9 @@
 --   { type = 'gather', kind = 'tree', count = 3 }                 trees chopped (kind 'rock': rocks mined)
 --   { type = 'sell', items = { 'wood_log', 'stone' }, count = 3 } sold to a camp trader (no items = anything)
 -- Any objective can have `hint = '...'`: the how-to line shown under it.
+-- A `have` objective can list `materials = { { item = 'scrap_metal', count = 2 } }`:
+-- the tracker shows how many you carry, and a pop-up tells you each time you
+-- pick one up (and how many more), then when you have everything.
 --
 -- VERIFY IN-GAME: places are picked from the map.
 return {
@@ -45,8 +48,10 @@ return {
             description = 'New out here? Let us get you a hatchet and a pickaxe, then put them to work and turn what you gather into cash.',
             objectives = {
                 { type = 'have', items = { 'weapon_hatchet', 'scrap_axe', 'weapon_battleaxe' }, label = 'a hatchet',
+                    materials = { { item = 'scrap_metal', count = 2 }, { item = 'rag', count = 1 } },
                     hint = 'Craft one (K): 2 scrap metal + 1 rag. Scrap and rags are in dumpsters, trash cans, wrecked cars and crates: hold Left Alt on one and choose Search.' },
                 { type = 'have', item = 'pickaxe', label = 'a pickaxe',
+                    materials = { { item = 'scrap_metal', count = 3 }, { item = 'rag', count = 1 } },
                     hint = 'Craft one (K): 3 scrap metal + 1 rag. Keep searching dumpsters, trash cans, wrecks and crates for more.' },
                 { type = 'gather', kind = 'tree', count = 3, label = 'Chop trees',
                     hint = 'Go to a tree zone (the Lumber marks on your map). With the hatchet on you, hold Left Alt on a tree, choose Chop tree, and press E while the needle is in the green.' },

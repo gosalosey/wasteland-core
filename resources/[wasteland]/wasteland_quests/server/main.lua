@@ -93,9 +93,15 @@ local function objectivesOf(src, id, quest, progress, recipes)
     for i, o in ipairs(quest.objectives) do
         local have, n = Rules.objective(quest, progress, i, countFor(src))
         local r = recipes and recipes[o.type == 'craft' and o.recipe or o.item]
+        local how = Rules.hint(o, { itemLabel = objectiveLabel(o), craftable = r ~= nil, needsBlueprint = r ~= nil and not r.known })
+        if o.type == 'have' and o.materials and have < n then
+            local mats, all = Rules.materials(o, countFor(src))
+            local parts = {}
+            for _, m in ipairs(mats) do parts[#parts + 1] = string.format('%s %d/%d', itemLabel(m.item), m.have, m.need) end
+            how = (all and 'You have everything: craft it (K). ' or 'You have: ' .. table.concat(parts, ', ') .. '. ') .. how
+        end
         out[i] = { text = Rules.text(o, have, n, objectiveLabel(o)), done = have >= n,
-            coords = (o.type == 'visit' and o.coords) or o.near or nil,
-            how = Rules.hint(o, { itemLabel = objectiveLabel(o), craftable = r ~= nil, needsBlueprint = r ~= nil and not r.known }) }
+            coords = (o.type == 'visit' and o.coords) or o.near or nil, how = how }
     end
     return out
 end
@@ -319,10 +325,49 @@ local function progress(src, ev)
     end
 end
 
+-- Pop-ups while gathering the materials of the next tool to get: "Scrap
+-- metal 1/2 for a hatchet (1 more)", then "You have everything".
+local matsSeen = {}    -- source -> { [objective i] = { [item] = have } }
+local function materialNotices(src, q, a)
+    local seen = matsSeen[src] or {}
+    matsSeen[src] = seen
+    for i, o in ipairs(q.objectives) do
+        local have, n = Rules.objective(q, a.progress, i, countFor(src))
+        if have < n and o.type == 'have' and o.materials then
+            local mats, all = Rules.materials(o, countFor(src))
+            local before = seen[i]
+            seen[i] = {}
+            for _, m in ipairs(mats) do seen[i][m.item] = m.have end
+            if before then
+                local what = o.label or objectiveLabel(o) or 'it'
+                local gained = false
+                for _, m in ipairs(mats) do
+                    if m.have > (before[m.item] or 0) then
+                        gained = true
+                        if not all then
+                            local left = m.need - m.have
+                            notice(src, left > 0 and string.format('%s %d/%d for %s: %d more needed.', itemLabel(m.item), m.have, m.need, what, left)
+                                or string.format('%s %d/%d for %s: that is enough.', itemLabel(m.item), m.have, m.need, what))
+                        end
+                    end
+                end
+                if gained and all then
+                    notice(src, string.format('You have everything for %s! Press K and craft it.', what))
+                    TriggerClientEvent('wasteland:quests:client:ready', src)
+                end
+            end
+            return -- only the first tool still to get
+        end
+    end
+end
+
 local function haveCheck(src)
     local s = stateOf(src)
     local q, id = tutorialQuest()
-    if s and q and s.active[id] then progress(src, { type = 'have', count = countFor(src) }) end
+    if s and q and s.active[id] then
+        progress(src, { type = 'have', count = countFor(src) })
+        if s.active[id] then materialNotices(src, q, s.active[id]) end
+    end
 end
 
 local function startTutorial(src)
@@ -413,7 +458,7 @@ AddEventHandler('wasteland:players:characterUnloading', function(src, character)
     if type(character) ~= 'table' then return end
     save(character.id)
     states[character.id], online[character.id] = nil, nil
-    if src then lastSent[src] = nil end
+    if src then lastSent[src] = nil; matsSeen[src] = nil end
 end)
 
 -- Visits: the server checks where every player with a visit objective is.
@@ -472,6 +517,10 @@ M = Wasteland.DefineModule({
                     items = { type = 'array', items = { type = 'string', pattern = '^[%w_]+$' } },
                     kind = { type = 'enum', values = { 'tree', 'rock' } },
                     hint = { type = 'string', maxLength = 300 },
+                    materials = { type = 'array', items = { type = 'table', fields = {
+                        item = { type = 'string', required = true, pattern = '^[%w_]+$' },
+                        count = { type = 'integer', default = 1, min = 1, max = 100000 },
+                    } } },
                     recipe = { type = 'string', pattern = '^[%w_]+$' },
                     container = { type = 'string', pattern = '^[%w_]+$' },
                     count = { type = 'integer', default = 1, min = 1, max = 100000 },

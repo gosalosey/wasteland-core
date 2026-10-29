@@ -241,6 +241,9 @@ local function notice(msg)
     EndTextCommandThefeedPostTicker(false, false)
 end
 RegisterNetEvent('wasteland:quests:client:notice', function(m) notice(m) end)
+RegisterNetEvent('wasteland:quests:client:ready', function()
+    PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+end)
 
 local function closeOffer()
     if uiRunning() and exports.wasteland_ui:IsOpen(OFFER) then exports.wasteland_ui:Close(OFFER) end

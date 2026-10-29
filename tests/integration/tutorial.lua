@@ -19,7 +19,8 @@ local CFG = {
         quests = {
             first_steps = { label = 'First steps', tutorial = true, description = 'Learn the ropes.',
                 objectives = {
-                    { type = 'have', items = { 'weapon_hatchet', 'scrap_axe' }, label = 'a hatchet', hint = 'Craft one (K).' },
+                    { type = 'have', items = { 'weapon_hatchet', 'scrap_axe' }, label = 'a hatchet',
+                        materials = { { item = 'scrap_metal', count = 2 }, { item = 'rag', count = 1 } }, hint = 'Craft one (K).' },
                     { type = 'have', item = 'pickaxe', label = 'a pickaxe' },
                     { type = 'gather', kind = 'tree', count = 2 },
                     { type = 'gather', kind = 'rock', count = 2 },
@@ -88,7 +89,7 @@ describe('new player tutorial', function()
         local t = tracker(id)
         expect(t[1].label).toBe('First steps')
         expect(t[1].objectives[1].text).toBe('Get a hatchet')
-        expect(t[1].objectives[1].how).toBe('Craft one (K).')
+        expect(t[1].objectives[1].how).toContain('Craft one (K).')
         expect(#t[1].handIn).toBe(0)
         -- maxActive is 1, and the tutorial does not count
         server:clientEvent(id, 'wasteland:quests:server:accept', 'base', 'hunt'); server:advance(200)
@@ -96,6 +97,20 @@ describe('new player tutorial', function()
         server:clientEvent(id, 'wasteland:quests:server:board', 'base'); server:advance(200)
         local b = last(id, 'wasteland:quests:client:board')
         for _, q in ipairs(b.quests) do expect(q.id ~= 'first_steps').toBe(true) end
+    end)
+
+    it('picking up materials pops up how many more, then that everything is there', function()
+        I('RemoveItem', id, 'scrap_metal', I('GetItemCount', id, 'scrap_metal')); I('RemoveItem', id, 'rag', I('GetItemCount', id, 'rag'))
+        server:advance(300)
+        I('AddItem', id, 'scrap_metal', 1); server:advance(300)
+        expect(last(id, 'wasteland:quests:client:notice')).toBe('Scrap metal 1/2 for a hatchet: 1 more needed.')
+        expect(tracker(id)[1].objectives[1].how).toContain('Scrap metal 1/2')
+        I('AddItem', id, 'scrap_metal', 1); server:advance(300)
+        expect(last(id, 'wasteland:quests:client:notice')).toContain('that is enough')
+        I('AddItem', id, 'rag', 1); server:advance(300)
+        expect(last(id, 'wasteland:quests:client:notice')).toBe('You have everything for a hatchet! Press K and craft it.')
+        expect(#events(id, 'wasteland:quests:client:ready')).toBe(1)
+        expect(tracker(id)[1].objectives[1].how).toContain('You have everything')
     end)
 
     it('tools count once carried, and stay done', function()

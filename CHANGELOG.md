@@ -1,5 +1,10 @@
 # Changelog
 
+## Tutorial: material pop-ups
+
+- While getting the hatchet and the pickaxe, a pop-up says each time you pick up a material how many you have and how many more you need ("Scrap metal 1/2 for a hatchet: 1 more needed."), then "You have everything for a hatchet! Press K and craft it." with a sound.
+- The tracker line shows the materials you carry too. New `materials` list on `have` objectives in quests.lua.
+
 ## New player tutorial quest ("First steps")
 
 - Offered once to every character a few seconds after they spawn: Start the tutorial / No thanks. Skipping is remembered; `/tutorial` asks again later, `/tutorial stop` drops it.
