@@ -56,6 +56,7 @@ return {
     'integration/camps.lua',
     'integration/crafting.lua',
     'integration/quests.lua',
+    'integration/tutorial.lua',
     'integration/story.lua',
     'integration/scrapweapons.lua',
     'integration/vehicles.lua',

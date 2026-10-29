@@ -5,7 +5,13 @@
 -- items are counted live and taken at hand-in. Hand-in happens at a camp
 -- that offers the quest: rewards first (refused when they do not fit), then
 -- the items. Each quest can be done again after its cooldown.
--- State per character: character data `quests = { active, done }`.
+-- State per character: character data `quests = { active, done, tutorial }`.
+--
+-- The tutorial (quests.lua `tutorial`): one quest with `tutorial = true`,
+-- offered once to every character (Start / No thanks). It is not on the job
+-- boards, does not count against maxActive, and finishes by itself (rewards
+-- paid wherever the player is) once every objective is done. /tutorial
+-- starts it later; /tutorial stop drops it.
 
 local Rules = WLQ.Rules
 local M
@@ -41,7 +47,7 @@ local function itemLabel(name)
 end
 
 local function objectiveLabel(o)
-    if o.type == 'bring' then return itemLabel(o.item) end
+    if o.type == 'bring' or o.type == 'have' then return itemLabel(o.item) end
     if o.type == 'craft' and GetResourceState('wasteland_crafting') == 'started' then
         return itemLabel(o.recipe)
     end
@@ -64,6 +70,15 @@ local function offers(quest, campId)
     for _, c in ipairs(quest.camps) do if c == campId then return true end end
     return false
 end
+local function jobCount(s)
+    local n = 0
+    for id in pairs(s.active) do
+        local q = M.config.quests[id]
+        if not (q and q.tutorial) then n = n + 1 end
+    end
+    return n
+end
+
 -- What the crafting menu says about an item / recipe: craftable? learned?
 local function recipesOf(src)
     if GetResourceState('wasteland_crafting') ~= 'started' then return {} end
@@ -87,6 +102,7 @@ end
 
 -- Camps a quest can be handed in at: { label, x, y, z } (a trader of each).
 local function handInCamps(quest)
+    if quest.tutorial then return {} end -- finishes by itself
     if GetResourceState('wasteland_camps') ~= 'started' then return {} end
     local ok, list = pcall(function() return exports.wasteland_camps:GetCamps() end)
     local out = {}
@@ -157,7 +173,7 @@ local function boardData(src, camp)
     local s = stateOf(src)
     local out = {}
     local ids = {}
-    for id, q in pairs(M.config.quests) do if offers(q, camp.id) or (s.active[id]) then ids[#ids + 1] = id end end
+    for id, q in pairs(M.config.quests) do if not q.tutorial and (offers(q, camp.id) or s.active[id]) then ids[#ids + 1] = id end end
     table.sort(ids, function(a, b) return M.config.quests[a].label < M.config.quests[b].label end)
     for _, id in ipairs(ids) do
         local q = M.config.quests[id]
@@ -169,9 +185,7 @@ local function boardData(src, camp)
         out[#out + 1] = { id = id, label = q.label, description = q.description, status = status, minutes = minutes,
             handInHere = offers(q, camp.id), objectives = objectivesOf(src, id, q, progress, recipesOf(src)), rewards = rewards }
     end
-    local active = 0
-    for _ in pairs(s.active) do active = active + 1 end
-    return { camp = camp.id, place = camp.label, quests = out, active = active, maxActive = M.config.maxActive }
+    return { camp = camp.id, active = jobCount(s), place = camp.label, quests = out, maxActive = M.config.maxActive }
 end
 
 local function sendBoard(src, camp, message, ok)
@@ -188,15 +202,13 @@ local function accept(src, campId, id)
     local camp = campOf(src, campId)
     local s, cid = stateOf(src)
     local q = M.config.quests[id]
-    if not camp or not s or not q or not offers(q, campId) then return end
+    if not camp or not s or not q or q.tutorial or not offers(q, campId) then return end
     local status, minutes = Rules.status(id, q, s, nowUnix(), countFor(src))
     if status ~= 'available' then
         sendBoard(src, camp, status == 'cooldown' and string.format('Come back in %d min.', minutes) or 'You already have this job.', false)
         return
     end
-    local active = 0
-    for _ in pairs(s.active) do active = active + 1 end
-    if active >= M.config.maxActive then sendBoard(src, camp, string.format('You can only have %d jobs at once.', M.config.maxActive), false); return end
+    if jobCount(s) >= M.config.maxActive then sendBoard(src, camp, string.format('You can only have %d jobs at once.', M.config.maxActive), false); return end
     s.active[id] = { progress = Rules.fresh(q), startedAt = nowUnix() }
     save(cid)
     M.log:info('player %d (character %d) accepted quest %s', src, cid, id)
@@ -218,7 +230,7 @@ local function handIn(src, campId, id)
     local camp = campOf(src, campId)
     local s, cid = stateOf(src)
     local q = M.config.quests[id]
-    if not camp or not s or not q or not s.active[id] or not offers(q, campId) then return end
+    if not camp or not s or not q or q.tutorial or not s.active[id] or not offers(q, campId) then return end
     if not Rules.complete(q, s.active[id].progress, countFor(src)) then sendBoard(src, camp, 'Not done yet.', false); return end
     -- 1. rewards (all or nothing)
     local given = {}
@@ -259,6 +271,39 @@ end
 -- Progress from the world
 -------------------------------------------------------------------------------
 
+local function notice(src, msg) TriggerClientEvent('wasteland:quests:client:notice', src, msg) end
+
+local function tutorialQuest()
+    local t = M.config.tutorial
+    local q = t.enabled and M.config.quests[t.quest]
+    return q and q.tutorial and q or nil, t.quest
+end
+
+-- The tutorial is done: rewards (all items or none; tried again on the
+-- next change when they do not fit), cash, finished for good.
+local function finishTutorial(src, s, cid)
+    local q, id = tutorialQuest()
+    if not q or not s.active[id] or not Rules.complete(q, s.active[id].progress, countFor(src)) then return end
+    local given = {}
+    for _, it in ipairs(q.rewards.items) do
+        if not inv():AddItem(src, it.name, it.count) then
+            for _, g in ipairs(given) do inv():RemoveItem(src, g.name, g.count) end
+            notice(src, 'Tutorial done! Make room in your inventory for the reward.')
+            return
+        end
+        given[#given + 1] = it
+    end
+    if q.rewards.cash and q.rewards.cash > 0 then inv():AddCash(src, q.rewards.cash) end
+    s.active[id] = nil
+    s.done[id] = nowUnix()
+    s.tutorial = 'done'
+    save(cid)
+    M.log:info('player %d (character %d) finished the tutorial', src, cid)
+    TriggerEvent('wasteland:quests:completed', src, id)
+    local r = rewardsText(q)
+    TriggerClientEvent('wasteland:quests:client:tutorialDone', src, { label = q.label, rewards = r, text = M.config.tutorial.doneText })
+end
+
 local function progress(src, ev)
     local s, cid = stateOf(src)
     if not s then return end
@@ -270,7 +315,38 @@ local function progress(src, ev)
     if changed then
         save(cid)
         sendTracker(src)
+        finishTutorial(src, s, cid)
     end
+end
+
+local function haveCheck(src)
+    local s = stateOf(src)
+    local q, id = tutorialQuest()
+    if s and q and s.active[id] then progress(src, { type = 'have', count = countFor(src) }) end
+end
+
+local function startTutorial(src)
+    local s, cid = stateOf(src)
+    local q, id = tutorialQuest()
+    if not s or not q then return end
+    if s.active[id] then notice(src, 'You are already doing the tutorial (J shows it).'); return end
+    s.active[id] = { progress = Rules.fresh(q), startedAt = nowUnix() }
+    s.tutorial = 'started'
+    save(cid)
+    M.log:info('player %d (character %d) started the tutorial', src, cid)
+    notice(src, 'Tutorial started. Follow the steps on the right of your screen (J for the full list).')
+    sendTracker(src)
+    haveCheck(src) -- tools already carried count straight away
+end
+
+local function offerTutorial(src, force)
+    local s = stateOf(src)
+    local q, id = tutorialQuest()
+    if not s or not q or (s.tutorial and not force) or s.active[id] then return end
+    local steps = {}
+    for i, o in ipairs(q.objectives) do steps[i] = Rules.text(o, 0, Rules.need(o), objectiveLabel(o)):gsub(' 0/%d+$', ''):gsub(' %(done%)$', '') end
+    TriggerClientEvent('wasteland:quests:client:tutorialOffer', src, { label = q.label, description = q.description,
+        steps = steps, rewards = rewardsText(q), command = M.config.tutorial.command })
 end
 
 AddEventHandler('wasteland:zombies:died', function(_, _, _, killer, coords)
@@ -285,9 +361,20 @@ AddEventHandler('wasteland:crafting:crafted', function(src, recipe)
     if M and M.active then progress(src, { type = 'craft', recipe = recipe, count = 1 }) end
 end)
 
--- Items changed: the "bring" lines of the tracker.
+-- A tree chopped / rock mined in a tree or rock zone.
+AddEventHandler('wasteland:loot:gathered', function(src, kind)
+    if M and M.active then progress(src, { type = 'gather', kind = kind, count = 1 }) end
+end)
+
+AddEventHandler('wasteland:camps:traded', function(src, side, name, count)
+    if M and M.active and side == 'sell' then progress(src, { type = 'sell', item = name, count = tonumber(count) or 1 }) end
+end)
+
+-- Items changed: the "bring" lines of the tracker, "have" objectives.
 AddEventHandler('wasteland:inventory:playerUpdated', function(src)
-    if M and M.active then sendTracker(src) end
+    if not (M and M.active) then return end
+    sendTracker(src)
+    haveCheck(src)
 end)
 
 local function load(src, cid)
@@ -297,10 +384,26 @@ local function load(src, cid)
     data.done = type(data.done) == 'table' and data.done or {}
     -- Quests removed from the config are dropped.
     for id in pairs(data.active) do if not M.config.quests[id] then data.active[id] = nil end end
+    if data.tutorial ~= nil and type(data.tutorial) ~= 'string' then data.tutorial = nil end
     states[cid], online[cid] = data, src
     lastSent[src] = nil
     sendTracker(src)
+    -- not asked yet: ask a moment after spawning (camps: once a spawn is chosen)
+    if not data.tutorial and tutorialQuest() and GetResourceState('wasteland_camps') ~= 'started' then
+        Citizen.SetTimeout(M.config.tutorial.askDelaySeconds * 1000, function()
+            if online[cid] == src then offerTutorial(src) end
+        end)
+    end
 end
+
+AddEventHandler('wasteland:camps:spawnChosen', function(src)
+    if not (M and M.active) then return end
+    local s, cid = stateOf(src)
+    if not s or s.tutorial or not tutorialQuest() then return end
+    Citizen.SetTimeout(M.config.tutorial.askDelaySeconds * 1000, function()
+        if online[cid] == src then offerTutorial(src) end
+    end)
+end)
 
 AddEventHandler('wasteland:players:characterLoaded', function(src, character)
     if M and M.active and type(character) == 'table' then load(src, character.id) end
@@ -350,14 +453,25 @@ M = Wasteland.DefineModule({
         schema = { type = 'table', fields = {
             maxActive = { type = 'integer', default = 3, min = 1, max = 20 },
             giverDistance = { type = 'number', default = 4.0, min = 1, max = 20 },
+            tutorial = { type = 'table', default = {}, fields = {
+                enabled = { type = 'boolean', default = true },
+                quest = { type = 'string', default = 'first_steps', pattern = '^[%a][%w_]*$' },
+                askDelaySeconds = { type = 'number', default = 8, min = 0, max = 600 },
+                command = { type = 'string', default = 'tutorial', pattern = '^[%a][%w_]*$' },
+                doneText = { type = 'string', default = '', maxLength = 400 },
+            } },
             quests = { type = 'map', default = {}, keys = { type = 'string', pattern = '^[%a][%w_]*$' }, values = { type = 'table', fields = {
                 label = { type = 'string', required = true, minLength = 1, maxLength = 48 },
                 description = { type = 'string', default = '', maxLength = 300 },
                 camps = { type = 'array', items = { type = 'string', pattern = '^[%a][%w_]*$' } },
                 cooldownMinutes = { type = 'number', default = 60, min = 0, max = 100000 },
+                tutorial = { type = 'boolean', default = false },
                 objectives = { type = 'array', required = true, minItems = 1, items = { type = 'table', fields = {
-                    type = { type = 'enum', required = true, values = { 'bring', 'kill', 'visit', 'search', 'craft' } },
+                    type = { type = 'enum', required = true, values = { 'bring', 'kill', 'visit', 'search', 'craft', 'have', 'gather', 'sell' } },
                     item = { type = 'string', pattern = '^[%w_]+$' },
+                    items = { type = 'array', items = { type = 'string', pattern = '^[%w_]+$' } },
+                    kind = { type = 'enum', values = { 'tree', 'rock' } },
+                    hint = { type = 'string', maxLength = 300 },
                     recipe = { type = 'string', pattern = '^[%w_]+$' },
                     container = { type = 'string', pattern = '^[%w_]+$' },
                     count = { type = 'integer', default = 1, min = 1, max = 100000 },
@@ -383,6 +497,10 @@ M = Wasteland.DefineModule({
                 if o.type == 'bring' and (not o.item or not inv():GetItemDefinition(o.item)) then return false, where .. ': bring needs a known item' end
                 if o.type == 'visit' and not o.coords then return false, where .. ': visit needs coords' end
                 if o.type == 'craft' and not o.recipe then return false, where .. ': craft needs a recipe' end
+                if o.type == 'have' and not o.item and not o.items then return false, where .. ': have needs an item (or items)' end
+                for _, n in ipairs(o.items or {}) do
+                    if not inv():GetItemDefinition(n) then return false, where .. ': unknown item "' .. n .. '"' end
+                end
             end
             for _, it in ipairs(q.rewards.items) do
                 if not inv():GetItemDefinition(it.name) then return false, string.format('quests.lua: quest "%s" rewards unknown item "%s"', id, it.name) end
@@ -438,7 +556,7 @@ M.netEvent('wasteland:quests:server:log', { rateLimit = { burst = 3, perSecond =
     local again = {}
     for id, q in pairs(M.config.quests) do
         local status, minutes = Rules.status(id, q, s, now, countFor(src))
-        if status == 'cooldown' then
+        if status == 'cooldown' and not q.tutorial then
             local camps = {}
             for _, c in ipairs(handInCamps(q)) do camps[#camps + 1] = c.label end
             again[#again + 1] = { label = q.label, minutes = minutes, camps = camps }
@@ -450,10 +568,40 @@ M.netEvent('wasteland:quests:server:log', { rateLimit = { burst = 3, perSecond =
         local ok, v = pcall(function() return exports.wasteland_story:GetStoryView(src) end)
         if ok and type(v) == 'table' and not v.done then story = v end
     end
-    local active = 0
-    for _ in pairs(s.active) do active = active + 1 end
     TriggerClientEvent('wasteland:quests:client:log', src, { now = now, quests = activeList(src, s), again = again, story = story,
-        active = active, maxActive = M.config.maxActive })
+        active = jobCount(s), maxActive = M.config.maxActive })
+end)
+
+-- The tutorial offer: Start / No thanks (asked once; /tutorial later).
+M.netEvent('wasteland:quests:server:tutorial', { args = { { type = 'enum', required = true, values = { 'start', 'skip' } } },
+    rateLimit = { burst = 3, perSecond = 0.5 } }, function(src, choice)
+    local s, cid = stateOf(src)
+    if not s or not tutorialQuest() then return end
+    if choice == 'start' then startTutorial(src); return end
+    if not s.tutorial then
+        s.tutorial = 'skipped'
+        save(cid)
+        notice(src, string.format('No problem. Type /%s any time to start the tutorial.', M.config.tutorial.command))
+    end
+end)
+
+M.netEvent('wasteland:quests:server:tutorialCommand', { args = { { type = 'string', maxLength = 16 } },
+    rateLimit = { burst = 3, perSecond = 0.5 } }, function(src, arg)
+    local s, cid = stateOf(src)
+    local q, id = tutorialQuest()
+    if not s then return end
+    if not q then notice(src, 'There is no tutorial on this server.'); return end
+    if arg == 'stop' then
+        if not s.active[id] then notice(src, 'You are not doing the tutorial.'); return end
+        s.active[id] = nil
+        s.tutorial = 'skipped'
+        save(cid)
+        sendTracker(src)
+        notice(src, string.format('Tutorial stopped. /%s starts it again.', M.config.tutorial.command))
+        return
+    end
+    if s.active[id] then notice(src, 'You are already doing the tutorial (J shows it). /' .. M.config.tutorial.command .. ' stop drops it.'); return end
+    offerTutorial(src, true) -- asks again (Start / No thanks), even after skipping or finishing
 end)
 
 M.netEvent('wasteland:quests:server:tracker', { rateLimit = { burst = 3, perSecond = 0.5 } }, function(src)
@@ -505,6 +653,10 @@ exports('GetQuestSummary', function(src)
     table.sort(out.cooldowns, function(a, b) return a.label < b.label end)
     return out
 end)
+
+--- OfferTutorial(source) / StartTutorial(source)
+exports('OfferTutorial', function(src) offerTutorial(tonumber(src), true) end)
+exports('StartTutorial', function(src) startTutorial(tonumber(src)) end)
 
 --- DropQuest(source, id) -> ok   (admin)
 exports('DropQuest', function(src, id)

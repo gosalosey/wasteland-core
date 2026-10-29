@@ -554,6 +554,7 @@ finishZoneTree = function(src, s)
     setDown(t, true)
     searches = searches + 1
     giveDirect(src, s, nc)
+    TriggerEvent('wasteland:loot:gathered', src, t.kind) -- 'tree' | 'rock' (quests)
     -- Very rarely: a Survivor's Cache.
     local cache = M.config.survivorCache
     if cache.enabled ~= false and c.rareChance > 0 and math.random() < c.rareChance then

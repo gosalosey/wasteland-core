@@ -3,7 +3,7 @@
 -- the quest tracker on screen and map markers for quest places.
 -- The server decides everything.
 
-local BOARD, TRACKER, LOG = 'questBoard', 'questTracker', 'questLog'
+local BOARD, TRACKER, LOG, OFFER = 'questBoard', 'questTracker', 'questLog', 'questTutorial'
 local showTracker
 local tracked = {}        -- the active quests last sent (the tracker adds distances to them)
 local hideTracker = false  -- the player hid the on-screen tracker (/quest -> Hide)
@@ -229,4 +229,48 @@ Citizen.CreateThread(function()
             exports.wasteland_ui:Update(TRACKER, trackerData())
         end
     end
+end)
+
+-------------------------------------------------------------------------------
+-- The tutorial: the offer (Start / No thanks), notices, /tutorial
+-------------------------------------------------------------------------------
+
+local function notice(msg)
+    BeginTextCommandThefeedPost('STRING')
+    AddTextComponentSubstringPlayerName(tostring(msg))
+    EndTextCommandThefeedPostTicker(false, false)
+end
+RegisterNetEvent('wasteland:quests:client:notice', function(m) notice(m) end)
+
+local function closeOffer()
+    if uiRunning() and exports.wasteland_ui:IsOpen(OFFER) then exports.wasteland_ui:Close(OFFER) end
+end
+
+RegisterNetEvent('wasteland:quests:client:tutorialOffer', function(d)
+    if type(d) ~= 'table' or not uiRunning() then return end
+    d.mode = 'offer'
+    if exports.wasteland_ui:IsOpen(OFFER) then exports.wasteland_ui:Update(OFFER, d)
+    else exports.wasteland_ui:Open(OFFER, { script = 'html/tutorial.js', data = d }) end
+end)
+
+RegisterNetEvent('wasteland:quests:client:tutorialDone', function(d)
+    if type(d) ~= 'table' or not uiRunning() then return end
+    d.mode = 'done'
+    PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', true)
+    if exports.wasteland_ui:IsOpen(OFFER) then exports.wasteland_ui:Update(OFFER, d)
+    else exports.wasteland_ui:Open(OFFER, { script = 'html/tutorial.js', data = d }) end
+end)
+
+AddEventHandler('wasteland:ui:client:action', function(screen, action)
+    if screen ~= OFFER then return end
+    closeOffer()
+    if action == 'start' or action == 'skip' then TriggerServerEvent('wasteland:quests:server:tutorial', action) end
+end)
+
+RegisterCommand('tutorial', function(_, args)
+    TriggerServerEvent('wasteland:quests:server:tutorialCommand', args[1] == 'stop' and 'stop' or '')
+end, false)
+
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() then closeOffer() end
 end)

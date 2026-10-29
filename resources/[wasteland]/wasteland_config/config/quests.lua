@@ -16,12 +16,47 @@
 --   { type = 'visit', coords = { x, y, z }, radius = 40, label = 'the airfield' }
 --   { type = 'search', container = 'crate', count = 3 }           loot.lua container types
 --   { type = 'craft', recipe = 'bandage', count = 2 }             crafting.lua recipes
+--   { type = 'have', item = 'pickaxe' }                           carried once (not taken)
+--   { type = 'have', items = { 'weapon_hatchet', 'scrap_axe' }, label = 'an axe' }   any of these
+--   { type = 'gather', kind = 'tree', count = 3 }                 trees chopped (kind 'rock': rocks mined)
+--   { type = 'sell', items = { 'wood_log', 'stone' }, count = 3 } sold to a camp trader (no items = anything)
+-- Any objective can have `hint = '...'`: the how-to line shown under it.
 --
 -- VERIFY IN-GAME: places are picked from the map.
 return {
     maxActive = 3,
 
+    -- The new player tutorial: offered once to every character a few seconds
+    -- after they spawn, with Start / No thanks. Skipping is fine; /tutorial
+    -- asks again later, /tutorial stop drops it. It is the quest below with
+    -- `tutorial = true`: not on the job boards, not counted in maxActive,
+    -- done once, and it finishes by itself (no hand-in) when every step is done.
+    tutorial = {
+        enabled = true,
+        quest = 'first_steps',
+        askDelaySeconds = 8,
+        command = 'tutorial',
+        doneText = 'That is the loop: loot scrap and rags, make tools, chop wood and mine stone, sell what you do not need. Traders buy almost anything, so everything you find is worth something. Good luck out there.',
+    },
+
     quests = {
+        first_steps = {
+            label = 'First steps', tutorial = true,
+            description = 'New out here? Let us get you a hatchet and a pickaxe, then put them to work and turn what you gather into cash.',
+            objectives = {
+                { type = 'have', items = { 'weapon_hatchet', 'scrap_axe', 'weapon_battleaxe' }, label = 'a hatchet',
+                    hint = 'Craft one (K): 2 scrap metal + 1 rag. Scrap and rags are in dumpsters, trash cans, wrecked cars and crates: hold Left Alt on one and choose Search.' },
+                { type = 'have', item = 'pickaxe', label = 'a pickaxe',
+                    hint = 'Craft one (K): 3 scrap metal + 1 rag. Keep searching dumpsters, trash cans, wrecks and crates for more.' },
+                { type = 'gather', kind = 'tree', count = 3, label = 'Chop trees',
+                    hint = 'Go to a tree zone (the Lumber marks on your map). With the hatchet on you, hold Left Alt on a tree, choose Chop tree, and press E while the needle is in the green.' },
+                { type = 'gather', kind = 'rock', count = 3, label = 'Mine rocks',
+                    hint = 'Go to a rock zone (the Mining marks on your map). With the pickaxe on you, hold Left Alt on a big rock, choose Mine rock, and press E in the green.' },
+                { type = 'sell', items = { 'wood_log', 'stone' }, count = 5, label = 'wood or stone',
+                    hint = 'Go to a camp trader, hold Left Alt on them, choose Trade and sell your wood logs and stone. Traders buy almost anything you find.' },
+            },
+            rewards = { cash = 50, items = { { name = 'water_bottle', count = 1 }, { name = 'canned_beans', count = 1 } } },
+        },
         scrap_run = {
             label = 'Scrap run', cooldownMinutes = 45,
             description = 'We need metal for the walls. Bring scrap.',

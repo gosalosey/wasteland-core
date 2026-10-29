@@ -8,6 +8,10 @@
 --   { type = 'visit',  coords = { x, y, z }, radius, label }
 --   { type = 'search', container?, count, near?, label? }   (loot container type)
 --   { type = 'craft',  recipe, count }
+--   { type = 'have',   item | items, count }     carried once (kept: not taken)
+--   { type = 'gather', kind = 'tree' | 'rock', count }  trees chopped / rocks mined
+--   { type = 'sell',   items?, count }            items sold to a camp trader
+-- Any objective can carry `hint`: its own how-to line.
 -- Progress: list of numbers, one per objective (bring: unused, read live).
 
 WLQ = WLQ or {}
@@ -65,7 +69,15 @@ function Rules.apply(quest, progress, ev)
             if ev.type == 'kill' and near(o, ev.coords) then add = 1
             elseif ev.type == 'search' and (not o.container or o.container == ev.container) and near(o, ev.coords) then add = 1
             elseif ev.type == 'craft' and o.recipe == ev.recipe then add = ev.count or 1
-            elseif ev.type == 'visit' and ev.coords and dist(o.coords, ev.coords) <= o.radius then add = 1 end
+            elseif ev.type == 'visit' and ev.coords and dist(o.coords, ev.coords) <= o.radius then add = 1
+            elseif ev.type == 'gather' and (not o.kind or o.kind == ev.kind) then add = ev.count or 1
+            elseif ev.type == 'sell' and Rules.matches(o, ev.item) then add = ev.count or 1
+            elseif ev.type == 'have' then
+                -- ev.count(item) -> carried; once enough is carried it stays done
+                local best = 0
+                for _, name in ipairs(o.items or { o.item }) do best = math.max(best, ev.count(name) or 0) end
+                add = math.max(0, best - cur)
+            end
             if add > 0 then
                 progress[i] = math.min(need(o), cur + add)
                 changed = true
@@ -73,6 +85,15 @@ function Rules.apply(quest, progress, ev)
         end
     end
     return changed
+end
+
+--- Does an item count for an objective (`items` list, or `item`, or any)?
+function Rules.matches(o, name)
+    if o.items then
+        for _, n in ipairs(o.items) do if n == name then return true end end
+        return false
+    end
+    return not o.item or o.item == name
 end
 
 --- Status of a quest for a character: 'active' | 'ready' | 'cooldown' | 'available'.
@@ -96,6 +117,9 @@ function Rules.text(o, have, n, itemLabel)
     if o.type == 'visit' then return string.format('Go to %s%s', o.label or 'the marked place', have >= n and ' (done)' or '') end
     if o.type == 'search' then return string.format('Search %s %d/%d', o.label or (o.container and (o.container .. 's')) or 'containers', have, n) end
     if o.type == 'craft' then return string.format('Make %s %d/%d', itemLabel or o.recipe, have, n) end
+    if o.type == 'have' then return string.format('Get %s%s', o.label or itemLabel or o.item, have >= n and ' (done)' or (n > 1 and string.format(' %d/%d', have, n) or '')) end
+    if o.type == 'gather' then return string.format('%s %d/%d', o.label or (o.kind == 'rock' and 'Mine rocks' or 'Chop trees'), have, n) end
+    if o.type == 'sell' then return string.format('Sell %s %d/%d', o.label or 'items to a trader', have, n) end
     return '?'
 end
 
@@ -103,6 +127,7 @@ end
 --- info: { itemLabel, craftable = bool, needsBlueprint = bool }
 function Rules.hint(o, info)
     info = info or {}
+    if o.hint then return o.hint end
     local what = info.itemLabel or o.item or o.recipe
     if o.type == 'bring' then
         return string.format('Carry %s back to camp. %s', what,
@@ -116,6 +141,9 @@ function Rules.hint(o, info)
     if o.type == 'search' then
         return string.format('Search %s: hold Left Alt on one and choose Search.', o.label or (o.container and (o.container .. 's')) or 'containers')
     end
+    if o.type == 'gather' then return o.kind == 'rock' and 'Mine rocks in a rock zone (on your map) with a pickaxe.' or 'Chop trees in a tree zone (on your map) with a hatchet.' end
+    if o.type == 'sell' then return 'Sell to a camp trader: hold Left Alt on them and choose Trade.' end
+    if o.type == 'have' then return string.format('Get %s: loot it or craft it (K).', o.label or what) end
     if o.type == 'craft' then
         return string.format('Craft %s in the crafting menu (K).%s', what, info.needsBlueprint and ' You need its blueprint first.' or '')
     end

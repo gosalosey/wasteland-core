@@ -30,4 +30,5 @@ files {
     'html/board.js',
     'html/tracker.js',
     'html/log.js',
+    'html/tutorial.js',
 }

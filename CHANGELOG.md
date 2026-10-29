@@ -1,5 +1,13 @@
 # Changelog
 
+## New player tutorial quest ("First steps")
+
+- Offered once to every character a few seconds after they spawn: Start the tutorial / No thanks. Skipping is remembered; `/tutorial` asks again later, `/tutorial stop` drops it.
+- Steps: get a hatchet, get a pickaxe (the hints say what to search for scrap metal and rags, and what to craft), chop 3 trees, mine 3 rocks, sell 5 wood logs or stone to a camp trader. Reward $50, a water bottle and canned beans; it finishes by itself, no hand-in.
+- Not on the job boards and does not use a job slot (maxActive).
+- New quest objective types: `have` (carry an item once), `gather` (trees / rocks), `sell` (to a camp trader), and a `hint` line on any objective. Settings: `tutorial` in quests.lua.
+- wasteland_loot sends `wasteland:loot:gathered` (src, "tree" | "rock") when a tree is chopped or a rock mined.
+
 ## Inventory: backpack shown open, HUD body in the health panel
 
 - Opening the inventory now shows the worn backpack straight away (Close backpack still hides it).
