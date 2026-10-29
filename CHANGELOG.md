@@ -1,8 +1,8 @@
 # Changelog
 
-## Gate doors tougher
+## Gates tougher
 
-- Gate doors now have 3000 health (was 700). Gate frames are unchanged at 700.
+- Gate doors and gate frames now have 3000 health (was 700).
 
 ## HUD: a grey silhouette instead of the character picture
 

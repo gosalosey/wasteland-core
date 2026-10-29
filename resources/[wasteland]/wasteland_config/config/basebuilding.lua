@@ -115,7 +115,7 @@ return {
         stairs = { label = 'Stairs', model = 'wl_bp_stairs_wood', category = 'structure', cost = { wood_planks = 14 }, health = 500, material = 'wood' },
         hatch = { label = 'Ladder Hatch', model = 'wl_bp_hatch_wood', category = 'structure', cost = { wood_planks = 8 }, health = 500, material = 'wood',
             family = 'ceiling', ladder = true },
-        gateframe = { label = 'Gate Frame', model = 'wl_bp_gate_frame', category = 'structure', cost = { wood_planks = 20 }, health = 700, material = 'wood' },
+        gateframe = { label = 'Gate Frame', model = 'wl_bp_gate_frame', category = 'structure', cost = { wood_planks = 20 }, health = 3000, material = 'wood' },
         door = { label = 'Wooden Door', model = 'wl_bp_door_wood', category = 'door', cost = { wood_planks = 10 }, health = 600,
             material = 'wood', openAngleOffset = 100.0, passThrough = true },
         metaldoor = { label = 'Metal Door', model = 'wl_bp_door_metal', category = 'door', cost = { metal_sheet = 6 }, health = 1500,
