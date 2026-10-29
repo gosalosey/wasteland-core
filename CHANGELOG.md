@@ -1,5 +1,10 @@
 # Changelog
 
+## More repairable vehicles
+
+- 40 more wreck spawn points (gas stations, car parks, docks, the airport, Route 68, the west coast, Paleto, Grapeseed), about 80 in all.
+- maxVehicles 40 -> 80, respawnMinutes 20 -> 10.
+
 ## Fix: quest tracker overlapping the story tracker
 
 - When the story tracker is on screen, the quest tracker now sits just below it instead of on top of it.

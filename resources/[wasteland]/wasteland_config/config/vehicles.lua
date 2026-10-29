@@ -11,8 +11,8 @@
 -- VERIFY IN-GAME: spawn points are picked from the map; a point in the
 -- wrong place can be moved or removed here.
 return {
-    maxVehicles = 40,            -- wrecks in the world (cars and motorbikes); one per spawn point at most
-    respawnMinutes = 20,         -- a new wreck every ... while under the limit
+    maxVehicles = 80,            -- wrecks in the world (cars and motorbikes); one per spawn point at most
+    respawnMinutes = 10,         -- a new wreck every ... while under the limit
     spawnDistance = 250,         -- a vehicle appears when a player is this close
     despawnDistance = 350,       -- ... and is put away when nobody is this close
     despawnAfterSeconds = 30,
@@ -164,5 +164,50 @@ return {
         { x = 1150.0, y = -660.0, z = 57.0, heading = 190.0 },     -- Mirror Park
         { x = 340.0, y = -560.0, z = 28.8, heading = 340.0 },      -- below Pillbox Hill hospital
         { x = -1600.0, y = -1000.0, z = 13.0, heading = 140.0 },   -- Del Perro pier car park
+        -- Even more wrecks (picked from the map; the spot check moves them to clear ground)
+        -- Blaine County / Route 68
+        { x = 49.0, y = 2779.0, z = 58.0, heading = 140.0 },      -- Route 68 gas station, Harmony
+        { x = 264.0, y = 2606.0, z = 44.9, heading = 10.0 },      -- Harmony garage
+        { x = 1040.0, y = 2671.0, z = 39.5, heading = 0.0 },      -- Route 68 east gas station
+        { x = 2540.0, y = 2594.0, z = 37.9, heading = 20.0 },     -- Rex's Diner, Senora
+        { x = 1785.0, y = 3331.0, z = 41.4, heading = 300.0 },    -- Sandy Shores airfield road
+        { x = 1960.0, y = 3840.0, z = 32.0, heading = 30.0 },     -- Sandy Shores north
+        { x = 920.0, y = 3650.0, z = 32.6, heading = 90.0 },      -- Alamo Sea, west Sandy
+        { x = 330.0, y = 3410.0, z = 36.0, heading = 80.0 },      -- Sandy Shores, Route 68 west
+        { x = 1365.0, y = 4370.0, z = 44.5, heading = 170.0 },    -- Millars Fishery, Alamo Sea
+        { x = 1960.0, y = 4640.0, z = 40.7, heading = 290.0 },    -- Grapeseed south
+        { x = 2160.0, y = 4770.0, z = 41.0, heading = 110.0 },    -- McKenzie airfield, Grapeseed
+        { x = 1850.0, y = 2585.0, z = 45.7, heading = 270.0 },    -- Bolingbroke prison car park
+        { x = 1990.0, y = 3050.0, z = 47.0, heading = 330.0 },    -- Yellow Jack Inn
+        { x = 2770.0, y = 2800.0, z = 41.4, heading = 120.0 },    -- Davis Quartz quarry
+        { x = 2690.0, y = 1680.0, z = 24.6, heading = 90.0 },     -- Palmer-Taylor power station
+        { x = -1130.0, y = 2690.0, z = 18.7, heading = 130.0 },   -- Route 68, Lago Zancudo
+        { x = -2190.0, y = 4250.0, z = 48.3, heading = 150.0 },   -- Hookies, Great Ocean Hwy
+        { x = 3330.0, y = 5160.0, z = 18.3, heading = 200.0 },    -- El Gordo lighthouse
+        -- Paleto Bay / north coast
+        { x = -680.0, y = 5800.0, z = 17.3, heading = 60.0 },     -- Bayview Lodge
+        { x = 1580.0, y = 6450.0, z = 25.0, heading = 150.0 },    -- Up-n-Atom, north coast
+        { x = 35.0, y = 6290.0, z = 31.2, heading = 30.0 },       -- Paleto chicken factory
+        { x = -15.0, y = 6510.0, z = 31.4, heading = 225.0 },     -- Paleto Bay main street
+        -- West coast
+        { x = -3150.0, y = 1100.0, z = 20.8, heading = 250.0 },   -- Chumash
+        { x = -3040.0, y = 590.0, z = 7.6, heading = 10.0 },      -- Banham Canyon store
+        { x = -2970.0, y = 400.0, z = 15.0, heading = 175.0 },    -- Great Ocean Hwy, Ineseno Rd
+        { x = -1825.0, y = 790.0, z = 138.2, heading = 130.0 },   -- Richman Glen gas station
+        { x = -2096.0, y = -320.0, z = 13.2, heading = 80.0 },    -- Pacific Bluffs gas station
+        -- Los Santos
+        { x = -1437.0, y = -277.0, z = 46.2, heading = 130.0 },   -- Morningwood gas station
+        { x = -319.0, y = -1472.0, z = 30.5, heading = 270.0 },   -- Davis Ave gas station
+        { x = 175.0, y = -1562.0, z = 29.3, heading = 45.0 },     -- Davis store
+        { x = 621.0, y = 269.0, z = 103.1, heading = 250.0 },     -- Vinewood, Clinton Ave
+        { x = 100.0, y = -1075.0, z = 29.3, heading = 340.0 },    -- Pillbox south garage
+        { x = -1076.0, y = -850.0, z = 4.9, heading = 40.0 },     -- Vespucci police station
+        { x = -1180.0, y = -880.0, z = 13.8, heading = 300.0 },   -- Vespucci Burger Shot
+        { x = 960.0, y = -140.0, z = 74.4, heading = 60.0 },      -- Mirror Park clubhouse
+        { x = 870.0, y = -2340.0, z = 30.4, heading = 175.0 },    -- Cypress Flats
+        { x = 1000.0, y = -2350.0, z = 30.5, heading = 85.0 },    -- Cypress Flats east
+        { x = -45.0, y = -2520.0, z = 6.0, heading = 235.0 },     -- Elysian Island docks
+        { x = 820.0, y = -2990.0, z = 6.0, heading = 270.0 },     -- Terminal docks
+        { x = -1270.0, y = -3380.0, z = 13.9, heading = 330.0 },  -- LS airport
     },
 }
