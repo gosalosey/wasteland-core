@@ -1,5 +1,16 @@
 # Changelog
 
+## Survivors (new module: wasteland_survivors)
+
+- Friendly NPC survivors wander the map near players (config/survivors.lua). They carry a gun or a blade, which they never drop.
+- They leave players alone. Hurt one and it fights back, and the survivors within 40 m turn on you too.
+- Survivors and zombies fight each other. Zombies now chase and hit survivors as well as players (wasteland_zombies: new `wasteland:zombies:server:hitPed`, server event `wasteland:zombies:hitPed`).
+- Helping: kill 2 zombies within 30 m of a survivor. They thank you, and Talk (Left Alt) gives a reward, once per survivor.
+- Trade (Left Alt): each survivor has 3 item-for-item swaps of their own from a configurable list, each usable a few times.
+- Voice: the game's own voice lines (shouting for help when zombies are on them, thanks, hello, insults), with the words shown above their head.
+- Admin: `/survivors count | clear | spawn`. Exports: GetSurvivorCount, SpawnSurvivor, IsSurvivor.
+- Add `ensure wasteland_survivors` after `ensure wasteland_hunting` (the updater adds it).
+
 ## Gates tougher
 
 - Gate doors and gate frames now have 3000 health (was 700).

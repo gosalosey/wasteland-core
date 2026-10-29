@@ -639,6 +639,28 @@ M.netEvent('wasteland:zombies:server:hit', {
     rateLimit = { burst = 10, perSecond = 6 },
 }, function(src, netId, victim) hit(src, netId, victim) end)
 
+-- A zombie's swing landed on a survivor (any non-player ped with the
+-- `wlSurvivor` state): checked like a hit on a player, then handed to
+-- wasteland_survivors (`wasteland:zombies:hitPed`).
+M.netEvent('wasteland:zombies:server:hitPed', {
+    args = { { type = 'integer', required = true, min = 1 }, { type = 'integer', required = true, min = 1 } },
+    rateLimit = { burst = 10, perSecond = 6 },
+}, function(src, netId, pedNet)
+    local z = zombieByNet(netId)
+    if not z or z.dead or NetworkGetEntityOwner(z.handle) ~= src then return end
+    local ped = NetworkGetEntityFromNetworkId(pedNet)
+    if not ped or ped == 0 or not DoesEntityExist(ped) or not Entity(ped).state.wlSurvivor then return end
+    local t = now()
+    local sp = WLZ.ServerAI and WLZ.ServerAI.specialOf(z)
+    if z.lastHit and t - z.lastHit < M.config.attack.cooldownMs * ((sp and sp.cooldownMult) or 1) then return end
+    if Rules.dist3d(coordsOf(z.handle), coordsOf(ped)) > M.config.attack.hitReach + 1.0 then return end
+    z.lastHit = t
+    local r = Rules.hit(M.config.kinds[z.kind], { damage = math.random(), infection = 1, infectionAmount = 0, bleeding = 1 })
+    local damage = r.damage
+    if sp and sp.damageMult then damage = math.floor(damage * sp.damageMult + 0.5) end
+    TriggerEvent('wasteland:zombies:hitPed', pedNet, damage, z.netId)
+end)
+
 M.netEvent('wasteland:zombies:server:died', {
     args = { { type = 'integer', required = true, min = 1 }, { type = 'integer', min = 0, max = 65535 } },
     rateLimit = { burst = 10, perSecond = 5 },

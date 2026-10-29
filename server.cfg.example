@@ -58,6 +58,7 @@ ensure wasteland_events
 ensure wasteland_groups
 ensure wasteland_trade
 ensure wasteland_hunting
+ensure wasteland_survivors
 ensure wasteland_skills
 ensure wasteland_guide
 ensure wasteland_props

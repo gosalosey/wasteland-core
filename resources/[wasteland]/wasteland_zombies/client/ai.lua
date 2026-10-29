@@ -107,6 +107,12 @@ local function sense(ped, b, ai, phaseName, phase, night)
             list[#list + 1] = { ped = target, pos = GetEntityCoords(target) }
         end
     end
+    -- survivors (wasteland_survivors): the zombies go for them too
+    for _, target in ipairs(C().survivors and C().survivors() or {}) do
+        if DoesEntityExist(target) and not IsEntityDead(target) then
+            list[#list + 1] = { ped = target, pos = GetEntityCoords(target) }
+        end
+    end
     local best, bestDist, bestSeen, bestPos
     for _, p in ipairs(list) do
         local dist = #(p.pos - zc)

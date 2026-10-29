@@ -13,6 +13,7 @@ local brains = {}      -- ped handle -> { mode, target, lastSeen, nextTask, next
 local ATTACK_DICT, ATTACK_ANIM = 'melee@unarmed@streamed_variations', 'plyr_takedown_front_slap' -- fallback
 local WALK_CLIPSET = 'move_m@drunk@verydrunk'
 local zombieGroup = nil
+local survivorList = {} -- living survivors (wasteland_survivors) this game shows: zombies go for them too
 
 RegisterNetEvent('wasteland:zombies:client:config', function(c)
     if type(c) ~= 'table' then return end
@@ -212,6 +213,15 @@ local function sense(ped, night)
             end
         end
     end
+    -- survivors: noticed when close or in sight
+    for _, target in ipairs(survivorList) do
+        if DoesEntityExist(target) and not IsEntityDead(target) then
+            local dist = #(GetEntityCoords(target) - zc)
+            if dist < bestDist and (dist <= d.hearSprint or (dist <= (night and d.sightNight or d.sightDay) and HasEntityClearLosToEntity(ped, target, 17))) then
+                best, bestDist = target, dist
+            end
+        end
+    end
     return best, bestDist
 end
 
@@ -304,6 +314,9 @@ local function chaseStep(ped, b, dist, speed, mods)
             local player = NetworkGetPlayerIndexFromPed(target)
             if player ~= -1 then
                 TriggerServerEvent('wasteland:zombies:server:hit', NetworkGetNetworkIdFromEntity(ped), GetPlayerServerId(player))
+            elseif NetworkGetEntityIsNetworked(target) then
+                -- a survivor (the server checks it and hurts them)
+                TriggerServerEvent('wasteland:zombies:server:hitPed', NetworkGetNetworkIdFromEntity(ped), NetworkGetNetworkIdFromEntity(target))
             end
         end
     end
@@ -442,7 +455,16 @@ Citizen.CreateThread(function()
             local hour = GetClockHours()
             local night = Rules.isNight(hour)
             local seen = {}
-            for _, ped in ipairs(GetGamePool('CPed')) do
+            local pool = GetGamePool('CPed')
+            local alive = {}
+            for _, ped in ipairs(pool) do
+                if not IsPedAPlayer(ped) and NetworkGetEntityIsNetworked(ped) and not IsPedDeadOrDying(ped, true) then
+                    local ok, st = pcall(function() return Entity(ped).state.wlSurvivor end)
+                    if ok and st then alive[#alive + 1] = ped end
+                end
+            end
+            survivorList = alive
+            for _, ped in ipairs(pool) do
                 if not IsPedAPlayer(ped) then
                     local info, investigate = zombieInfo(ped)
                     if info then
@@ -506,6 +528,7 @@ WLZ.Client = {
     cfg = function() return cfg end,
     safe = safe,
     isZombie = function(ped) return zombieInfo(ped) ~= nil end,
+    survivors = function() return survivorList end,
     chaseStep = chaseStep,
     playAttack = playAttack,
 }
