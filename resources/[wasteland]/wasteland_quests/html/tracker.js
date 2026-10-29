@@ -41,19 +41,31 @@
         if ((data.quests || []).length) root.appendChild(h('div', { class: 'wqt-foot', text: 'J or /quest for details' }));
     }
 
+    // The story tracker sits on the same side: when it is shown, go below it
+    // (it changes height with its text, so look again every half second).
+    let timer = null;
+    function place() {
+        if (!root) return;
+        const story = document.querySelector('.wst-root');
+        const r = story && story.offsetParent !== null ? story.getBoundingClientRect() : null;
+        root.style.top = r && r.height > 0 ? Math.max(r.bottom + 14, window.innerHeight * 0.3) + 'px' : '';
+    }
+
     UI.registerScreen('questTracker', {
         mount: function (el, data) {
             root = h('div', { class: 'wqt-root' });
             el.appendChild(root);
             el.appendChild(h('style', { text: CSS }));
             render(data);
+            place();
+            timer = setInterval(place, 500);
         },
-        update: render,
-        unmount: function () { root = null; },
+        update: function (data) { render(data); place(); },
+        unmount: function () { if (timer) clearInterval(timer); timer = null; root = null; },
     });
 
     const CSS = [
-        '.wqt-root { position: absolute; right: 1.6vw; top: 30vh; width: 270px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }',
+        '.wqt-root { position: absolute; right: 1.6vw; top: 30vh; width: 270px; max-height: 68vh; overflow: hidden; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }',
         '.wqt-quest { background: rgba(10,14,9,0.6); border-left: 2px solid #d6b23c; border-radius: 3px; padding: 6px 9px; }',
         '.wqt-quest.is-ready { border-left-color: #7fc75a; }',
         '.wqt-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 2px; }',

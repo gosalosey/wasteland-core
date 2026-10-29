@@ -1,5 +1,9 @@
 # Changelog
 
+## Fix: quest tracker overlapping the story tracker
+
+- When the story tracker is on screen, the quest tracker now sits just below it instead of on top of it.
+
 ## Tutorial: material pop-ups
 
 - While getting the hatchet and the pickaxe, a pop-up says each time you pick up a material how many you have and how many more you need ("Scrap metal 1/2 for a hatchet: 1 more needed."), then "You have everything for a hatchet! Press K and craft it." with a sound.
