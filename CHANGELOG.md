@@ -1,5 +1,9 @@
 # Changelog
 
+## Zombies: log why one was removed near a player
+
+- When a zombie is removed for being in a safe zone (camp, new tool cupboard, tree / rock zone) or near a protected player, the server console says which, if a player is within 120 m.
+
 ## More repairable vehicles
 
 - 40 more wreck spawn points (gas stations, car parks, docks, the airport, Route 68, the west coast, Paleto, Grapeseed), about 80 in all.

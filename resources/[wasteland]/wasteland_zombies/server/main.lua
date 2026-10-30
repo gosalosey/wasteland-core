@@ -54,19 +54,20 @@ end
 -- Safe zones (camps): no zombies inside.
 -- Camps, the small zone around every tool cupboard (base building), and
 -- tree / rock zones.
+-- Returns true and which kind of zone ('camp' | 'base' | 'gather').
 local function inSafeZone(coords)
     if GetResourceState('wasteland_camps') == 'started' then
         local ok, safe = pcall(function() return exports.wasteland_camps:IsInSafeZone(coords) end)
-        if ok and safe == true then return true end
+        if ok and safe == true then return true, 'camp' end
     end
     if GetResourceState('wasteland_basebuilding') == 'started' then
         local ok, safe = pcall(function() return exports.wasteland_basebuilding:IsInBaseZone(coords) end)
-        if ok and safe == true then return true end
+        if ok and safe == true then return true, 'base' end
     end
     -- Tree and rock zones (wasteland_loot treeZones / rockZones, safe = true).
     if GetResourceState('wasteland_loot') == 'started' then
         local ok, safe = pcall(function() return exports.wasteland_loot:IsInGatherZone(coords) end)
-        if ok and safe == true then return true end
+        if ok and safe == true then return true, 'gather' end
     end
     return false
 end
@@ -153,7 +154,7 @@ end
 local PROTECTED_CLEAR = 60.0
 local function nearProtected(c, list)
     for _, p in ipairs(list) do
-        if p.protected and Rules.dist2d(c, p.coords) <= PROTECTED_CLEAR then return true end
+        if p.protected and Rules.dist2d(c, p.coords) <= PROTECTED_CLEAR then return true, p.source end
     end
     return false
 end
@@ -224,8 +225,22 @@ local function maintain()
                 if t - z.dyingAt >= 3000 then markDead(z, 'health') end
             end
             local c = coordsOf(z.handle)
-            if inSafeZone(c) or nearProtected(c, list) then
-                remove(z) -- wandered into a camp, or near someone making a character
+            local safe, zone = inSafeZone(c)
+            local prot, who = false, nil
+            if not safe then prot, who = nearProtected(c, list) end
+            if safe or prot then
+                -- wandered into a camp, or near someone making a character.
+                -- Logged when a player is close, so "zombies vanish near me" can be traced.
+                for _, p in ipairs(list) do
+                    if Rules.dist2d(c, p.coords) <= 120 then
+                        M.log:info('zombie removed near player %d at %.0f, %.0f: %s', p.source, c.x, c.y,
+                            safe and ({ camp = 'inside a camp', base = 'inside a tool cupboard safe zone (first safeMinutes after placing)',
+                                gather = 'inside a tree / rock zone (safe = true in loot.lua)' })[zone]
+                            or ('player ' .. tostring(who) .. ' is marked protected (creator / spawn choice)'))
+                        break
+                    end
+                end
+                remove(z)
                 goto continue
             end
             local close = false
