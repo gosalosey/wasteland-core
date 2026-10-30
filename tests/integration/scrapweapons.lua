@@ -250,7 +250,15 @@ describe('scrap weapons replace the standard ones', function()
         for name, w in pairs(catalog) do
             local d = items[name]
             expect(name .. ':' .. tostring(d ~= nil)).toBe(name .. ':true')
-            for k, v in pairs(w.item) do expect(name .. '.' .. k .. '=' .. tostring(d[k])).toBe(name .. '.' .. k .. '=' .. tostring(v)) end
+            local function str(x)
+                if type(x) ~= 'table' then return tostring(x) end
+                local keys = {}
+                for kk in pairs(x) do keys[#keys + 1] = tostring(kk) end
+                table.sort(keys)
+                for i, kk in ipairs(keys) do keys[i] = kk .. '=' .. tostring(x[kk]) end
+                return '{' .. table.concat(keys, ',') .. '}'
+            end
+            for k, v in pairs(w.item) do expect(name .. '.' .. k .. '=' .. str(d[k])).toBe(name .. '.' .. k .. '=' .. str(v)) end
         end
     end)
 

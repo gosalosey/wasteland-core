@@ -1,5 +1,13 @@
 # Changelog
 
+## Attachments on the scrap guns
+
+- The scrap guns (pipe shotgun, pump, double-barrel, bolt rifle, lever rifle) take attachments now. Their models have no mount points for the game's parts, so the effects are scripted:
+  - suppressor: shots carry half as far (zombies), as on other guns;
+  - flashlight: a beam from the gun while aiming;
+  - scope (bolt and lever rifles): zoom while aiming.
+- The parts do not show on the gun model. Item setting: `attachments = { slot = 'SCRIPTED' }`.
+
 ## Fix: vehicle HUD tyres not matching the vehicle
 
 - The tyre boxes show a burst tyre as 0 straight away (what the game shows), not only after the server hears of it.

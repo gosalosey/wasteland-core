@@ -3,7 +3,9 @@
 -- time, each only once its model, data and icon are finished.
 --
 -- Per weapon (key = the inventory item name, scrap_*):
---   item      inventory item definition (as in inventory.lua items; category = 'weapon')
+--   item      inventory item definition (as in inventory.lua items; category = 'weapon').
+--             Guns: attachments = { slot = 'SCRIPTED' } (the models have no mount points for
+--             the game's parts: suppressor, flashlight and scope are done by script)
 --   weapon    { hash = 'WEAPON_WL_...', ammo?, wear?, noise? } (as in weapons.lua)
 --   recipe    { label, result, ingredients, seconds?, blueprint?, station? } (as in crafting.lua)
 --             (optional; leave out for loot-only weapons)
@@ -32,7 +34,7 @@ WLSW.catalog = {
     -- door hinge, nail firing pin, 2x4 grip. Handles like the game's sawed-off
     -- but holds one shell: the barrel swings open to load each shot.
     scrap_pipe_shotgun = {
-        item = { label = 'Pipe shotgun', category = 'weapon', width = 4, height = 2, weight = 1.4, durability = 120,
+        item = { attachments = { suppressor = 'SCRIPTED', flashlight = 'SCRIPTED' }, label = 'Pipe shotgun', category = 'weapon', width = 4, height = 2, weight = 1.4, durability = 120,
             description = 'One shell in a length of pipe. Crude, loud and hits hard up close. Reload after every shot.' },
         weapon = { hash = 'WEAPON_WL_PIPESHOTGUN', ammo = 'ammo_12g', noise = 180, wear = 2 },
         recipe = { label = 'Pipe shotgun', result = { name = 'scrap_pipe_shotgun', count = 1 },
@@ -61,7 +63,7 @@ WLSW.catalog = {
     -- sheet-steel receiver, a pump made from wood wrapped in inner tube, plank
     -- stock with spare shells. Pumps like the game's pump shotgun; holds 4.
     scrap_pump_shotgun = {
-        item = { label = 'Scrap pump shotgun', category = 'weapon', width = 5, height = 2, weight = 2.2, durability = 250,
+        item = { attachments = { suppressor = 'SCRIPTED', flashlight = 'SCRIPTED' }, label = 'Scrap pump shotgun', category = 'weapon', width = 5, height = 2, weight = 2.2, durability = 250,
             description = 'A welded receiver, two pipes and a plank. Holds four shells; pump between shots.' },
         weapon = { hash = 'WEAPON_WL_SCRAPPUMP', ammo = 'ammo_12g', noise = 180 },
         recipe = { label = 'Scrap pump shotgun', result = { name = 'scrap_pump_shotgun', count = 1 },
@@ -75,7 +77,7 @@ WLSW.catalog = {
     -- pipe receiver with a working bolt, tin box magazine, washer sights.
     -- Handles like the game's precision rifle (bolt cycled between shots); 5 rounds.
     scrap_bolt_rifle = {
-        item = { label = 'Scrap bolt rifle', category = 'weapon', width = 6, height = 2, weight = 3.0, durability = 300,
+        item = { attachments = { suppressor = 'SCRIPTED', flashlight = 'SCRIPTED', scope = 'SCRIPTED' }, label = 'Scrap bolt rifle', category = 'weapon', width = 6, height = 2, weight = 3.0, durability = 300,
             description = 'A pipe barrel on a hand-cut stock with a working bolt. Five rounds of .308; hits hard at range.' },
         weapon = { hash = 'WEAPON_WL_SCRAPBOLT', ammo = 'ammo_308', noise = 300, wear = 2 },
         recipe = { label = 'Scrap bolt rifle', result = { name = 'scrap_bolt_rifle', count = 1 },
@@ -119,7 +121,7 @@ WLSW.catalog = {
     -- has no lever action: it handles like the precision rifle, faster and
     -- lighter (7 rounds of .44, 65 damage, a shot a second).
     scrap_lever_rifle = {
-        item = { label = 'Scrap lever rifle', category = 'weapon', width = 6, height = 2, weight = 2.8, durability = 350,
+        item = { attachments = { suppressor = 'SCRIPTED', flashlight = 'SCRIPTED', scope = 'SCRIPTED' }, label = 'Scrap lever rifle', category = 'weapon', width = 6, height = 2, weight = 2.8, durability = 350,
             description = 'An old-style lever gun put back together from scrap. Seven .44 rounds, quick follow-up shots.' },
         weapon = { hash = 'WEAPON_WL_SCRAPLEVER', ammo = 'ammo_44', noise = 220 },
         recipe = { label = 'Scrap lever rifle', result = { name = 'scrap_lever_rifle', count = 1 },
@@ -149,7 +151,7 @@ WLSW.catalog = {
     -- bandage wraps. The game's sawed-off: two shells, the barrels swing open
     -- to reload.
     scrap_double_barrel = {
-        item = { label = 'Improvised double-barrel', category = 'weapon', width = 5, height = 2, weight = 2.3, durability = 200,
+        item = { attachments = { suppressor = 'SCRIPTED', flashlight = 'SCRIPTED' }, label = 'Improvised double-barrel', category = 'weapon', width = 5, height = 2, weight = 2.3, durability = 200,
             description = 'Two pipes, two hammers, two shells. Break it open and load both.' },
         weapon = { hash = 'WEAPON_WL_SCRAPDOUBLE', ammo = 'ammo_12g', noise = 180, wear = 2 },
         recipe = { label = 'Improvised double-barrel', result = { name = 'scrap_double_barrel', count = 1 },

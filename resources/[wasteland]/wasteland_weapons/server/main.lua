@@ -34,13 +34,15 @@ local function state(src, h, stack)
     -- fitted attachments -> GTA components
     local components = {}
     local fitted = stack.metadata.attachments or {}
+    local scripted = {}   -- slots with no game part (custom guns): the client does the effect
     for slot in pairs(fitted) do
         local comp = d and d.attachments and d.attachments[slot]
-        if comp then components[#components + 1] = comp end
+        if comp == 'SCRIPTED' then scripted[slot] = true
+        elseif comp then components[#components + 1] = comp end
     end
     table.sort(components)
     return {
-        components = components,
+        components = components, scripted = scripted,
         uid = h.uid, item = h.item, label = d and d.label or h.item, hash = w.hash,
         melee = w.ammo == nil, ammo = ammoCount(src, w),
         durability = durability, maxDurability = d and d.durability or 0,

@@ -157,3 +157,56 @@ AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     RemoveAllPedWeapons(PlayerPedId(), true)
 end)
+
+-------------------------------------------------------------------------------
+-- Attachments with no game part (custom guns: `SCRIPTED`). The suppressor's
+-- effect is the server's (shots carry half as far); here: the flashlight
+-- (a beam from the gun while aiming) and the scope (zoom while aiming).
+-------------------------------------------------------------------------------
+
+local scopeCam = nil
+local function scopeOff()
+    if scopeCam then
+        RenderScriptCams(false, false, 0, true, false)
+        DestroyCam(scopeCam, false)
+        scopeCam = nil
+    end
+end
+
+Citizen.CreateThread(function()
+    while true do
+        local sc = current and current.scripted
+        if not sc or not next(sc) then
+            scopeOff()
+            Citizen.Wait(300)
+        else
+            Citizen.Wait(0)
+            local ped = PlayerPedId()
+            local aiming = IsPlayerFreeAiming(PlayerId()) and GetSelectedPedWeapon(ped) == hash
+            if sc.flashlight and aiming then
+                local w = GetCurrentPedWeaponEntityIndex(ped)
+                local from = (w ~= 0) and GetEntityCoords(w) or GetPedBoneCoords(ped, 0xDEAD, 0.0, 0.0, 0.0)
+                local rot = GetGameplayCamRot(2)
+                local rx, rz = math.rad(rot.x), math.rad(rot.z)
+                local dir = vector3(-math.sin(rz) * math.cos(rx), math.cos(rz) * math.cos(rx), math.sin(rx))
+                DrawSpotLight(from.x, from.y, from.z, dir.x, dir.y, dir.z, 255, 245, 225, 40.0, 6.0, 0.0, 14.0, 30.0)
+            end
+            if sc.scope and aiming and GetFollowPedCamViewMode() ~= 4 then
+                if not scopeCam then
+                    scopeCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+                    RenderScriptCams(true, false, 0, true, false)
+                end
+                SetCamCoord(scopeCam, GetGameplayCamCoord())
+                SetCamRot(scopeCam, GetGameplayCamRot(2), 2)
+                SetCamFov(scopeCam, 18.0)
+                HideHudComponentThisFrame(14) -- the game's reticle (wrong size zoomed in)
+                DrawRect(0.5, 0.5, 0.0015, 0.004, 255, 255, 255, 200)
+                DrawRect(0.5, 0.5, 0.002, 0.0015, 255, 255, 255, 200)
+            else
+                scopeOff()
+            end
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res) if res == GetCurrentResourceName() then scopeOff() end end)
