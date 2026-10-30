@@ -16,6 +16,14 @@ local active = nil     -- action in progress
 local WHEELS = { 0, 1, 4, 5 } -- tyre indices of a car
 local BIKE_WHEELS = { 0, 4 }  -- of a motorbike (front, rear)
 local function wheelsOf(s) return (s and s.wheelsMax == 2) and BIKE_WHEELS or WHEELS end
+-- The game's tyre slots at each position: trucks can have their rear wheels
+-- in the middle slots (2, 3) instead of 4, 5, so the rear checks both.
+local SLOTS = { [0] = { 0 }, [1] = { 1 }, [4] = { 4, 2 }, [5] = { 5, 3 } }
+local function slotsOf(s, idx) return (s and s.wheelsMax == 2) and { idx } or SLOTS[idx] end
+local function tyreBurst(veh, s, idx)
+    for _, k in ipairs(slotsOf(s, idx)) do if IsVehicleTyreBurst(veh, k, false) then return true end end
+    return false
+end
 local HUD = 'vehHud'
 local driving = nil    -- { veh, fuel, why } while this player drives (for the HUD)
 
@@ -60,9 +68,11 @@ local function apply(veh, s)
     local wheels = s.parts and s.parts.wheels or (s.wheelsMax or 4)
     local tyres = s.parts and s.parts.cond and s.parts.cond.tyres or {}
     for i, idx in ipairs(wheelsOf(s)) do
-        if i > wheels then SetVehicleTyreBurst(veh, idx, true, 1000.0)
-        elseif (tyres[i] or 100) <= 0 then SetVehicleTyreBurst(veh, idx, false, 1000.0)   -- worn out or burst: flat
-        else SetVehicleTyreFixed(veh, idx) end
+        for _, k in ipairs(slotsOf(s, idx)) do
+            if i > wheels then SetVehicleTyreBurst(veh, k, true, 1000.0)
+            elseif (tyres[i] or 100) <= 0 then SetVehicleTyreBurst(veh, k, false, 1000.0)   -- worn out or burst: flat
+            else SetVehicleTyreFixed(veh, k) end
+        end
     end
     -- Now the server may read damage from the entity again.
     if s.acked ~= s.seq and NetworkGetEntityIsNetworked(veh) then
@@ -444,18 +454,23 @@ Citizen.CreateThread(function()
             else
                 SetVehicleUndriveable(veh, false)
                 told = nil
-                if GetIsVehicleEngineRunning(veh) then
-                    km = km + GetEntitySpeed(veh) * GetFrameTime() / 1000.0
-                    if GetGameTimer() - lastWear > 10000 then
-                        -- wear: distance, and tyres that burst (fitted ones that are not flat yet)
-                        lastWear = GetGameTimer()
-                        local bursts, tyres = {}, (s.parts.cond and s.parts.cond.tyres) or {}
-                        for i, idx in ipairs(wheelsOf(s)) do
-                            bursts[i] = i <= (s.parts.wheels or 0) and (tyres[i] or 100) > 0 and IsVehicleTyreBurst(veh, idx, false) or false
-                        end
+                local running = GetIsVehicleEngineRunning(veh)
+                if GetGameTimer() - lastWear > 10000 then
+                    -- wear: distance, and tyres that burst (fitted ones that are not flat
+                    -- yet). Bursts are sent with the engine off too.
+                    lastWear = GetGameTimer()
+                    local bursts, tyres, any = {}, (s.parts.cond and s.parts.cond.tyres) or {}, false
+                    for i, idx in ipairs(wheelsOf(s)) do
+                        bursts[i] = i <= (s.parts.wheels or 0) and (tyres[i] or 100) > 0 and tyreBurst(veh, s, idx) or false
+                        any = any or bursts[i]
+                    end
+                    if running or any then
                         TriggerServerEvent('wasteland:vehicles:server:wear', NetworkGetNetworkIdFromEntity(veh), math.min(50.0, km), bursts)
                         km = 0.0
                     end
+                end
+                if running then
+                    km = km + GetEntitySpeed(veh) * GetFrameTime() / 1000.0
                     fuel = math.max(0, fuel - Rules.fuelUsed(cfg.fuel, GetEntitySpeed(veh) * 3.6, GetFrameTime()))
                     SetVehicleFuelLevel(veh, fuel / (s.tank or 50) * 100.0)
                     if GetGameTimer() - lastReport > 5000 and fuel < (s.fuel or 0) - 0.01 then
@@ -615,7 +630,12 @@ Citizen.CreateThread(function()
                 if p then
                     local c = p.cond or {}
                     local tyres = {}
-                    for i = 1, (s.wheelsMax or 4) do tyres[i] = i <= (p.wheels or 0) and math.floor((c.tyres or {})[i] or 100) or -1 end
+                    local idxs = wheelsOf(s)
+                    for i = 1, (s.wheelsMax or 4) do
+                        tyres[i] = i <= (p.wheels or 0) and math.floor((c.tyres or {})[i] or 100) or -1
+                        -- what the game shows: a burst tyre is 0 now, before the server hears of it
+                        if tyres[i] > 0 and idxs[i] and tyreBurst(veh, s, idxs[i]) then tyres[i] = 0 end
+                    end
                     data.parts = { engine = p.engine and math.floor(c.engine or 100) or -1, battery = p.battery and math.floor(c.battery or 100) or -1, tyres = tyres,
                         bike = s.wheelsMax == 2 }
                 end

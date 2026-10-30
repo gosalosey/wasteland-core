@@ -1,5 +1,11 @@
 # Changelog
 
+## Fix: vehicle HUD tyres not matching the vehicle
+
+- The tyre boxes show a burst tyre as 0 straight away (what the game shows), not only after the server hears of it.
+- Bursts are reported with the engine off too.
+- Rear tyres check both of the game's rear wheel slots (trucks can have their rear wheels in the middle slots), when reading, bursting and fixing them.
+
 ## Fix: zombies vanishing around a player
 
 - A player left marked "protected" (meant only for the character creator / spawn choice) made every zombie within 60 m of them disappear. The protection is now switched off by itself 20 s after spawning is over.
