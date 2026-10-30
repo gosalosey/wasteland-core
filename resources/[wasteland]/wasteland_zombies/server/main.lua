@@ -233,10 +233,12 @@ local function maintain()
                 -- Logged when a player is close, so "zombies vanish near me" can be traced.
                 for _, p in ipairs(list) do
                     if Rules.dist2d(c, p.coords) <= 120 then
-                        M.log:info('zombie removed near player %d at %.0f, %.0f: %s', p.source, c.x, c.y,
-                            safe and ({ camp = 'inside a camp', base = 'inside a tool cupboard safe zone (first safeMinutes after placing)',
+                        local why = safe and ({ camp = 'inside a camp', base = 'inside a tool cupboard safe zone (first safeMinutes after placing)',
                                 gather = 'inside a tree / rock zone (safe = true in loot.lua)' })[zone]
-                            or ('player ' .. tostring(who) .. ' is marked protected (creator / spawn choice)'))
+                            or ('player ' .. tostring(who) .. ' is marked protected (creator / spawn choice)')
+                        M.log:info('zombie removed near player %d at %.0f, %.0f: %s', p.source, c.x, c.y, why)
+                        -- also in that player's F8 console
+                        TriggerClientEvent('wasteland:zombies:client:removedWhy', p.source, why)
                         break
                     end
                 end

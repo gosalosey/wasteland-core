@@ -1,5 +1,10 @@
 # Changelog
 
+## Fix: zombies vanishing around a player
+
+- A player left marked "protected" (meant only for the character creator / spawn choice) made every zombie within 60 m of them disappear. The protection is now switched off by itself 20 s after spawning is over.
+- The reason a zombie is removed near you is also printed in your F8 console.
+
 ## Zombies: log why one was removed near a player
 
 - When a zombie is removed for being in a safe zone (camp, new tool cupboard, tree / rock zone) or near a protected player, the server console says which, if a player is within 120 m.

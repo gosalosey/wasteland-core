@@ -455,3 +455,27 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+-- Safety net: "protected" (zombies and damage leave you alone) is only for
+-- making a character, choosing where to start and being placed. If it is
+-- still on 20 s after all of that is over (a step that should have switched
+-- it off did not), switch it off: otherwise zombies vanish around you.
+Citizen.CreateThread(function()
+    local since = nil
+    while true do
+        Citizen.Wait(2000)
+        local busy = not loaded or placing
+            or (GetResourceState('wasteland_appearance') == 'started' and exports.wasteland_appearance:IsEditing())
+            or (uiRunning() and exports.wasteland_ui:IsOpen('spawnChoice'))
+        if LocalPlayer.state.wlProtected and not busy then
+            since = since or GetGameTimer()
+            if GetGameTimer() - since >= 20000 then
+                print('[wasteland] still marked protected after spawning: switched off')
+                LocalPlayer.state:set('wlProtected', false, true)
+                since = nil
+            end
+        else
+            since = nil
+        end
+    end
+end)

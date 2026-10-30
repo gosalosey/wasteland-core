@@ -561,3 +561,5 @@ RegisterCommand('zcheck', function(_, args)
         print(line)
     end
 end, false)
+
+RegisterNetEvent('wasteland:zombies:client:removedWhy', function(why) print('[wasteland] a zombie near you was removed: ' .. tostring(why)) end)
